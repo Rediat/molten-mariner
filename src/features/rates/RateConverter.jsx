@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { calculateEAR } from '../../utils/financial-utils';
 import { useHistory } from '../../context/HistoryContext';
+import { Info } from 'lucide-react';
 
 const RateConverter = () => {
     const { addToHistory } = useHistory();
@@ -27,7 +28,6 @@ const RateConverter = () => {
             <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-neutral-400 bg-clip-text text-transparent mb-6">
                 Interest Rates
             </h1>
-            <p className="text-neutral-500 text-sm mb-8">Convert Nominal Rate to Effective Annual Rate (EAR)</p>
 
             <div className="space-y-6 flex-1">
                 <div className="bg-neutral-800/50 rounded-xl p-6">
@@ -48,8 +48,8 @@ const RateConverter = () => {
                                 key={freq.n}
                                 onClick={() => setCompounding(freq.n)}
                                 className={`py-3 px-4 rounded-lg text-sm font-bold text-left transition-all ${compounding === freq.n
-                                        ? 'bg-primary-600/20 text-primary-400 ring-1 ring-primary-500/50'
-                                        : 'bg-neutral-900/50 text-neutral-500 hover:bg-neutral-900'
+                                    ? 'bg-primary-600/20 text-primary-400 ring-1 ring-primary-500/50'
+                                    : 'bg-neutral-900/50 text-neutral-500 hover:bg-neutral-900'
                                     }`}
                             >
                                 {freq.label}
