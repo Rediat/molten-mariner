@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { calculateTVM } from '../../utils/financial-utils';
 import { useHistory } from '../../context/HistoryContext';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Info } from 'lucide-react';
 
 const TVMCalculator = () => {
     const { addToHistory } = useHistory();
@@ -60,6 +60,7 @@ const TVMCalculator = () => {
         { label: 'Semi-Annual (2)', value: 2 },
         { label: 'Quarterly (4)', value: 4 },
         { label: 'Monthly (12)', value: 12 },
+        { label: 'Daily (365)', value: 365 },
     ];
 
     return (
@@ -90,6 +91,7 @@ const TVMCalculator = () => {
                     </select>
                 </div>
             </div>
+
 
             {/* Target Selector */}
             <div className="flex bg-neutral-900/50 p-1 rounded-xl mb-8 overflow-x-auto scrollbar-hide">

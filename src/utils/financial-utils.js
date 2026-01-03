@@ -148,6 +148,63 @@ export const calculateBond = (faceValue, couponRate, ytm, years, frequency = 1) 
     return price;
 };
 
+export const calculateBondYTM = (faceValue, couponRate, price, years, frequency = 1) => {
+    const c = (couponRate / 100) * faceValue / frequency;
+    const n = years * frequency;
+
+    // Newton-Raphson to find periodic rate r
+    // f(r) = c * ((1 - (1+r)^-n) / r) + faceValue * (1+r)^-n - price = 0
+    let r = (couponRate / 100) / frequency; // Start guess with coupon rate
+    if (r === 0) r = 0.05 / frequency;
+
+    for (let i = 0; i < 100; i++) {
+        const factor = Math.pow(1 + r, -n);
+        const f = c * ((1 - factor) / r) + faceValue * factor - price;
+
+        // Derivative: f'(r) = c * [ (n*r*(1+r)^-(n+1) - (1-(1+r)^-n)) / r^2 ] - n*faceValue*(1+r)^-(n+1)
+        const dF = c * ((n * r * Math.pow(1 + r, -n - 1) - (1 - factor)) / (r * r)) - n * faceValue * Math.pow(1 + r, -n - 1);
+
+        if (Math.abs(dF) < 1e-12) break;
+
+        const nextR = r - f / dF;
+        if (Math.abs(nextR - r) < 1e-8) {
+            return nextR * frequency * 100;
+        }
+        r = nextR;
+    }
+    return r * frequency * 100;
+};
+
+export const getAmortizationSchedule = (amount, rate, termMonths) => {
+    const r = rate / 100 / 12;
+    const n = termMonths;
+    let payment = 0;
+    if (r === 0) {
+        payment = amount / n;
+    } else {
+        payment = amount * (r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
+    }
+
+    const schedule = [];
+    let balance = amount;
+
+    for (let i = 1; i <= n; i++) {
+        const interest = balance * r;
+        const principal = payment - interest;
+        balance -= principal;
+
+        schedule.push({
+            month: i,
+            payment,
+            interest,
+            principal,
+            balance: Math.max(0, balance)
+        });
+    }
+
+    return schedule;
+};
+
 export const calculateNPV = (rate, cashFlows) => {
     const r = rate / 100;
     return cashFlows.reduce((acc, flow, t) => {
