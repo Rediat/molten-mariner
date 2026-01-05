@@ -1,10 +1,109 @@
-export const calculateTVM = (target, values, mode = 'END', frequency = 12) => {
+export const calculateTVM = (target, values, mode = 'END', frequency = 12, interestType = 'COMPOUND') => {
     let { n, i, pv, pmt, fv } = values;
     const type = mode === 'BEGIN' ? 1 : 0;
 
-    // Convert annual interest rate to periodic rate
+    // Periodic rate
     const r = (i / 100) / frequency;
 
+    if (interestType === 'SIMPLE') {
+        const t = n; // Time in periods
+
+        // Factors
+        // PV Factor: (1 + r*n)
+        const pvFactor = 1 + r * n;
+
+        // Annuity Factor (Sum of simple interest on payments)
+        // END: n + r*n*(n-1)/2
+        // BEGIN: n + r*n*(n+1)/2
+        let pmtFactor = 0;
+        if (mode === 'END') {
+            pmtFactor = n + r * n * (n - 1) / 2;
+        } else {
+            pmtFactor = n + r * n * (n + 1) / 2;
+        }
+
+        if (target === 'fv') {
+            // FV + PV(1+rn) + PMT(Factor) = 0
+            return -(pv * pvFactor + pmt * pmtFactor);
+        }
+
+        if (target === 'pv') {
+            // PV = -(FV + PMT*Factor) / (1+rn)
+            if (pvFactor === 0) return 0; // Should not happen for positive rates
+            return -(fv + pmt * pmtFactor) / pvFactor;
+        }
+
+        if (target === 'pmt') {
+            // PMT = -(FV + PV(1+rn)) / Factor
+            if (pmtFactor === 0) return 0;
+            return -(fv + pv * pvFactor) / pmtFactor;
+        }
+
+        if (target === 'i') {
+            // Solve for r (Linear)
+            // FV + PV(1+rn) + PMT(n + r*k) = 0 where k is the n(n-1)/2 or similar
+            // FV + PV + PV*r*n + PMT*n + PMT*r*k = 0
+            // r(PV*n + PMT*k) = -(FV + PV + PMT*n)
+            // r = -(FV + PV + PMT*n) / (PV*n + PMT*k)
+
+            const k = mode === 'END' ? n * (n - 1) / 2 : n * (n + 1) / 2;
+            const numerator = -(fv + pv + pmt * n);
+            const denominator = pv * n + pmt * k;
+
+            if (Math.abs(denominator) < 1e-9) return 0;
+            const calculatedR = numerator / denominator;
+            return calculatedR * frequency * 100;
+        }
+
+        if (target === 'n') {
+            // Solve for n (Quadratic for PMT != 0, Linear for PMT == 0)
+            // FV + PV(1+rn) + PMT(n + r*n(n-1)/2) = 0    (assuming END)
+            // FV + PV + PVrn + PMT*n + PMT*r/2 * (n^2 - n) = 0
+            // (PMT*r/2) n^2 + (PV*r + PMT - PMT*r/2) n + (FV + PV) = 0
+
+            // If PMT = 0: FV + PV + PVrn = 0 => PVrn = -(FV+PV) => n = -(FV+PV)/(PV*r)
+            if (Math.abs(pmt) < 1e-9) {
+                if (Math.abs(pv * r) < 1e-9) return 0;
+                return -(fv + pv) / (pv * r);
+            }
+
+            // Quadratic Ax^2 + Bx + C = 0
+            let A, B, C;
+            C = fv + pv;
+
+            if (mode === 'END') {
+                // pmtFactor = n + r/2 * (n^2 - n) = (r/2)n^2 + (1 - r/2)n
+                A = pmt * r / 2;
+                B = pv * r + pmt * (1 - r / 2);
+            } else {
+                // pmtFactor = n + r/2 * (n^2 + n) = (r/2)n^2 + (1 + r/2)n
+                A = pmt * r / 2;
+                B = pv * r + pmt * (1 + r / 2);
+            }
+
+            if (Math.abs(A) < 1e-9) {
+                // Linear
+                return -C / B;
+            }
+
+            // Quadratic formula (-B +/- sqrt(B^2 - 4AC)) / 2A
+            const discriminant = B * B - 4 * A * C;
+            if (discriminant < 0) return 0; // No real solution
+
+            const sqrtD = Math.sqrt(discriminant);
+            const r1 = (-B + sqrtD) / (2 * A);
+            const r2 = (-B - sqrtD) / (2 * A);
+
+            // Return positive reasonable root
+            if (r1 > 0) return r1;
+            if (r2 > 0) return r2;
+            return 0;
+        }
+
+        return 0;
+    }
+
+    // COMPOUND (Existing Logic)
     if (target === 'fv') {
         if (r === 0) {
             return -(pv + pmt * n);
