@@ -137,12 +137,35 @@ const BondCalculator = () => {
 
             <button
                 onClick={handleCalculate}
-                className="w-full bg-gradient-to-r from-primary-600 to-primary-500 text-neutral-900 font-bold text-lg py-3 rounded-2xl shadow-lg mt-3"
+                className="w-full bg-gradient-to-r from-primary-600 to-primary-500 text-neutral-900 font-black text-base py-3.5 rounded-xl shadow-lg shadow-primary-900/20 active:scale-[0.98] transition-all hover:brightness-110 flex items-center justify-center gap-2 uppercase tracking-widest mt-3"
             >
-                CALCULATE
+                <CalculateIcon className="w-5 h-5" />
+                Calculate
             </button>
         </div>
     );
 };
+
+// Simple icon for the button
+const CalculateIcon = ({ className }) => (
+    <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        className={className}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+    >
+        <rect x="4" y="2" width="16" height="20" rx="2" />
+        <line x1="8" y1="6" x2="16" y2="6" />
+        <line x1="16" y1="14" x2="16" y2="14" />
+        <line x1="8" y1="14" x2="8" y2="14" />
+        <line x1="12" y1="14" x2="12" y2="14" />
+        <line x1="16" y1="18" x2="16" y2="18" />
+        <line x1="8" y1="18" x2="8" y2="18" />
+        <line x1="12" y1="18" x2="12" y2="18" />
+    </svg>
+);
 
 export default BondCalculator;

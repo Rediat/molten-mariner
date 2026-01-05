@@ -18,11 +18,13 @@ const TVMCalculator = () => {
 
     const [calculatedValue, setCalculatedValue] = useState(null);
 
+    const [interestType, setInterestType] = useState('COMPOUND');
+
     const handleCalculate = () => {
         try {
-            const result = calculateTVM(target, values, mode, frequency);
+            const result = calculateTVM(target, values, mode, frequency, interestType);
             setCalculatedValue(result);
-            addToHistory('TVM', { ...values, mode, target, frequency }, result);
+            addToHistory('TVM', { ...values, mode, target, frequency, interestType }, result);
 
             // Update the target value in the inputs to show the result
             setValues(prev => ({
@@ -66,24 +68,34 @@ const TVMCalculator = () => {
     return (
         <div className="flex flex-col h-full">
             {/* Header */}
-            <div className="flex justify-between items-start mb-6">
+            <div className="flex justify-between items-start mb-4">
                 <div>
-                    <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-neutral-400 bg-clip-text text-transparent">
+                    <h1 className="text-xl font-bold bg-gradient-to-r from-white to-neutral-400 bg-clip-text text-transparent">
                         TVM Calculator
                     </h1>
-                    <p className="text-neutral-500 text-sm font-medium">Time Value of Money</p>
+                    <p className="text-neutral-500 text-[10px] font-medium uppercase tracking-wider">Time Value of Money</p>
                 </div>
-                <div className="flex flex-col items-end gap-2">
-                    <button
-                        onClick={() => setMode(m => m === 'END' ? 'BEGIN' : 'END')}
-                        className="flex items-center gap-1 bg-neutral-800 border border-neutral-700 rounded-full px-3 py-1 text-xs font-semibold text-primary-500 hover:bg-neutral-700 transition-colors"
-                    >
-                        Mode: {mode}
-                    </button>
+                <div className="flex flex-col items-end gap-1.5">
+                    <div className="flex gap-1.5">
+                        <button
+                            onClick={() => setInterestType(t => t === 'COMPOUND' ? 'SIMPLE' : 'COMPOUND')}
+                            className={`flex items-center gap-1 border rounded-full px-2.5 py-0.5 text-[10px] font-bold transition-all ${interestType === 'SIMPLE'
+                                ? 'bg-primary-600 border-primary-500 text-white shadow-lg shadow-primary-900/20'
+                                : 'bg-neutral-800 border-neutral-700 text-neutral-400 hover:bg-neutral-700'}`}
+                        >
+                            {interestType === 'SIMPLE' ? 'SIMPLE' : 'COMPOUND'}
+                        </button>
+                        <button
+                            onClick={() => setMode(m => m === 'END' ? 'BEGIN' : 'END')}
+                            className="flex items-center gap-1 bg-neutral-800 border border-neutral-700 rounded-full px-2.5 py-0.5 text-[10px] font-bold text-primary-500 hover:bg-neutral-700 transition-all"
+                        >
+                            {mode}
+                        </button>
+                    </div>
                     <select
                         value={frequency}
                         onChange={(e) => setFrequency(Number(e.target.value))}
-                        className="bg-neutral-800 border border-neutral-700 rounded-lg px-2 py-1 text-xs font-semibold text-neutral-300 focus:outline-none"
+                        className="bg-neutral-800 border border-neutral-700 rounded-lg px-2 py-0.5 text-[10px] font-bold text-neutral-300 focus:outline-none"
                     >
                         {frequencies.map(f => (
                             <option key={f.value} value={f.value}>{f.label}</option>
@@ -94,44 +106,44 @@ const TVMCalculator = () => {
 
 
             {/* Target Selector */}
-            <div className="flex bg-neutral-900/50 p-1 rounded-xl mb-8 overflow-x-auto scrollbar-hide">
+            <div className="flex bg-neutral-900/50 p-1 rounded-xl mb-4 overflow-x-auto scrollbar-hide">
                 {fields.map(field => (
                     <button
                         key={field.id}
                         onClick={() => setTarget(field.id)}
-                        className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${target === field.id
+                        className={`flex-1 py-1.5 px-2 rounded-lg text-[10px] font-black transition-all whitespace-nowrap ${target === field.id
                             ? 'bg-neutral-700 text-white shadow-md'
                             : 'text-neutral-500 hover:text-neutral-300'
                             }`}
                     >
-                        Solve {field.label}
+                        {field.label}
                     </button>
                 ))}
             </div>
 
             {/* Inputs */}
-            <div className="space-y-4 flex-1">
+            <div className="space-y-2 flex-1">
                 {fields.map(field => (
-                    <div key={field.id} className={`group relative bg-neutral-800/50 rounded-xl p-4 transition-all duration-300 border ${target === field.id ? 'border-primary-500/50 ring-1 ring-primary-500/20' : 'border-transparent hover:border-neutral-700'
+                    <div key={field.id} className={`group relative bg-neutral-800/40 rounded-xl p-3 transition-all duration-300 border ${target === field.id ? 'border-primary-500/50 ring-1 ring-primary-500/10 bg-neutral-800/60' : 'border-transparent hover:border-neutral-700'
                         }`}>
                         <div className="flex justify-between items-center">
                             <div className="flex flex-col">
-                                <label className={`text-base font-bold transition-colors ${target === field.id ? 'text-primary-400' : 'text-neutral-300'
+                                <label className={`text-sm font-bold transition-colors ${target === field.id ? 'text-primary-400' : 'text-neutral-300'
                                     }`}>
                                     {field.label}
                                 </label>
-                                <span className="text-[10px] uppercase tracking-wider text-neutral-500 font-semibold">{field.sub}</span>
+                                <span className="text-[9px] uppercase tracking-tighter text-neutral-500 font-bold">{field.sub}</span>
                             </div>
 
                             <div className="relative">
                                 {target === field.id && calculatedValue === null ? (
-                                    <span className="text-neutral-500 italic text-sm font-medium px-2">Calculated...</span>
+                                    <span className="text-neutral-600 italic text-xs font-bold px-2">CALC...</span>
                                 ) : (
                                     <input
                                         type="number"
                                         value={values[field.id]}
                                         onChange={(e) => handleChange(field.id, e.target.value)}
-                                        className={`bg-transparent text-right text-xl font-mono focus:outline-none w-32 placeholder-neutral-600 transition-colors ${target === field.id ? 'text-primary-400 font-bold' : 'text-white'
+                                        className={`bg-transparent text-right text-lg font-mono focus:outline-none w-28 placeholder-neutral-700 transition-colors ${target === field.id ? 'text-primary-400 font-black' : 'text-white'
                                             }`}
                                         placeholder="0"
                                     />
@@ -143,13 +155,13 @@ const TVMCalculator = () => {
             </div>
 
             {/* Action Button */}
-            <div className="mt-8">
+            <div className="mt-4">
                 <button
                     onClick={handleCalculate}
-                    className="w-full bg-gradient-to-r from-primary-600 to-primary-500 text-neutral-900 font-bold text-lg py-4 rounded-2xl shadow-lg shadow-primary-900/20 active:scale-[0.98] transition-all hover:brightness-110 flex items-center justify-center gap-2"
+                    className="w-full bg-gradient-to-r from-primary-600 to-primary-500 text-neutral-900 font-black text-base py-3.5 rounded-xl shadow-lg shadow-primary-900/20 active:scale-[0.98] transition-all hover:brightness-110 flex items-center justify-center gap-2 uppercase tracking-widest"
                 >
-                    <CalculateIcon className="w-6 h-6" />
-                    CALCULATE
+                    <CalculateIcon className="w-5 h-5" />
+                    Calculate
                 </button>
             </div>
         </div>
