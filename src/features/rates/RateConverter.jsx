@@ -38,7 +38,7 @@ const RateConverter = () => {
                             type="number"
                             value={nominal}
                             onChange={(e) => setNominal(parseFloat(e.target.value) || 0)}
-                            className="flex-1 bg-transparent text-xl font-mono text-white focus:outline-none border-b border-neutral-700 focus:border-primary-500 transition-colors pb-1 text-right"
+                            className="ml-auto w-32 bg-transparent text-xl font-mono text-white focus:outline-none border-b border-neutral-700 focus:border-primary-500 transition-colors pb-1 text-right"
                         />
                     </div>
 
