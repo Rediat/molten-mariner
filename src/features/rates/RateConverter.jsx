@@ -8,11 +8,29 @@ const RateConverter = () => {
     const [nominal, setNominal] = useState(5);
     const [compounding, setCompounding] = useState(12); // Monthly default
     const [result, setResult] = useState(null);
+    const [doublingTime, setDoublingTime] = useState(null);
 
     const handleCalculate = () => {
         const res = calculateEAR(nominal, compounding);
         setResult(res);
-        addToHistory('RATES', { nominal, compounding }, res);
+
+        // Rule of 72 (precise calculation): t = ln(2) / (n * ln(1 + r/n))
+        const r = nominal / 100;
+        const n = compounding;
+        let t = 0;
+
+        if (r > 0) {
+            t = Math.log(2) / (n * Math.log(1 + r / n));
+        }
+
+        // Convert years to Y M D
+        const years = Math.floor(t);
+        const remainderMonths = (t - years) * 12;
+        const months = Math.floor(remainderMonths);
+        const days = Math.round((remainderMonths - months) * 30.44);
+
+        setDoublingTime({ years, months, days });
+        addToHistory('RATES', { nominal, compounding, doublingTime: { years, months, days } }, res);
     };
 
     const frequencies = [
@@ -101,6 +119,37 @@ const RateConverter = () => {
                     )}
                 </div>
             </div>
+
+            {/* Time to Double Display */}
+            {doublingTime && (
+                <div className="mt-2 bg-gradient-to-br from-neutral-800/80 to-neutral-900/80 rounded-xl p-3 shrink-0 border border-white/10 relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <svg className="w-12 h-12 text-primary-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+
+                    <label className="text-[10px] font-bold text-primary-400/80 uppercase tracking-widest mb-1 flex items-center gap-1.5">
+                        Time to Double Investment
+                    </label>
+                    <div className="flex items-baseline gap-3">
+                        {doublingTime.years > 0 && (
+                            <div className="flex items-baseline gap-1">
+                                <span className="text-xl font-mono font-bold text-white">{doublingTime.years}</span>
+                                <span className="text-[10px] text-neutral-500 uppercase font-bold tracking-wider">Yrs</span>
+                            </div>
+                        )}
+                        <div className="flex items-baseline gap-1">
+                            <span className="text-xl font-mono font-bold text-white">{doublingTime.months}</span>
+                            <span className="text-[10px] text-neutral-500 uppercase font-bold tracking-wider">Mos</span>
+                        </div>
+                        <div className="flex items-baseline gap-1">
+                            <span className="text-xl font-mono font-bold text-white">{doublingTime.days}</span>
+                            <span className="text-[10px] text-neutral-500 uppercase font-bold tracking-wider">Days</span>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Calculate Button */}
             <button
