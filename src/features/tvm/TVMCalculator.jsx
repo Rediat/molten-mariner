@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { calculateTVM } from '../../utils/financial-utils';
 import { useHistory } from '../../context/HistoryContext';
 import { ChevronDown, Info } from 'lucide-react';
+import FormattedNumberInput from '../../components/FormattedNumberInput';
 
 const TVMCalculator = () => {
     const { addToHistory } = useHistory();
@@ -128,8 +129,8 @@ const TVMCalculator = () => {
                 {fields.map(field => (
                     <div key={field.id} className={`group relative bg-neutral-800/40 rounded-xl p-3 transition-all duration-300 border ${target === field.id ? 'border-primary-500/50 ring-1 ring-primary-500/10 bg-neutral-800/60' : 'border-transparent hover:border-neutral-700'
                         }`}>
-                        <div className="flex justify-between items-center">
-                            <div className="flex flex-col">
+                        <div className="flex justify-between items-center gap-4">
+                            <div className="flex flex-col items-start text-left">
                                 <label className={`text-sm font-bold transition-colors ${target === field.id ? 'text-primary-400' : 'text-neutral-300'
                                     }`}>
                                     {field.label}
@@ -137,15 +138,15 @@ const TVMCalculator = () => {
                                 <span className="text-[9px] uppercase tracking-tighter text-neutral-500 font-bold">{field.sub}</span>
                             </div>
 
-                            <div className="relative">
+                            <div className="relative flex-1">
                                 {target === field.id && calculatedValue === null ? (
                                     <span className="text-neutral-600 italic text-xs font-bold px-2">CALC...</span>
                                 ) : (
-                                    <input
-                                        type="number"
+                                    <FormattedNumberInput
                                         value={values[field.id]}
                                         onChange={(e) => handleChange(field.id, e.target.value)}
-                                        className={`bg-transparent text-right text-lg font-mono focus:outline-none w-28 placeholder-neutral-700 transition-colors ${target === field.id ? 'text-primary-400 font-black' : 'text-white'
+                                        decimals={field.id === 'n' ? 0 : 2}
+                                        className={`bg-transparent text-right text-lg font-mono focus:outline-none w-full placeholder-neutral-700 transition-colors ${target === field.id ? 'text-primary-400 font-black' : 'text-white'
                                             }`}
                                         placeholder="0"
                                     />

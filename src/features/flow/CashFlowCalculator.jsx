@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { calculateNPV, calculateIRR } from '../../utils/financial-utils';
 import { useHistory } from '../../context/HistoryContext';
 import { Plus, Trash2, Info } from 'lucide-react';
+import FormattedNumberInput from '../../components/FormattedNumberInput';
 
 const CashFlowCalculator = () => {
     const { addToHistory } = useHistory();
@@ -34,11 +35,10 @@ const CashFlowCalculator = () => {
 
             <div className="bg-neutral-800/50 p-4 rounded-xl mb-4 flex justify-between items-center">
                 <label className="font-bold text-neutral-300">Discount Rate (%)</label>
-                <input
-                    type="number"
+                <FormattedNumberInput
                     value={rate}
                     onChange={(e) => setRate(parseFloat(e.target.value) || 0)}
-                    className="bg-transparent text-right text-lg font-mono text-primary-400 focus:outline-none w-24 border-b border-primary-500/50"
+                    className="bg-transparent text-right text-lg font-mono text-primary-400 focus:outline-none w-32 border-b border-primary-500/50"
                 />
             </div>
 
@@ -46,8 +46,7 @@ const CashFlowCalculator = () => {
                 {flows.map((flow, i) => (
                     <div key={i} className="flex items-center gap-3 bg-neutral-800/30 p-3 rounded-lg border border-transparent focus-within:border-neutral-700">
                         <span className="text-xs font-bold text-neutral-500 w-8">CF {i}</span>
-                        <input
-                            type="number"
+                        <FormattedNumberInput
                             value={flow}
                             onChange={(e) => updateFlow(i, e.target.value)}
                             className="flex-1 bg-transparent text-right font-mono text-white focus:outline-none"

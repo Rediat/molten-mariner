@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { calculateEAR } from '../../utils/financial-utils';
 import { useHistory } from '../../context/HistoryContext';
 import { Info } from 'lucide-react';
+import FormattedNumberInput from '../../components/FormattedNumberInput';
 
 const RateConverter = () => {
     const { addToHistory } = useHistory();
@@ -52,11 +53,10 @@ const RateConverter = () => {
                 <div className="bg-neutral-800/50 rounded-xl p-3 shrink-0">
                     <div className="flex items-center gap-4 mb-3">
                         <label className="text-xs font-bold text-neutral-400 shrink-0">Nominal (%)</label>
-                        <input
-                            type="number"
+                        <FormattedNumberInput
                             value={nominal}
                             onChange={(e) => setNominal(parseFloat(e.target.value) || 0)}
-                            className="ml-auto w-32 bg-transparent text-xl font-mono text-white focus:outline-none border-b border-neutral-700 focus:border-primary-500 transition-colors pb-1 text-right"
+                            className="flex-1 w-full bg-transparent text-xl font-mono text-white focus:outline-none border-b border-neutral-700 focus:border-primary-500 transition-colors pb-1 text-right"
                         />
                     </div>
 
