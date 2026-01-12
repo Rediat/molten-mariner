@@ -5,13 +5,23 @@ import { Trash2, Clock } from 'lucide-react';
 const HistoryView = () => {
     const { history, clearHistory } = useHistory();
 
+    const formatNum = (num, decimals = 2) => new Intl.NumberFormat('en-US', {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals
+    }).format(num);
+
     const formatResult = (result) => {
-        if (typeof result === 'object') {
+        if (typeof result === 'object' && result !== null) {
             return Object.entries(result)
-                .map(([k, v]) => `${k}: ${v.toFixed(2)}`)
+                .map(([k, v]) => `${k}: ${typeof v === 'number' ? formatNum(v) : v}`)
                 .join(', ');
         }
-        return Number(result).toFixed(2);
+        return formatNum(Number(result));
+    };
+
+    const getDecimalsForField = (key) => {
+        const zeroDecimalFields = ['n', 'years', 'paymentsMade', 'frequency', 'compounding'];
+        return zeroDecimalFields.includes(key) ? 0 : 2;
     };
 
     return (
@@ -48,16 +58,20 @@ const HistoryView = () => {
                             <div className="mb-2">
                                 <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-neutral-400">
                                     {Object.entries(item.inputs).map(([k, v]) => (
-                                        <div key={k} className="flex justify-between">
-                                            <span>{k}:</span>
-                                            <span className="text-neutral-300">{v}</span>
+                                        <div key={k} className="flex justify-between gap-2">
+                                            <span className="shrink-0">{k}:</span>
+                                            <span className="text-neutral-300 text-right truncate">
+                                                {typeof v === 'object' && v !== null
+                                                    ? Object.entries(v).map(([subK, subV]) => `${subV}${subK[0]}`).join(' ')
+                                                    : (typeof v === 'number' ? formatNum(v, getDecimalsForField(k)) : v)}
+                                            </span>
                                         </div>
                                     ))}
                                 </div>
                             </div>
                             <div className="mt-2 pt-2 border-t border-neutral-700 flex justify-between items-center">
                                 <span className="text-xs font-bold text-neutral-300">Result</span>
-                                <span className="text-lg font-mono text-white">{formatResult(item.result)}</span>
+                                <span className="text-xs font-bold text-white">{formatResult(item.result)}</span>
                             </div>
                         </div>
                     ))

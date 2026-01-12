@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { calculateLoan, getAmortizationSchedule } from '../../utils/financial-utils';
 import { useHistory } from '../../context/HistoryContext';
 import { Info, List, X } from 'lucide-react';
+import FormattedNumberInput from '../../components/FormattedNumberInput';
 
 const LoanCalculator = () => {
     const { addToHistory } = useHistory();
@@ -103,16 +104,16 @@ const LoanCalculator = () => {
                             { id: 'years', label: 'Loan Term', sub: 'Years' },
                         ].map(field => (
                             <div key={field.id} className="bg-neutral-800/50 rounded-xl p-3 border border-transparent hover:border-neutral-700 transition-all">
-                                <div className="flex justify-between items-center">
-                                    <div className="flex flex-col">
+                                <div className="flex justify-between items-center gap-4">
+                                    <div className="flex flex-col shrink-0 items-start text-left">
                                         <label className="text-base font-bold text-neutral-300">{field.label}</label>
                                         <span className="text-[10px] uppercase tracking-wider text-neutral-500 font-semibold">{field.sub}</span>
                                     </div>
-                                    <input
-                                        type="number"
+                                    <FormattedNumberInput
                                         value={values[field.id]}
                                         onChange={(e) => handleChange(field.id, e.target.value)}
-                                        className="bg-transparent text-right text-xl font-mono text-white focus:outline-none w-32 placeholder-neutral-600"
+                                        decimals={field.id === 'years' ? 0 : 2}
+                                        className="bg-transparent text-right text-xl font-mono text-white focus:outline-none w-full flex-1 placeholder-neutral-600"
                                     />
                                 </div>
                             </div>
@@ -141,16 +142,16 @@ const LoanCalculator = () => {
                             </div>
                         ) : (
                             <div className="bg-neutral-800/50 rounded-xl p-3 border border-transparent hover:border-neutral-700 transition-all">
-                                <div className="flex justify-between items-center">
-                                    <div className="flex flex-col">
+                                <div className="flex justify-between items-center gap-4">
+                                    <div className="flex flex-col shrink-0 items-start text-left">
                                         <label className="text-base font-bold text-neutral-300">Payments Made</label>
                                         <span className="text-[10px] uppercase tracking-wider text-neutral-500 font-semibold">Count</span>
                                     </div>
-                                    <input
-                                        type="number"
+                                    <FormattedNumberInput
                                         value={values.paymentsMade}
                                         onChange={(e) => handleChange('paymentsMade', e.target.value)}
-                                        className="bg-transparent text-right text-xl font-mono text-white focus:outline-none w-32 placeholder-neutral-600"
+                                        decimals={0}
+                                        className="bg-transparent text-right text-xl font-mono text-white focus:outline-none w-full flex-1 placeholder-neutral-600"
                                     />
                                 </div>
                             </div>

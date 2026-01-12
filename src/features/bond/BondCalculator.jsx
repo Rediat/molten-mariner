@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { calculateBond, calculateBondYTM } from '../../utils/financial-utils';
 import { useHistory } from '../../context/HistoryContext';
 import { Info } from 'lucide-react';
+import FormattedNumberInput from '../../components/FormattedNumberInput';
 
 const BondCalculator = () => {
     const { addToHistory } = useHistory();
@@ -85,16 +86,16 @@ const BondCalculator = () => {
 
             <div className="space-y-2 flex-1 overflow-y-auto pr-1 scrollbar-hide">
                 {inputFields.map(field => (
-                    <div key={field.id} className="bg-neutral-800/50 rounded-xl p-3 flex justify-between items-center border border-transparent hover:border-neutral-700 transition-all">
-                        <div className="flex flex-col">
+                    <div key={field.id} className="bg-neutral-800/50 rounded-xl p-3 flex justify-between items-center gap-4 border border-transparent hover:border-neutral-700 transition-all">
+                        <div className="flex flex-col shrink-0 items-start text-left">
                             <label className="text-base font-bold text-neutral-300">{field.label}</label>
                             <span className="text-[10px] uppercase tracking-wider text-neutral-500 font-semibold">{field.sub}</span>
                         </div>
-                        <input
-                            type="number"
+                        <FormattedNumberInput
                             value={values[field.id]}
                             onChange={(e) => handleChange(field.id, e.target.value)}
-                            className="bg-transparent text-right text-xl font-mono text-white focus:outline-none w-32 placeholder-neutral-600"
+                            decimals={field.id === 'years' ? 0 : 2}
+                            className="bg-transparent text-right text-xl font-mono text-white focus:outline-none w-full flex-1 placeholder-neutral-600"
                         />
                     </div>
                 ))}
