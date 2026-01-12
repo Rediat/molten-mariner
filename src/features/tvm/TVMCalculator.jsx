@@ -62,6 +62,8 @@ const TVMCalculator = () => {
         { label: 'Semi-Annual (2)', value: 2 },
         { label: 'Quarterly (4)', value: 4 },
         { label: 'Monthly (12)', value: 12 },
+        { label: 'Bi-weekly (26)', value: 26 },
+        { label: 'Weekly (52)', value: 52 },
         { label: 'Daily (365)', value: 365 },
     ];
 

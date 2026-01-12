@@ -10,6 +10,7 @@ const LoanCalculator = () => {
         amount: 250000,
         rate: 5.5,
         years: 30,
+        frequency: 12,
         paymentsMade: 0,
         startDate: new Date().toISOString().split('T')[0],
         futureDate: new Date().toISOString().split('T')[0]
@@ -17,24 +18,39 @@ const LoanCalculator = () => {
     const [result, setResult] = useState(null);
     const [showSchedule, setShowSchedule] = useState(false);
 
-    const calculateMonthsBetween = (d1, d2) => {
+    const calculatePeriodsBetween = (d1, d2, freq) => {
         const start = new Date(d1);
         const end = new Date(d2);
         if (isNaN(start) || isNaN(end)) return 0;
-        return (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
+
+        const diffTime = Math.abs(end - start);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        if (freq === 365) return diffDays;
+        if (freq === 52) return Math.floor(diffDays / 7);
+        if (freq === 26) return Math.floor(diffDays / 14);
+
+        // Approximate for months/years
+        const months = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
+        if (freq === 12) return months;
+        if (freq === 4) return Math.floor(months / 3);
+        if (freq === 2) return Math.floor(months / 6);
+        if (freq === 1) return Math.floor(months / 12);
+
+        return months; // Fallback
     };
 
     const handleCalculate = () => {
-        const termMonths = values.years * 12;
+        const termPeriods = values.years * values.frequency;
         let pmtMade = values.paymentsMade;
 
         if (useDates) {
-            pmtMade = calculateMonthsBetween(values.startDate, values.futureDate);
+            pmtMade = calculatePeriodsBetween(values.startDate, values.futureDate, values.frequency);
             // Clamp between 0 and term
-            pmtMade = Math.max(0, Math.min(pmtMade, termMonths));
+            pmtMade = Math.max(0, Math.min(pmtMade, termPeriods));
         }
 
-        const res = calculateLoan(values.amount, values.rate, termMonths, pmtMade);
+        const res = calculateLoan(values.amount, values.rate, values.years, pmtMade, values.frequency);
         setResult({ ...res, calculatedPayments: pmtMade });
         addToHistory('LOAN', { ...values, useDates, calculatedPayments: pmtMade }, res);
     };
@@ -46,7 +62,7 @@ const LoanCalculator = () => {
         }));
     };
 
-    const schedule = result ? getAmortizationSchedule(values.amount, values.rate, values.years * 12) : [];
+    const schedule = result ? getAmortizationSchedule(values.amount, values.rate, values.years, values.frequency) : [];
     const usedPayments = result ? result.calculatedPayments ?? values.paymentsMade : values.paymentsMade;
 
     return (
@@ -55,12 +71,27 @@ const LoanCalculator = () => {
                 <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-neutral-400 bg-clip-text text-transparent">
                     Loan Calculator
                 </h1>
-                <button
-                    onClick={() => setUseDates(!useDates)}
-                    className="text-[10px] font-bold uppercase tracking-tighter bg-neutral-800 border border-neutral-700 rounded-full px-3 py-1 text-primary-500 hover:bg-neutral-700 transition-all"
-                >
-                    {useDates ? 'Use Manual Count' : 'Use Dates'}
-                </button>
+                <div className="flex flex-col items-end gap-2">
+                    <button
+                        onClick={() => setUseDates(!useDates)}
+                        className="text-[10px] font-bold uppercase tracking-tighter bg-neutral-800 border border-neutral-700 rounded-full px-3 py-1 text-primary-500 hover:bg-neutral-700 transition-all"
+                    >
+                        {useDates ? 'Use Manual Count' : 'Use Dates'}
+                    </button>
+                    <select
+                        value={values.frequency}
+                        onChange={(e) => handleChange('frequency', e.target.value)}
+                        className="bg-neutral-800 border border-neutral-700 rounded-lg px-2 py-0.5 text-[10px] font-bold text-neutral-300 focus:outline-none text-left appearance-none cursor-pointer hover:bg-neutral-700"
+                    >
+                        <option value={1}>Annual (1)</option>
+                        <option value={2}>Semi-Annual (2)</option>
+                        <option value={4}>Quarterly (4)</option>
+                        <option value={12}>Monthly (12)</option>
+                        <option value={26}>Bi-weekly (26)</option>
+                        <option value={52}>Weekly (52)</option>
+                        <option value={365}>Daily (365)</option>
+                    </select>
+                </div>
             </div>
 
             {!showSchedule ? (
@@ -130,7 +161,7 @@ const LoanCalculator = () => {
                         <div className="bg-neutral-900/50 rounded-2xl p-4 border border-primary-900/30 mb-2 mt-4">
                             <div className="flex justify-between items-end mb-3">
                                 <div className="flex flex-col">
-                                    <span className="text-sm font-medium text-neutral-400">Monthly Payment</span>
+                                    <span className="text-sm font-medium text-neutral-400">Periodic Payment</span>
                                     <button
                                         onClick={() => setShowSchedule(true)}
                                         className="text-[10px] text-primary-500 font-bold uppercase tracking-tighter flex items-center gap-1 mt-1 hover:text-primary-400 outline-none"
@@ -144,7 +175,7 @@ const LoanCalculator = () => {
                                     </span>
                                     {useDates && (
                                         <span className="text-[10px] text-neutral-500 uppercase font-bold tracking-wider">
-                                            Based on {result.calculatedPayments} months
+                                            Based on {result.calculatedPayments} periods
                                         </span>
                                     )}
                                 </div>
@@ -197,7 +228,7 @@ const LoanCalculator = () => {
                         <table className="w-full text-left text-xs">
                             <thead className="sticky top-0 bg-[#1a1a1a] text-neutral-500 font-bold uppercase tracking-wider z-10">
                                 <tr>
-                                    <th className="p-4">Mo</th>
+                                    <th className="p-4">Period</th>
                                     <th className="p-4">Interest</th>
                                     <th className="p-4">Principal</th>
                                     <th className="p-4 text-right">Balance</th>

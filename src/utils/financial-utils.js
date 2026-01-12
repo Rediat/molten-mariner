@@ -195,11 +195,11 @@ export const calculateTVM = (target, values, mode = 'END', frequency = 12, inter
     return 0;
 };
 
-export const calculateLoan = (amount, rate, termMonths, paymentsMade = 0) => {
-    const r = rate / 100 / 12;
-    const n = termMonths;
+export const calculateLoan = (amount, rate, termYears, paymentsMade = 0, frequency = 12) => {
+    const r = rate / 100 / frequency;
+    const n = termYears * frequency;
 
-    // Monthly Payment Formula: P * r * (1+r)^n / ((1+r)^n - 1)
+    // Periodic Payment Formula: P * r * (1+r)^n / ((1+r)^n - 1)
     let payment = 0;
     if (r === 0) {
         payment = amount / n;
@@ -224,7 +224,7 @@ export const calculateLoan = (amount, rate, termMonths, paymentsMade = 0) => {
     }
 
     return {
-        monthlyPayment: payment,
+        monthlyPayment: payment, // Kept key name for compatibility, but represents periodic payment
         totalPayment,
         totalInterest,
         outstandingBalance: Math.max(0, balance)
@@ -274,9 +274,9 @@ export const calculateBondYTM = (faceValue, couponRate, price, years, frequency 
     return r * frequency * 100;
 };
 
-export const getAmortizationSchedule = (amount, rate, termMonths) => {
-    const r = rate / 100 / 12;
-    const n = termMonths;
+export const getAmortizationSchedule = (amount, rate, termYears, frequency = 12) => {
+    const r = rate / 100 / frequency;
+    const n = termYears * frequency;
     let payment = 0;
     if (r === 0) {
         payment = amount / n;
@@ -293,7 +293,7 @@ export const getAmortizationSchedule = (amount, rate, termMonths) => {
         balance -= principal;
 
         schedule.push({
-            month: i,
+            month: i, // Kept key name for compatibility
             payment,
             interest,
             principal,
