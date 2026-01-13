@@ -299,7 +299,7 @@ export const calculateBondYTM = (faceValue, couponRate, price, years, frequency 
     return r * frequency * 100;
 };
 
-export const getAmortizationSchedule = (amount, rate, termYears, frequency = 12) => {
+export const getAmortizationSchedule = (amount, rate, termYears, frequency = 12, startDate = null) => {
     const r = rate / 100 / frequency;
     const n = termYears * frequency;
     let payment = 0;
@@ -312,13 +312,46 @@ export const getAmortizationSchedule = (amount, rate, termYears, frequency = 12)
     const schedule = [];
     let balance = amount;
 
+    // Parse start date if provided
+    let currentDate = startDate ? new Date(startDate) : new Date();
+
     for (let i = 1; i <= n; i++) {
         const interest = balance * r;
         const principal = payment - interest;
         balance -= principal;
 
+        // Calculate date for this payment
+        // Assuming end of period payments, so add 1 period to start date initially?
+        // Usually Amortization starts one period AFTER start date.
+        // Let's increment date based on frequency.
+
+        let dateStr = '';
+        if (startDate) {
+            // Logic to increment date
+            // This is a simple approximation. For rigorous financial calc, libraries like date-fns or moment might be better but we stick to vanilla JS.
+            if (frequency === 12) {
+                currentDate.setMonth(currentDate.getMonth() + 1);
+            } else if (frequency === 4) {
+                currentDate.setMonth(currentDate.getMonth() + 3);
+            } else if (frequency === 2) {
+                currentDate.setMonth(currentDate.getMonth() + 6);
+            } else if (frequency === 1) {
+                currentDate.setFullYear(currentDate.getFullYear() + 1);
+            } else if (frequency === 26) {
+                currentDate.setDate(currentDate.getDate() + 14);
+            } else if (frequency === 52) {
+                currentDate.setDate(currentDate.getDate() + 7);
+            } else if (frequency === 365) {
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
+
+            // Format: "MMM yyyy"
+            dateStr = currentDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+        }
+
         schedule.push({
-            month: i, // Kept key name for compatibility
+            month: i,
+            date: dateStr,
             payment,
             interest,
             principal,
