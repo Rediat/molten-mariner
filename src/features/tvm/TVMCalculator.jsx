@@ -1,14 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { calculateTVM } from '../../utils/financial-utils';
 import { useHistory } from '../../context/HistoryContext';
-import { ChevronDown, Info } from 'lucide-react';
+import { ChevronDown, Info, Settings2 } from 'lucide-react';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
 
 const TVMCalculator = () => {
     const { addToHistory } = useHistory();
     const [mode, setMode] = useState('END');
     const [target, setTarget] = useState('fv');
-    const [frequency, setFrequency] = useState(12); // Default Monthly
+    const [frequency, setFrequency] = useState(12); // P/Y
+    const [compoundingFrequency, setCompoundingFrequency] = useState(12); // C/Y
+    const [isCompoundingManuallySet, setIsCompoundingManuallySet] = useState(false);
+    const [showAdvanced, setShowAdvanced] = useState(false);
+    const [nMode, setNMode] = useState('YEARS'); // 'YEARS' or 'PERIODS'
+
     const [values, setValues] = useState({
         n: 360, // Default 30 years monthly
         i: 6,   // 6% Annual
@@ -23,9 +28,19 @@ const TVMCalculator = () => {
 
     const handleCalculate = () => {
         try {
-            const result = calculateTVM(target, values, mode, frequency, interestType);
+            // If not in advanced mode, force C/Y = P/Y just to be safe (though verify logic handles it)
+            const effectiveCY = showAdvanced ? compoundingFrequency : frequency;
+
+            const result = calculateTVM(target, values, mode, frequency, interestType, effectiveCY);
             setCalculatedValue(result);
-            addToHistory('TVM', { ...values, mode, target, frequency, interestType }, result);
+            addToHistory('TVM', {
+                ...values,
+                mode,
+                target,
+                frequency,
+                compoundingFrequency: effectiveCY,
+                interestType
+            }, result);
 
             // Update the target value in the inputs to show the result
             setValues(prev => ({
@@ -39,10 +54,19 @@ const TVMCalculator = () => {
     };
 
     const handleChange = (field, val) => {
+        let numericVal = parseFloat(val) || 0;
+
+        // Handle N input based on mode
+        if (field === 'n' && nMode === 'YEARS') {
+            // If user types 5 years, we store 5 * frequency
+            numericVal = numericVal * frequency;
+        }
+
         setValues(prev => ({
             ...prev,
-            [field]: parseFloat(val) || 0
+            [field]: numericVal
         }));
+
         // Reset calculated state if user edits
         if (field === target) {
             // If user edits the target field, maybe we should switch target? 
@@ -50,13 +74,37 @@ const TVMCalculator = () => {
         }
     };
 
+    // Custom label renderer for N field
+    const renderNLabel = () => (
+        <div className="flex items-center gap-2">
+            <span className={`text-sm font-bold transition-colors ${target === 'n' ? 'text-primary-400' : 'text-neutral-300'}`}>
+                {nMode === 'YEARS' ? 'Years' : 'N'}
+            </span>
+            <button
+                onClick={() => setNMode(m => m === 'YEARS' ? 'PERIODS' : 'YEARS')}
+                className="bg-neutral-900 border border-neutral-700 rounded px-1.5 py-0.5 text-[9px] font-bold text-neutral-400 hover:text-white uppercase tracking-wider"
+            >
+                {nMode === 'YEARS' ? 'In Years' : 'In Periods'}
+            </button>
+        </div>
+    );
+
     const fields = [
-        { id: 'n', label: 'N', sub: 'Total Periods' },
+        { id: 'n', label: 'N/Years', customLabel: renderNLabel(), sub: nMode === 'YEARS' ? 'N / Frequency' : 'Total Periods' },
         { id: 'i', label: 'I/Y', sub: 'Annual %' },
         { id: 'pv', label: 'PV', sub: 'Pres Val' },
         { id: 'pmt', label: 'PMT', sub: 'Payment' },
         { id: 'fv', label: 'FV', sub: 'Fut Val' },
     ];
+
+    // Get display value (convert back to years if needed)
+    const getDisplayValue = (field) => {
+        if (field === 'n' && nMode === 'YEARS') {
+            // If n=60 and freq=12, return 5
+            return values.n / frequency;
+        }
+        return values[field];
+    }
 
     const frequencies = [
         { label: 'Annual (1)', value: 1 },
@@ -81,6 +129,24 @@ const TVMCalculator = () => {
                 <div className="flex flex-col items-end gap-1.5">
                     <div className="flex gap-1.5">
                         <button
+                            onClick={() => {
+                                const newMode = !showAdvanced;
+                                setShowAdvanced(newMode);
+                                if (!newMode) {
+                                    // Reset C/Y to match P/Y when hiding advanced mode
+                                    setCompoundingFrequency(frequency);
+                                    setIsCompoundingManuallySet(false);
+                                }
+                            }}
+                            className={`flex items-center justify-center p-1 rounded-full transition-all ${showAdvanced
+                                ? 'bg-primary-600/20 text-primary-400 ring-1 ring-primary-500/50'
+                                : 'bg-neutral-800 text-neutral-500 hover:bg-neutral-700'
+                                }`}
+                            title={showAdvanced ? "Simple Mode" : "Advanced Mode"}
+                        >
+                            <Settings2 className="w-3 h-3" />
+                        </button>
+                        <button
                             onClick={() => setInterestType(t => t === 'COMPOUND' ? 'SIMPLE' : 'COMPOUND')}
                             className={`flex items-center gap-1 border rounded-full px-2.5 py-0.5 text-[10px] font-bold transition-all ${interestType === 'SIMPLE'
                                 ? 'bg-primary-600 border-primary-500 text-white shadow-lg shadow-primary-900/20'
@@ -95,15 +161,56 @@ const TVMCalculator = () => {
                             {mode}
                         </button>
                     </div>
-                    <select
-                        value={frequency}
-                        onChange={(e) => setFrequency(Number(e.target.value))}
-                        className="bg-neutral-800 border border-neutral-700 rounded-lg px-2 py-0.5 text-[10px] font-bold text-neutral-300 focus:outline-none"
-                    >
-                        {frequencies.map(f => (
-                            <option key={f.value} value={f.value}>{f.label}</option>
-                        ))}
-                    </select>
+                    <div className="flex gap-1.5">
+                        <select
+                            value={frequency}
+                            onChange={(e) => {
+                                const newFreq = Number(e.target.value);
+
+                                // Logic to preserve Time if in YEARS mode
+                                if (nMode === 'YEARS') {
+                                    // Calculate current years: oldN / oldFreq
+                                    const currentYears = values.n / frequency;
+                                    // Set new N: currentYears * newFreq
+                                    const newN = currentYears * newFreq;
+
+                                    setValues(prev => ({
+                                        ...prev,
+                                        n: newN
+                                    }));
+                                }
+
+                                setFrequency(newFreq);
+                                // Auto-sync compounding if it wasn't manually set different OR if simple mode is active
+                                if (!showAdvanced || !isCompoundingManuallySet) {
+                                    setCompoundingFrequency(newFreq);
+                                }
+                            }}
+                            className="bg-neutral-800 border border-neutral-700 rounded-lg px-2 py-0.5 text-[10px] font-bold text-neutral-300 focus:outline-none"
+                        >
+                            {frequencies.map(f => (
+                                <option key={f.value} value={f.value}>{showAdvanced ? `P/Y: ${f.label.split('(')[0]}` : f.label}</option>
+                            ))}
+                        </select>
+
+                        {showAdvanced && (
+                            <select
+                                value={compoundingFrequency}
+                                onChange={(e) => {
+                                    setCompoundingFrequency(Number(e.target.value));
+                                    setIsCompoundingManuallySet(true);
+                                }}
+                                className={`bg-neutral-800 border-neutral-700 rounded-lg px-2 py-0.5 text-[10px] font-bold focus:outline-none border ${isCompoundingManuallySet
+                                    ? 'text-primary-400 border-primary-500/50'
+                                    : 'text-neutral-500'
+                                    }`}
+                            >
+                                {frequencies.map(f => (
+                                    <option key={f.value} value={f.value}>C/Y: {f.label.split('(')[0]}</option>
+                                ))}
+                            </select>
+                        )}
+                    </div>
                 </div>
             </div>
 
@@ -131,10 +238,12 @@ const TVMCalculator = () => {
                         }`}>
                         <div className="flex justify-between items-center gap-4">
                             <div className="flex flex-col items-start text-left">
-                                <label className={`text-sm font-bold transition-colors ${target === field.id ? 'text-primary-400' : 'text-neutral-300'
-                                    }`}>
-                                    {field.label}
-                                </label>
+                                {field.customLabel ? field.customLabel : (
+                                    <label className={`text-sm font-bold transition-colors ${target === field.id ? 'text-primary-400' : 'text-neutral-300'
+                                        }`}>
+                                        {field.label}
+                                    </label>
+                                )}
                                 <span className="text-[9px] uppercase tracking-tighter text-neutral-500 font-bold">{field.sub}</span>
                             </div>
 
@@ -143,7 +252,7 @@ const TVMCalculator = () => {
                                     <span className="text-neutral-600 italic text-xs font-bold px-2">CALC...</span>
                                 ) : (
                                     <FormattedNumberInput
-                                        value={values[field.id]}
+                                        value={getDisplayValue(field.id)}
                                         onChange={(e) => handleChange(field.id, e.target.value)}
                                         decimals={field.id === 'n' ? 0 : 2}
                                         className={`bg-transparent text-right text-lg font-mono focus:outline-none w-full placeholder-neutral-700 transition-colors ${target === field.id ? 'text-primary-400 font-black' : 'text-white'
