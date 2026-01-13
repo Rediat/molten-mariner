@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { calculateTVM } from '../../utils/financial-utils';
 import { useHistory } from '../../context/HistoryContext';
-import { ChevronDown, Info, Settings2 } from 'lucide-react';
+import { Settings2 } from 'lucide-react';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
 
 const TVMCalculator = () => {
