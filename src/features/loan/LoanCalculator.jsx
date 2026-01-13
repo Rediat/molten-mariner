@@ -1,19 +1,19 @@
 import React, { useState } from 'react';
 import { calculateLoan, getAmortizationSchedule } from '../../utils/financial-utils';
 import { useHistory } from '../../context/HistoryContext';
-import { Info, List, X } from 'lucide-react';
+import { List, X } from 'lucide-react';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
 
 const LoanCalculator = () => {
     const { addToHistory } = useHistory();
-    const [useDates, setUseDates] = useState(false);
+    const [useDates, setUseDates] = useState(true);
     const [values, setValues] = useState({
-        amount: 250000,
-        rate: 5.5,
-        years: 30,
+        amount: 374136.48,
+        rate: 9.5,
+        years: 15,
         frequency: 12,
         paymentsMade: 0,
-        startDate: new Date().toISOString().split('T')[0],
+        startDate: '2018-08-01',
         futureDate: new Date().toISOString().split('T')[0]
     });
     const [result, setResult] = useState(null);
