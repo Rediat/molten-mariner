@@ -122,7 +122,7 @@ const LoanCalculator = () => {
 
                             {useDates ? (
                                 <div className="grid grid-cols-2 gap-2">
-                                    <div className="bg-neutral-800/50 rounded-xl p-3 border border-transparent hover:border-neutral-700 transition-all">
+                                    <div className="bg-neutral-800/50 rounded-xl p-3 border border-transparent hover:border-neutral-700 transition-all text-left">
                                         <label className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold block mb-2">Start Date</label>
                                         <input
                                             type="date"
@@ -131,7 +131,7 @@ const LoanCalculator = () => {
                                             className="bg-transparent text-white text-sm font-mono focus:outline-none w-full"
                                         />
                                     </div>
-                                    <div className="bg-neutral-800/50 rounded-xl p-3 border border-transparent hover:border-neutral-700 transition-all">
+                                    <div className="bg-neutral-800/50 rounded-xl p-3 border border-transparent hover:border-neutral-700 transition-all text-left">
                                         <label className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold block mb-2">Future Date</label>
                                         <input
                                             type="date"
