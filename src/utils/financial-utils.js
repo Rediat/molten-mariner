@@ -1,9 +1,27 @@
-export const calculateTVM = (target, values, mode = 'END', frequency = 12, interestType = 'COMPOUND') => {
+export const calculateTVM = (target, values, mode = 'END', frequency = 12, interestType = 'COMPOUND', compoundingFrequency = null) => {
     let { n, i, pv, pmt, fv } = values;
     const type = mode === 'BEGIN' ? 1 : 0;
 
-    // Periodic rate
-    const r = (i / 100) / frequency;
+    // If compoundingFrequency is not provided, assume it equals payment frequency (Standard TVM)
+    const cy = compoundingFrequency || frequency;
+    const py = frequency;
+
+    // Standard Financial Calculator Logic
+    // r = Effective Rate per Payment Period
+    let r;
+
+    if (interestType === 'SIMPLE') {
+        // Simple Interest logic remains based on Payment Frequency
+        r = (i / 100) / py;
+    } else {
+        // Compound Interest
+        // 1. Calculate Periodic Rate for compounding period
+        const r_periodic = (i / 100) / cy;
+
+        // 2. Convert to Effective Rate per Payment Period
+        // formula: r_eff = ((1 + r_periodic) ^ (CY / PY)) - 1
+        r = Math.pow(1 + r_periodic, cy / py) - 1;
+    }
 
     if (interestType === 'SIMPLE') {
         const t = n; // Time in periods
@@ -52,7 +70,7 @@ export const calculateTVM = (target, values, mode = 'END', frequency = 12, inter
 
             if (Math.abs(denominator) < 1e-9) return 0;
             const calculatedR = numerator / denominator;
-            return calculatedR * frequency * 100;
+            return calculatedR * py * 100; // Use py for simple interest annualization
         }
 
         if (target === 'n') {
@@ -103,7 +121,7 @@ export const calculateTVM = (target, values, mode = 'END', frequency = 12, inter
         return 0;
     }
 
-    // COMPOUND (Existing Logic)
+    // COMPOUND (General Logic)
     if (target === 'fv') {
         if (r === 0) {
             return -(pv + pmt * n);
@@ -135,61 +153,68 @@ export const calculateTVM = (target, values, mode = 'END', frequency = 12, inter
         if (r === 0) {
             return -(pv + fv) / pmt;
         }
-        // Formula derived from PV formula solving for n
-        // PV + PMT/r * (1+r*type) * (1 - (1+r)^-n) + FV * (1+r)^-n = 0
-        // This is complex, using a simplified version usually:
         // n = log((PMT*(1+r*type) - FV*r) / (PMT*(1+r*type) + PV*r)) / log(1+r)
         const pmtAdj = pmt * (1 + r * type);
         const num = pmtAdj - fv * r;
         const den = pmtAdj + pv * r;
+
+        // Safety check for log issues
+        if (num / den <= 0) return 0;
+
         const nVal = Math.log(num / den) / Math.log(1 + r);
         return nVal;
     }
 
     if (target === 'i') {
-        // Newton-Raphson approximation for periodic rate r
-        // Function f(r) = PV + PMT * (1+r*type) * ((1 - (1+r)^-n) / r) + FV * (1+r)^-n
+        // Newton-Raphson approximation for I/Y (Annual Interest Rate)
+        // This solves for the Nominal Rate (I), not the effective rate r directly
+        // Because r depends on I, CY, and PY non-linearly.
 
-        let rGuess = 0.05 / frequency; // Initial guess 5% annual
-        if (n <= 0) return 0;
+        let iGuess = 5.0; // Initial guess 5% annual
+        // Or better: use rate function approximation? 
+        // We'll stick to a robust NR on the annual rate percentage directly.
 
-        for (let iter = 0; iter < 100; iter++) {
-            let fValue, fDerivative;
-            const factor = Math.pow(1 + rGuess, n);
+        const calculateF_Deriv = (iVal) => {
+            const r_p = (iVal / 100) / cy;
+            const r_eff = Math.pow(1 + r_p, cy / py) - 1;
+
+            // If r is effectively 0
+            if (Math.abs(r_eff) < 1e-9) {
+                const fValue = pv + pmt * n + fv;
+                // Derivative w.r.t iVal (rough approx or 0) - lets rely on secant/numerical if possible
+                // But for simplicity in this general function, let's just do numerical derivative
+                return { fValue, r_eff };
+            }
+
+            const factor = Math.pow(1 + r_eff, n);
             const factorInv = 1 / factor;
+            const term1 = (1 + r_eff * type);
+            const geometricSeries = (1 - factorInv) / r_eff;
 
-            if (Math.abs(rGuess) < 1e-8) {
-                // Handle near zero case
-                fValue = pv + pmt * n + fv;
-                fDerivative = pmt * n * (n - 1) / 2 + fv * n;
-            } else {
-                const term1 = (1 + rGuess * type);
-                const geometricSeries = (1 - factorInv) / rGuess;
+            const fValue = pv + pmt * term1 * geometricSeries + fv * factorInv;
+            return { fValue, r_eff };
+        };
 
-                fValue = pv + pmt * term1 * geometricSeries + fv * factorInv;
+        let iter = 0;
+        let x0 = iGuess;
 
-                // Numerical derivative
-                const delta = 1e-5;
-                const r2 = rGuess + delta;
-                const factor2 = Math.pow(1 + r2, n);
-                const factorInv2 = 1 / factor2;
-                const term1_2 = (1 + r2 * type);
-                const geometricSeries2 = (1 - factorInv2) / r2;
-                const fValue2 = pv + pmt * term1_2 * geometricSeries2 + fv * factorInv2;
+        for (iter = 0; iter < 50; iter++) {
+            const y0 = calculateF_Deriv(x0).fValue;
+            if (Math.abs(y0) < 1e-6) return x0;
 
-                fDerivative = (fValue2 - fValue) / delta;
-            }
+            // Numerical Derivative
+            const delta = 1e-4;
+            const x1 = x0 + delta;
+            const y1 = calculateF_Deriv(x1).fValue;
+            const derivative = (y1 - y0) / delta;
 
-            if (Math.abs(fDerivative) < 1e-9) break;
+            if (Math.abs(derivative) < 1e-9) break; // Flats
 
-            const nextR = rGuess - fValue / fDerivative;
-            // Converged
-            if (Math.abs(nextR - rGuess) < 1e-8) {
-                return nextR * frequency * 100; // Return Annual %
-            }
-            rGuess = nextR;
+            const nextX = x0 - y0 / derivative;
+            if (Math.abs(nextX - x0) < 1e-6) return nextX;
+            x0 = nextX;
         }
-        return rGuess * frequency * 100;
+        return x0;
     }
 
     return 0;
