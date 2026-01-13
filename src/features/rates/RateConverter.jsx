@@ -54,13 +54,13 @@ const RateConverter = () => {
 
     return (
         <div className="flex flex-col h-full overflow-hidden max-w-lg mx-auto w-full">
-            <h1 className="text-lg font-bold bg-gradient-to-r from-white to-neutral-400 bg-clip-text text-transparent mb-3 shrink-0 text-center">
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-neutral-400 bg-clip-text text-transparent mb-6 shrink-0 text-left">
                 Interest Rates
             </h1>
 
-            <div className="flex-1 flex flex-col min-h-0 space-y-3 overflow-y-auto custom-scrollbar pb-2">
+            <div className="flex-1 flex flex-col min-h-0 space-y-2 overflow-y-auto custom-scrollbar pb-1">
                 {/* Inputs Section */}
-                <div className="bg-neutral-800/50 rounded-xl p-3 shrink-0">
+                <div className="bg-neutral-800/50 rounded-xl p-2 shrink-0">
                     <div className="flex items-center gap-4 mb-3">
                         <label className="text-xs font-bold text-neutral-400 shrink-0">Nominal (%)</label>
                         <FormattedNumberInput
@@ -77,7 +77,7 @@ const RateConverter = () => {
                                 <button
                                     key={freq.n}
                                     onClick={() => setCompounding(freq.n)}
-                                    className={`py-2 px-3 rounded-lg text-xs font-bold transition-all ${compounding === freq.n
+                                    className={`py-1.5 px-3 rounded-lg text-[10px] font-bold transition-all ${compounding === freq.n
                                         ? 'bg-primary-600/20 text-primary-400 ring-1 ring-primary-500/50'
                                         : 'bg-neutral-900/50 text-neutral-500 hover:bg-neutral-900'
                                         }`}
@@ -93,7 +93,7 @@ const RateConverter = () => {
                 <div className="flex-1 flex flex-col bg-neutral-800/20 rounded-xl overflow-hidden border border-neutral-800/50 min-h-0">
                     {result !== null ? (
                         <>
-                            <div className="bg-neutral-800/80 p-3 text-center shrink-0 border-b border-neutral-800">
+                            <div className="bg-neutral-800/80 p-2 text-center shrink-0 border-b border-neutral-800">
                                 <span className="text-[10px] font-medium text-neutral-500 uppercase tracking-widest">Effective Annual Rate</span>
                                 <div className="text-2xl font-bold text-white mt-0.5 font-mono">
                                     {result.toFixed(4)}%
@@ -108,6 +108,7 @@ const RateConverter = () => {
                                         { n: 2, label: 'Semiannually' },
                                         { n: 4, label: 'Quarterly' },
                                         { n: 12, label: 'Monthly' },
+                                        { n: 26, label: 'Bi-weekly' },
                                         { n: 52, label: 'Weekly' },
                                         { n: 365, label: 'Daily' },
                                     ].map((freq) => (

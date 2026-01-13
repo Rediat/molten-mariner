@@ -239,9 +239,9 @@ const LoanCalculator = () => {
                                 {schedule.map((row) => (
                                     <tr key={row.month} className={`hover:bg-neutral-800/30 transition-colors ${row.month <= usedPayments ? 'opacity-50' : ''}`}>
                                         <td className="p-4 font-mono text-neutral-400">{row.month}</td>
-                                        <td className="p-4 font-mono text-white">${row.interest.toFixed(2)}</td>
-                                        <td className="p-4 font-mono text-white">${row.principal.toFixed(2)}</td>
-                                        <td className="p-4 font-mono text-emerald-500 font-bold text-right">${row.balance.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+                                        <td className="p-4 font-mono text-white">${row.interest.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                        <td className="p-4 font-mono text-white">${row.principal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                        <td className="p-4 font-mono text-emerald-500 font-bold text-right">${row.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                                     </tr>
                                 ))}
                             </tbody>

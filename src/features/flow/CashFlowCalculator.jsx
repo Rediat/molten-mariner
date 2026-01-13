@@ -29,7 +29,7 @@ const CashFlowCalculator = () => {
 
     return (
         <div className="flex flex-col h-full">
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-neutral-400 bg-clip-text text-transparent mb-4">
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-neutral-400 bg-clip-text text-transparent mb-6 shrink-0 text-left">
                 Cash Flow
             </h1>
 
