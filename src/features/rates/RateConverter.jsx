@@ -44,10 +44,11 @@ const RateConverter = () => {
 
     const frequencies = [
         { n: 1, label: 'Annually' },
-        { n: 2, label: 'Semiannually' },
+        { n: 2, label: 'Semi-Annually' },
         { n: 4, label: 'Quarterly' },
         { n: 12, label: 'Monthly' },
-        { n: 26, label: 'Bi-weekly' },
+        { n: 24, label: 'Semi-Monthly' },
+        { n: 26, label: 'Bi-Weekly' },
         { n: 52, label: 'Weekly' },
         { n: 365, label: 'Daily' },
     ];
@@ -103,15 +104,7 @@ const RateConverter = () => {
                             <div className="flex-1 overflow-y-auto custom-scrollbar p-3">
                                 <h3 className="text-[10px] font-bold text-neutral-500 mb-2 uppercase tracking-wide border-b border-neutral-800/50 pb-1">Period Rates Breakdown</h3>
                                 <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-                                    {[
-                                        { n: 1, label: 'Annually' },
-                                        { n: 2, label: 'Semiannually' },
-                                        { n: 4, label: 'Quarterly' },
-                                        { n: 12, label: 'Monthly' },
-                                        { n: 26, label: 'Bi-weekly' },
-                                        { n: 52, label: 'Weekly' },
-                                        { n: 365, label: 'Daily' },
-                                    ].map((freq) => (
+                                    {frequencies.map((freq) => (
                                         <div key={freq.n} className="flex justify-between items-center py-1 border-b border-neutral-800/50 last:border-0 text-xs">
                                             <span className="text-neutral-500 truncate mr-2">{freq.label}</span>
                                             <span className="font-mono text-primary-400">

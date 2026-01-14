@@ -34,6 +34,7 @@ const LoanCalculator = () => {
         // Approximate for months/years
         const months = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
         if (freq === 12) return months;
+        if (freq === 24) return Math.floor(months * 2 + ((end.getDate() - start.getDate()) / 15));
         if (freq === 4) return Math.floor(months / 3);
         if (freq === 2) return Math.floor(months / 6);
         if (freq === 1) return Math.floor(months / 12);
@@ -84,11 +85,12 @@ const LoanCalculator = () => {
                         onChange={(e) => handleChange('frequency', e.target.value)}
                         className="bg-neutral-800 border border-neutral-700 rounded-lg px-2 py-0.5 text-[10px] font-bold text-neutral-300 focus:outline-none text-left appearance-none cursor-pointer hover:bg-neutral-700"
                     >
-                        <option value={1}>Annual (1)</option>
-                        <option value={2}>Semi-Annual (2)</option>
+                        <option value={1}>Annually (1)</option>
+                        <option value={2}>Semi-Annually (2)</option>
                         <option value={4}>Quarterly (4)</option>
                         <option value={12}>Monthly (12)</option>
-                        <option value={26}>Bi-weekly (26)</option>
+                        <option value={24}>Semi-Monthly (24)</option>
+                        <option value={26}>Bi-Weekly (26)</option>
                         <option value={52}>Weekly (52)</option>
                         <option value={365}>Daily (365)</option>
                     </select>

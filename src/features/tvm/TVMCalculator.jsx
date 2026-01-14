@@ -107,11 +107,12 @@ const TVMCalculator = () => {
     }
 
     const frequencies = [
-        { label: 'Annual (1)', value: 1 },
-        { label: 'Semi-Annual (2)', value: 2 },
+        { label: 'Annually (1)', value: 1 },
+        { label: 'Semi-Annually (2)', value: 2 },
         { label: 'Quarterly (4)', value: 4 },
         { label: 'Monthly (12)', value: 12 },
-        { label: 'Bi-weekly (26)', value: 26 },
+        { label: 'Semi-Monthly (24)', value: 24 },
+        { label: 'Bi-Weekly (26)', value: 26 },
         { label: 'Weekly (52)', value: 52 },
         { label: 'Daily (365)', value: 365 },
     ];
