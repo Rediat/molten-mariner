@@ -477,6 +477,45 @@ export const calculateDiscountedPaybackPeriod = (cashFlows, rate) => {
     return null;
 };
 
+export const calculateProfitabilityIndex = (cashFlows, rate) => {
+    // PI = PV of Future Cash Flows / Initial Investment
+    // Assuming CF0 is the initial investment (negative), we take absolute value.
+    // If CF0 >= 0, it's conceptually undefined or infinite for standard projects, but we can treat CF0 as 0 investment?
+    // Standard text: PI = (NPV + Initial Investment) / Initial Investment = PV_all / Initial_Investment
+
+    const r = rate / 100;
+    let initialInvestment = 0;
+    let pvFuture = 0;
+
+    // We assume period 0 is initial investment
+    if (cashFlows.length > 0) {
+        if (cashFlows[0] < 0) {
+            initialInvestment = Math.abs(cashFlows[0]);
+        } else {
+            // If CF0 is positive, it's not an investment. We need to find negative flows? 
+            // Simplified: PI usually refers to Time 0 investment.
+            // If no initial investment, PI is undefined or not applicable.
+            // Let's count CF0 as investment if negative.
+            // If CF0 is positive, we treat it as a return.
+            // Let's stick to: Sum of PVs of all *positive* flows / Sum of PVs of all *negative* flows (absolute)?
+            // Or simpler standard definition: PV of future flows / Initial Outlay.
+
+            // Implementation:
+            // 1. PV of all flows from t=1..n
+            // 2. Initial Investment = abs(CF0) if CF0 < 0
+        }
+
+        // Calculate PV of flows t=1 to n
+        for (let t = 1; t < cashFlows.length; t++) {
+            pvFuture += cashFlows[t] / Math.pow(1 + r, t);
+        }
+    }
+
+    if (initialInvestment === 0) return 0; // Avoid division by zero
+
+    return pvFuture / initialInvestment;
+};
+
 export const calculateBondYTC = (faceValue, couponRate, price, yearsToCall, callPrice, frequency = 1) => {
     const c = (couponRate / 100) * faceValue / frequency;
     const n = yearsToCall * frequency;
