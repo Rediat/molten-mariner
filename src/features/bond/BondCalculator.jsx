@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { calculateBond, calculateBondYTM, calculateBondYTC, calculateBondDuration, calculateBondConvexity } from '../../utils/financial-utils';
 import { useHistory } from '../../context/HistoryContext';
-import { Info } from 'lucide-react';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
 
 const BondCalculator = () => {

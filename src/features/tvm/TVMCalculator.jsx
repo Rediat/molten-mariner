@@ -48,7 +48,6 @@ const TVMCalculator = () => {
                 [target]: parseFloat(result.toFixed(6))
             }));
         } catch (error) {
-            console.error("Calculation error", error);
             setCalculatedValue("Error");
         }
     };
