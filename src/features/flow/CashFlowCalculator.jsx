@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { calculateNPV, calculateIRR, calculateMIRR, calculatePaybackPeriod, calculateDiscountedPaybackPeriod } from '../../utils/financial-utils';
+import { calculateNPV, calculateIRR, calculateMIRR, calculatePaybackPeriod, calculateDiscountedPaybackPeriod, calculateProfitabilityIndex } from '../../utils/financial-utils';
 import { useHistory } from '../../context/HistoryContext';
 import { Plus, Trash2 } from 'lucide-react';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
@@ -17,8 +17,9 @@ const CashFlowCalculator = () => {
         const mirr = calculateMIRR(flows, rate, reinvestRate);
         const payback = calculatePaybackPeriod(flows);
         const discountedPayback = calculateDiscountedPaybackPeriod(flows, rate);
+        const pi = calculateProfitabilityIndex(flows, rate);
 
-        const res = { npv, irr, mirr, payback, discountedPayback };
+        const res = { npv, irr, mirr, payback, discountedPayback, pi };
         setResult(res);
         addToHistory('FLOW', { rate, reinvestRate, flows: flows.join(', ') }, res);
     };
@@ -107,6 +108,12 @@ const CashFlowCalculator = () => {
                             <div className="text-neutral-500 text-[10px] uppercase font-bold mb-1">MIRR</div>
                             <div className="text-sm font-bold text-secondary-400 font-mono">
                                 {result.mirr.toFixed(2)}%
+                            </div>
+                        </div>
+                        <div className="col-span-3 border-t border-neutral-800 pt-2 mt-1 flex justify-between items-center px-1">
+                            <div className="text-neutral-500 text-[10px] uppercase font-bold">Profitability Index</div>
+                            <div className="text-sm font-bold text-white font-mono">
+                                {result.pi.toFixed(2)}
                             </div>
                         </div>
                     </div>
