@@ -13,22 +13,27 @@ import HistoryView from './features/history/HistoryView';
 function App() {
     const [activeTab, setActiveTab] = useState('tvm');
 
-    const renderContent = () => {
-        switch (activeTab) {
-            case 'tvm': return <TVMCalculator />;
-            case 'loan': return <LoanCalculator />;
-            case 'flow': return <CashFlowCalculator />;
-            case 'bond': return <BondCalculator />;
-            case 'rates': return <RateConverter />;
-            case 'history': return <HistoryView />;
-            default: return <TVMCalculator />;
-        }
-    };
-
     return (
         <HistoryProvider>
             <Layout activeTab={activeTab} onTabChange={setActiveTab}>
-                {renderContent()}
+                <div className={activeTab === 'tvm' ? 'block h-full' : 'hidden'}>
+                    <TVMCalculator />
+                </div>
+                <div className={activeTab === 'loan' ? 'block h-full' : 'hidden'}>
+                    <LoanCalculator />
+                </div>
+                <div className={activeTab === 'flow' ? 'block h-full' : 'hidden'}>
+                    <CashFlowCalculator />
+                </div>
+                <div className={activeTab === 'bond' ? 'block h-full' : 'hidden'}>
+                    <BondCalculator />
+                </div>
+                <div className={activeTab === 'rates' ? 'block h-full' : 'hidden'}>
+                    <RateConverter />
+                </div>
+                <div className={activeTab === 'history' ? 'block h-full' : 'hidden'}>
+                    <HistoryView />
+                </div>
             </Layout>
         </HistoryProvider>
     );

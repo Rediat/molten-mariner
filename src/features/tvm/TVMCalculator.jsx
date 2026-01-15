@@ -24,6 +24,7 @@ const TVMCalculator = () => {
 
     const [calculatedValue, setCalculatedValue] = useState(null);
     const [totalInterest, setTotalInterest] = useState(null);
+    const [isTIManuallySet, setIsTIManuallySet] = useState(false);
     const [interestType, setInterestType] = useState('COMPOUND');
 
     const handleCalculate = () => {
@@ -32,15 +33,46 @@ const TVMCalculator = () => {
             let result;
             let currentInterest;
 
+            // Clone values to work with locally
+            let calcValues = { ...values };
+
+            // If Total Interest is manually set (and we aren't solving FOR it), use it as a constraint
+            // Only use if manually set flag is true
+            if (totalInterest !== null && target !== 'totalInterest' && isTIManuallySet) {
+                // TI = PV + PMT*N + FV
+                // We assume TI constraint defines the PMT (if Target is not PMT)
+                // or defines PV (if Target is not PV)?
+                // Standard Logic: TI + PV + FV defines the PMT stream sum.
+                // We derive PMT from TI.
+
+                // Heuristic for Sign:
+                // If PV is positive (Loan), Interest Paid should be negative.
+                // If user entered positive TI (e.g. "500,000 cost"), treat as negative.
+                let effectiveTI = totalInterest;
+                if (calcValues.pv > 0 && totalInterest > 0) {
+                    effectiveTI = -totalInterest;
+                }
+
+                // Calculate Implied PMT
+                // PMT = (TI - PV - FV) / N
+                if (calcValues.n !== 0 && target !== 'pmt') {
+                    const impliedPMT = (effectiveTI - calcValues.pv - calcValues.fv) / calcValues.n;
+                    calcValues.pmt = impliedPMT;
+                    // We also update the main state so the user sees this derived PMT
+                    setValues(prev => ({ ...prev, pmt: parseFloat(impliedPMT.toFixed(2)) }));
+                }
+            }
+
             if (target === 'totalInterest') {
                 // Just calculate the sum
-                result = values.pv + values.pmt * values.n + values.fv;
+                result = calcValues.pv + calcValues.pmt * calcValues.n + calcValues.fv;
                 currentInterest = result;
                 setCalculatedValue(result);
                 setTotalInterest(result);
+                setIsTIManuallySet(false); // It is now a calculated result
 
                 addToHistory('TVM', {
-                    ...values,
+                    ...calcValues,
                     mode,
                     target: 'TI',
                     frequency,
@@ -49,16 +81,17 @@ const TVMCalculator = () => {
                 }, { totalInterest: result });
 
             } else {
-                result = calculateTVM(target, values, mode, frequency, interestType, effectiveCY);
+                result = calculateTVM(target, calcValues, mode, frequency, interestType, effectiveCY);
                 setCalculatedValue(result);
 
                 // Calculate Total Interest using the result
-                const finalValues = { ...values, [target]: result };
+                const finalValues = { ...calcValues, [target]: result };
                 currentInterest = finalValues.pv + finalValues.pmt * finalValues.n + finalValues.fv;
                 setTotalInterest(currentInterest);
+                setIsTIManuallySet(false); // It is now a calculated result
 
                 addToHistory('TVM', {
-                    ...values,
+                    ...calcValues,
                     mode,
                     target,
                     frequency,
@@ -91,7 +124,6 @@ const TVMCalculator = () => {
         }));
 
         if (field !== target) {
-            setTotalInterest(null);
             setCalculatedValue(null);
         }
     };
@@ -125,7 +157,7 @@ const TVMCalculator = () => {
             return values.n / frequency;
         }
         if (field === 'totalInterest') {
-            return totalInterest !== null ? totalInterest : (values.pv + values.pmt * values.n + values.fv);
+            return totalInterest;
         }
         return values[field];
     }
@@ -133,40 +165,18 @@ const TVMCalculator = () => {
     const handleInterestInput = (val) => {
         // Remove commas to ensure clean parsing if val is a string
         const cleanVal = typeof val === 'string' ? val.replace(/,/g, '') : val;
-        const newInterest = parseFloat(cleanVal) || 0;
+        const newInterest = parseFloat(cleanVal);
 
-        setTotalInterest(newInterest);
-
-        if (target === 'totalInterest') return;
-
-        let varToAdjust = target;
-        if (target === 'i') varToAdjust = 'pmt';
-
-        let newValues = { ...values };
-
-        if (varToAdjust === 'n') {
-            if (Math.abs(values.pmt) > 1e-9) {
-                newValues.n = (newInterest - values.pv - values.fv) / values.pmt;
-            }
-        } else if (varToAdjust === 'pv') {
-            newValues.pv = newInterest - values.fv - (values.pmt * values.n);
-        } else if (varToAdjust === 'fv') {
-            newValues.fv = newInterest - values.pv - (values.pmt * values.n);
+        // If NaN (empty), set to null so it doesn't constrain calc
+        if (isNaN(newInterest)) {
+            setTotalInterest(null);
+            setIsTIManuallySet(false);
         } else {
-            varToAdjust = 'pmt';
-            if (values.n !== 0) {
-                newValues.pmt = (newInterest - values.pv - values.fv) / values.n;
-            }
+            setTotalInterest(newInterest);
+            setIsTIManuallySet(true);
         }
 
-        newValues[varToAdjust] = parseFloat(newValues[varToAdjust].toFixed(6));
-
-        const effectiveCY = showAdvanced ? compoundingFrequency : frequency;
-        const newRate = calculateTVM('i', newValues, mode, frequency, interestType, effectiveCY);
-
-        newValues.i = parseFloat(newRate.toFixed(6));
-
-        setValues(newValues);
+        // Only reset the calculation state, do NOT touch other values (PV, PMT, etc.)
         setCalculatedValue(null);
     };
 
