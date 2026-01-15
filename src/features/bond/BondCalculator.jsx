@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { calculateBond, calculateBondYTM } from '../../utils/financial-utils';
+import { calculateBond, calculateBondYTM, calculateBondYTC, calculateBondDuration, calculateBondConvexity } from '../../utils/financial-utils';
 import { useHistory } from '../../context/HistoryContext';
 import { Info } from 'lucide-react';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
@@ -13,12 +13,17 @@ const BondCalculator = () => {
         ytm: 4,
         price: 1050,
         years: 10,
-        frequency: 2 // 1=Annual, 2=Semi
+        frequency: 2, // 1=Annual, 2=Semi
+        callPrice: 1000,
+        yearsToCall: 5
     });
     const [result, setResult] = useState(null);
+    const [metrics, setMetrics] = useState(null);
 
     const handleCalculate = () => {
         let res;
+        let ytmUsed = values.ytm;
+
         if (target === 'price') {
             res = calculateBond(
                 values.faceValue,
@@ -27,8 +32,6 @@ const BondCalculator = () => {
                 values.years,
                 values.frequency
             );
-            setResult(res);
-            addToHistory('BOND', { ...values, target: 'PRICE' }, res);
         } else {
             res = calculateBondYTM(
                 values.faceValue,
@@ -37,9 +40,40 @@ const BondCalculator = () => {
                 values.years,
                 values.frequency
             );
-            setResult(res);
-            addToHistory('BOND', { ...values, target: 'YTM' }, res);
+            ytmUsed = res;
         }
+
+        const duration = calculateBondDuration(
+            values.faceValue,
+            values.couponRate,
+            ytmUsed,
+            values.years,
+            values.frequency
+        );
+
+        const convexity = calculateBondConvexity(
+            values.faceValue,
+            values.couponRate,
+            ytmUsed,
+            values.years,
+            values.frequency
+        );
+
+        let ytc = null;
+        if (values.yearsToCall > 0) {
+            ytc = calculateBondYTC(
+                values.faceValue,
+                values.couponRate,
+                target === 'price' ? res : values.price,
+                values.yearsToCall,
+                values.callPrice,
+                values.frequency
+            );
+        }
+
+        setResult(res);
+        setMetrics({ duration, convexity, ytc });
+        addToHistory('BOND', { ...values, target: target.toUpperCase() }, { result: res, ...duration, convexity, ytc });
     };
 
     const handleChange = (field, val) => {
@@ -56,7 +90,9 @@ const BondCalculator = () => {
             ? [{ id: 'ytm', label: 'Yield to Maturity', sub: '%' }]
             : [{ id: 'price', label: 'Bond Price', sub: '$' }]
         ),
-        { id: 'years', label: 'Years to Maturity', sub: 'Years' }
+        { id: 'years', label: 'Years to Maturity', sub: 'Years' },
+        { id: 'callPrice', label: 'Call Price', sub: '$' },
+        { id: 'yearsToCall', label: 'Years to Call', sub: 'Years' }
     ];
 
     return (
@@ -68,49 +104,30 @@ const BondCalculator = () => {
                     </h1>
                     <p className="text-neutral-500 text-sm font-medium">Valuation & Yield</p>
                 </div>
-                <div className="bg-neutral-800 p-1 rounded-xl flex">
-                    <button
-                        onClick={() => { setTarget('price'); setResult(null); }}
-                        className={`px-3 py-1 text-[10px] font-bold rounded-lg transition-all ${target === 'price' ? 'bg-neutral-700 text-white shadow' : 'text-neutral-500'}`}
-                    >
-                        PRICE
-                    </button>
-                    <button
-                        onClick={() => { setTarget('ytm'); setResult(null); }}
-                        className={`px-3 py-1 text-[10px] font-bold rounded-lg transition-all ${target === 'ytm' ? 'bg-neutral-700 text-white shadow' : 'text-neutral-500'}`}
-                    >
-                        YTM
-                    </button>
-                </div>
-            </div>
-
-            <div className="space-y-2 flex-1 overflow-y-auto pr-1 scrollbar-hide">
-                {inputFields.map(field => (
-                    <div key={field.id} className="bg-neutral-800/50 rounded-xl p-3 flex justify-between items-center gap-4 border border-transparent hover:border-neutral-700 transition-all">
-                        <div className="flex flex-col shrink-0 items-start text-left">
-                            <label className="text-base font-bold text-neutral-300">{field.label}</label>
-                            <span className="text-[10px] uppercase tracking-wider text-neutral-500 font-semibold">{field.sub}</span>
-                        </div>
-                        <FormattedNumberInput
-                            value={values[field.id]}
-                            onChange={(e) => handleChange(field.id, e.target.value)}
-                            decimals={field.id === 'years' ? 0 : 2}
-                            className="bg-transparent text-right text-xl font-mono text-white focus:outline-none w-full flex-1 placeholder-neutral-600"
-                        />
+                <div className="flex flex-col items-end gap-2">
+                    <div className="bg-neutral-800 p-1 rounded-xl flex">
+                        <button
+                            onClick={() => { setTarget('price'); setResult(null); setMetrics(null); }}
+                            className={`px-3 py-1 text-[10px] font-bold rounded-lg transition-all ${target === 'price' ? 'bg-neutral-700 text-white shadow' : 'text-neutral-500'}`}
+                        >
+                            PRICE
+                        </button>
+                        <button
+                            onClick={() => { setTarget('ytm'); setResult(null); setMetrics(null); }}
+                            className={`px-3 py-1 text-[10px] font-bold rounded-lg transition-all ${target === 'ytm' ? 'bg-neutral-700 text-white shadow' : 'text-neutral-500'}`}
+                        >
+                            YTM
+                        </button>
                     </div>
-                ))}
-
-                <div className="bg-neutral-800/50 rounded-xl p-3 flex justify-between items-center">
-                    <label className="text-base font-bold text-neutral-300">Frequency</label>
-                    <div className="flex bg-neutral-900 rounded-lg p-1">
+                    <div className="bg-neutral-800 p-1 rounded-xl flex">
                         {[
-                            { val: 1, label: 'Annual' },
-                            { val: 2, label: 'Semi' }
+                            { val: 1, label: 'ANNUAL' },
+                            { val: 2, label: 'SEMI' }
                         ].map(opt => (
                             <button
                                 key={opt.val}
                                 onClick={() => handleChange('frequency', opt.val)}
-                                className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${values.frequency === opt.val
+                                className={`px-3 py-1 text-[10px] font-bold rounded-lg transition-all ${values.frequency === opt.val
                                     ? 'bg-neutral-700 text-white shadow'
                                     : 'text-neutral-500 hover:text-neutral-300'
                                     }`}
@@ -122,23 +139,66 @@ const BondCalculator = () => {
                 </div>
             </div>
 
-            {result !== null && (
-                <div className="bg-neutral-900/50 rounded-2xl p-4 border border-primary-900/30 mb-3 flex justify-between items-end mt-2">
-                    <span className="text-sm font-medium text-neutral-400">
-                        {target === 'price' ? 'Bond Price' : 'Yield (YTM)'}
-                    </span>
-                    <span className="text-3xl font-bold text-primary-500 font-mono">
-                        {target === 'price'
-                            ? result.toLocaleString('en-US', { style: 'currency', currency: 'USD' })
-                            : `${result.toFixed(3)}%`
-                        }
-                    </span>
+            <div className="space-y-2 flex-1 overflow-y-auto pr-1 scrollbar-hide">
+                {inputFields.map(field => (
+                    <div key={field.id} className="bg-neutral-800/40 rounded-xl p-3 flex justify-between items-center gap-4 border border-transparent hover:border-neutral-700 transition-all">
+                        <div className="flex flex-col shrink-0 items-start text-left">
+                            <label className="text-sm font-bold text-neutral-300">{field.label}</label>
+                            <span className="text-[9px] uppercase tracking-tighter text-neutral-500 font-bold">{field.sub}</span>
+                        </div>
+                        <FormattedNumberInput
+                            value={values[field.id]}
+                            onChange={(e) => handleChange(field.id, e.target.value)}
+                            decimals={field.id.includes('years') ? 0 : 2}
+                            className="bg-transparent text-right text-lg font-mono text-white focus:outline-none w-full flex-1 placeholder-neutral-600"
+                        />
+                    </div>
+                ))}
+            </div>
+
+            {result !== null && metrics && (
+                <div className="space-y-3 mb-3 mt-4">
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="bg-neutral-900/50 rounded-xl p-3 border border-neutral-800">
+                            <div className="text-[10px] uppercase font-bold text-neutral-500 mb-1">Duration</div>
+                            <div className="flex justify-between items-end">
+                                <span className="text-xs text-neutral-400">Mac</span>
+                                <span className="text-sm font-bold text-white font-mono">{metrics.duration.macaulay.toFixed(2)}</span>
+                            </div>
+                            <div className="flex justify-between items-end">
+                                <span className="text-xs text-neutral-400">Mod</span>
+                                <span className="text-sm font-bold text-white font-mono">{metrics.duration.modified.toFixed(2)}</span>
+                            </div>
+                        </div>
+                        <div className="bg-neutral-900/50 rounded-xl p-3 border border-neutral-800 flex flex-col justify-between">
+                            <div className="text-[10px] uppercase font-bold text-neutral-500 mb-1">Convexity</div>
+                            <span className="text-sm font-bold text-white font-mono self-end">{metrics.convexity.toFixed(2)}</span>
+                        </div>
+
+                        <div className="bg-neutral-900/50 rounded-xl p-3 border border-neutral-800 flex flex-col justify-between">
+                            <div className="text-[10px] uppercase font-bold text-neutral-500 mb-1">
+                                {target === 'price' ? 'Bond Price' : 'Yield (YTM)'}
+                            </div>
+                            <span className="text-lg font-bold text-primary-500 font-mono self-end">
+                                {target === 'price'
+                                    ? result.toLocaleString('en-US', { style: 'currency', currency: 'USD' })
+                                    : `${result.toFixed(3)}%`
+                                }
+                            </span>
+                        </div>
+                        <div className="bg-neutral-900/50 rounded-xl p-3 border border-neutral-800 flex flex-col justify-between">
+                            <div className="text-[10px] uppercase font-bold text-neutral-500 mb-1">Yield to Call</div>
+                            <span className="text-lg font-bold text-secondary-400 font-mono self-end">
+                                {metrics.ytc ? `${metrics.ytc.toFixed(3)}%` : 'N/A'}
+                            </span>
+                        </div>
+                    </div>
                 </div>
             )}
 
             <button
                 onClick={handleCalculate}
-                className="w-full bg-gradient-to-r from-primary-600 to-primary-500 text-neutral-900 font-black text-base py-3.5 rounded-xl shadow-lg shadow-primary-900/20 active:scale-[0.98] transition-all hover:brightness-110 flex items-center justify-center gap-2 uppercase tracking-widest mt-3"
+                className="w-full bg-gradient-to-r from-primary-600 to-primary-500 text-neutral-900 font-black text-base py-3.5 rounded-xl shadow-lg shadow-primary-900/20 active:scale-[0.98] transition-all hover:brightness-110 flex items-center justify-center gap-2 uppercase tracking-widest mt-1"
             >
                 <CalculateIcon className="w-5 h-5" />
                 Calculate
