@@ -24,7 +24,6 @@ const TVMCalculator = () => {
 
     const [calculatedValue, setCalculatedValue] = useState(null);
     const [totalInterest, setTotalInterest] = useState(null);
-    const [isTIManuallySet, setIsTIManuallySet] = useState(false);
     const [interestType, setInterestType] = useState('COMPOUND');
 
     const handleCalculate = () => {
@@ -36,40 +35,111 @@ const TVMCalculator = () => {
             // Clone values to work with locally
             let calcValues = { ...values };
 
-            // If Total Interest is manually set (and we aren't solving FOR it), use it as a constraint
-            // Only use if manually set flag is true
-            if (totalInterest !== null && target !== 'totalInterest' && isTIManuallySet) {
-                // TI = PV + PMT*N + FV
-                // We assume TI constraint defines the PMT (if Target is not PMT)
-                // or defines PV (if Target is not PV)?
-                // Standard Logic: TI + PV + FV defines the PMT stream sum.
-                // We derive PMT from TI.
+            // Determine if we need to use the Total Interest constraint
+            const useTIConstraint = totalInterest !== null && target !== 'totalInterest';
 
-                // Heuristic for Sign:
-                // If PV is positive (Loan), Interest Paid should be negative.
-                // If user entered positive TI (e.g. "500,000 cost"), treat as negative.
+            if (useTIConstraint) {
+                // TI = PV + PMT*N + FV (combined with TVM constraint)
                 let effectiveTI = totalInterest;
-                if (calcValues.pv > 0 && totalInterest > 0) {
-                    effectiveTI = -totalInterest;
+
+                // Smart Sign Logic based on target and existing values
+                if (target !== 'pv' && target !== 'pmt') {
+                    if (calcValues.pv > 0 && totalInterest > 0) effectiveTI = -totalInterest;
+                } else {
+                    if (calcValues.pmt < 0 && totalInterest > 0) effectiveTI = -totalInterest;
                 }
 
-                // Calculate Implied PMT
-                // PMT = (TI - PV - FV) / N
-                if (calcValues.n !== 0 && target !== 'pmt') {
-                    const impliedPMT = (effectiveTI - calcValues.pv - calcValues.fv) / calcValues.n;
-                    calcValues.pmt = impliedPMT;
-                    // We also update the main state so the user sees this derived PMT
-                    setValues(prev => ({ ...prev, pmt: parseFloat(impliedPMT.toFixed(2)) }));
+                if (target === 'pv') {
+                    // Algebraically solve for PV using TI constraint and TVM equation
+                    let r_periodic = (calcValues.i / 100) / effectiveCY;
+                    let n = calcValues.n;
+                    let type = mode === 'BEGIN' ? 1 : 0;
+                    let pow = Math.pow(1 + r_periodic, n);
+
+                    let fv_factor_pv = -pow;
+                    let fv_factor_pmt = 0;
+                    if (Math.abs(r_periodic) < 1e-9) {
+                        fv_factor_pmt = -n;
+                    } else {
+                        fv_factor_pmt = -((pow - 1) / r_periodic) * (type ? (1 + r_periodic) : 1);
+                    }
+
+                    let term_pv = 1 + fv_factor_pv; // = 1 - (1+r)^n
+                    let term_pmt = n + fv_factor_pmt;
+
+                    // PV = (TI - PMT * term_pmt) / term_pv
+                    if (Math.abs(term_pv) > 1e-9) {
+                        result = (effectiveTI - calcValues.pmt * term_pmt) / term_pv;
+                    } else {
+                        result = 0;
+                    }
+
+                    calcValues.pv = result;
+                    calcValues.fv = effectiveTI - result - calcValues.pmt * n;
+                }
+                else if (target === 'pmt') {
+                    // Algebraically solve for PMT using TI constraint
+                    let r_periodic = (calcValues.i / 100) / effectiveCY;
+                    let n = calcValues.n;
+                    let type = mode === 'BEGIN' ? 1 : 0;
+                    let pow = Math.pow(1 + r_periodic, n);
+
+                    let fv_factor_pv = -pow;
+                    let fv_factor_pmt = 0;
+                    if (Math.abs(r_periodic) < 1e-9) {
+                        fv_factor_pmt = -n;
+                    } else {
+                        fv_factor_pmt = -((pow - 1) / r_periodic) * (type ? (1 + r_periodic) : 1);
+                    }
+
+                    let term_pv = 1 + fv_factor_pv;
+                    let term_pmt = n + fv_factor_pmt;
+
+                    if (calcValues.pv > 0 && effectiveTI > 0) effectiveTI = -effectiveTI;
+
+                    if (Math.abs(term_pmt) > 1e-9) {
+                        result = (effectiveTI - calcValues.pv * term_pv) / term_pmt;
+                    } else {
+                        result = 0;
+                    }
+
+                    calcValues.pmt = result;
+                    calcValues.fv = effectiveTI - calcValues.pv - result * n;
+                }
+                else {
+                    // Target is I, N, or FV - derive variable to satisfy TI then solve
+                    if (calcValues.pv > 0 && effectiveTI > 0) effectiveTI = -effectiveTI;
+
+                    if (Math.abs(calcValues.fv) < 0.01 && calcValues.n !== 0) {
+                        const impliedPMT = (effectiveTI - calcValues.pv - calcValues.fv) / calcValues.n;
+                        calcValues.pmt = impliedPMT;
+                        setValues(prev => ({ ...prev, pmt: parseFloat(impliedPMT.toFixed(2)) }));
+                    } else {
+                        const impliedFV = effectiveTI - calcValues.pv - calcValues.pmt * calcValues.n;
+                        calcValues.fv = impliedFV;
+                        setValues(prev => ({ ...prev, fv: parseFloat(impliedFV.toFixed(2)) }));
+                    }
+
+                    result = calculateTVM(target, calcValues, mode, frequency, interestType, effectiveCY);
+                }
+            } else {
+                if (target !== 'totalInterest') {
+                    result = calculateTVM(target, calcValues, mode, frequency, interestType, effectiveCY);
                 }
             }
 
             if (target === 'totalInterest') {
-                // Just calculate the sum
+                // If PMT is zero/empty, calculate it first before computing TI
+                if (Math.abs(calcValues.pmt) < 0.01) {
+                    const calculatedPMT = calculateTVM('pmt', calcValues, mode, frequency, interestType, effectiveCY);
+                    calcValues.pmt = calculatedPMT;
+                    setValues(prev => ({ ...prev, pmt: parseFloat(calculatedPMT.toFixed(2)) }));
+                }
+
                 result = calcValues.pv + calcValues.pmt * calcValues.n + calcValues.fv;
                 currentInterest = result;
                 setCalculatedValue(result);
                 setTotalInterest(result);
-                setIsTIManuallySet(false); // It is now a calculated result
 
                 addToHistory('TVM', {
                     ...calcValues,
@@ -78,17 +148,15 @@ const TVMCalculator = () => {
                     frequency,
                     compoundingFrequency: effectiveCY,
                     interestType
-                }, { totalInterest: result });
+                }, { pmt: calcValues.pmt, totalInterest: result });
 
             } else {
-                result = calculateTVM(target, calcValues, mode, frequency, interestType, effectiveCY);
                 setCalculatedValue(result);
 
-                // Calculate Total Interest using the result
                 const finalValues = { ...calcValues, [target]: result };
                 currentInterest = finalValues.pv + finalValues.pmt * finalValues.n + finalValues.fv;
                 setTotalInterest(currentInterest);
-                setIsTIManuallySet(false); // It is now a calculated result
+
 
                 addToHistory('TVM', {
                     ...calcValues,
@@ -99,7 +167,6 @@ const TVMCalculator = () => {
                     interestType
                 }, { [target]: result, totalInterest: currentInterest });
 
-                // Update the target value in the inputs
                 setValues(prev => ({
                     ...prev,
                     [target]: parseFloat(result.toFixed(6))
@@ -128,7 +195,6 @@ const TVMCalculator = () => {
         }
     };
 
-    // Custom label renderer for N field
     const renderNLabel = () => (
         <div className="flex items-center gap-2">
             <span className={`text-sm font-bold transition-colors ${target === 'n' ? 'text-primary-400' : 'text-neutral-300'}`}>
@@ -139,6 +205,28 @@ const TVMCalculator = () => {
                 className="bg-neutral-900 border border-neutral-700 rounded px-1.5 py-0.5 text-[9px] font-bold text-neutral-400 hover:text-white uppercase tracking-wider"
             >
                 {nMode === 'YEARS' ? 'In Years' : 'In Periods'}
+            </button>
+        </div>
+    );
+
+    const renderTILabel = () => (
+        <div className="flex items-center gap-2">
+            <span className={`text-sm font-bold transition-colors ${target === 'totalInterest' ? 'text-primary-400' : 'text-neutral-300'}`}>
+                TI
+            </span>
+            <button
+                onClick={() => setIsTIManuallySet(prev => !prev)}
+                className={`flex items-center gap-1 border rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider transition-all ${isTIManuallySet
+                    ? 'bg-amber-500/20 border-amber-500/50 text-amber-400'
+                    : 'bg-neutral-900 border-neutral-700 text-neutral-400 hover:text-white'
+                    }`}
+                title={isTIManuallySet ? "TI is locked as constraint" : "Click to lock TI as constraint"}
+            >
+                {isTIManuallySet ? (
+                    <><Lock className="w-2.5 h-2.5" /> Locked</>
+                ) : (
+                    <><Unlock className="w-2.5 h-2.5" /> Unlocked</>
+                )}
             </button>
         </div>
     );
@@ -160,24 +248,24 @@ const TVMCalculator = () => {
             return totalInterest;
         }
         return values[field];
-    }
+    };
 
     const handleInterestInput = (val) => {
-        // Remove commas to ensure clean parsing if val is a string
         const cleanVal = typeof val === 'string' ? val.replace(/,/g, '') : val;
         const newInterest = parseFloat(cleanVal);
 
-        // If NaN (empty), set to null so it doesn't constrain calc
         if (isNaN(newInterest)) {
             setTotalInterest(null);
-            setIsTIManuallySet(false);
         } else {
             setTotalInterest(newInterest);
-            setIsTIManuallySet(true);
         }
 
-        // Only reset the calculation state, do NOT touch other values (PV, PMT, etc.)
         setCalculatedValue(null);
+    };
+
+    const clearTIConstraint = () => {
+        setIsTIManuallySet(false);
+        setTotalInterest(null);
     };
 
     const frequencies = [
@@ -284,7 +372,6 @@ const TVMCalculator = () => {
                 </div>
             </div>
 
-
             {/* Target Selector */}
             <div className="flex gap-1 bg-neutral-900/50 p-1 rounded-xl mb-4 overflow-x-auto scrollbar-hide">
                 {fields.map(field => (
@@ -377,6 +464,6 @@ const CalculateIcon = ({ className }) => (
         <line x1="8" y1="18" x2="8" y2="18" />
         <line x1="12" y1="18" x2="12" y2="18" />
     </svg>
-)
+);
 
 export default TVMCalculator;
