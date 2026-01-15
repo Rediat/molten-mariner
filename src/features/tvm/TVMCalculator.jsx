@@ -23,41 +23,65 @@ const TVMCalculator = () => {
     });
 
     const [calculatedValue, setCalculatedValue] = useState(null);
-
+    const [totalInterest, setTotalInterest] = useState(null);
     const [interestType, setInterestType] = useState('COMPOUND');
 
     const handleCalculate = () => {
         try {
-            // If not in advanced mode, force C/Y = P/Y just to be safe (though verify logic handles it)
             const effectiveCY = showAdvanced ? compoundingFrequency : frequency;
+            let result;
+            let currentInterest;
 
-            const result = calculateTVM(target, values, mode, frequency, interestType, effectiveCY);
-            setCalculatedValue(result);
-            addToHistory('TVM', {
-                ...values,
-                mode,
-                target,
-                frequency,
-                compoundingFrequency: effectiveCY,
-                interestType
-            }, result);
+            if (target === 'totalInterest') {
+                // Just calculate the sum
+                result = values.pv + values.pmt * values.n + values.fv;
+                currentInterest = result;
+                setCalculatedValue(result);
+                setTotalInterest(result);
 
-            // Update the target value in the inputs to show the result
-            setValues(prev => ({
-                ...prev,
-                [target]: parseFloat(result.toFixed(6))
-            }));
+                addToHistory('TVM', {
+                    ...values,
+                    mode,
+                    target: 'TI',
+                    frequency,
+                    compoundingFrequency: effectiveCY,
+                    interestType
+                }, { totalInterest: result });
+
+            } else {
+                result = calculateTVM(target, values, mode, frequency, interestType, effectiveCY);
+                setCalculatedValue(result);
+
+                // Calculate Total Interest using the result
+                const finalValues = { ...values, [target]: result };
+                currentInterest = finalValues.pv + finalValues.pmt * finalValues.n + finalValues.fv;
+                setTotalInterest(currentInterest);
+
+                addToHistory('TVM', {
+                    ...values,
+                    mode,
+                    target,
+                    frequency,
+                    compoundingFrequency: effectiveCY,
+                    interestType
+                }, { [target]: result, totalInterest: currentInterest });
+
+                // Update the target value in the inputs
+                setValues(prev => ({
+                    ...prev,
+                    [target]: parseFloat(result.toFixed(6))
+                }));
+            }
         } catch (error) {
             setCalculatedValue("Error");
         }
     };
 
     const handleChange = (field, val) => {
-        let numericVal = parseFloat(val) || 0;
+        const cleanVal = typeof val === 'string' ? val.replace(/,/g, '') : val;
+        let numericVal = parseFloat(cleanVal) || 0;
 
-        // Handle N input based on mode
         if (field === 'n' && nMode === 'YEARS') {
-            // If user types 5 years, we store 5 * frequency
             numericVal = numericVal * frequency;
         }
 
@@ -66,10 +90,9 @@ const TVMCalculator = () => {
             [field]: numericVal
         }));
 
-        // Reset calculated state if user edits
-        if (field === target) {
-            // If user edits the target field, maybe we should switch target? 
-            // For now, just let them edit, but it will be overwritten on calc.
+        if (field !== target) {
+            setTotalInterest(null);
+            setCalculatedValue(null);
         }
     };
 
@@ -94,16 +117,58 @@ const TVMCalculator = () => {
         { id: 'pv', label: 'PV', sub: 'Pres Val' },
         { id: 'pmt', label: 'PMT', sub: 'Payment' },
         { id: 'fv', label: 'FV', sub: 'Fut Val' },
+        { id: 'totalInterest', label: 'TI', sub: 'Total Interest' },
     ];
 
-    // Get display value (convert back to years if needed)
     const getDisplayValue = (field) => {
         if (field === 'n' && nMode === 'YEARS') {
-            // If n=60 and freq=12, return 5
             return values.n / frequency;
+        }
+        if (field === 'totalInterest') {
+            return totalInterest !== null ? totalInterest : (values.pv + values.pmt * values.n + values.fv);
         }
         return values[field];
     }
+
+    const handleInterestInput = (val) => {
+        // Remove commas to ensure clean parsing if val is a string
+        const cleanVal = typeof val === 'string' ? val.replace(/,/g, '') : val;
+        const newInterest = parseFloat(cleanVal) || 0;
+
+        setTotalInterest(newInterest);
+
+        if (target === 'totalInterest') return;
+
+        let varToAdjust = target;
+        if (target === 'i') varToAdjust = 'pmt';
+
+        let newValues = { ...values };
+
+        if (varToAdjust === 'n') {
+            if (Math.abs(values.pmt) > 1e-9) {
+                newValues.n = (newInterest - values.pv - values.fv) / values.pmt;
+            }
+        } else if (varToAdjust === 'pv') {
+            newValues.pv = newInterest - values.fv - (values.pmt * values.n);
+        } else if (varToAdjust === 'fv') {
+            newValues.fv = newInterest - values.pv - (values.pmt * values.n);
+        } else {
+            varToAdjust = 'pmt';
+            if (values.n !== 0) {
+                newValues.pmt = (newInterest - values.pv - values.fv) / values.n;
+            }
+        }
+
+        newValues[varToAdjust] = parseFloat(newValues[varToAdjust].toFixed(6));
+
+        const effectiveCY = showAdvanced ? compoundingFrequency : frequency;
+        const newRate = calculateTVM('i', newValues, mode, frequency, interestType, effectiveCY);
+
+        newValues.i = parseFloat(newRate.toFixed(6));
+
+        setValues(newValues);
+        setCalculatedValue(null);
+    };
 
     const frequencies = [
         { label: 'Annually (1)', value: 1 },
@@ -133,7 +198,6 @@ const TVMCalculator = () => {
                                 const newMode = !showAdvanced;
                                 setShowAdvanced(newMode);
                                 if (!newMode) {
-                                    // Reset C/Y to match P/Y when hiding advanced mode
                                     setCompoundingFrequency(frequency);
                                     setIsCompoundingManuallySet(false);
                                 }
@@ -167,11 +231,8 @@ const TVMCalculator = () => {
                             onChange={(e) => {
                                 const newFreq = Number(e.target.value);
 
-                                // Logic to preserve Time if in YEARS mode
                                 if (nMode === 'YEARS') {
-                                    // Calculate current years: oldN / oldFreq
                                     const currentYears = values.n / frequency;
-                                    // Set new N: currentYears * newFreq
                                     const newN = currentYears * newFreq;
 
                                     setValues(prev => ({
@@ -181,7 +242,6 @@ const TVMCalculator = () => {
                                 }
 
                                 setFrequency(newFreq);
-                                // Auto-sync compounding if it wasn't manually set different OR if simple mode is active
                                 if (!showAdvanced || !isCompoundingManuallySet) {
                                     setCompoundingFrequency(newFreq);
                                 }
@@ -253,8 +313,15 @@ const TVMCalculator = () => {
                                 ) : (
                                     <FormattedNumberInput
                                         value={getDisplayValue(field.id)}
-                                        onChange={(e) => handleChange(field.id, e.target.value)}
+                                        onChange={(e) => {
+                                            if (field.id === 'totalInterest') {
+                                                handleInterestInput(e.target.value);
+                                            } else {
+                                                handleChange(field.id, e.target.value);
+                                            }
+                                        }}
                                         decimals={field.id === 'n' ? 0 : 2}
+                                        forceFixedOnFocus={field.id === 'totalInterest'}
                                         className={`bg-transparent text-right text-lg font-mono focus:outline-none w-full placeholder-neutral-700 transition-colors ${target === field.id ? 'text-primary-400 font-black' : 'text-white'
                                             }`}
                                         placeholder="0"
