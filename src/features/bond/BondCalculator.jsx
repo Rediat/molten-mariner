@@ -138,9 +138,9 @@ const BondCalculator = () => {
                 </div>
             </div>
 
-            <div className="space-y-2 flex-1 overflow-y-auto pr-1 scrollbar-hide">
+            <div className="space-y-1 flex-1 overflow-y-auto pr-1 scrollbar-hide">
                 {inputFields.map(field => (
-                    <div key={field.id} className="bg-neutral-800/40 rounded-xl p-3 flex justify-between items-center gap-4 border border-transparent hover:border-neutral-700 transition-all">
+                    <div key={field.id} className="bg-neutral-800/40 rounded-xl p-2 flex justify-between items-center gap-4 border border-transparent hover:border-neutral-700 transition-all">
                         <div className="flex flex-col shrink-0 items-start text-left">
                             <label className="text-sm font-bold text-neutral-300">{field.label}</label>
                             <span className="text-[9px] uppercase tracking-tighter text-neutral-500 font-bold">{field.sub}</span>
