@@ -414,9 +414,157 @@ export const calculateIRR = (cashFlows, guess = 0.1) => {
     return r * 100;
 };
 
+
 export const calculateEAR = (nominal, n) => {
     // EAR = (1 + r/n)^n - 1
     const r = nominal / 100;
     const val = Math.pow(1 + r / n, n) - 1;
     return val * 100;
+};
+
+export const calculateMIRR = (cashFlows, financeRate, reinvestRate) => {
+    // MIRR = (FV(positive flows, reinvestRate) / -PV(negative flows, financeRate))^(1/n) - 1
+    const n = cashFlows.length - 1; // Number of periods
+    const rFinance = financeRate / 100;
+    const rReinvest = reinvestRate / 100;
+
+    let pvNeg = 0;
+    let fvPos = 0;
+
+    cashFlows.forEach((flow, t) => {
+        if (flow < 0) {
+            pvNeg += flow / Math.pow(1 + rFinance, t);
+        } else {
+            fvPos += flow * Math.pow(1 + rReinvest, n - t);
+        }
+    });
+
+    if (pvNeg === 0 || fvPos === 0) return 0; // Avoid division by zero or log of negative/zero
+
+    // Formula: (FV_pos / -PV_neg)^(1/n) - 1
+    const mirr = Math.pow(fvPos / -pvNeg, 1 / n) - 1;
+    return mirr * 100;
+};
+
+export const calculatePaybackPeriod = (cashFlows) => {
+    let cumulativeCashFlow = 0;
+    for (let t = 0; t < cashFlows.length; t++) {
+        cumulativeCashFlow += cashFlows[t];
+        if (cumulativeCashFlow >= 0) {
+            // Payback occurred in this period
+            if (t === 0) return 0;
+            const prevCumulative = cumulativeCashFlow - cashFlows[t];
+            // Fraction of period: amount needed / amount received
+            // prevCumulative is negative, so -prevCumulative is the amount needed
+            return (t - 1) + (-prevCumulative / cashFlows[t]);
+        }
+    }
+    return null; // No payback
+};
+
+export const calculateDiscountedPaybackPeriod = (cashFlows, rate) => {
+    let cumulativeDCF = 0;
+    const r = rate / 100;
+    for (let t = 0; t < cashFlows.length; t++) {
+        const dcf = cashFlows[t] / Math.pow(1 + r, t);
+        cumulativeDCF += dcf;
+        if (cumulativeDCF >= 0) {
+            if (t === 0) return 0;
+            const prevCumulative = cumulativeDCF - dcf;
+            return (t - 1) + (-prevCumulative / dcf);
+        }
+    }
+    return null;
+};
+
+export const calculateBondYTC = (faceValue, couponRate, price, yearsToCall, callPrice, frequency = 1) => {
+    const c = (couponRate / 100) * faceValue / frequency;
+    const n = yearsToCall * frequency;
+
+    // Newton-Raphson to find periodic rate r
+    let r = (couponRate / 100) / frequency;
+    if (r === 0) r = 0.05 / frequency;
+
+    for (let i = 0; i < 100; i++) {
+        const factor = Math.pow(1 + r, -n); // (1+r)^-n
+        // Price formula using CallPrice instead of FaceValue for redemption
+        const f = c * ((1 - factor) / r) + callPrice * factor - price;
+
+        // Derivative
+        // Term 1 (Coupons): c * [ (n*r*(1+r)^-(n+1) - (1-(1+r)^-n)) / r^2 ]
+        // Term 2 (Redemption): -n * callPrice * (1+r)^-(n+1)
+        const term1 = c * ((n * r * Math.pow(1 + r, -n - 1) - (1 - factor)) / (r * r));
+        const term2 = -n * callPrice * Math.pow(1 + r, -n - 1);
+        const dF = term1 + term2;
+
+        if (Math.abs(dF) < 1e-12) break;
+
+        const nextR = r - f / dF;
+        if (Math.abs(nextR - r) < 1e-8) {
+            return nextR * frequency * 100;
+        }
+        r = nextR;
+    }
+    return r * frequency * 100;
+};
+
+export const calculateBondDuration = (faceValue, couponRate, ytm, years, frequency = 1) => {
+    const c = (couponRate / 100) * faceValue / frequency;
+    const r = (ytm / 100) / frequency;
+    const n = years * frequency;
+    let price = 0;
+    let weightedTime = 0;
+
+    for (let t = 1; t <= n; t++) {
+        const cashFlow = (t === n) ? (c + faceValue) : c;
+        const pvFactor = Math.pow(1 + r, -t);
+        const pv = cashFlow * pvFactor;
+        price += pv;
+        weightedTime += pv * (t / frequency); // t/frequency is time in years
+    }
+
+    if (price === 0) return { macaulay: 0, modified: 0 };
+
+    const macaulay = weightedTime / price;
+    const modified = macaulay / (1 + r); // Modified = Mac / (1 + y/k)
+
+    return { macaulay, modified };
+};
+
+export const calculateBondConvexity = (faceValue, couponRate, ytm, years, frequency = 1) => {
+    const c = (couponRate / 100) * faceValue / frequency;
+    const r = (ytm / 100) / frequency;
+    const n = years * frequency;
+    let price = 0;
+    let convexitySum = 0;
+
+    for (let t = 1; t <= n; t++) {
+        const cashFlow = (t === n) ? (c + faceValue) : c;
+        const pvFactor = Math.pow(1 + r, -t);
+        const pv = cashFlow * pvFactor;
+        price += pv;
+
+        // Convexity term: CF_t / (1+r)^t * t * (t+1)
+        // But standard formula involves terms divided by Price * (1+y)^2
+        // Let's sum [ CF_t * (t * (t+1)) / (1+r)^(t+2) ] ?
+        // Or simpler: Second derivative / Price
+        // dP/dy = -1/(1+y) * Sum( t * PV )
+        // d2P/dy2 = 1/(1+y)^2 * Sum( t(t+1) * PV )
+        // Convexity = (d2P/dy2) / P
+
+        // Calculating Sum( t * (t+1) * PV )
+        convexitySum += pv * t * (t + 1);
+    }
+
+    if (price === 0) return 0;
+
+    // Convexity (annualized approx)
+    // C = [1 / (P * (1+r)^2)] * Sum( t(t+1) * CF / (1+r)^t ) * (1/freq^2)
+    // Wait, if t is periods, we need to adjust for frequency.
+
+    const factor = 1 / (Math.pow(1 + r, 2));
+    const rawConvexity = (convexitySum * factor) / price;
+
+    // Adjust for annual
+    return rawConvexity / (frequency * frequency);
 };

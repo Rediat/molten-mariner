@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { calculateLoan, getAmortizationSchedule } from '../../utils/financial-utils';
 import { useHistory } from '../../context/HistoryContext';
-import { List, X } from 'lucide-react';
+import { List, X, FileText, FileSpreadsheet } from 'lucide-react';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const LoanCalculator = () => {
     const { addToHistory } = useHistory();
@@ -66,6 +68,75 @@ const LoanCalculator = () => {
 
     const schedule = result ? getAmortizationSchedule(values.amount, values.rate, values.years, values.frequency, values.startDate) : [];
     const usedPayments = result ? result.calculatedPayments ?? values.paymentsMade : values.paymentsMade;
+
+    const downloadCSV = () => {
+        if (!schedule.length) return;
+
+        const headers = ['Date', 'Period', 'Interest', 'Principal', 'Balance'];
+        const rows = schedule.map(row => [
+            row.date || '',
+            row.month,
+            row.interest.toFixed(2),
+            row.principal.toFixed(2),
+            row.balance.toFixed(2)
+        ]);
+
+        const csvContent = [
+            headers.join(','),
+            ...rows.map(row => row.join(','))
+        ].join('\n');
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        if (link.download !== undefined) {
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'amortization_schedule.csv');
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    };
+
+    const downloadPDF = () => {
+        if (!schedule.length) return;
+
+        const doc = new jsPDF();
+
+        // Add Title
+        doc.setTextColor(40);
+        doc.setFontSize(18);
+        doc.text("Amortization Schedule", 14, 22);
+
+        doc.setFontSize(11);
+        doc.setTextColor(100);
+        const details = `Loan Amount: $${values.amount.toLocaleString()} | Rate: ${values.rate}% | Term: ${values.years} Years`;
+        doc.text(details, 14, 30);
+
+        // Generate Table
+        const tableColumn = ["Date", "Period", "Interest", "Principal", "Balance"];
+        const tableRows = schedule.map(row => [
+            row.date || '-',
+            row.month,
+            `$${row.interest.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+            `$${row.principal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+            `$${row.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+        ]);
+
+        autoTable(doc, {
+            head: [tableColumn],
+            body: tableRows,
+            startY: 40,
+            theme: 'grid',
+            headStyles: { fillColor: [66, 66, 66], textColor: 255, fontStyle: 'bold' },
+            bodyStyles: { textColor: 50 },
+            alternateRowStyles: { fillColor: [245, 245, 245] },
+            margin: { top: 40 }
+        });
+
+        doc.save("amortization_schedule.pdf");
+    };
 
     return (
         <div className="flex flex-col h-full relative">
@@ -221,12 +292,29 @@ const LoanCalculator = () => {
                     <div className="absolute inset-y-0 -left-2 -right-2 bg-[#1a1a1a] rounded-2xl border border-neutral-800 overflow-hidden animate-in fade-in zoom-in-95 duration-200 z-50 shadow-2xl flex flex-col">
                         <div className="p-2 border-b border-neutral-800 flex justify-between items-center bg-neutral-900">
                             <h3 className="font-bold text-xs text-white uppercase tracking-wider">Amortization</h3>
-                            <button
-                                onClick={() => setShowSchedule(false)}
-                                className="p-1 hover:bg-neutral-700 rounded-full transition-colors"
-                            >
-                                <X size={16} className="text-neutral-500" />
-                            </button>
+                            <div className="flex items-center gap-1">
+                                <button
+                                    onClick={downloadCSV}
+                                    className="p-1 hover:bg-neutral-700 rounded-lg transition-colors text-neutral-400 hover:text-green-500"
+                                    title="Export CSV"
+                                >
+                                    <FileSpreadsheet size={16} />
+                                </button>
+                                <button
+                                    onClick={downloadPDF}
+                                    className="p-1 hover:bg-neutral-700 rounded-lg transition-colors text-neutral-400 hover:text-red-500"
+                                    title="Export PDF"
+                                >
+                                    <FileText size={16} />
+                                </button>
+                                <div className="w-px h-4 bg-neutral-700 mx-1"></div>
+                                <button
+                                    onClick={() => setShowSchedule(false)}
+                                    className="p-1 hover:bg-neutral-700 rounded-full transition-colors"
+                                >
+                                    <X size={16} className="text-neutral-500" />
+                                </button>
+                            </div>
                         </div>
                         <div className="flex-1 overflow-auto scrollbar-hide">
                             <table className="w-full text-left text-xs">
