@@ -45,7 +45,7 @@ const TVMCalculator = () => {
             // Update the target value in the inputs to show the result
             setValues(prev => ({
                 ...prev,
-                [target]: parseFloat(result.toFixed(2))
+                [target]: parseFloat(result.toFixed(6))
             }));
         } catch (error) {
             console.error("Calculation error", error);
