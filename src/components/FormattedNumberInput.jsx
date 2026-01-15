@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-const FormattedNumberInput = ({ value, onChange, className, placeholder, decimals = 2, ...props }) => {
+const FormattedNumberInput = ({ value, onChange, className, placeholder, decimals = 2, forceFixedOnFocus = false, ...props }) => {
     const [displayValue, setDisplayValue] = useState('');
     const [isFocused, setIsFocused] = useState(false);
     const inputRef = useRef(null);
@@ -27,7 +27,11 @@ const FormattedNumberInput = ({ value, onChange, className, placeholder, decimal
         setIsFocused(true);
         // Show raw value for editing
         if (value !== null && value !== undefined && !isNaN(value)) {
-            setDisplayValue(value.toString());
+            if (forceFixedOnFocus) {
+                setDisplayValue(parseFloat(value).toFixed(decimals));
+            } else {
+                setDisplayValue(value.toString());
+            }
         } else {
             setDisplayValue('');
         }

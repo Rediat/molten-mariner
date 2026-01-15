@@ -13,7 +13,12 @@ const HistoryView = () => {
     const formatResult = (result) => {
         if (typeof result === 'object' && result !== null) {
             return Object.entries(result)
-                .map(([k, v]) => `${['npv', 'irr', 'mirr', 'pi'].includes(k) ? k.toUpperCase() : k}: ${typeof v === 'number' ? formatNum(v) : v}`)
+                .map(([k, v]) => {
+                    let label = k;
+                    if (['npv', 'irr', 'mirr', 'pi', 'fv', 'pv', 'pmt'].includes(k)) label = k.toUpperCase();
+                    if (k === 'totalInterest') label = 'Interest';
+                    return `${label}: ${typeof v === 'number' ? formatNum(v) : v}`;
+                })
                 .join(', ');
         }
         return formatNum(Number(result));
