@@ -3,8 +3,26 @@ import { calculateLoan, getAmortizationSchedule } from '../../utils/financial-ut
 import { useHistory } from '../../context/HistoryContext';
 import { List, X, FileText, FileSpreadsheet } from 'lucide-react';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
+import { CalculateIcon } from '../../components/Icons';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+
+const FREQUENCIES = [
+    { value: 1, label: 'Annually (1)' },
+    { value: 2, label: 'Semi-Annually (2)' },
+    { value: 4, label: 'Quarterly (4)' },
+    { value: 12, label: 'Monthly (12)' },
+    { value: 24, label: 'Semi-Monthly (24)' },
+    { value: 26, label: 'Bi-Weekly (26)' },
+    { value: 52, label: 'Weekly (52)' },
+    { value: 365, label: 'Daily (365)' },
+];
+
+const INPUT_FIELDS = [
+    { id: 'amount', label: 'Loan Amount', sub: 'Principal', decimals: 2 },
+    { id: 'rate', label: 'Interest Rate', sub: '% per year', decimals: 2 },
+    { id: 'years', label: 'Loan Term', sub: 'Years', decimals: 0 },
+];
 
 const LoanCalculator = () => {
     const { addToHistory } = useHistory();
@@ -22,37 +40,25 @@ const LoanCalculator = () => {
     const [showSchedule, setShowSchedule] = useState(false);
 
     const calculatePeriodsBetween = (d1, d2, freq) => {
-        const start = new Date(d1);
-        const end = new Date(d2);
+        const start = new Date(d1), end = new Date(d2);
         if (isNaN(start) || isNaN(end)) return 0;
 
-        const diffTime = Math.abs(end - start);
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-        if (freq === 365) return diffDays;
-        if (freq === 52) return Math.floor(diffDays / 7);
-        if (freq === 26) return Math.floor(diffDays / 14);
-
-        // Approximate for months/years
+        const diffDays = Math.ceil(Math.abs(end - start) / (1000 * 60 * 60 * 24));
         const months = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
-        if (freq === 12) return months;
-        if (freq === 24) return Math.floor(months * 2 + ((end.getDate() - start.getDate()) / 15));
-        if (freq === 4) return Math.floor(months / 3);
-        if (freq === 2) return Math.floor(months / 6);
-        if (freq === 1) return Math.floor(months / 12);
 
-        return months; // Fallback
+        const periodMap = {
+            365: diffDays, 52: Math.floor(diffDays / 7), 26: Math.floor(diffDays / 14),
+            12: months, 24: Math.floor(months * 2 + (end.getDate() - start.getDate()) / 15),
+            4: Math.floor(months / 3), 2: Math.floor(months / 6), 1: Math.floor(months / 12)
+        };
+        return periodMap[freq] ?? months;
     };
 
     const handleCalculate = () => {
         const termPeriods = values.years * values.frequency;
-        let pmtMade = values.paymentsMade;
-
-        if (useDates) {
-            pmtMade = calculatePeriodsBetween(values.startDate, values.futureDate, values.frequency);
-            // Clamp between 0 and term
-            pmtMade = Math.max(0, Math.min(pmtMade, termPeriods));
-        }
+        let pmtMade = useDates
+            ? Math.max(0, Math.min(calculatePeriodsBetween(values.startDate, values.futureDate, values.frequency), termPeriods))
+            : values.paymentsMade;
 
         const res = calculateLoan(values.amount, values.rate, values.years, pmtMade, values.frequency);
         setResult({ ...res, calculatedPayments: pmtMade });
@@ -60,110 +66,62 @@ const LoanCalculator = () => {
     };
 
     const handleChange = (field, val) => {
-        setValues(prev => ({
-            ...prev,
-            [field]: (field.includes('Date')) ? val : (parseFloat(val) || 0)
-        }));
+        setValues(prev => ({ ...prev, [field]: field.includes('Date') ? val : (parseFloat(val) || 0) }));
     };
 
     const schedule = result ? getAmortizationSchedule(values.amount, values.rate, values.years, values.frequency, values.startDate) : [];
-    const usedPayments = result ? result.calculatedPayments ?? values.paymentsMade : values.paymentsMade;
+    const usedPayments = result?.calculatedPayments ?? values.paymentsMade;
 
     const downloadCSV = () => {
         if (!schedule.length) return;
-
         const headers = ['Date', 'Period', 'Interest', 'Principal', 'Balance'];
-        const rows = schedule.map(row => [
-            row.date || '',
-            row.month,
-            row.interest.toFixed(2),
-            row.principal.toFixed(2),
-            row.balance.toFixed(2)
-        ]);
-
-        const csvContent = [
-            headers.join(','),
-            ...rows.map(row => row.join(','))
-        ].join('\n');
-
+        const rows = schedule.map(r => [r.date || '', r.month, r.interest.toFixed(2), r.principal.toFixed(2), r.balance.toFixed(2)]);
+        const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
-        if (link.download !== undefined) {
-            const url = URL.createObjectURL(blob);
-            link.setAttribute('href', url);
-            link.setAttribute('download', 'amortization_schedule.csv');
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
+        link.href = URL.createObjectURL(blob);
+        link.download = 'amortization_schedule.csv';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     };
 
     const downloadPDF = () => {
         if (!schedule.length) return;
-
         const doc = new jsPDF();
-
-        // Add Title
         doc.setTextColor(40);
         doc.setFontSize(18);
         doc.text("Amortization Schedule", 14, 22);
-
         doc.setFontSize(11);
         doc.setTextColor(100);
-        const details = `Loan Amount: $${values.amount.toLocaleString()} | Rate: ${values.rate}% | Term: ${values.years} Years`;
-        doc.text(details, 14, 30);
-
-        // Generate Table
-        const tableColumn = ["Date", "Period", "Interest", "Principal", "Balance"];
-        const tableRows = schedule.map(row => [
-            row.date || '-',
-            row.month,
-            `$${row.interest.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-            `$${row.principal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-            `$${row.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-        ]);
+        doc.text(`Loan Amount: $${values.amount.toLocaleString()} | Rate: ${values.rate}% | Term: ${values.years} Years`, 14, 30);
 
         autoTable(doc, {
-            head: [tableColumn],
-            body: tableRows,
+            head: [["Date", "Period", "Interest", "Principal", "Balance"]],
+            body: schedule.map(r => [r.date || '-', r.month,
+            `$${r.interest.toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
+            `$${r.principal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
+            `$${r.balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}`]),
             startY: 40,
             theme: 'grid',
             headStyles: { fillColor: [66, 66, 66], textColor: 255, fontStyle: 'bold' },
-            bodyStyles: { textColor: 50 },
             alternateRowStyles: { fillColor: [245, 245, 245] },
-            margin: { top: 40 }
         });
-
         doc.save("amortization_schedule.pdf");
     };
+
+    const formatCurrency = (val) => val.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
 
     return (
         <div className="flex flex-col h-full relative">
             <div className="flex justify-between items-start mb-6">
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-neutral-400 bg-clip-text text-transparent">
-                    Loan Calculator
-                </h1>
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-neutral-400 bg-clip-text text-transparent">Loan Calculator</h1>
                 <div className="flex flex-col items-end gap-2">
-                    <button
-                        onClick={() => setUseDates(!useDates)}
-                        className="text-[10px] font-bold uppercase tracking-tighter bg-neutral-800 border border-neutral-700 rounded-full px-3 py-1 text-primary-500 hover:bg-neutral-700 transition-all"
-                    >
+                    <button onClick={() => setUseDates(!useDates)} className="text-[10px] font-bold uppercase tracking-tighter bg-neutral-800 border border-neutral-700 rounded-full px-3 py-1 text-primary-500 hover:bg-neutral-700 transition-all">
                         {useDates ? 'Use Manual Count' : 'Use Dates'}
                     </button>
-                    <select
-                        value={values.frequency}
-                        onChange={(e) => handleChange('frequency', e.target.value)}
-                        className="bg-neutral-800 border border-neutral-700 rounded-lg px-2 py-0.5 text-[10px] font-bold text-neutral-300 focus:outline-none text-left appearance-none cursor-pointer hover:bg-neutral-700"
-                    >
-                        <option value={1}>Annually (1)</option>
-                        <option value={2}>Semi-Annually (2)</option>
-                        <option value={4}>Quarterly (4)</option>
-                        <option value={12}>Monthly (12)</option>
-                        <option value={24}>Semi-Monthly (24)</option>
-                        <option value={26}>Bi-Weekly (26)</option>
-                        <option value={52}>Weekly (52)</option>
-                        <option value={365}>Daily (365)</option>
+                    <select value={values.frequency} onChange={(e) => handleChange('frequency', e.target.value)} className="bg-neutral-800 border border-neutral-700 rounded-lg px-2 py-0.5 text-[10px] font-bold text-neutral-300 focus:outline-none">
+                        {FREQUENCIES.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
                     </select>
                 </div>
             </div>
@@ -172,47 +130,26 @@ const LoanCalculator = () => {
                 {!showSchedule ? (
                     <div className="flex flex-col h-full">
                         <div className="space-y-2 flex-1 overflow-y-auto pr-1 scrollbar-hide">
-                            {[
-                                { id: 'amount', label: 'Loan Amount', sub: 'Principal' },
-                                { id: 'rate', label: 'Interest Rate', sub: '% per year' },
-                                { id: 'years', label: 'Loan Term', sub: 'Years' },
-                            ].map(field => (
+                            {INPUT_FIELDS.map(field => (
                                 <div key={field.id} className="bg-neutral-800/50 rounded-xl p-3 border border-transparent hover:border-neutral-700 transition-all">
                                     <div className="flex justify-between items-center gap-4">
                                         <div className="flex flex-col shrink-0 items-start text-left">
                                             <label className="text-base font-bold text-neutral-300">{field.label}</label>
                                             <span className="text-[10px] uppercase tracking-wider text-neutral-500 font-semibold">{field.sub}</span>
                                         </div>
-                                        <FormattedNumberInput
-                                            value={values[field.id]}
-                                            onChange={(e) => handleChange(field.id, e.target.value)}
-                                            decimals={field.id === 'years' ? 0 : 2}
-                                            className="bg-transparent text-right text-xl font-mono text-white focus:outline-none w-full flex-1 placeholder-neutral-600"
-                                        />
+                                        <FormattedNumberInput value={values[field.id]} onChange={(e) => handleChange(field.id, e.target.value)} decimals={field.decimals} className="bg-transparent text-right text-xl font-mono text-white focus:outline-none w-full flex-1" />
                                     </div>
                                 </div>
                             ))}
 
                             {useDates ? (
                                 <div className="grid grid-cols-2 gap-2">
-                                    <div className="bg-neutral-800/50 rounded-xl p-3 border border-transparent hover:border-neutral-700 transition-all text-left">
-                                        <label className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold block mb-2">Start Date</label>
-                                        <input
-                                            type="date"
-                                            value={values.startDate}
-                                            onChange={(e) => handleChange('startDate', e.target.value)}
-                                            className="bg-transparent text-white text-sm font-mono focus:outline-none w-full"
-                                        />
-                                    </div>
-                                    <div className="bg-neutral-800/50 rounded-xl p-3 border border-transparent hover:border-neutral-700 transition-all text-left">
-                                        <label className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold block mb-2">Future Date</label>
-                                        <input
-                                            type="date"
-                                            value={values.futureDate}
-                                            onChange={(e) => handleChange('futureDate', e.target.value)}
-                                            className="bg-transparent text-white text-sm font-mono focus:outline-none w-full"
-                                        />
-                                    </div>
+                                    {[{ id: 'startDate', label: 'Start Date' }, { id: 'futureDate', label: 'Future Date' }].map(d => (
+                                        <div key={d.id} className="bg-neutral-800/50 rounded-xl p-3 border border-transparent hover:border-neutral-700 transition-all text-left">
+                                            <label className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold block mb-2">{d.label}</label>
+                                            <input type="date" value={values[d.id]} onChange={(e) => handleChange(d.id, e.target.value)} className="bg-transparent text-white text-sm font-mono focus:outline-none w-full" />
+                                        </div>
+                                    ))}
                                 </div>
                             ) : (
                                 <div className="bg-neutral-800/50 rounded-xl p-3 border border-transparent hover:border-neutral-700 transition-all">
@@ -221,12 +158,7 @@ const LoanCalculator = () => {
                                             <label className="text-base font-bold text-neutral-300">Payments Made</label>
                                             <span className="text-[10px] uppercase tracking-wider text-neutral-500 font-semibold">Count</span>
                                         </div>
-                                        <FormattedNumberInput
-                                            value={values.paymentsMade}
-                                            onChange={(e) => handleChange('paymentsMade', e.target.value)}
-                                            decimals={0}
-                                            className="bg-transparent text-right text-xl font-mono text-white focus:outline-none w-full flex-1 placeholder-neutral-600"
-                                        />
+                                        <FormattedNumberInput value={values.paymentsMade} onChange={(e) => handleChange('paymentsMade', e.target.value)} decimals={0} className="bg-transparent text-right text-xl font-mono text-white focus:outline-none w-full flex-1" />
                                     </div>
                                 </div>
                             )}
@@ -237,55 +169,30 @@ const LoanCalculator = () => {
                                 <div className="flex justify-between items-end mb-3">
                                     <div className="flex flex-col">
                                         <span className="text-sm font-medium text-neutral-400">Periodic Payment</span>
-                                        <button
-                                            onClick={() => setShowSchedule(true)}
-                                            className="text-[10px] text-primary-500 font-bold uppercase tracking-tighter flex items-center gap-1 mt-1 hover:text-primary-400 outline-none"
-                                        >
+                                        <button onClick={() => setShowSchedule(true)} className="text-[10px] text-primary-500 font-bold uppercase tracking-tighter flex items-center gap-1 mt-1 hover:text-primary-400">
                                             <List size={12} /> View Schedule
                                         </button>
                                     </div>
                                     <div className="text-right">
-                                        <span className="block text-3xl font-bold text-primary-500">
-                                            {result.monthlyPayment.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
-                                        </span>
-                                        {useDates && (
-                                            <span className="text-[10px] text-neutral-500 uppercase font-bold tracking-wider">
-                                                Based on {result.calculatedPayments} periods
-                                            </span>
-                                        )}
+                                        <span className="block text-3xl font-bold text-primary-500">{formatCurrency(result.monthlyPayment)}</span>
+                                        {useDates && <span className="text-[10px] text-neutral-500 uppercase font-bold tracking-wider">Based on {result.calculatedPayments} periods</span>}
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-2 text-xs">
-                                    <div className="flex flex-col gap-1">
-                                        <span className="text-neutral-500">Total Interest</span>
-                                        <span className="text-white font-mono">
-                                            {result.totalInterest.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
-                                        </span>
-                                    </div>
-                                    <div className="flex flex-col gap-1 text-right">
-                                        <span className="text-neutral-500">Total Cost</span>
-                                        <span className="text-white font-mono">
-                                            {result.totalPayment.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
-                                        </span>
-                                    </div>
+                                    <div className="flex flex-col gap-1"><span className="text-neutral-500">Total Interest</span><span className="text-white font-mono">{formatCurrency(result.totalInterest)}</span></div>
+                                    <div className="flex flex-col gap-1 text-right"><span className="text-neutral-500">Total Cost</span><span className="text-white font-mono">{formatCurrency(result.totalPayment)}</span></div>
                                     {result.outstandingBalance > 0 && (
                                         <div className="col-span-2 pt-2 border-t border-neutral-800 flex justify-between items-center mt-1">
                                             <span className="text-neutral-400">Outstanding Balance</span>
-                                            <span className="text-white font-mono font-bold text-base">
-                                                {result.outstandingBalance.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
-                                            </span>
+                                            <span className="text-white font-mono font-bold text-base">{formatCurrency(result.outstandingBalance)}</span>
                                         </div>
                                     )}
                                 </div>
                             </div>
                         )}
 
-                        <button
-                            onClick={handleCalculate}
-                            className="w-full bg-gradient-to-r from-primary-600 to-primary-500 text-neutral-900 font-black text-base py-3.5 rounded-xl shadow-lg shadow-primary-900/20 active:scale-[0.98] transition-all hover:brightness-110 flex items-center justify-center gap-2 uppercase tracking-widest"
-                        >
-                            <CalculateIcon className="w-5 h-5" />
-                            Calculate
+                        <button onClick={handleCalculate} className="w-full bg-gradient-to-r from-primary-600 to-primary-500 text-neutral-900 font-black text-base py-3.5 rounded-xl shadow-lg shadow-primary-900/20 active:scale-[0.98] transition-all hover:brightness-110 flex items-center justify-center gap-2 uppercase tracking-widest">
+                            <CalculateIcon className="w-5 h-5" /> Calculate
                         </button>
                     </div>
                 ) : (
@@ -293,27 +200,10 @@ const LoanCalculator = () => {
                         <div className="p-2 border-b border-neutral-800 flex justify-between items-center bg-neutral-900">
                             <h3 className="font-bold text-xs text-white uppercase tracking-wider">Amortization</h3>
                             <div className="flex items-center gap-1">
-                                <button
-                                    onClick={downloadCSV}
-                                    className="p-1 hover:bg-neutral-700 rounded-lg transition-colors text-neutral-400 hover:text-green-500"
-                                    title="Export CSV"
-                                >
-                                    <FileSpreadsheet size={16} />
-                                </button>
-                                <button
-                                    onClick={downloadPDF}
-                                    className="p-1 hover:bg-neutral-700 rounded-lg transition-colors text-neutral-400 hover:text-red-500"
-                                    title="Export PDF"
-                                >
-                                    <FileText size={16} />
-                                </button>
-                                <div className="w-px h-4 bg-neutral-700 mx-1"></div>
-                                <button
-                                    onClick={() => setShowSchedule(false)}
-                                    className="p-1 hover:bg-neutral-700 rounded-full transition-colors"
-                                >
-                                    <X size={16} className="text-neutral-500" />
-                                </button>
+                                <button onClick={downloadCSV} className="p-1 hover:bg-neutral-700 rounded-lg transition-colors text-neutral-400 hover:text-green-500" title="Export CSV"><FileSpreadsheet size={16} /></button>
+                                <button onClick={downloadPDF} className="p-1 hover:bg-neutral-700 rounded-lg transition-colors text-neutral-400 hover:text-red-500" title="Export PDF"><FileText size={16} /></button>
+                                <div className="w-px h-4 bg-neutral-700 mx-1" />
+                                <button onClick={() => setShowSchedule(false)} className="p-1 hover:bg-neutral-700 rounded-full transition-colors"><X size={16} className="text-neutral-500" /></button>
                             </div>
                         </div>
                         <div className="flex-1 overflow-auto scrollbar-hide">
@@ -330,12 +220,12 @@ const LoanCalculator = () => {
                                     {schedule.map((row) => (
                                         <tr key={row.month} className={`hover:bg-neutral-800/30 transition-colors ${row.month <= usedPayments ? 'opacity-50' : ''}`}>
                                             <td className="px-1 py-2 font-mono text-neutral-400 whitespace-nowrap">
-                                                {row.date && (<span className="text-white font-bold mr-1">{row.date}</span>)}
+                                                {row.date && <span className="text-white font-bold mr-1">{row.date}</span>}
                                                 <span className="text-neutral-600">({row.month})</span>
                                             </td>
-                                            <td className="px-1 py-2 font-mono text-right text-neutral-400">{row.interest.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                                            <td className="px-1 py-2 font-mono text-right text-neutral-400">{row.principal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                                            <td className="px-1 py-2 font-mono text-emerald-500 font-bold text-right">{row.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                            <td className="px-1 py-2 font-mono text-right text-neutral-400">{row.interest.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+                                            <td className="px-1 py-2 font-mono text-right text-neutral-400">{row.principal.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+                                            <td className="px-1 py-2 font-mono text-emerald-500 font-bold text-right">{row.balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -347,27 +237,5 @@ const LoanCalculator = () => {
         </div>
     );
 };
-
-// Simple icon for the button
-const CalculateIcon = ({ className }) => (
-    <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2.5"
-        className={className}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-    >
-        <rect x="4" y="2" width="16" height="20" rx="2" />
-        <line x1="8" y1="6" x2="16" y2="6" />
-        <line x1="16" y1="14" x2="16" y2="14" />
-        <line x1="8" y1="14" x2="8" y2="14" />
-        <line x1="12" y1="14" x2="12" y2="14" />
-        <line x1="16" y1="18" x2="16" y2="18" />
-        <line x1="8" y1="18" x2="8" y2="18" />
-        <line x1="12" y1="18" x2="12" y2="18" />
-    </svg>
-);
 
 export default LoanCalculator;

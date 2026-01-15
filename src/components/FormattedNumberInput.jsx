@@ -1,15 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-const FormattedNumberInput = ({ value, onChange, className, placeholder, decimals = 2, forceFixedOnFocus = false, ...props }) => {
+const FormattedNumberInput = ({
+    value,
+    onChange,
+    className,
+    placeholder,
+    decimals = 2,
+    forceFixedOnFocus = false,
+    ...props
+}) => {
     const [displayValue, setDisplayValue] = useState('');
     const [isFocused, setIsFocused] = useState(false);
     const inputRef = useRef(null);
 
-    // Format number with commas
     const formatNumber = (num) => {
-        if (num === null || num === undefined || num === '') return '';
-        if (isNaN(num)) return '';
-        // Use Intl.NumberFormat for locale-aware formatting
+        if (num === null || num === undefined || num === '' || isNaN(num)) return '';
         return new Intl.NumberFormat('en-US', {
             minimumFractionDigits: decimals,
             maximumFractionDigits: decimals
@@ -17,40 +22,23 @@ const FormattedNumberInput = ({ value, onChange, className, placeholder, decimal
     };
 
     useEffect(() => {
-        // Update display value when value prop changes and not focused
-        if (!isFocused) {
-            setDisplayValue(formatNumber(value));
-        }
-    }, [value, isFocused]);
+        if (!isFocused) setDisplayValue(formatNumber(value));
+    }, [value, isFocused, decimals]);
 
     const handleFocus = (e) => {
         setIsFocused(true);
-        // Show raw value for editing
         if (value !== null && value !== undefined && !isNaN(value)) {
-            if (forceFixedOnFocus) {
-                setDisplayValue(parseFloat(value).toFixed(decimals));
-            } else {
-                setDisplayValue(value.toString());
-            }
+            setDisplayValue(forceFixedOnFocus ? parseFloat(value).toFixed(decimals) : value.toString());
         } else {
             setDisplayValue('');
         }
-        props.onFocus && props.onFocus(e);
+        props.onFocus?.(e);
     };
 
     const handleBlur = (e) => {
         setIsFocused(false);
-        // Format on blur
         setDisplayValue(formatNumber(value));
-        props.onBlur && props.onBlur(e);
-    };
-
-    const handleChange = (e) => {
-        const val = e.target.value;
-        setDisplayValue(val);
-        // Pass the event up. The parent will likely handle parsing.
-        // We ensure the structure mimics a standard event
-        onChange(e);
+        props.onBlur?.(e);
     };
 
     return (
@@ -59,7 +47,7 @@ const FormattedNumberInput = ({ value, onChange, className, placeholder, decimal
             ref={inputRef}
             type={isFocused ? "number" : "text"}
             value={displayValue}
-            onChange={handleChange}
+            onChange={(e) => { setDisplayValue(e.target.value); onChange(e); }}
             onFocus={handleFocus}
             onBlur={handleBlur}
             className={className}
