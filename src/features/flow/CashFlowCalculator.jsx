@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { calculateNPV, calculateIRR, calculateMIRR, calculatePaybackPeriod, calculateDiscountedPaybackPeriod } from '../../utils/financial-utils';
 import { useHistory } from '../../context/HistoryContext';
-import { Plus, Trash2, Info } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
 
 const CashFlowCalculator = () => {

@@ -34,13 +34,7 @@ const RateConverter = () => {
         addToHistory('RATES', { nominal, compounding, doublingTime: { years, months, days } }, res);
     };
 
-    // const frequencies = [
-    //     { n: 1, label: 'Annually' },
-    //     { n: 2, label: 'Semiannually' },
-    //     { n: 4, label: 'Quarterly' },
-    //     { n: 12, label: 'Monthly' },
-    //     { n: 365, label: 'Daily' },
-    // ];
+
 
     const frequencies = [
         { n: 1, label: 'Annually' },
