@@ -33,7 +33,7 @@ const LoanCalculator = () => {
         years: 15,
         frequency: 12,
         paymentsMade: 0,
-        startDate: '2018-08-01',
+        startDate: '2018-07-01',
         futureDate: new Date().toISOString().split('T')[0]
     });
     const [result, setResult] = useState(null);
@@ -284,9 +284,9 @@ const LoanCalculator = () => {
                                                 {row.date && <span className="text-white font-bold mr-1">{row.date}</span>}
                                                 <span className="text-neutral-600">({row.month})</span>
                                             </td>
-                                            <td className="px-1 py-2 font-mono text-right text-neutral-400">{row.interest.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
-                                            <td className="px-1 py-2 font-mono text-right text-neutral-400">{row.principal.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
-                                            <td className="px-1 py-2 font-mono text-emerald-500 font-bold text-right">{row.balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+                                            <td className="px-1 py-2 font-mono text-right text-neutral-400">{row.interest.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                            <td className="px-1 py-2 font-mono text-right text-neutral-400">{row.principal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                            <td className="px-1 py-2 font-mono text-emerald-500 font-bold text-right">{row.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                                         </tr>
                                     ))}
                                 </tbody>
