@@ -335,7 +335,10 @@ export const getAmortizationSchedule = (amount, rate, termYears, frequency = 12,
 
         let dateStr = '';
         if (startDate) {
-            // Logic to increment date
+            // Format the current date FIRST (so first payment starts on start date)
+            dateStr = currentDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+
+            // THEN increment date for the next iteration
             // This is a simple approximation. For rigorous financial calc, libraries like date-fns or moment might be better but we stick to vanilla JS.
             if (frequency === 12) {
                 currentDate.setMonth(currentDate.getMonth() + 1);
@@ -353,32 +356,17 @@ export const getAmortizationSchedule = (amount, rate, termYears, frequency = 12,
                 currentDate.setDate(currentDate.getDate() + 1);
             } else if (frequency === 24) {
                 // Semi-monthly: 1st and 15th logic or simple 15/16 day split
-                // Sticking to 15 days approx for schedule generation simply
-                // Or better: if day <= 15, set to 15. If > 15, set to 1st of next month.
-                // But simplified for iteration:
                 const d = currentDate.getDate();
                 if (d <= 15) {
-                    // move to 15th
-                    // If we are on 1st, go to 15th. 
-                    // If we are on 15th, go to 1st of next month?
-                    // Amortization usually implies equal intervals. 24 times a year is exactly half-month?
-                    // Let's us simple +15 days approx, but that drifts.
-                    // Better: "Semi-monthly" usually means 2 fixed dates (e.g. 1st and 15th).
                     if (d < 15) currentDate.setDate(15);
                     else {
                         currentDate.setMonth(currentDate.getMonth() + 1);
                         currentDate.setDate(1);
                     }
                 } else {
-                    // If > 15 (e.g. started on 20th), go to next month's 15th?
-                    // Let's assume standard starts 1st or 15th.
-                    // Fallback to simple +15 days helps if start date is weird.
                     currentDate.setDate(currentDate.getDate() + 15);
                 }
             }
-
-            // Format: "MMM yyyy"
-            dateStr = currentDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
         }
 
         schedule.push({
