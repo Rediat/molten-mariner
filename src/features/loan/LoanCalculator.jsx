@@ -78,7 +78,8 @@ const LoanCalculator = () => {
         const rows = schedule.map(r => [r.date || '', r.month, r.interest.toFixed(2), r.principal.toFixed(2), r.balance.toFixed(2)]);
         const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const fileName = 'amortization_schedule.csv';
+        const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace('T', '_').slice(0, 15);
+        const fileName = `amortization_schedule_${timestamp}.csv`;
 
         // Try Web Share API first (works on Android)
         if (navigator.share && navigator.canShare) {
@@ -135,7 +136,8 @@ const LoanCalculator = () => {
             alternateRowStyles: { fillColor: [245, 245, 245] },
         });
 
-        const fileName = 'amortization_schedule.pdf';
+        const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace('T', '_').slice(0, 15);
+        const fileName = `amortization_schedule_${timestamp}.pdf`;
         const pdfBlob = doc.output('blob');
 
         // Try Web Share API first (works on Android)
