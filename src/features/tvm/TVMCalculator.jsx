@@ -169,7 +169,7 @@ const TVMCalculator = () => {
     const handleInterestInput = (val) => {
         const cleanVal = typeof val === 'string' ? val.replace(/,/g, '') : val;
         const newInterest = parseFloat(cleanVal);
-        setTotalInterest(isNaN(newInterest) ? null : newInterest);
+        setTotalInterest(isNaN(newInterest) ? 0 : newInterest);
         setCalculatedValue(null);
     };
 
