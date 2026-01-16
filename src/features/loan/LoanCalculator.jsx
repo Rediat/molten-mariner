@@ -72,6 +72,12 @@ const LoanCalculator = () => {
     const schedule = result ? getAmortizationSchedule(values.amount, values.rate, values.years, values.frequency, values.startDate) : [];
     const usedPayments = result?.calculatedPayments ?? values.paymentsMade;
 
+    // Detect if running on Windows desktop (to skip Web Share API which freezes in Edge)
+    const isWindowsDesktop = () => {
+        const ua = navigator.userAgent;
+        return ua.includes('Windows') && !ua.includes('Mobile');
+    };
+
     const downloadCSV = async () => {
         if (!schedule.length) return;
         const headers = ['Date', 'Period', 'Interest', 'Principal', 'Balance'];
@@ -81,8 +87,8 @@ const LoanCalculator = () => {
         const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace('T', '_').slice(0, 15);
         const fileName = `amortization_schedule_${timestamp}.csv`;
 
-        // Try Web Share API first (works on Android)
-        if (navigator.share && navigator.canShare) {
+        // Try Web Share API first (works on Android, but skip on Windows desktop to avoid Edge freeze)
+        if (!isWindowsDesktop() && navigator.share && navigator.canShare) {
             const file = new File([blob], fileName, { type: 'text/csv' });
             if (navigator.canShare({ files: [file] })) {
                 try {
@@ -97,7 +103,7 @@ const LoanCalculator = () => {
             }
         }
 
-        // Fallback: Create download link
+        // Direct download method (works reliably on all desktop browsers including Edge)
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
@@ -140,8 +146,8 @@ const LoanCalculator = () => {
         const fileName = `amortization_schedule_${timestamp}.pdf`;
         const pdfBlob = doc.output('blob');
 
-        // Try Web Share API first (works on Android)
-        if (navigator.share && navigator.canShare) {
+        // Try Web Share API first (works on Android, but skip on Windows desktop to avoid Edge freeze)
+        if (!isWindowsDesktop() && navigator.share && navigator.canShare) {
             const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
             if (navigator.canShare({ files: [file] })) {
                 try {
