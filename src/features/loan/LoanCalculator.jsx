@@ -72,21 +72,48 @@ const LoanCalculator = () => {
     const schedule = result ? getAmortizationSchedule(values.amount, values.rate, values.years, values.frequency, values.startDate) : [];
     const usedPayments = result?.calculatedPayments ?? values.paymentsMade;
 
-    const downloadCSV = () => {
+    const downloadCSV = async () => {
         if (!schedule.length) return;
         const headers = ['Date', 'Period', 'Interest', 'Principal', 'Balance'];
         const rows = schedule.map(r => [r.date || '', r.month, r.interest.toFixed(2), r.principal.toFixed(2), r.balance.toFixed(2)]);
         const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const fileName = 'amortization_schedule.csv';
+
+        // Try Web Share API first (works on Android)
+        if (navigator.share && navigator.canShare) {
+            const file = new File([blob], fileName, { type: 'text/csv' });
+            if (navigator.canShare({ files: [file] })) {
+                try {
+                    await navigator.share({
+                        files: [file],
+                        title: 'Amortization Schedule',
+                    });
+                    return;
+                } catch (err) {
+                    if (err.name === 'AbortError') return; // User cancelled
+                }
+            }
+        }
+
+        // Fallback: Create download link
+        const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = 'amortization_schedule.csv';
+        link.href = url;
+        link.download = fileName;
+        link.style.display = 'none';
         document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+
+        // Use setTimeout to ensure the click registers on mobile
+        setTimeout(() => {
+            link.click();
+            document.body.removeChild(link);
+            // Clean up the blob URL after a delay
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }, 100);
     };
 
-    const downloadPDF = () => {
+    const downloadPDF = async () => {
         if (!schedule.length) return;
         const doc = new jsPDF();
         doc.setTextColor(40);
@@ -107,7 +134,41 @@ const LoanCalculator = () => {
             headStyles: { fillColor: [66, 66, 66], textColor: 255, fontStyle: 'bold' },
             alternateRowStyles: { fillColor: [245, 245, 245] },
         });
-        doc.save("amortization_schedule.pdf");
+
+        const fileName = 'amortization_schedule.pdf';
+        const pdfBlob = doc.output('blob');
+
+        // Try Web Share API first (works on Android)
+        if (navigator.share && navigator.canShare) {
+            const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
+            if (navigator.canShare({ files: [file] })) {
+                try {
+                    await navigator.share({
+                        files: [file],
+                        title: 'Amortization Schedule',
+                    });
+                    return;
+                } catch (err) {
+                    if (err.name === 'AbortError') return; // User cancelled
+                }
+            }
+        }
+
+        // Fallback: Create download link
+        const url = URL.createObjectURL(pdfBlob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = fileName;
+        link.style.display = 'none';
+        document.body.appendChild(link);
+
+        // Use setTimeout to ensure the click registers on mobile
+        setTimeout(() => {
+            link.click();
+            document.body.removeChild(link);
+            // Clean up the blob URL after a delay
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }, 100);
     };
 
     const formatCurrency = (val) => val.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
