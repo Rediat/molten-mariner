@@ -260,9 +260,32 @@ const LoanCalculator = () => {
                             </div>
                         )}
 
-                        <button onClick={handleCalculate} className="w-full bg-gradient-to-r from-primary-600 to-primary-500 text-neutral-900 font-black text-base py-3.5 rounded-xl shadow-lg shadow-primary-900/20 active:scale-[0.98] transition-all hover:brightness-110 flex items-center justify-center gap-2 uppercase tracking-widest">
-                            <CalculateIcon className="w-5 h-5" /> Calculate
-                        </button>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => {
+                                    setValues({
+                                        amount: 0,
+                                        rate: 0,
+                                        years: 0,
+                                        frequency: 12,
+                                        paymentsMade: 0,
+                                        startDate: new Date().toISOString().split('T')[0],
+                                        futureDate: new Date().toISOString().split('T')[0]
+                                    });
+                                    setResult(null);
+                                }}
+                                className="w-1/4 bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-sm py-3.5 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center gap-1.5 uppercase tracking-wider"
+                                title="Clear all values"
+                            >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                                CLR
+                            </button>
+                            <button onClick={handleCalculate} className="flex-1 bg-gradient-to-r from-primary-600 to-primary-500 text-neutral-900 font-black text-base py-3.5 rounded-xl shadow-lg shadow-primary-900/20 active:scale-[0.98] transition-all hover:brightness-110 flex items-center justify-center gap-2 uppercase tracking-widest">
+                                <CalculateIcon className="w-5 h-5" /> Calculate
+                            </button>
+                        </div>
                     </div>
                 ) : (
                     <div className="absolute inset-y-0 -left-2 -right-2 bg-[#1a1a1a] rounded-2xl border border-neutral-800 overflow-hidden animate-in fade-in zoom-in-95 duration-200 z-50 shadow-2xl flex flex-col">
