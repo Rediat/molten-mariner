@@ -15,11 +15,19 @@ export const calculateTVM = (target, values, mode = 'END', frequency = 12, inter
         r = (i / 100) / py;
     } else {
         // Compound Interest
-        // 1. Calculate Periodic Rate for compounding period
+        // When CY != PY, we need to find the effective rate per payment period
+        // 
+        // Standard approach (used by financial calculators like TI BA II+):
+        // 1. Convert nominal annual rate to effective annual rate using CY
+        //    EAR = (1 + i/CY)^CY - 1
+        // 2. Convert EAR to rate per payment period
+        //    r = (1 + EAR)^(1/PY) - 1
+        // 
+        // Combined formula: r = (1 + i/CY)^(CY/PY) - 1
+
         const r_periodic = (i / 100) / cy;
 
-        // 2. Convert to Effective Rate per Payment Period
-        // formula: r_eff = ((1 + r_periodic) ^ (CY / PY)) - 1
+        // Convert to Effective Rate per Payment Period
         r = Math.pow(1 + r_periodic, cy / py) - 1;
     }
 
