@@ -59,7 +59,7 @@ const TVMCalculator = () => {
 
     const [values, setValues] = useState(DEFAULT_VALUES);
     const [calculatedValue, setCalculatedValue] = useState(null);
-    const [totalInterest, setTotalInterest] = useState(null);
+    const [totalInterest, setTotalInterest] = useState(0);
 
     // Determine effective sign for TI based on context
     const getEffectiveTI = (ti, calcValues, targetField) => {
@@ -101,7 +101,7 @@ const TVMCalculator = () => {
             const effectiveCY = showAdvanced ? compoundingFrequency : frequency;
             let result;
             let calcValues = { ...values };
-            const useTIConstraint = totalInterest !== null && target !== 'totalInterest';
+            const useTIConstraint = totalInterest !== null && totalInterest !== 0 && target !== 'totalInterest';
 
             if (useTIConstraint) {
                 const effectiveTI = getEffectiveTI(totalInterest, calcValues, target);
@@ -187,8 +187,12 @@ const TVMCalculator = () => {
     const getDisplayValue = (field) => {
         if (field === 'n' && nMode === 'YEARS') return values.n / frequency;
         if (field === 'totalInterest') return totalInterest;
+        if (field === 'totalPMT') return totalPMT;
         return values[field];
     };
+
+    // Calculate Total PMT (PMT × N)
+    const totalPMT = values.pmt * values.n;
 
     // Field definitions
     const fields = [
@@ -198,6 +202,7 @@ const TVMCalculator = () => {
         { id: 'pmt', label: 'PMT', sub: 'Payment' },
         { id: 'fv', label: 'FV', sub: 'Fut Val' },
         { id: 'totalInterest', label: 'TI', sub: 'Total Interest' },
+        { id: 'totalPMT', label: 'ΣPmt', sub: 'Total PMT (PMT × N)', isReadOnly: true },
     ];
 
     return (
@@ -267,7 +272,7 @@ const TVMCalculator = () => {
 
             {/* Target Selector */}
             <div className="flex gap-1 bg-neutral-900/50 p-1 rounded-xl mb-4 overflow-x-auto scrollbar-hide">
-                {fields.map(field => (
+                {fields.filter(f => !f.isReadOnly).map(field => (
                     <button
                         key={field.id}
                         onClick={() => setTarget(field.id)}
@@ -281,11 +286,11 @@ const TVMCalculator = () => {
             {/* Inputs */}
             <div className="space-y-2 flex-1">
                 {fields.map(field => (
-                    <div key={field.id} className={`group relative bg-neutral-800/40 rounded-xl p-3 transition-all duration-300 border ${target === field.id ? 'border-primary-500/50 ring-1 ring-primary-500/10 bg-neutral-800/60' : 'border-transparent hover:border-neutral-700'}`}>
+                    <div key={field.id} className={`group relative bg-neutral-800/40 rounded-xl p-3 transition-all duration-300 border ${field.isReadOnly ? 'border-neutral-700/50 bg-neutral-900/30' : target === field.id ? 'border-primary-500/50 ring-1 ring-primary-500/10 bg-neutral-800/60' : 'border-transparent hover:border-neutral-700'}`}>
                         <div className="flex justify-between items-center gap-4">
                             <div className="flex flex-col items-start text-left">
                                 <div className="flex items-center gap-2">
-                                    <label className={`text-sm font-bold transition-colors ${target === field.id ? 'text-primary-400' : 'text-neutral-300'}`}>
+                                    <label className={`text-sm font-bold transition-colors ${field.isReadOnly ? 'text-neutral-500' : target === field.id ? 'text-primary-400' : 'text-neutral-300'}`}>
                                         {field.label}
                                     </label>
                                     {field.hasNToggle && (
@@ -300,7 +305,11 @@ const TVMCalculator = () => {
                                 <span className="text-[9px] uppercase tracking-tighter text-neutral-500 font-bold">{field.sub}</span>
                             </div>
                             <div className="relative flex-1">
-                                {target === field.id && calculatedValue === null ? (
+                                {field.isReadOnly ? (
+                                    <span className="block text-right text-lg font-mono text-neutral-400 w-full">
+                                        {getDisplayValue(field.id)?.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    </span>
+                                ) : target === field.id && calculatedValue === null ? (
                                     <span className="text-neutral-600 italic text-xs font-bold px-2">CALC...</span>
                                 ) : (
                                     <FormattedNumberInput
