@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { calculateTVM } from '../../utils/financial-utils';
 import { useHistory } from '../../context/HistoryContext';
-import { Settings2 } from 'lucide-react';
+import { Settings2, Info } from 'lucide-react';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
 import { CalculateIcon } from '../../components/Icons';
 
@@ -56,6 +56,7 @@ const TVMCalculator = () => {
     const [showAdvanced, setShowAdvanced] = useState(false);
     const [nMode, setNMode] = useState('YEARS');
     const [interestType, setInterestType] = useState('COMPOUND');
+    const [showExplanation, setShowExplanation] = useState(false);
 
     const [values, setValues] = useState(DEFAULT_VALUES);
     const [calculatedValue, setCalculatedValue] = useState(null);
@@ -218,6 +219,13 @@ const TVMCalculator = () => {
                 <div className="flex flex-col items-end gap-1.5">
                     <div className="flex gap-1.5">
                         <button
+                            onClick={() => setShowExplanation(!showExplanation)}
+                            className={`flex items-center justify-center p-1 rounded-full transition-all ${showExplanation ? 'bg-primary-600/20 text-primary-400 ring-1 ring-primary-500/50' : 'bg-neutral-800 text-neutral-500 hover:bg-neutral-700'}`}
+                            title="Show Info"
+                        >
+                            <Info className="w-3 h-3" />
+                        </button>
+                        <button
                             onClick={() => {
                                 setShowAdvanced(!showAdvanced);
                                 if (showAdvanced) {
@@ -269,6 +277,18 @@ const TVMCalculator = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Explanation Panel */}
+            {showExplanation && (
+                <div className="bg-gradient-to-r from-primary-900/30 to-neutral-800/50 border border-primary-500/30 rounded-xl p-3 mb-4 text-xs text-neutral-300 text-left">
+                    <p className="font-bold text-primary-400 mb-1">Time Value of Money (TVM)</p>
+                    <p className="text-[11px] leading-relaxed">
+                        Solve for any variable in the TVM equation: N (periods), I/Y (interest rate),
+                        PV (present value), PMT (payment), or FV (future value). Supports both
+                        compound and simple interest with customizable payment frequencies.
+                    </p>
+                </div>
+            )}
 
             {/* Target Selector */}
             <div className="flex gap-1 bg-neutral-900/50 p-1 rounded-xl mb-4 overflow-x-auto scrollbar-hide">

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { calculateBond, calculateBondYTM, calculateBondYTC, calculateBondDuration, calculateBondConvexity } from '../../utils/financial-utils';
 import { useHistory } from '../../context/HistoryContext';
+import { Info } from 'lucide-react';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
 import { CalculateIcon } from '../../components/Icons';
 
@@ -12,6 +13,7 @@ const BondCalculator = () => {
     });
     const [result, setResult] = useState(null);
     const [metrics, setMetrics] = useState(null);
+    const [showExplanation, setShowExplanation] = useState(false);
 
     const handleCalculate = () => {
         const { faceValue, couponRate, ytm, price, years, frequency, callPrice, yearsToCall } = values;
@@ -46,19 +48,28 @@ const BondCalculator = () => {
 
     return (
         <div className="flex flex-col h-full">
-            <div className="flex justify-between items-start mb-6">
+            <div className="flex justify-between items-start mb-4">
                 <div>
                     <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-neutral-400 bg-clip-text text-transparent">Bond Pricing</h1>
                     <p className="text-neutral-500 text-sm font-medium">Valuation & Yield</p>
                 </div>
                 <div className="flex flex-col items-end gap-2">
-                    <div className="bg-neutral-800 p-1 rounded-xl flex">
-                        {['price', 'ytm'].map(t => (
-                            <button key={t} onClick={() => { setTarget(t); setResult(null); setMetrics(null); }}
-                                className={`px-3 py-1 text-[10px] font-bold rounded-lg transition-all ${target === t ? 'bg-neutral-700 text-white shadow' : 'text-neutral-500'}`}>
-                                {t.toUpperCase()}
-                            </button>
-                        ))}
+                    <div className="flex gap-1.5">
+                        <button
+                            onClick={() => setShowExplanation(!showExplanation)}
+                            className={`flex items-center justify-center p-1 rounded-full transition-all ${showExplanation ? 'bg-primary-600/20 text-primary-400 ring-1 ring-primary-500/50' : 'bg-neutral-800 text-neutral-500 hover:bg-neutral-700'}`}
+                            title="Show Info"
+                        >
+                            <Info className="w-3 h-3" />
+                        </button>
+                        <div className="bg-neutral-800 p-1 rounded-xl flex">
+                            {['price', 'ytm'].map(t => (
+                                <button key={t} onClick={() => { setTarget(t); setResult(null); setMetrics(null); }}
+                                    className={`px-3 py-1 text-[10px] font-bold rounded-lg transition-all ${target === t ? 'bg-neutral-700 text-white shadow' : 'text-neutral-500'}`}>
+                                    {t.toUpperCase()}
+                                </button>
+                            ))}
+                        </div>
                     </div>
                     <div className="bg-neutral-800 p-1 rounded-xl flex">
                         {[{ val: 1, label: 'ANNUAL' }, { val: 2, label: 'SEMI' }].map(opt => (
@@ -70,6 +81,17 @@ const BondCalculator = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Explanation Panel */}
+            {showExplanation && (
+                <div className="bg-gradient-to-r from-primary-900/30 to-neutral-800/50 border border-primary-500/30 rounded-xl p-3 mb-4 text-xs text-neutral-300 text-left">
+                    <p className="font-bold text-primary-400 mb-1">Bond Valuation</p>
+                    <p className="text-[11px] leading-relaxed">
+                        Calculate bond prices or Yield to Maturity (YTM). Includes Duration (Macaulay & Modified),
+                        Convexity, and Yield to Call (YTC) for callable bonds.
+                    </p>
+                </div>
+            )}
 
             <div className="space-y-1 flex-1 overflow-y-auto pr-1 scrollbar-hide">
                 {inputFields.map(field => (

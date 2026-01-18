@@ -8,6 +8,7 @@ import LoanCalculator from './features/loan/LoanCalculator';
 import CashFlowCalculator from './features/flow/CashFlowCalculator';
 import BondCalculator from './features/bond/BondCalculator';
 import RateConverter from './features/rates/RateConverter';
+import GoalPlanner from './features/goal/GoalPlanner';
 import HistoryView from './features/history/HistoryView';
 
 function App() {
@@ -30,6 +31,9 @@ function App() {
                 </div>
                 <div className={activeTab === 'rates' ? 'block h-full' : 'hidden'}>
                     <RateConverter />
+                </div>
+                <div className={activeTab === 'goal' ? 'block h-full' : 'hidden'}>
+                    <GoalPlanner />
                 </div>
                 <div className={activeTab === 'history' ? 'block h-full' : 'hidden'}>
                     <HistoryView />
