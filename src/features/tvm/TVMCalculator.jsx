@@ -251,7 +251,7 @@ const TVMCalculator = () => {
                             {mode}
                         </button>
                     </div>
-                    <div className="flex gap-1.5">
+                    <div className="flex flex-col items-end gap-1.5">
                         <select
                             value={frequency}
                             onChange={(e) => handleFrequencyChange(Number(e.target.value))}
