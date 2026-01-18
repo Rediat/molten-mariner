@@ -71,6 +71,7 @@ const GoalPlanner = () => {
             let calculatedPMT = 0;
             let totalContributions = 0;
             let totalInterestEarned = 0;
+            let exceedsSuggestion = null;
 
             if (solveMode === 'pmt') {
                 // Solve for PMT only (PV = 0)
@@ -87,29 +88,41 @@ const GoalPlanner = () => {
                 if (knownPV > 0 && knownPMT === 0) {
                     // User specified PV, solve for PMT
                     calculatedPV = knownPV;
-                    const remainingFV = targetFV - (calculatedPV * fvFactorPV);
-                    calculatedPMT = remainingFV > 0 ? remainingFV / fvFactorPMT : 0;
-                    totalContributions = calculatedPV + (calculatedPMT * n);
+                    const pvContributionToFV = calculatedPV * fvFactorPV;
+                    if (pvContributionToFV >= targetFV) {
+                        // PV alone exceeds target - no PMT needed
+                        calculatedPMT = 0;
+                        totalContributions = calculatedPV;
+                    } else {
+                        const remainingFV = targetFV - pvContributionToFV;
+                        calculatedPMT = remainingFV / fvFactorPMT;
+                        totalContributions = calculatedPV + (calculatedPMT * n);
+                    }
                 } else if (knownPMT > 0 && knownPV === 0) {
                     // User specified PMT, solve for PV
                     calculatedPMT = knownPMT;
                     const pmtContributionToFV = calculatedPMT * fvFactorPMT;
-                    calculatedPV = pmtContributionToFV < targetFV
-                        ? (targetFV - pmtContributionToFV) / fvFactorPV
-                        : 0;
-                    totalContributions = calculatedPV + (calculatedPMT * n);
+                    if (pmtContributionToFV >= targetFV) {
+                        // PMT alone exceeds or meets target - no PV needed
+                        calculatedPV = 0;
+                        totalContributions = calculatedPMT * n;
+                        // Calculate what they'll actually get and what PMT they'd need
+                        const actualFV = pmtContributionToFV;
+                        const optimalPMT = targetFV / fvFactorPMT;
+                        exceedsSuggestion = {
+                            type: 'pmt_exceeds',
+                            actualFV,
+                            optimalPMT,
+                            currentPMT: knownPMT,
+                            actualInterest: actualFV - totalContributions,
+                            interestPercent: ((actualFV - totalContributions) / actualFV * 100).toFixed(0)
+                        };
+                    } else {
+                        calculatedPV = (targetFV - pmtContributionToFV) / fvFactorPV;
+                        totalContributions = calculatedPV + (calculatedPMT * n);
+                    }
                 } else if (pvRatio > 0 && pvRatio < 100) {
                     // Use ratio: pvRatio% comes from PV, (100-pvRatio)% from PMT contributions
-                    // We need to solve: PV * fvFactorPV + PMT * fvFactorPMT = targetFV
-                    // And: PV / (PV + PMT*n) = pvRatio/100
-                    // This is a system of equations. Let's solve it:
-                    // Let totalContrib = PV + PMT*n
-                    // PV = totalContrib * (pvRatio/100)
-                    // PMT = totalContrib * (1 - pvRatio/100) / n
-                    // Substitute into FV equation:
-                    // totalContrib * (pvRatio/100) * fvFactorPV + totalContrib * (1-pvRatio/100)/n * fvFactorPMT = targetFV
-                    // totalContrib * [(pvRatio/100)*fvFactorPV + (1-pvRatio/100)/n * fvFactorPMT] = targetFV
-
                     const pvPortion = pvRatio / 100;
                     const pmtPortion = 1 - pvPortion;
                     const combinedFactor = (pvPortion * fvFactorPV) + ((pmtPortion / n) * fvFactorPMT);
@@ -118,11 +131,6 @@ const GoalPlanner = () => {
                     calculatedPMT = (totalContributions * pmtPortion) / n;
                 } else {
                     // Default: Equal weight to PV and total PMT contributions
-                    // PV = PMT * n (total contributions split 50/50)
-                    // Solve: PV * fvFactorPV + PMT * fvFactorPMT = targetFV
-                    // And: PV = PMT * n
-                    // Substitute: PMT * n * fvFactorPV + PMT * fvFactorPMT = targetFV
-                    // PMT * (n * fvFactorPV + fvFactorPMT) = targetFV
                     const combinedFactor = (n * fvFactorPV) + fvFactorPMT;
                     calculatedPMT = targetFV / combinedFactor;
                     calculatedPV = calculatedPMT * n;
@@ -147,7 +155,8 @@ const GoalPlanner = () => {
                 frequency,
                 mode,
                 solveMode,
-                insights
+                insights,
+                exceedsSuggestion
             };
 
             setResults(newResults);
@@ -427,8 +436,36 @@ const GoalPlanner = () => {
                         </div>
                     </div>
 
-                    {/* Actionable Recommendations */}
-                    {results.insights && results.pmt > 0 && (
+                    {/* Smart Suggestion when PMT exceeds target */}
+                    {results.exceedsSuggestion && results.exceedsSuggestion.type === 'pmt_exceeds' && (
+                        <div className="pt-2 border-t border-neutral-700">
+                            <p className="text-[9px] font-bold text-emerald-400 uppercase tracking-wider mb-2">
+                                🎉 Great News!
+                            </p>
+                            <div className="text-[10px] text-neutral-300 space-y-2">
+                                <div className="bg-emerald-900/20 border border-emerald-500/30 rounded-lg p-2">
+                                    <p className="font-bold text-emerald-400 mb-1">Your payment exceeds your goal!</p>
+                                    <p>At ${results.exceedsSuggestion.currentPMT.toLocaleString()}/{results.insights?.freqLabel || 'month'}, you'll actually reach <span className="text-white font-bold">${results.exceedsSuggestion.actualFV.toLocaleString('en-US', { maximumFractionDigits: 0 })}</span></p>
+                                    <p className="mt-1 text-emerald-400"><span className="font-bold">{results.exceedsSuggestion.interestPercent}%</span> comes from compound interest!</p>
+                                </div>
+
+                                <p className="font-bold text-white text-[9px] uppercase tracking-wider">Choose an option:</p>
+
+                                <div className="bg-primary-900/20 border border-primary-500/30 rounded-lg p-2">
+                                    <p className="font-bold text-primary-400 mb-1">Option 1: Increase your goal</p>
+                                    <p>Set Target FV to <span className="text-white font-bold">${results.exceedsSuggestion.actualFV.toLocaleString('en-US', { maximumFractionDigits: 0 })}</span> to maximize what your ${results.exceedsSuggestion.currentPMT.toLocaleString()} payment can achieve.</p>
+                                </div>
+
+                                <div className="bg-amber-900/20 border border-amber-500/30 rounded-lg p-2">
+                                    <p className="font-bold text-amber-400 mb-1">Option 2: Reduce your payment</p>
+                                    <p>Pay only <span className="text-white font-bold">${results.exceedsSuggestion.optimalPMT.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>/{results.insights?.freqLabel || 'month'} to reach your ${results.targetFV.toLocaleString()} goal and save the difference.</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Actionable Recommendations - only show if no exceeds suggestion */}
+                    {results.insights && results.pmt > 0 && !results.exceedsSuggestion && (
                         <div className="pt-2 border-t border-neutral-700">
                             <p className="text-[9px] font-bold text-primary-400 uppercase tracking-wider mb-2">
                                 📋 Your Action Plan
