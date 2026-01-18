@@ -441,32 +441,52 @@ const GoalPlanner = () => {
                     </div>
 
                     {/* Smart Suggestion when PMT exceeds target */}
-                    {results.exceedsSuggestion && results.exceedsSuggestion.type === 'pmt_exceeds' && (
-                        <div className="pt-2 border-t border-neutral-700">
-                            <p className="text-[9px] font-bold text-emerald-400 uppercase tracking-wider mb-2">
-                                🎉 Great News!
-                            </p>
-                            <div className="text-[10px] text-neutral-300 space-y-2">
-                                <div className="bg-emerald-900/20 border border-emerald-500/30 rounded-lg p-2">
-                                    <p className="font-bold text-emerald-400 mb-1">Your payment exceeds your goal!</p>
-                                    <p>At ${results.exceedsSuggestion.currentPMT.toLocaleString()}/{results.insights?.freqLabel || 'month'}, you'll actually reach <span className="text-white font-bold">${results.exceedsSuggestion.actualFV.toLocaleString('en-US', { maximumFractionDigits: 0 })}</span></p>
-                                    <p className="mt-1 text-emerald-400"><span className="font-bold">{results.exceedsSuggestion.interestPercent}%</span> comes from compound interest!</p>
-                                </div>
+                    {results.exceedsSuggestion && results.exceedsSuggestion.type === 'pmt_exceeds' && (() => {
+                        // Check if user has taken the optimal choice
+                        const isOption1Taken = Math.abs(results.targetFV - results.exceedsSuggestion.actualFV) < 1; // Target FV matches actualFV
+                        const isOption2Taken = Math.abs(results.exceedsSuggestion.currentPMT - results.exceedsSuggestion.optimalPMT) < 0.01; // PMT matches optimalPMT
 
-                                <p className="font-bold text-white text-[9px] uppercase tracking-wider">Choose an option:</p>
+                        return (
+                            <div className="pt-2 border-t border-neutral-700">
+                                <p className="text-[9px] font-bold text-emerald-400 uppercase tracking-wider mb-2">
+                                    🎉 Great News!
+                                </p>
+                                <div className="text-[10px] text-neutral-300 space-y-2">
+                                    <div className="bg-emerald-900/20 border border-emerald-500/30 rounded-lg p-2">
+                                        <p className="font-bold text-emerald-400 mb-1">Your payment exceeds your goal!</p>
+                                        <p>At ${results.exceedsSuggestion.currentPMT.toLocaleString()}/{results.insights?.freqLabel || 'month'}, you'll actually reach <span className="text-white font-bold">${results.exceedsSuggestion.actualFV.toLocaleString('en-US', { maximumFractionDigits: 0 })}</span></p>
+                                        <p className="mt-1 text-emerald-400"><span className="font-bold">{results.exceedsSuggestion.interestPercent}%</span> comes from compound interest!</p>
+                                    </div>
 
-                                <div className="bg-primary-900/20 border border-primary-500/30 rounded-lg p-2">
-                                    <p className="font-bold text-primary-400 mb-1">Option 1: Increase your goal</p>
-                                    <p>Set Target FV to <span className="text-white font-bold">${results.exceedsSuggestion.actualFV.toLocaleString('en-US', { maximumFractionDigits: 0 })}</span> to maximize what your ${results.exceedsSuggestion.currentPMT.toLocaleString()} payment can achieve.</p>
-                                </div>
+                                    <p className="font-bold text-white text-[9px] uppercase tracking-wider">Choose an option:</p>
 
-                                <div className="bg-amber-900/20 border border-amber-500/30 rounded-lg p-2">
-                                    <p className="font-bold text-amber-400 mb-1">Option 2: Reduce your payment</p>
-                                    <p>Pay only <span className="text-white font-bold">${results.exceedsSuggestion.optimalPMT.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>/{results.insights?.freqLabel || 'month'} to reach your ${results.targetFV.toLocaleString()} goal and save the difference.</p>
+                                    {isOption1Taken ? (
+                                        <div className="bg-emerald-900/30 border border-emerald-500/50 rounded-lg p-2">
+                                            <p className="font-bold text-emerald-400 mb-1">✅ Option 1: Goal Maximized!</p>
+                                            <p>Your Target FV of <span className="text-white font-bold">${results.targetFV.toLocaleString('en-US', { maximumFractionDigits: 0 })}</span> is perfectly aligned with what your ${results.exceedsSuggestion.currentPMT.toLocaleString()} payment can achieve.</p>
+                                        </div>
+                                    ) : (
+                                        <div className="bg-primary-900/20 border border-primary-500/30 rounded-lg p-2">
+                                            <p className="font-bold text-primary-400 mb-1">Option 1: Increase your goal</p>
+                                            <p>Set Target FV to <span className="text-white font-bold">${results.exceedsSuggestion.actualFV.toLocaleString('en-US', { maximumFractionDigits: 0 })}</span> to maximize what your ${results.exceedsSuggestion.currentPMT.toLocaleString()} payment can achieve.</p>
+                                        </div>
+                                    )}
+
+                                    {isOption2Taken ? (
+                                        <div className="bg-emerald-900/30 border border-emerald-500/50 rounded-lg p-2">
+                                            <p className="font-bold text-emerald-400 mb-1">✅ Option 2: Payment Optimized!</p>
+                                            <p>Your payment of <span className="text-white font-bold">${results.exceedsSuggestion.currentPMT.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>/{results.insights?.freqLabel || 'month'} is exactly what you need to reach your ${results.targetFV.toLocaleString()} goal.</p>
+                                        </div>
+                                    ) : (
+                                        <div className="bg-amber-900/20 border border-amber-500/30 rounded-lg p-2">
+                                            <p className="font-bold text-amber-400 mb-1">Option 2: Reduce your payment</p>
+                                            <p>Pay only <span className="text-white font-bold">${results.exceedsSuggestion.optimalPMT.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>/{results.insights?.freqLabel || 'month'} to reach your ${results.targetFV.toLocaleString()} goal and save the difference.</p>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
-                        </div>
-                    )}
+                        );
+                    })()}
 
                     {/* Actionable Recommendations - only show if no exceeds suggestion */}
                     {results.insights && results.pmt > 0 && !results.exceedsSuggestion && (
