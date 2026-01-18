@@ -13,30 +13,39 @@ import HistoryView from './features/history/HistoryView';
 
 function App() {
     const [activeTab, setActiveTab] = useState('tvm');
+    const [showHelp, setShowHelp] = useState(false);
+
+    const toggleHelp = () => setShowHelp(true);
+    const closeHelp = () => setShowHelp(false);
 
     return (
         <HistoryProvider>
-            <Layout activeTab={activeTab} onTabChange={setActiveTab}>
+            <Layout
+                activeTab={activeTab}
+                onTabChange={setActiveTab}
+                showHelp={showHelp}
+                onCloseHelp={closeHelp}
+            >
                 <div className={activeTab === 'tvm' ? 'block h-full' : 'hidden'}>
-                    <TVMCalculator />
+                    <TVMCalculator toggleHelp={toggleHelp} />
                 </div>
                 <div className={activeTab === 'loan' ? 'block h-full' : 'hidden'}>
-                    <LoanCalculator />
+                    <LoanCalculator toggleHelp={toggleHelp} />
                 </div>
                 <div className={activeTab === 'flow' ? 'block h-full' : 'hidden'}>
-                    <CashFlowCalculator />
+                    <CashFlowCalculator toggleHelp={toggleHelp} />
                 </div>
                 <div className={activeTab === 'bond' ? 'block h-full' : 'hidden'}>
-                    <BondCalculator />
+                    <BondCalculator toggleHelp={toggleHelp} />
                 </div>
                 <div className={activeTab === 'rates' ? 'block h-full' : 'hidden'}>
-                    <RateConverter />
+                    <RateConverter toggleHelp={toggleHelp} />
                 </div>
                 <div className={activeTab === 'goal' ? 'block h-full' : 'hidden'}>
-                    <GoalPlanner />
+                    <GoalPlanner toggleHelp={toggleHelp} />
                 </div>
                 <div className={activeTab === 'history' ? 'block h-full' : 'hidden'}>
-                    <HistoryView />
+                    <HistoryView toggleHelp={toggleHelp} />
                 </div>
             </Layout>
         </HistoryProvider>

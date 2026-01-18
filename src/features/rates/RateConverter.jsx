@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { calculateEAR } from '../../utils/financial-utils';
 import { useHistory } from '../../context/HistoryContext';
-import { Info } from 'lucide-react';
+import { Info, HelpCircle, Trash2 } from 'lucide-react';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
 import { CalculateIcon } from '../../components/Icons';
 
@@ -16,7 +16,7 @@ const FREQUENCIES = [
     { n: 365, label: 'Daily' },
 ];
 
-const RateConverter = () => {
+const RateConverter = ({ toggleHelp }) => {
     const { addToHistory } = useHistory();
     const [nominal, setNominal] = useState(5);
     const [compounding, setCompounding] = useState(12);
@@ -114,23 +114,33 @@ const RateConverter = () => {
             {doublingTime && (
                 <div className="mt-2 bg-gradient-to-br from-neutral-800/80 to-neutral-900/80 rounded-xl p-3 shrink-0 border border-white/10 relative overflow-hidden group">
                     <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity">
-                        <svg className="w-12 h-12 text-primary-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
+                        <CalculateIcon className="w-8 h-8 text-primary-500" />
                     </div>
-                    <label className="text-[10px] font-bold text-primary-400/80 uppercase tracking-widest mb-1 flex items-center gap-1.5">Time to Double Investment</label>
-                    <div className="flex items-baseline gap-3">
-                        {doublingTime.years > 0 && <div className="flex items-baseline gap-1"><span className="text-xl font-mono font-bold text-white">{doublingTime.years}</span><span className="text-[10px] text-neutral-500 uppercase font-bold tracking-wider">Yrs</span></div>}
-                        <div className="flex items-baseline gap-1"><span className="text-xl font-mono font-bold text-white">{doublingTime.months}</span><span className="text-[10px] text-neutral-500 uppercase font-bold tracking-wider">Mos</span></div>
-                        <div className="flex items-baseline gap-1"><span className="text-xl font-mono font-bold text-white">{doublingTime.days}</span><span className="text-[10px] text-neutral-500 uppercase font-bold tracking-wider">Days</span></div>
+                    <div className="relative z-10">
+                        <span className="text-[10px] font-bold text-primary-400 uppercase tracking-widest mb-2 block">Investment Doubling Time</span>
+                        <div className="grid grid-cols-3 gap-2">
+                            <div className="bg-neutral-900/50 rounded-lg p-1.5 border border-white/5">
+                                <div className="text-[9px] text-neutral-500 uppercase font-bold">Years</div>
+                                <div className="text-sm font-bold text-white font-mono">{doublingTime.years}</div>
+                            </div>
+                            <div className="bg-neutral-900/50 rounded-lg p-1.5 border border-white/5">
+                                <div className="text-[9px] text-neutral-500 uppercase font-bold">Months</div>
+                                <div className="text-sm font-bold text-white font-mono">{doublingTime.months}</div>
+                            </div>
+                            <div className="bg-neutral-900/50 rounded-lg p-1.5 border border-white/5">
+                                <div className="text-[9px] text-neutral-500 uppercase font-bold">Days</div>
+                                <div className="text-sm font-bold text-white font-mono">{doublingTime.days}</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}
 
+            {/* Action Buttons */}
             <div className="flex gap-2 shrink-0 mt-3">
                 <button
                     onClick={() => {
-                        setNominal(0);
+                        setNominal(5);
                         setCompounding(12);
                         setResult(null);
                         setDoublingTime(null);
@@ -138,10 +148,15 @@ const RateConverter = () => {
                     className="w-1/4 bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-sm py-3.5 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center gap-1.5 uppercase tracking-wider"
                     title="Clear all values"
                 >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
+                    <Trash2 className="w-4 h-4" />
                     CLR
+                </button>
+                <button
+                    onClick={toggleHelp}
+                    className="bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-sm px-4 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center"
+                    title="Help Guide"
+                >
+                    <HelpCircle className="w-5 h-5" />
                 </button>
                 <button onClick={handleCalculate} className="flex-1 bg-gradient-to-r from-primary-600 to-primary-500 text-neutral-900 font-black text-base py-3.5 rounded-xl shadow-lg shadow-primary-900/20 active:scale-[0.98] transition-all hover:brightness-110 flex items-center justify-center gap-2 uppercase tracking-widest">
                     <CalculateIcon className="w-5 h-5" /> Calculate

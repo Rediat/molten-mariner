@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
     HelpCircle, Calculator, Target, DollarSign, Activity, FileText, Percent,
-    ChevronDown, ChevronUp, Book, Lightbulb, Hash, ArrowRight, History
+    ChevronDown, ChevronUp, Book, Lightbulb, Hash, ArrowRight, History, Trash2
 } from 'lucide-react';
 
 // Map tab IDs to section IDs
@@ -12,7 +12,7 @@ const TAB_TO_SECTION = {
     flow: 'flow',
     bond: 'bond',
     rates: 'rates',
-    history: 'getting-started'
+    history: 'history'
 };
 
 const HelpSection = ({ id, title, icon: Icon, children, isOpen, onToggle }) => {
@@ -427,6 +427,46 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                 <InfoBox type="tip">
                     <strong>Rule of 72:</strong> A quick estimate for doubling time is 72 ÷ interest rate.
                     For example, at 8%, money doubles in approximately 72 ÷ 8 = 9 years.
+                </InfoBox>
+            </HelpSection>
+
+            {/* History */}
+            <HelpSection
+                id="history"
+                title="History"
+                icon={History}
+                isOpen={openSection === 'history'}
+                onToggle={handleToggle}
+            >
+                <p>
+                    The History tab automatically tracks and stores all your calculations. This allows you
+                    to review past results, compare scenarios, and access important financial data without re-entering values.
+                </p>
+
+                <div className="pt-2">
+                    <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Features:</p>
+                    <FieldList fields={[
+                        { name: 'Auto-Save', description: 'Every time you click "Calculate", the result is added to your history' },
+                        { name: 'Module Tracking', description: 'Each entry is labeled with the calculator used (TVM, Loan, etc.)' },
+                        { name: 'Timestamp', description: 'See exactly when each calculation was performed' },
+                        { name: 'Persistence', description: 'Your history is saved locally on your device and remains available even after refreshing' }
+                    ]} />
+                </div>
+
+                <div className="pt-2">
+                    <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Actions:</p>
+                    <ul className="space-y-2">
+                        <li className="flex gap-2">
+                            <Trash2 className="w-4 h-4 text-red-500 shrink-0" />
+                            <div className="text-xs">
+                                <span className="font-bold text-white">Clear History:</span> Use the trash icon in the History header to permanently delete all saved calculations.
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+
+                <InfoBox type="tip">
+                    <strong>Context Awareness:</strong> If you open the Help guide while viewing the History tab, it will automatically scroll to this section.
                 </InfoBox>
             </HelpSection>
 
