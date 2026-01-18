@@ -10,6 +10,8 @@ import BondCalculator from './features/bond/BondCalculator';
 import RateConverter from './features/rates/RateConverter';
 import GoalPlanner from './features/goal/GoalPlanner';
 import HistoryView from './features/history/HistoryView';
+import HelpGuide from './features/help/HelpGuide';
+
 
 function App() {
     const [activeTab, setActiveTab] = useState('tvm');
@@ -37,6 +39,9 @@ function App() {
                 </div>
                 <div className={activeTab === 'history' ? 'block h-full' : 'hidden'}>
                     <HistoryView />
+                </div>
+                <div className={activeTab === 'help' ? 'block h-full' : 'hidden'}>
+                    <HelpGuide />
                 </div>
             </Layout>
         </HistoryProvider>

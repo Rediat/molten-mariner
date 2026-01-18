@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calculator, DollarSign, Activity, FileText, History, Percent, Target } from 'lucide-react';
+import { Calculator, DollarSign, Activity, FileText, History, Percent, Target, HelpCircle } from 'lucide-react';
 
 const Layout = ({ children, activeTab, onTabChange }) => {
     const navItems = [
@@ -9,8 +9,10 @@ const Layout = ({ children, activeTab, onTabChange }) => {
         { id: 'flow', label: 'FLOW', icon: Activity },
         { id: 'bond', label: 'BOND', icon: FileText },
         { id: 'rates', label: 'RATES', icon: Percent },
-        { id: 'history', label: 'HISTORY', icon: History },
+        { id: 'history', label: 'HIST', icon: History },
+        { id: 'help', label: 'HELP', icon: HelpCircle },
     ];
+
 
     return (
         <div className="min-h-screen bg-neutral-900 text-white flex flex-col items-center justify-center p-4">
