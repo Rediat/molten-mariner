@@ -41,9 +41,13 @@ const GoalPlanner = () => {
     const [results, setResults] = useState(null);
     const [showExplanation, setShowExplanation] = useState(false);
 
-    // Calculate effective rate per period
+    // Calculate effective rate per period (matches TVM calculator logic)
+    // I/Y is treated as nominal annual rate (APR), same as standard financial calculators
     const getPeriodicRate = () => {
-        return Math.pow(1 + rate / 100, 1 / frequency) - 1;
+        // Standard approach: nominal rate / periods per year
+        // When compounding frequency = payment frequency, this gives the correct periodic rate
+        const nominalRate = rate / 100;
+        return nominalRate / frequency;
     };
 
     // Calculate FV factor for PV
