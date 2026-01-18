@@ -453,7 +453,11 @@ const GoalPlanner = ({ toggleHelp }) => {
                                 </p>
                                 <div className="text-[10px] text-neutral-300 space-y-2">
                                     <div className="bg-emerald-900/20 border border-emerald-500/30 rounded-lg p-2">
-                                        <p className="font-bold text-emerald-400 mb-1">Your payment exceeds your goal!</p>
+                                        <p className="font-bold text-emerald-400 mb-1">
+                                            {isOption1Taken || isOption2Taken
+                                                ? "Your plan is fully optimized!"
+                                                : "Your payment exceeds your goal!"}
+                                        </p>
                                         <p>At ${results.exceedsSuggestion.currentPMT.toLocaleString()}/{results.insights?.freqLabel || 'month'}, you'll actually reach <span className="text-white font-bold">${results.exceedsSuggestion.actualFV.toLocaleString('en-US', { maximumFractionDigits: 0 })}</span></p>
                                         <p className="mt-1 text-emerald-400"><span className="font-bold">{results.exceedsSuggestion.interestPercent}%</span> comes from compound interest!</p>
                                     </div>
