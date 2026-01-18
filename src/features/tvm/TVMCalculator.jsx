@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { calculateTVM } from '../../utils/financial-utils';
 import { useHistory } from '../../context/HistoryContext';
-import { Settings2, Info } from 'lucide-react';
+import { Settings2, Info, HelpCircle, Trash2 } from 'lucide-react';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
 import { CalculateIcon } from '../../components/Icons';
 
@@ -44,7 +44,7 @@ const calcTVMFactors = (rate, n, isBeginMode) => {
 };
 
 
-const TVMCalculator = () => {
+const TVMCalculator = ({ toggleHelp }) => {
     const { addToHistory } = useHistory();
 
     // Core state
@@ -358,10 +358,15 @@ const TVMCalculator = () => {
                     className="w-1/4 bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-sm py-3.5 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center gap-1.5 uppercase tracking-wider"
                     title="Clear all values"
                 >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
+                    <Trash2 className="w-4 h-4" />
                     CLR
+                </button>
+                <button
+                    onClick={toggleHelp}
+                    className="bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-sm px-4 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center"
+                    title="Help Guide"
+                >
+                    <HelpCircle className="w-5 h-5" />
                 </button>
                 <button
                     onClick={handleCalculate}
