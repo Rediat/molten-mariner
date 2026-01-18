@@ -22,6 +22,7 @@ const RateConverter = () => {
     const [compounding, setCompounding] = useState(12);
     const [result, setResult] = useState(null);
     const [doublingTime, setDoublingTime] = useState(null);
+    const [showExplanation, setShowExplanation] = useState(false);
 
     const handleCalculate = () => {
         const res = calculateEAR(nominal, compounding);
@@ -41,7 +42,27 @@ const RateConverter = () => {
 
     return (
         <div className="flex flex-col h-full overflow-hidden max-w-lg mx-auto w-full">
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-neutral-400 bg-clip-text text-transparent mb-6 shrink-0 text-left">Interest Rates</h1>
+            <div className="flex justify-between items-start mb-4">
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-neutral-400 bg-clip-text text-transparent">Interest Rates</h1>
+                <button
+                    onClick={() => setShowExplanation(!showExplanation)}
+                    className={`flex items-center justify-center p-1 rounded-full transition-all ${showExplanation ? 'bg-primary-600/20 text-primary-400 ring-1 ring-primary-500/50' : 'bg-neutral-800 text-neutral-500 hover:bg-neutral-700'}`}
+                    title="Show Info"
+                >
+                    <Info className="w-3 h-3" />
+                </button>
+            </div>
+
+            {/* Explanation Panel */}
+            {showExplanation && (
+                <div className="bg-gradient-to-r from-primary-900/30 to-neutral-800/50 border border-primary-500/30 rounded-xl p-3 mb-4 text-xs text-neutral-300 text-left">
+                    <p className="font-bold text-primary-400 mb-1">Interest Rate Converter</p>
+                    <p className="text-[11px] leading-relaxed">
+                        Convert between Nominal (APR) and Effective Annual Rates (EAR). See periodic rate
+                        breakdowns and calculate how long it takes to double your investment at any rate.
+                    </p>
+                </div>
+            )}
 
             <div className="flex-1 flex flex-col min-h-0 space-y-2 overflow-y-auto custom-scrollbar pb-1">
                 <div className="bg-neutral-800/50 rounded-xl p-2 shrink-0">

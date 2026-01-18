@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { calculateLoan, getAmortizationSchedule } from '../../utils/financial-utils';
 import { useHistory } from '../../context/HistoryContext';
-import { List, X, FileText, FileSpreadsheet } from 'lucide-react';
+import { List, X, FileText, FileSpreadsheet, Info } from 'lucide-react';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
 import { CalculateIcon } from '../../components/Icons';
 import jsPDF from 'jspdf';
@@ -38,6 +38,7 @@ const LoanCalculator = () => {
     });
     const [result, setResult] = useState(null);
     const [showSchedule, setShowSchedule] = useState(false);
+    const [showExplanation, setShowExplanation] = useState(false);
 
     const calculatePeriodsBetween = (d1, d2, freq) => {
         const start = new Date(d1), end = new Date(d2);
@@ -183,17 +184,38 @@ const LoanCalculator = () => {
 
     return (
         <div className="flex flex-col h-full relative">
-            <div className="flex justify-between items-start mb-6">
+            <div className="flex justify-between items-start mb-4">
                 <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-neutral-400 bg-clip-text text-transparent">Loan Calculator</h1>
                 <div className="flex flex-col items-end gap-2">
-                    <button onClick={() => setUseDates(!useDates)} className="text-[10px] font-bold uppercase tracking-tighter bg-neutral-800 border border-neutral-700 rounded-full px-3 py-1 text-primary-500 hover:bg-neutral-700 transition-all">
-                        {useDates ? 'Use Manual Count' : 'Use Dates'}
-                    </button>
+                    <div className="flex gap-1.5">
+                        <button
+                            onClick={() => setShowExplanation(!showExplanation)}
+                            className={`flex items-center justify-center p-1 rounded-full transition-all ${showExplanation ? 'bg-primary-600/20 text-primary-400 ring-1 ring-primary-500/50' : 'bg-neutral-800 text-neutral-500 hover:bg-neutral-700'}`}
+                            title="Show Info"
+                        >
+                            <Info className="w-3 h-3" />
+                        </button>
+                        <button onClick={() => setUseDates(!useDates)} className="text-[10px] font-bold uppercase tracking-tighter bg-neutral-800 border border-neutral-700 rounded-full px-3 py-1 text-primary-500 hover:bg-neutral-700 transition-all">
+                            {useDates ? 'Use Manual Count' : 'Use Dates'}
+                        </button>
+                    </div>
                     <select value={values.frequency} onChange={(e) => handleChange('frequency', e.target.value)} className="bg-neutral-800 border border-neutral-700 rounded-lg px-2 py-0.5 text-[10px] font-bold text-neutral-300 focus:outline-none">
                         {FREQUENCIES.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
                     </select>
                 </div>
             </div>
+
+            {/* Explanation Panel */}
+            {showExplanation && (
+                <div className="bg-gradient-to-r from-primary-900/30 to-neutral-800/50 border border-primary-500/30 rounded-xl p-3 mb-4 text-xs text-neutral-300 text-left">
+                    <p className="font-bold text-primary-400 mb-1">Loan & Amortization Calculator</p>
+                    <p className="text-[11px] leading-relaxed">
+                        Calculate loan payments, total interest, and view full amortization schedules.
+                        Track outstanding balances at any point using dates or payment counts.
+                        Export schedules to PDF or CSV.
+                    </p>
+                </div>
+            )}
 
             <div className="relative flex-1 min-h-0">
                 {!showSchedule ? (

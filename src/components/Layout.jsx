@@ -1,9 +1,10 @@
 import React from 'react';
-import { Calculator, DollarSign, Activity, FileText, History, Percent } from 'lucide-react';
+import { Calculator, DollarSign, Activity, FileText, History, Percent, Target } from 'lucide-react';
 
 const Layout = ({ children, activeTab, onTabChange }) => {
     const navItems = [
         { id: 'tvm', label: 'TVM', icon: Calculator },
+        { id: 'goal', label: 'GOAL', icon: Target },
         { id: 'loan', label: 'LOAN', icon: DollarSign },
         { id: 'flow', label: 'FLOW', icon: Activity },
         { id: 'bond', label: 'BOND', icon: FileText },

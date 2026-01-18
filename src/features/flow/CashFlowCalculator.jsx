@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { calculateNPV, calculateIRR, calculateMIRR, calculatePaybackPeriod, calculateDiscountedPaybackPeriod, calculateProfitabilityIndex } from '../../utils/financial-utils';
 import { useHistory } from '../../context/HistoryContext';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Info } from 'lucide-react';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
 import { CalculateIcon } from '../../components/Icons';
 
@@ -11,6 +11,7 @@ const CashFlowCalculator = () => {
     const [reinvestRate, setReinvestRate] = useState(10);
     const [flows, setFlows] = useState([-10000, 2000, 3000, 4000, 5000]);
     const [result, setResult] = useState(null);
+    const [showExplanation, setShowExplanation] = useState(false);
 
     const handleCalculate = () => {
         const res = {
@@ -35,7 +36,28 @@ const CashFlowCalculator = () => {
 
     return (
         <div className="flex flex-col h-full">
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-neutral-400 bg-clip-text text-transparent mb-6 shrink-0 text-left">Cash Flow</h1>
+            <div className="flex justify-between items-start mb-4">
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-neutral-400 bg-clip-text text-transparent">Cash Flow</h1>
+                <button
+                    onClick={() => setShowExplanation(!showExplanation)}
+                    className={`flex items-center justify-center p-1 rounded-full transition-all ${showExplanation ? 'bg-primary-600/20 text-primary-400 ring-1 ring-primary-500/50' : 'bg-neutral-800 text-neutral-500 hover:bg-neutral-700'}`}
+                    title="Show Info"
+                >
+                    <Info className="w-3 h-3" />
+                </button>
+            </div>
+
+            {/* Explanation Panel */}
+            {showExplanation && (
+                <div className="bg-gradient-to-r from-primary-900/30 to-neutral-800/50 border border-primary-500/30 rounded-xl p-3 mb-4 text-xs text-neutral-300 text-left">
+                    <p className="font-bold text-primary-400 mb-1">Cash Flow Analyzer (NPV & IRR)</p>
+                    <p className="text-[11px] leading-relaxed">
+                        Evaluate investments with uneven cash flows. Calculate NPV (Net Present Value),
+                        IRR (Internal Rate of Return), MIRR, Payback Period, Discounted Payback,
+                        and Profitability Index.
+                    </p>
+                </div>
+            )}
 
             <div className="bg-neutral-800/50 p-4 rounded-xl mb-4 grid grid-cols-2 gap-4">
                 {[{ label: 'Finance Rate (%)', value: rate, setter: setRate, color: 'primary' },
