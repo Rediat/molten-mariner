@@ -40,6 +40,7 @@ const GoalPlanner = ({ toggleHelp }) => {
     // Results
     const [results, setResults] = useState(null);
     const [showExplanation, setShowExplanation] = useState(false);
+    const [showPvRatioHelp, setShowPvRatioHelp] = useState(false);
 
     // Calculate effective rate per period (matches TVM calculator logic)
     // I/Y is treated as nominal annual rate (APR), same as standard financial calculators
@@ -125,7 +126,7 @@ const GoalPlanner = ({ toggleHelp }) => {
                         calculatedPV = (targetFV - pmtContributionToFV) / fvFactorPV;
                         totalContributions = calculatedPV + (calculatedPMT * n);
                     }
-                } else if (pvRatio > 0 && pvRatio < 100) {
+                } else if (pvRatio >= 0 && pvRatio <= 100) {
                     // Use ratio: pvRatio% comes from PV, (100-pvRatio)% from PMT contributions
                     const pvPortion = pvRatio / 100;
                     const pmtPortion = 1 - pvPortion;
@@ -379,22 +380,44 @@ const GoalPlanner = ({ toggleHelp }) => {
                         </div>
 
                         {/* PV Ratio */}
-                        <div className="flex justify-between items-center gap-4">
-                            <div className="flex flex-col items-start text-left">
-                                <label className="text-xs font-bold text-neutral-400">PV Ratio %</label>
-                                <span className="text-[8px] uppercase tracking-tighter text-neutral-600 font-bold">% from Lump Sum</span>
+                        <div className="flex flex-col gap-2">
+                            <div className="flex justify-between items-center gap-4">
+                                <div className="flex items-center gap-2 text-left">
+                                    <div className="flex flex-col">
+                                        <div className="flex items-center gap-1.5">
+                                            <label className="text-xs font-bold text-neutral-400">PV Ratio %</label>
+                                            <button
+                                                onClick={() => setShowPvRatioHelp(!showPvRatioHelp)}
+                                                className={`p-0.5 rounded-full transition-all ${showPvRatioHelp ? 'text-primary-400 bg-primary-400/10' : 'text-neutral-600 hover:text-neutral-400'}`}
+                                            >
+                                                <HelpCircle className="w-3 h-3" />
+                                            </button>
+                                        </div>
+                                        <span className="text-[8px] uppercase tracking-tighter text-neutral-600 font-bold">% from Lump Sum</span>
+                                    </div>
+                                </div>
+                                <FormattedNumberInput
+                                    value={pvRatio}
+                                    onChange={(e) => {
+                                        setPvRatio(parseFloat(e.target.value.replace(/,/g, '')) || 0);
+                                        setKnownPV(0);
+                                        setKnownPMT(0);
+                                    }}
+                                    decimals={0}
+                                    className="bg-neutral-800 rounded-lg px-2 py-1 text-right text-sm font-mono focus:outline-none w-24 placeholder-neutral-700 text-white"
+                                    placeholder="0"
+                                />
                             </div>
-                            <FormattedNumberInput
-                                value={pvRatio}
-                                onChange={(e) => {
-                                    setPvRatio(parseFloat(e.target.value.replace(/,/g, '')) || 0);
-                                    setKnownPV(0);
-                                    setKnownPMT(0);
-                                }}
-                                decimals={0}
-                                className="bg-neutral-800 rounded-lg px-2 py-1 text-right text-sm font-mono focus:outline-none w-24 placeholder-neutral-700 text-white"
-                                placeholder="0"
-                            />
+                            {showPvRatioHelp && (
+                                <div className="bg-neutral-800/50 rounded-lg p-2 text-[10px] text-neutral-400 border border-neutral-700/50 text-left">
+                                    <p className="leading-relaxed">
+                                        <span className="text-primary-400 font-bold">PV Ratio</span> determines the percentage of your goal funded by your initial lump sum versus regular contributions.
+                                    </p>
+                                    <p className="mt-1 leading-relaxed opacity-80">
+                                        For example, a <span className="text-white">20%</span> PV Ratio means your starting deposit covers 20% of the target, while regular payments cover the remaining 80%.
+                                    </p>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
