@@ -312,6 +312,11 @@ const TVMCalculator = ({ toggleHelp }) => {
                                 <div className="flex items-center gap-2">
                                     <label className={`text-sm font-bold transition-colors ${field.isReadOnly ? 'text-neutral-500' : target === field.id ? 'text-primary-400' : 'text-neutral-300'}`}>
                                         {field.label}
+                                        {field.id === 'totalInterest' && totalInterest !== 0 && (values.fv || values.pv) && (
+                                            <span className="text-[#00ff00] ml-1 text-xs">
+                                                ({Math.abs((totalInterest / (values.fv || values.pv)) * 100).toFixed(2)}% of {values.fv ? 'FV' : 'PV'})
+                                            </span>
+                                        )}
                                     </label>
                                     {field.hasNToggle && (
                                         <button
