@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useHistory } from '../../context/HistoryContext';
 import { Target, TrendingUp, Wallet, PiggyBank, Calculator, Info, HelpCircle, Trash2 } from 'lucide-react';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
@@ -41,6 +41,15 @@ const GoalPlanner = ({ toggleHelp }) => {
     const [results, setResults] = useState(null);
     const [showExplanation, setShowExplanation] = useState(false);
     const [showPvRatioHelp, setShowPvRatioHelp] = useState(false);
+
+    const bottomRef = useRef(null);
+
+    // Auto-scroll to bottom when results are calculated
+    useEffect(() => {
+        if (results && bottomRef.current) {
+            bottomRef.current.scrollIntoView({ behavior: 'smooth' });
+        }
+    }, [results]);
 
     // Calculate effective rate per period (matches TVM calculator logic)
     // I/Y is treated as nominal annual rate (APR), same as standard financial calculators
@@ -421,148 +430,150 @@ const GoalPlanner = ({ toggleHelp }) => {
                         </div>
                     </div>
                 )}
-            </div>
 
-            {/* Results */}
-            {results && !results.error && (
-                <div className="mt-4 bg-gradient-to-br from-primary-900/30 to-neutral-800/50 border border-primary-500/30 rounded-xl p-4 space-y-3 shrink-0">
-                    <div className="grid grid-cols-2 gap-3">
-                        {results.pv > 0 && (
-                            <div className="bg-neutral-900/50 rounded-lg p-2.5">
-                                <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Initial Deposit (PV)</p>
-                                <p className="text-lg font-black text-primary-400">
-                                    ${results.pv.toLocaleString('en-US', { maximumFractionDigits: 0 })}
+
+                {/* Results */}
+                {results && !results.error && (
+                    <div className="mt-4 bg-gradient-to-br from-primary-900/30 to-neutral-800/50 border border-primary-500/30 rounded-xl p-4 space-y-3 shrink-0">
+                        <div className="grid grid-cols-2 gap-3">
+                            {results.pv > 0 && (
+                                <div className="bg-neutral-900/50 rounded-lg p-2.5">
+                                    <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Initial Deposit (PV)</p>
+                                    <p className="text-lg font-black text-primary-400">
+                                        ${results.pv.toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                                    </p>
+                                </div>
+                            )}
+                            {results.pmt > 0 && (
+                                <div className="bg-neutral-900/50 rounded-lg p-2.5">
+                                    <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Payment (PMT)</p>
+                                    <p className="text-lg font-black text-green-400">
+                                        ${results.pmt.toLocaleString('en-US', { maximumFractionDigits: 2 })}
+                                    </p>
+                                    <p className="text-[9px] text-neutral-500">
+                                        ${results.annualPMT.toLocaleString('en-US', { maximumFractionDigits: 0 })}/yr
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3 pt-2 border-t border-neutral-700">
+                            <div>
+                                <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Total Contributions</p>
+                                <p className="text-sm font-bold text-white">
+                                    ${results.totalContributions.toLocaleString('en-US', { maximumFractionDigits: 0 })}
                                 </p>
                             </div>
-                        )}
-                        {results.pmt > 0 && (
-                            <div className="bg-neutral-900/50 rounded-lg p-2.5">
-                                <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Payment (PMT)</p>
-                                <p className="text-lg font-black text-green-400">
-                                    ${results.pmt.toLocaleString('en-US', { maximumFractionDigits: 2 })}
-                                </p>
-                                <p className="text-[9px] text-neutral-500">
-                                    ${results.annualPMT.toLocaleString('en-US', { maximumFractionDigits: 0 })}/yr
+                            <div>
+                                <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Interest Earned</p>
+                                <p className="text-sm font-bold text-emerald-400">
+                                    ${results.totalInterest.toLocaleString('en-US', { maximumFractionDigits: 0 })}
                                 </p>
                             </div>
-                        )}
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3 pt-2 border-t border-neutral-700">
-                        <div>
-                            <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Total Contributions</p>
-                            <p className="text-sm font-bold text-white">
-                                ${results.totalContributions.toLocaleString('en-US', { maximumFractionDigits: 0 })}
-                            </p>
                         </div>
-                        <div>
-                            <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Interest Earned</p>
-                            <p className="text-sm font-bold text-emerald-400">
-                                ${results.totalInterest.toLocaleString('en-US', { maximumFractionDigits: 0 })}
-                            </p>
-                        </div>
-                    </div>
 
-                    {/* Smart Suggestion when PMT exceeds target */}
-                    {results.exceedsSuggestion && results.exceedsSuggestion.type === 'pmt_exceeds' && (() => {
-                        // Check if user has taken the optimal choice
-                        const isOption1Taken = Math.abs(results.targetFV - results.exceedsSuggestion.actualFV) < 1; // Target FV matches actualFV
-                        const isOption2Taken = Math.abs(results.exceedsSuggestion.currentPMT - results.exceedsSuggestion.optimalPMT) < 0.01; // PMT matches optimalPMT
+                        {/* Smart Suggestion when PMT exceeds target */}
+                        {results.exceedsSuggestion && results.exceedsSuggestion.type === 'pmt_exceeds' && (() => {
+                            // Check if user has taken the optimal choice
+                            const isOption1Taken = Math.abs(results.targetFV - results.exceedsSuggestion.actualFV) < 1; // Target FV matches actualFV
+                            const isOption2Taken = Math.abs(results.exceedsSuggestion.currentPMT - results.exceedsSuggestion.optimalPMT) < 0.01; // PMT matches optimalPMT
 
-                        return (
+                            return (
+                                <div className="pt-2 border-t border-neutral-700">
+                                    <p className="text-[9px] font-bold text-emerald-400 uppercase tracking-wider mb-2">
+                                        🎉 Great News!
+                                    </p>
+                                    <div className="text-[10px] text-neutral-300 space-y-2">
+                                        <div className="bg-emerald-900/20 border border-emerald-500/30 rounded-lg p-2">
+                                            <p className="font-bold text-emerald-400 mb-1">
+                                                {isOption1Taken || isOption2Taken
+                                                    ? "Your plan is fully optimized!"
+                                                    : "Your payment exceeds your goal!"}
+                                            </p>
+                                            <p>At ${results.exceedsSuggestion.currentPMT.toLocaleString()}/{results.insights?.freqLabel || 'month'}, you'll actually reach <span className="text-white font-bold">${results.exceedsSuggestion.actualFV.toLocaleString('en-US', { maximumFractionDigits: 0 })}</span></p>
+                                            <p className="mt-1 text-emerald-400"><span className="font-bold">{results.exceedsSuggestion.interestPercent}%</span> comes from compound interest!</p>
+                                        </div>
+
+                                        <p className="font-bold text-white text-[9px] uppercase tracking-wider">Choose an option:</p>
+
+                                        {isOption1Taken ? (
+                                            <div className="bg-emerald-900/30 border border-emerald-500/50 rounded-lg p-2">
+                                                <p className="font-bold text-emerald-400 mb-1">✅ Option 1: Goal Maximized!</p>
+                                                <p>Your Target FV of <span className="text-white font-bold">${results.targetFV.toLocaleString('en-US', { maximumFractionDigits: 0 })}</span> is perfectly aligned with what your ${results.exceedsSuggestion.currentPMT.toLocaleString()} payment can achieve.</p>
+                                            </div>
+                                        ) : (
+                                            <div className="bg-primary-900/20 border border-primary-500/30 rounded-lg p-2">
+                                                <p className="font-bold text-primary-400 mb-1">Option 1: Increase your goal</p>
+                                                <p>Set Target FV to <span className="text-white font-bold">${results.exceedsSuggestion.actualFV.toLocaleString('en-US', { maximumFractionDigits: 0 })}</span> to maximize what your ${results.exceedsSuggestion.currentPMT.toLocaleString()} payment can achieve.</p>
+                                            </div>
+                                        )}
+
+                                        {isOption2Taken ? (
+                                            <div className="bg-emerald-900/30 border border-emerald-500/50 rounded-lg p-2">
+                                                <p className="font-bold text-emerald-400 mb-1">✅ Option 2: Payment Optimized!</p>
+                                                <p>Your payment of <span className="text-white font-bold">${results.exceedsSuggestion.currentPMT.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>/{results.insights?.freqLabel || 'month'} is exactly what you need to reach your ${results.targetFV.toLocaleString()} goal.</p>
+                                            </div>
+                                        ) : (
+                                            <div className="bg-amber-900/20 border border-amber-500/30 rounded-lg p-2">
+                                                <p className="font-bold text-amber-400 mb-1">Option 2: Reduce your payment</p>
+                                                <p>Pay only <span className="text-white font-bold">${results.exceedsSuggestion.optimalPMT.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>/{results.insights?.freqLabel || 'month'} to reach your ${results.targetFV.toLocaleString()} goal and save the difference.</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })()}
+
+                        {/* Actionable Recommendations - only show if no exceeds suggestion */}
+                        {results.insights && results.pmt > 0 && !results.exceedsSuggestion && (
                             <div className="pt-2 border-t border-neutral-700">
-                                <p className="text-[9px] font-bold text-emerald-400 uppercase tracking-wider mb-2">
-                                    🎉 Great News!
+                                <p className="text-[9px] font-bold text-primary-400 uppercase tracking-wider mb-2">
+                                    📋 Your Action Plan
                                 </p>
                                 <div className="text-[10px] text-neutral-300 space-y-2">
-                                    <div className="bg-emerald-900/20 border border-emerald-500/30 rounded-lg p-2">
-                                        <p className="font-bold text-emerald-400 mb-1">
-                                            {isOption1Taken || isOption2Taken
-                                                ? "Your plan is fully optimized!"
-                                                : "Your payment exceeds your goal!"}
-                                        </p>
-                                        <p>At ${results.exceedsSuggestion.currentPMT.toLocaleString()}/{results.insights?.freqLabel || 'month'}, you'll actually reach <span className="text-white font-bold">${results.exceedsSuggestion.actualFV.toLocaleString('en-US', { maximumFractionDigits: 0 })}</span></p>
-                                        <p className="mt-1 text-emerald-400"><span className="font-bold">{results.exceedsSuggestion.interestPercent}%</span> comes from compound interest!</p>
+                                    <div className="bg-neutral-900/50 rounded-lg p-2">
+                                        <p className="font-bold text-white mb-1">✅ What to do:</p>
+                                        <p>Save <span className="text-green-400 font-bold">${results.pmt.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span> every {results.insights.freqLabel} for {results.years} years.</p>
+                                        <p className="text-neutral-500 mt-1">That's just ${results.insights.dailySavings.toFixed(2)}/day</p>
                                     </div>
 
-                                    <p className="font-bold text-white text-[9px] uppercase tracking-wider">Choose an option:</p>
+                                    <div className="bg-neutral-900/50 rounded-lg p-2">
+                                        <p className="font-bold text-white mb-1">💰 What you'll get:</p>
+                                        <p><span className="text-emerald-400 font-bold">{results.insights.interestPercent}%</span> of your final ${results.targetFV.toLocaleString()} comes from compound interest — money working for you.</p>
+                                    </div>
 
-                                    {isOption1Taken ? (
-                                        <div className="bg-emerald-900/30 border border-emerald-500/50 rounded-lg p-2">
-                                            <p className="font-bold text-emerald-400 mb-1">✅ Option 1: Goal Maximized!</p>
-                                            <p>Your Target FV of <span className="text-white font-bold">${results.targetFV.toLocaleString('en-US', { maximumFractionDigits: 0 })}</span> is perfectly aligned with what your ${results.exceedsSuggestion.currentPMT.toLocaleString()} payment can achieve.</p>
-                                        </div>
-                                    ) : (
-                                        <div className="bg-primary-900/20 border border-primary-500/30 rounded-lg p-2">
-                                            <p className="font-bold text-primary-400 mb-1">Option 1: Increase your goal</p>
-                                            <p>Set Target FV to <span className="text-white font-bold">${results.exceedsSuggestion.actualFV.toLocaleString('en-US', { maximumFractionDigits: 0 })}</span> to maximize what your ${results.exceedsSuggestion.currentPMT.toLocaleString()} payment can achieve.</p>
-                                        </div>
-                                    )}
-
-                                    {isOption2Taken ? (
-                                        <div className="bg-emerald-900/30 border border-emerald-500/50 rounded-lg p-2">
-                                            <p className="font-bold text-emerald-400 mb-1">✅ Option 2: Payment Optimized!</p>
-                                            <p>Your payment of <span className="text-white font-bold">${results.exceedsSuggestion.currentPMT.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>/{results.insights?.freqLabel || 'month'} is exactly what you need to reach your ${results.targetFV.toLocaleString()} goal.</p>
-                                        </div>
-                                    ) : (
+                                    {results.years > 5 && (
                                         <div className="bg-amber-900/20 border border-amber-500/30 rounded-lg p-2">
-                                            <p className="font-bold text-amber-400 mb-1">Option 2: Reduce your payment</p>
-                                            <p>Pay only <span className="text-white font-bold">${results.exceedsSuggestion.optimalPMT.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>/{results.insights?.freqLabel || 'month'} to reach your ${results.targetFV.toLocaleString()} goal and save the difference.</p>
+                                            <p className="font-bold text-amber-400 mb-1">⚠️ Don't delay:</p>
+                                            <p>Waiting 5 years means paying <span className="text-amber-400 font-bold">${Math.abs(results.insights.increasedPmt).toLocaleString('en-US', { maximumFractionDigits: 0 })}</span> more per {results.insights.freqLabel} ({results.insights.increasePercent}% increase).</p>
                                         </div>
                                     )}
                                 </div>
                             </div>
-                        );
-                    })()}
+                        )}
 
-                    {/* Actionable Recommendations - only show if no exceeds suggestion */}
-                    {results.insights && results.pmt > 0 && !results.exceedsSuggestion && (
-                        <div className="pt-2 border-t border-neutral-700">
-                            <p className="text-[9px] font-bold text-primary-400 uppercase tracking-wider mb-2">
-                                📋 Your Action Plan
-                            </p>
-                            <div className="text-[10px] text-neutral-300 space-y-2">
-                                <div className="bg-neutral-900/50 rounded-lg p-2">
-                                    <p className="font-bold text-white mb-1">✅ What to do:</p>
-                                    <p>Save <span className="text-green-400 font-bold">${results.pmt.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span> every {results.insights.freqLabel} for {results.years} years.</p>
-                                    <p className="text-neutral-500 mt-1">That's just ${results.insights.dailySavings.toFixed(2)}/day</p>
-                                </div>
-
-                                <div className="bg-neutral-900/50 rounded-lg p-2">
-                                    <p className="font-bold text-white mb-1">💰 What you'll get:</p>
-                                    <p><span className="text-emerald-400 font-bold">{results.insights.interestPercent}%</span> of your final ${results.targetFV.toLocaleString()} comes from compound interest — money working for you.</p>
-                                </div>
-
-                                {results.years > 5 && (
-                                    <div className="bg-amber-900/20 border border-amber-500/30 rounded-lg p-2">
-                                        <p className="font-bold text-amber-400 mb-1">⚠️ Don't delay:</p>
-                                        <p>Waiting 5 years means paying <span className="text-amber-400 font-bold">${Math.abs(results.insights.increasedPmt).toLocaleString('en-US', { maximumFractionDigits: 0 })}</span> more per {results.insights.freqLabel} ({results.insights.increasePercent}% increase).</p>
+                        {results.insights && results.pv > 0 && results.pmt === 0 && (
+                            <div className="pt-2 border-t border-neutral-700">
+                                <p className="text-[9px] font-bold text-primary-400 uppercase tracking-wider mb-2">
+                                    📋 Your Action Plan
+                                </p>
+                                <div className="text-[10px] text-neutral-300 space-y-2">
+                                    <div className="bg-neutral-900/50 rounded-lg p-2">
+                                        <p className="font-bold text-white mb-1">✅ What to do:</p>
+                                        <p>Invest <span className="text-primary-400 font-bold">${results.pv.toLocaleString('en-US', { maximumFractionDigits: 0 })}</span> today and let it grow for {results.years} years.</p>
                                     </div>
-                                )}
-                            </div>
-                        </div>
-                    )}
 
-                    {results.insights && results.pv > 0 && results.pmt === 0 && (
-                        <div className="pt-2 border-t border-neutral-700">
-                            <p className="text-[9px] font-bold text-primary-400 uppercase tracking-wider mb-2">
-                                📋 Your Action Plan
-                            </p>
-                            <div className="text-[10px] text-neutral-300 space-y-2">
-                                <div className="bg-neutral-900/50 rounded-lg p-2">
-                                    <p className="font-bold text-white mb-1">✅ What to do:</p>
-                                    <p>Invest <span className="text-primary-400 font-bold">${results.pv.toLocaleString('en-US', { maximumFractionDigits: 0 })}</span> today and let it grow for {results.years} years.</p>
-                                </div>
-
-                                <div className="bg-neutral-900/50 rounded-lg p-2">
-                                    <p className="font-bold text-white mb-1">💰 What you'll get:</p>
-                                    <p>Your money will grow <span className="text-emerald-400 font-bold">{(results.targetFV / results.pv).toFixed(1)}x</span> through compound interest alone.</p>
+                                    <div className="bg-neutral-900/50 rounded-lg p-2">
+                                        <p className="font-bold text-white mb-1">💰 What you'll get:</p>
+                                        <p>Your money will grow <span className="text-emerald-400 font-bold">{(results.targetFV / results.pv).toFixed(1)}x</span> through compound interest alone.</p>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    )}
-                </div>
-            )}
+                        )}
+                    </div>
+                )}
+                <div ref={bottomRef} className="h-1" />
+            </div>
 
             {/* Action Buttons */}
             <div className="mt-4 flex gap-2 shrink-0">
@@ -597,7 +608,7 @@ const GoalPlanner = ({ toggleHelp }) => {
                     Calculate
                 </button>
             </div>
-        </div>
+        </div >
     );
 };
 
