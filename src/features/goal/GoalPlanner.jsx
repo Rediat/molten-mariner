@@ -211,9 +211,9 @@ const GoalPlanner = ({ toggleHelp }) => {
     };
 
     return (
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full overflow-hidden">
             {/* Header */}
-            <div className="flex justify-between items-start mb-4">
+            <div className="flex justify-between items-start mb-4 shrink-0">
                 <div>
                     <h1 className="text-xl font-bold bg-gradient-to-r from-white to-neutral-400 bg-clip-text text-transparent flex items-center gap-2">
                         <Target className="w-5 h-5 text-primary-500" />
@@ -255,7 +255,7 @@ const GoalPlanner = ({ toggleHelp }) => {
 
             {/* Explanation Panel */}
             {showExplanation && (
-                <div className="bg-gradient-to-r from-primary-900/30 to-neutral-800/50 border border-primary-500/30 rounded-xl p-3 mb-4 text-xs text-neutral-300 text-left">
+                <div className="bg-gradient-to-r from-primary-900/30 to-neutral-800/50 border border-primary-500/30 rounded-xl p-3 mb-4 text-xs text-neutral-300 text-left shrink-0">
                     <p className="font-bold text-primary-400 mb-1">Financial Goal Planner</p>
                     <p className="text-[11px] leading-relaxed">
                         Calculate exactly how much to save to reach your target. Choose between
@@ -266,7 +266,7 @@ const GoalPlanner = ({ toggleHelp }) => {
             )}
 
             {/* Solve Mode Selector */}
-            <div className="flex gap-1 bg-neutral-900/50 p-1 rounded-xl mb-4">
+            <div className="flex gap-1 bg-neutral-900/50 p-1 rounded-xl mb-4 shrink-0">
                 {SOLVE_MODES.map(sm => (
                     <button
                         key={sm.id}
@@ -282,7 +282,7 @@ const GoalPlanner = ({ toggleHelp }) => {
             </div>
 
             {/* Input Fields */}
-            <div className="space-y-1.5 flex-1">
+            <div className="space-y-1.5 flex-1 overflow-y-auto min-h-0 pr-1">
                 {/* Target FV */}
                 <div className="group relative bg-neutral-800/40 rounded-lg p-2 transition-all duration-300 border border-primary-500/50 ring-1 ring-primary-500/10 bg-neutral-800/60">
                     <div className="flex justify-between items-center gap-4">
@@ -425,7 +425,7 @@ const GoalPlanner = ({ toggleHelp }) => {
 
             {/* Results */}
             {results && !results.error && (
-                <div className="mt-4 bg-gradient-to-br from-primary-900/30 to-neutral-800/50 border border-primary-500/30 rounded-xl p-4 space-y-3">
+                <div className="mt-4 bg-gradient-to-br from-primary-900/30 to-neutral-800/50 border border-primary-500/30 rounded-xl p-4 space-y-3 shrink-0">
                     <div className="grid grid-cols-2 gap-3">
                         {results.pv > 0 && (
                             <div className="bg-neutral-900/50 rounded-lg p-2.5">
@@ -565,7 +565,7 @@ const GoalPlanner = ({ toggleHelp }) => {
             )}
 
             {/* Action Buttons */}
-            <div className="mt-4 flex gap-2">
+            <div className="mt-4 flex gap-2 shrink-0">
                 <button
                     onClick={() => {
                         setTargetFV(1000000);
