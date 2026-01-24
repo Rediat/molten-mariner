@@ -136,6 +136,11 @@ const TVMCalculator = ({ toggleHelp }) => {
             }
 
             // Update state
+            if (result === 'INVALID_SIGN' || result === 'Error' || (typeof result === 'number' && isNaN(result))) {
+                setCalculatedValue(result);
+                return;
+            }
+
             setCalculatedValue(result);
 
             if (target === 'totalInterest') {
@@ -336,6 +341,10 @@ const TVMCalculator = ({ toggleHelp }) => {
                                     </span>
                                 ) : target === field.id && calculatedValue === null ? (
                                     <span className="text-neutral-600 italic text-xs font-bold px-2">CALC...</span>
+                                ) : target === field.id && calculatedValue === 'INVALID_SIGN' ? (
+                                    <span className="text-red-400 text-[10px] leading-tight font-bold text-right w-full block">PV/PMT or FV can't have the same sign</span>
+                                ) : target === field.id && (calculatedValue === "Error" || (typeof calculatedValue === 'number' && isNaN(calculatedValue))) ? (
+                                    <span className="text-red-400 italic text-xs font-bold px-2">Error</span>
                                 ) : (
                                     <FormattedNumberInput
                                         value={getDisplayValue(field.id)}
