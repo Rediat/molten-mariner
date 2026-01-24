@@ -175,12 +175,20 @@ export const calculateTVM = (target, values, mode = 'END', frequency = 12, inter
 
     if (target === 'i') {
         // Newton-Raphson approximation for I/Y (Annual Interest Rate)
-        // This solves for the Nominal Rate (I), not the effective rate r directly
-        // Because r depends on I, CY, and PY non-linearly.
+
+        // 1. Validate Signs: There must be at least one positive and one negative cash flow
+        // unless all are zero.
+        // We consider PV, PMT, FV.
+        // Note: This assumes standard financing where r > -100%
+        const hasPositive = pv > 0 || pmt > 0 || fv > 0;
+        const hasNegative = pv < 0 || pmt < 0 || fv < 0;
+        const allZero = values.n > 0 && Math.abs(pv) < 1e-9 && Math.abs(pmt) < 1e-9 && Math.abs(fv) < 1e-9;
+
+        if (!allZero && (!hasPositive || !hasNegative)) {
+            return 'INVALID_SIGN';
+        }
 
         let iGuess = 5.0; // Initial guess 5% annual
-        // Or better: use rate function approximation? 
-        // We'll stick to a robust NR on the annual rate percentage directly.
 
         const calculateF_Deriv = (iVal) => {
             const r_p = (iVal / 100) / cy;
@@ -189,8 +197,6 @@ export const calculateTVM = (target, values, mode = 'END', frequency = 12, inter
             // If r is effectively 0
             if (Math.abs(r_eff) < 1e-9) {
                 const fValue = pv + pmt * n + fv;
-                // Derivative w.r.t iVal (rough approx or 0) - lets rely on secant/numerical if possible
-                // But for simplicity in this general function, let's just do numerical derivative
                 return { fValue, r_eff };
             }
 
@@ -206,7 +212,7 @@ export const calculateTVM = (target, values, mode = 'END', frequency = 12, inter
         let iter = 0;
         let x0 = iGuess;
 
-        for (iter = 0; iter < 50; iter++) {
+        for (iter = 0; iter < 100; iter++) {
             const y0 = calculateF_Deriv(x0).fValue;
             if (Math.abs(y0) < 1e-6) return x0;
 
@@ -219,10 +225,19 @@ export const calculateTVM = (target, values, mode = 'END', frequency = 12, inter
             if (Math.abs(derivative) < 1e-9) break; // Flats
 
             const nextX = x0 - y0 / derivative;
-            if (Math.abs(nextX - x0) < 1e-6) return nextX;
+
+            // Damping or bounds check could go here, but for now just check convergence
+            if (Math.abs(nextX - x0) < 1e-7) {
+                // Check if it's a root
+                if (Math.abs(calculateF_Deriv(nextX).fValue) < 1e-4) return nextX;
+                return NaN; // Converged to non-root
+            }
             x0 = nextX;
         }
-        return x0;
+
+        // Final check
+        if (Math.abs(calculateF_Deriv(x0).fValue) < 1e-4) return x0;
+        return NaN;
     }
 
     return 0;
