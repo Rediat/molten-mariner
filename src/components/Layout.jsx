@@ -1,17 +1,24 @@
 import React, { useState } from 'react';
-import { Calculator, DollarSign, Activity, FileText, History, Percent, Target, HelpCircle, X } from 'lucide-react';
+import { Calculator, DollarSign, Activity, FileText, History, Percent, Target, HelpCircle, X, Receipt } from 'lucide-react';
 import HelpGuide from '../features/help/HelpGuide';
+import { useSettings } from '../context/SettingsContext';
 
 const Layout = ({ children, activeTab, onTabChange, showHelp, onCloseHelp }) => {
-    const navItems = [
+    const { settings } = useSettings();
+
+    const allNavItems = [
         { id: 'tvm', label: 'TVM', icon: Calculator },
         { id: 'goal', label: 'GOAL', icon: Target },
         { id: 'loan', label: 'LOAN', icon: DollarSign },
-        { id: 'flow', label: 'FLOW', icon: Activity },
-        { id: 'bond', label: 'BOND', icon: FileText },
-        { id: 'rates', label: 'RATES', icon: Percent },
-        { id: 'history', label: 'HISTORY', icon: History },
+        { id: 'flow', label: 'FLOW', icon: Activity, settingKey: 'showFlow' },
+        { id: 'bond', label: 'BOND', icon: FileText, settingKey: 'showBond' },
+        { id: 'rates', label: 'RATES', icon: Percent, settingKey: 'showRates' },
+        { id: 'tbill', label: 'T-BILL', icon: Receipt, settingKey: 'showTBill' },
+        { id: 'history', label: 'HISTORY', icon: History, settingKey: 'showHistory' },
     ];
+
+    // Filter nav items based on settings
+    const navItems = allNavItems.filter(item => !item.settingKey || settings[item.settingKey]);
 
     return (
         <div className="min-h-screen bg-neutral-900 text-white flex flex-col items-center justify-center p-4">

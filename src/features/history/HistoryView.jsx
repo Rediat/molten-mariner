@@ -1,8 +1,8 @@
 import React from 'react';
 import { useHistory } from '../../context/HistoryContext';
-import { Trash2, Clock, HelpCircle } from 'lucide-react';
+import { Trash2, Clock, HelpCircle, Settings } from 'lucide-react';
 
-const HistoryView = ({ toggleHelp }) => {
+const HistoryView = ({ toggleHelp, toggleSettings }) => {
     const { history, clearHistory } = useHistory();
 
     const formatNum = (num, decimals = 2) => new Intl.NumberFormat('en-US', {
@@ -36,6 +36,13 @@ const HistoryView = ({ toggleHelp }) => {
                     History
                 </h1>
                 <div className="flex items-center gap-2">
+                    <button
+                        onClick={toggleSettings}
+                        className="p-2 rounded-full hover:bg-neutral-800 transition-colors text-neutral-400 hover:text-white"
+                        title="Settings"
+                    >
+                        <Settings size={20} />
+                    </button>
                     <button
                         onClick={toggleHelp}
                         className="p-2 rounded-full hover:bg-neutral-800 transition-colors text-neutral-400 hover:text-white"

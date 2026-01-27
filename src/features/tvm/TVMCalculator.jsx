@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { calculateTVM } from '../../utils/financial-utils';
 import { useHistory } from '../../context/HistoryContext';
-import { Settings2, Info, HelpCircle, Trash2 } from 'lucide-react';
+import { Settings2, Info, HelpCircle, Trash2, Settings } from 'lucide-react';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
 import { CalculateIcon } from '../../components/Icons';
 
@@ -44,7 +44,7 @@ const calcTVMFactors = (rate, n, isBeginMode) => {
 };
 
 
-const TVMCalculator = ({ toggleHelp }) => {
+const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
     const { addToHistory } = useHistory();
 
     // Core state
@@ -381,6 +381,13 @@ const TVMCalculator = ({ toggleHelp }) => {
                     title="Help Guide"
                 >
                     <HelpCircle className="w-5 h-5" />
+                </button>
+                <button
+                    onClick={toggleSettings}
+                    className="bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-sm px-4 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center"
+                    title="Settings"
+                >
+                    <Settings className="w-5 h-5" />
                 </button>
                 <button
                     onClick={handleCalculate}

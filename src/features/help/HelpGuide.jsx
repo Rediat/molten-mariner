@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
     HelpCircle, Calculator, Target, DollarSign, Activity, FileText, Percent,
-    ChevronDown, ChevronUp, Book, Lightbulb, Hash, ArrowRight, History, Trash2
+    ChevronDown, ChevronUp, Book, Lightbulb, Hash, ArrowRight, History, Trash2, Receipt
 } from 'lucide-react';
 
 // Map tab IDs to section IDs
@@ -12,6 +12,7 @@ const TAB_TO_SECTION = {
     flow: 'flow',
     bond: 'bond',
     rates: 'rates',
+    tbill: 'tbill',
     history: 'history'
 };
 
@@ -134,6 +135,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                         <li>• <strong>Flow</strong> - NPV, IRR & cash flow analysis</li>
                         <li>• <strong>Bond</strong> - Bond pricing & yields</li>
                         <li>• <strong>Rates</strong> - Interest rate conversions</li>
+                        <li>• <strong>T-Bill</strong> - Treasury Bill bidding calculator</li>
                         <li>• <strong>History</strong> - View past calculations</li>
                     </ul>
                 </div>
@@ -427,6 +429,54 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                 <InfoBox type="tip">
                     <strong>Rule of 72:</strong> A quick estimate for doubling time is 72 ÷ interest rate.
                     For example, at 8%, money doubles in approximately 72 ÷ 8 = 9 years.
+                </InfoBox>
+            </HelpSection>
+
+            {/* T-Bill Calculator */}
+            <HelpSection
+                id="tbill"
+                title="T-Bill Calculator"
+                icon={Receipt}
+                isOpen={openSection === 'tbill'}
+                onToggle={handleToggle}
+            >
+                <p>
+                    Calculate Treasury Bill purchase prices and returns using discount pricing.
+                    Perfect for bidding on government T-Bills and understanding your actual yield.
+                </p>
+
+                <div className="pt-2">
+                    <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Inputs:</p>
+                    <FieldList fields={[
+                        { name: 'Face Value', description: 'The amount you receive at maturity (par value)' },
+                        { name: 'Tenure', description: 'Duration of the T-Bill (28, 91, 182, or 364 days)' },
+                        { name: 'Discount Rate', description: 'Annual discount rate used to calculate purchase price' },
+                        { name: 'Issue Date', description: 'The date when the T-Bill is issued' },
+                        { name: 'Brokerage %', description: 'Commission percentage charged by your broker' }
+                    ]} />
+                </div>
+
+                <div className="pt-2">
+                    <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Results:</p>
+                    <FieldList fields={[
+                        { name: 'Purchase Price', description: 'Amount to pay for the T-Bill (before brokerage)' },
+                        { name: 'Brokerage', description: 'Commission amount based on purchase price' },
+                        { name: 'Total Consideration', description: 'Total amount you pay (purchase price + brokerage)' },
+                        { name: 'Maturity Date', description: 'Date when the T-Bill matures' },
+                        { name: 'Discount', description: 'Difference between face value and purchase price' },
+                        { name: 'Net Return', description: 'Your actual profit after brokerage (face value - total consideration)' },
+                        { name: 'Effective Yield', description: 'Annualized return on your investment' }
+                    ]} />
+                </div>
+
+                <InfoBox type="formula">
+                    <strong>Purchase Price = Face Value / (1 + (Rate × Days / 365))</strong>
+                    <br />This is the standard discount pricing formula for T-Bills.
+                </InfoBox>
+
+                <InfoBox type="tip">
+                    <strong>Compare Effective Yield:</strong> The effective yield shows your actual annualized return,
+                    which is typically higher than the discount rate due to the discount pricing method.
                 </InfoBox>
             </HelpSection>
 
