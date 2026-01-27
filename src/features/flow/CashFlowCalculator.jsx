@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { calculateNPV, calculateIRR, calculateMIRR, calculatePaybackPeriod, calculateDiscountedPaybackPeriod, calculateProfitabilityIndex } from '../../utils/financial-utils';
 import { useHistory } from '../../context/HistoryContext';
-import { Plus, Trash2, Info, HelpCircle } from 'lucide-react';
+import { Plus, Trash2, Info, HelpCircle, Settings } from 'lucide-react';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
 import { CalculateIcon } from '../../components/Icons';
 
-const CashFlowCalculator = ({ toggleHelp }) => {
+const CashFlowCalculator = ({ toggleHelp, toggleSettings }) => {
     const { addToHistory } = useHistory();
     const [rate, setRate] = useState(10);
     const [reinvestRate, setReinvestRate] = useState(10);
@@ -132,6 +132,13 @@ const CashFlowCalculator = ({ toggleHelp }) => {
                     title="Help Guide"
                 >
                     <HelpCircle className="w-5 h-5" />
+                </button>
+                <button
+                    onClick={toggleSettings}
+                    className="bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-sm px-4 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center"
+                    title="Settings"
+                >
+                    <Settings className="w-5 h-5" />
                 </button>
                 <button onClick={handleCalculate} className="flex-1 bg-gradient-to-r from-primary-600 to-primary-500 text-neutral-900 font-black text-base py-3.5 rounded-xl shadow-lg shadow-primary-900/20 active:scale-[0.98] transition-all hover:brightness-110 flex items-center justify-center gap-2 uppercase tracking-widest">
                     <CalculateIcon className="w-5 h-5" /> Calculate
