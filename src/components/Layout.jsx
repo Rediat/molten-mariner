@@ -7,9 +7,9 @@ const Layout = ({ children, activeTab, onTabChange, showHelp, onCloseHelp }) => 
     const { settings } = useSettings();
 
     const allNavItems = [
-        { id: 'tvm', label: 'TVM', icon: Calculator },
-        { id: 'goal', label: 'GOAL', icon: Target },
-        { id: 'loan', label: 'LOAN', icon: DollarSign },
+        { id: 'tvm', label: 'TVM', icon: Calculator, settingKey: 'showTVM' },
+        { id: 'goal', label: 'GOAL', icon: Target, settingKey: 'showGoal' },
+        { id: 'loan', label: 'LOAN', icon: DollarSign, settingKey: 'showLoan' },
         { id: 'flow', label: 'FLOW', icon: Activity, settingKey: 'showFlow' },
         { id: 'bond', label: 'BOND', icon: FileText, settingKey: 'showBond' },
         { id: 'rates', label: 'RATES', icon: Percent, settingKey: 'showRates' },
@@ -17,8 +17,13 @@ const Layout = ({ children, activeTab, onTabChange, showHelp, onCloseHelp }) => 
         { id: 'history', label: 'HISTORY', icon: History, settingKey: 'showHistory' },
     ];
 
-    // Filter nav items based on settings
-    const navItems = allNavItems.filter(item => !item.settingKey || settings[item.settingKey]);
+    // Get tab order from settings
+    const tabOrder = settings.tabOrder || ['tvm', 'goal', 'loan', 'flow', 'bond', 'rates', 'tbill', 'history'];
+
+    // Filter nav items based on settings and sort by tabOrder
+    const navItems = allNavItems
+        .filter(item => settings[item.settingKey])
+        .sort((a, b) => tabOrder.indexOf(a.id) - tabOrder.indexOf(b.id));
 
     return (
         <div className="min-h-screen bg-neutral-900 text-white flex flex-col items-center justify-center p-4">
