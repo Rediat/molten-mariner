@@ -96,7 +96,7 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
             <div className="space-y-1.5 flex-1 overflow-y-auto pr-1 scrollbar-hide">
                 {/* Face Value */}
                 <div className="bg-neutral-800/40 rounded-xl p-2.5 border border-primary-500/50 ring-1 ring-primary-500/10">
-                    <div className="flex justify-between items-center gap-2">
+                    <div className="flex justify-between items-center gap-2 min-w-0">
                         <div className="shrink-0">
                             <label className="text-sm font-bold text-primary-400 block leading-tight text-left">Face Value</label>
                             <span className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold">Amount at Maturity</span>
@@ -105,7 +105,7 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
                             value={faceValue}
                             onChange={(e) => setFaceValue(parseFloat(e.target.value.replace(/,/g, '')) || 0)}
                             decimals={2}
-                            className="bg-transparent text-right text-lg font-mono focus:outline-none flex-1 text-primary-400 font-black"
+                            className="bg-transparent text-right text-lg font-mono focus:outline-none text-primary-400 font-black min-w-0 w-32"
                             placeholder="500,000"
                         />
                     </div>

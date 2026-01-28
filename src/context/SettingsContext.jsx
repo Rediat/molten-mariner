@@ -5,11 +5,15 @@ const SettingsContext = createContext();
 const STORAGE_KEY = 'molten-mariner-settings';
 
 const DEFAULT_SETTINGS = {
-    showFlow: true,
-    showBond: true,
+    showTVM: true,
+    showLoan: true,
+    showFlow: false,
+    showBond: false,
     showRates: true,
     showTBill: true,
-    showHistory: true,
+    showGoal: true,
+    showHistory: false,
+    tabOrder: ['tvm', 'goal', 'loan', 'flow', 'bond', 'rates', 'tbill', 'history'],
 };
 
 export const SettingsProvider = ({ children }) => {
