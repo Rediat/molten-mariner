@@ -12,8 +12,8 @@ const DEFAULT_SETTINGS = {
     showRates: true,
     showTBill: true,
     showGoal: true,
-    showHistory: false,
-    tabOrder: ['tvm', 'goal', 'loan', 'flow', 'bond', 'rates', 'tbill', 'history'],
+    showHistory: true,
+    tabOrder: ['tvm', 'goal', 'loan', 'tbill', 'rates', 'history', 'flow', 'bond'],
 };
 
 export const SettingsProvider = ({ children }) => {
