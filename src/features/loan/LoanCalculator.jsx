@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { calculateLoan, getAmortizationSchedule } from '../../utils/financial-utils';
 import { useHistory } from '../../context/HistoryContext';
-import { List, X, FileText, FileSpreadsheet, Info, HelpCircle, Trash2, Settings } from 'lucide-react';
+import { List, X, FileText, FileSpreadsheet, Info, HelpCircle, Trash2, Settings, History } from 'lucide-react';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
 import { CalculateIcon } from '../../components/Icons';
+import HistoryOverlay from '../../components/HistoryOverlay';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -39,6 +40,7 @@ const LoanCalculator = ({ toggleHelp, toggleSettings }) => {
     const [result, setResult] = useState(null);
     const [showSchedule, setShowSchedule] = useState(false);
     const [showExplanation, setShowExplanation] = useState(false);
+    const [showHistory, setShowHistory] = useState(false);
 
     const calculatePeriodsBetween = (d1, d2, freq) => {
         const start = new Date(d1), end = new Date(d2);
@@ -263,6 +265,12 @@ const LoanCalculator = ({ toggleHelp, toggleSettings }) => {
                                         <button onClick={() => setShowSchedule(true)} className="text-[10px] text-primary-500 font-bold uppercase tracking-tighter flex items-center gap-1 mt-1 hover:text-primary-400">
                                             <List size={12} /> View Schedule
                                         </button>
+                                        <button
+                                            onClick={() => setShowHistory(true)}
+                                            className="text-[10px] text-primary-500 font-bold uppercase tracking-tighter flex items-center gap-1 mt-1 hover:text-primary-400"
+                                        >
+                                            <History size={12} /> View History
+                                        </button>
                                     </div>
                                     <div className="text-right">
                                         <span className="block text-3xl font-bold text-primary-500">{formatCurrency(result.monthlyPayment)}</span>
@@ -282,7 +290,7 @@ const LoanCalculator = ({ toggleHelp, toggleSettings }) => {
                             </div>
                         )}
 
-                        <div className="flex gap-2">
+                        <div className="flex gap-1.5">
                             <button
                                 onClick={() => {
                                     setValues({
@@ -296,25 +304,25 @@ const LoanCalculator = ({ toggleHelp, toggleSettings }) => {
                                     });
                                     setResult(null);
                                 }}
-                                className="w-1/4 bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-sm py-3.5 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center gap-1.5 uppercase tracking-wider"
+                                className="w-[15%] bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-xs py-3.5 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center gap-1 uppercase tracking-wider"
                                 title="Clear all values"
                             >
-                                <Trash2 className="w-4 h-4" />
+                                <Trash2 className="w-3.5 h-3.5" />
                                 CLR
                             </button>
                             <button
                                 onClick={toggleHelp}
-                                className="bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-sm px-4 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center"
+                                className="bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-sm px-2 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center"
                                 title="Help Guide"
                             >
-                                <HelpCircle className="w-5 h-5" />
+                                <HelpCircle className="w-4 h-4" />
                             </button>
                             <button
                                 onClick={toggleSettings}
-                                className="bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-sm px-4 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center"
+                                className="bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-sm px-2 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center"
                                 title="Settings"
                             >
-                                <Settings className="w-5 h-5" />
+                                <Settings className="w-4 h-4" />
                             </button>
                             <button onClick={handleCalculate} className="flex-1 bg-gradient-to-r from-primary-600 to-primary-500 text-neutral-900 font-black text-base py-3.5 rounded-xl shadow-lg shadow-primary-900/20 active:scale-[0.98] transition-all hover:brightness-110 flex items-center justify-center gap-2 uppercase tracking-widest">
                                 <CalculateIcon className="w-5 h-5" /> Calculate
@@ -360,6 +368,14 @@ const LoanCalculator = ({ toggleHelp, toggleSettings }) => {
                     </div>
                 )}
             </div>
+
+            {/* History Overlay */}
+            <HistoryOverlay
+                isOpen={showHistory}
+                onClose={() => setShowHistory(false)}
+                module="Loan"
+                title="Loan"
+            />
         </div>
     );
 };
