@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { calculateEAR } from '../../utils/financial-utils';
 import { useHistory } from '../../context/HistoryContext';
-import { Info, HelpCircle, Trash2, Settings } from 'lucide-react';
+import { Info, HelpCircle, Trash2, Settings, History } from 'lucide-react';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
 import { CalculateIcon } from '../../components/Icons';
+import HistoryOverlay from '../../components/HistoryOverlay';
 
 const FREQUENCIES = [
     { n: 1, label: 'Annually' },
@@ -23,6 +24,7 @@ const RateConverter = ({ toggleHelp, toggleSettings }) => {
     const [result, setResult] = useState(null);
     const [doublingTime, setDoublingTime] = useState(null);
     const [showExplanation, setShowExplanation] = useState(false);
+    const [showHistory, setShowHistory] = useState(false);
 
     const handleCalculate = () => {
         const res = calculateEAR(nominal, compounding);
@@ -86,9 +88,17 @@ const RateConverter = ({ toggleHelp, toggleSettings }) => {
                 <div className="flex-1 flex flex-col bg-neutral-800/20 rounded-xl overflow-hidden border border-neutral-800/50 min-h-0">
                     {result !== null ? (
                         <>
-                            <div className="bg-neutral-800/80 p-2 text-center shrink-0 border-b border-neutral-800">
-                                <span className="text-[10px] font-medium text-neutral-500 uppercase tracking-widest">Effective Annual Rate</span>
-                                <div className="text-2xl font-bold text-white mt-0.5 font-mono">{result.toFixed(4)}%</div>
+                            <div className="bg-neutral-800/80 p-2 border-b border-neutral-800">
+                                <div className="flex justify-between items-center mb-1">
+                                    <span className="text-[10px] font-medium text-neutral-500 uppercase tracking-widest">Effective Annual Rate</span>
+                                    <button
+                                        onClick={() => setShowHistory(true)}
+                                        className="text-[9px] text-primary-500 font-bold uppercase tracking-wider flex items-center gap-1 hover:text-primary-400 transition-colors"
+                                    >
+                                        <History size={12} /> History
+                                    </button>
+                                </div>
+                                <div className="text-2xl font-bold text-white font-mono text-center">{result.toFixed(4)}%</div>
                             </div>
                             <div className="flex-1 overflow-y-auto custom-scrollbar p-3">
                                 <h3 className="text-[10px] font-bold text-neutral-500 mb-2 uppercase tracking-wide border-b border-neutral-800/50 pb-1">Period Rates Breakdown</h3>
@@ -169,6 +179,14 @@ const RateConverter = ({ toggleHelp, toggleSettings }) => {
                     <CalculateIcon className="w-5 h-5" /> Calculate
                 </button>
             </div>
+
+            {/* History Overlay */}
+            <HistoryOverlay
+                isOpen={showHistory}
+                onClose={() => setShowHistory(false)}
+                module="RATES"
+                title="Rate Converter"
+            />
         </div>
     );
 };

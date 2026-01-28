@@ -33,8 +33,14 @@ export const HistoryProvider = ({ children }) => {
 
     const clearHistory = () => setHistory([]);
 
+    const clearModuleHistory = (module) => {
+        setHistory(prev => prev.filter(item =>
+            item.module.toUpperCase() !== module.toUpperCase()
+        ));
+    };
+
     return (
-        <HistoryContext.Provider value={{ history, addToHistory, clearHistory }}>
+        <HistoryContext.Provider value={{ history, addToHistory, clearHistory, clearModuleHistory }}>
             {children}
         </HistoryContext.Provider>
     );

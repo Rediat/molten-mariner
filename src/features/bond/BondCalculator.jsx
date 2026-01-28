@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { calculateBond, calculateBondYTM, calculateBondYTC, calculateBondDuration, calculateBondConvexity } from '../../utils/financial-utils';
 import { useHistory } from '../../context/HistoryContext';
-import { Info, HelpCircle, Trash2, Settings } from 'lucide-react';
+import { Info, HelpCircle, Trash2, Settings, History } from 'lucide-react';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
 import { CalculateIcon } from '../../components/Icons';
+import HistoryOverlay from '../../components/HistoryOverlay';
 
 const BondCalculator = ({ toggleHelp, toggleSettings }) => {
     const { addToHistory } = useHistory();
@@ -14,6 +15,7 @@ const BondCalculator = ({ toggleHelp, toggleSettings }) => {
     const [result, setResult] = useState(null);
     const [metrics, setMetrics] = useState(null);
     const [showExplanation, setShowExplanation] = useState(false);
+    const [showHistory, setShowHistory] = useState(false);
 
     const handleCalculate = () => {
         const { faceValue, couponRate, ytm, price, years, frequency, callPrice, yearsToCall } = values;
@@ -48,12 +50,12 @@ const BondCalculator = ({ toggleHelp, toggleSettings }) => {
 
     return (
         <div className="flex flex-col h-full">
-            <div className="flex justify-between items-start mb-4">
+            <div className="flex justify-between items-start mb-2">
                 <div>
                     <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-neutral-400 bg-clip-text text-transparent">Bond Pricing</h1>
-                    <p className="text-neutral-500 text-sm font-medium">Valuation & Yield</p>
+                    <p className="text-neutral-500 text-[10px] font-medium uppercase tracking-wider">Valuation & Yield</p>
                 </div>
-                <div className="flex flex-col items-end gap-2">
+                <div className="flex flex-col items-end gap-1">
                     <div className="flex gap-1.5">
                         <button
                             onClick={() => setShowExplanation(!showExplanation)}
@@ -84,7 +86,7 @@ const BondCalculator = ({ toggleHelp, toggleSettings }) => {
 
             {/* Explanation Panel */}
             {showExplanation && (
-                <div className="bg-gradient-to-r from-primary-900/30 to-neutral-800/50 border border-primary-500/30 rounded-xl p-3 mb-4 text-xs text-neutral-300 text-left">
+                <div className="bg-gradient-to-r from-primary-900/30 to-neutral-800/50 border border-primary-500/30 rounded-xl p-2 mb-2 text-xs text-neutral-300 text-left">
                     <p className="font-bold text-primary-400 mb-1">Bond Valuation</p>
                     <p className="text-[11px] leading-relaxed">
                         Calculate bond prices or Yield to Maturity (YTM). Includes Duration (Macaulay & Modified),
@@ -93,9 +95,9 @@ const BondCalculator = ({ toggleHelp, toggleSettings }) => {
                 </div>
             )}
 
-            <div className="space-y-1 flex-1 overflow-y-auto pr-1 scrollbar-hide">
+            <div className="space-y-0.5 flex-1 overflow-y-auto pr-1 scrollbar-hide">
                 {inputFields.map(field => (
-                    <div key={field.id} className="bg-neutral-800/40 rounded-xl p-2 flex justify-between items-center gap-4 border border-transparent hover:border-neutral-700 transition-all">
+                    <div key={field.id} className="bg-neutral-800/40 rounded-lg p-1.5 flex justify-between items-center gap-4 border border-transparent hover:border-neutral-700 transition-all">
                         <div className="flex flex-col shrink-0 items-start text-left">
                             <label className="text-sm font-bold text-neutral-300">{field.label}</label>
                             <span className="text-[9px] uppercase tracking-tighter text-neutral-500 font-bold">{field.sub}</span>
@@ -106,9 +108,18 @@ const BondCalculator = ({ toggleHelp, toggleSettings }) => {
             </div>
 
             {result !== null && metrics && (
-                <div className="space-y-3 mb-3 mt-4">
-                    <div className="grid grid-cols-2 gap-3">
-                        <div className="bg-neutral-900/50 rounded-xl p-3 border border-neutral-800">
+                <div className="space-y-2 mb-2 mt-2">
+                    <div className="flex justify-between items-center">
+                        <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Results</span>
+                        <button
+                            onClick={() => setShowHistory(true)}
+                            className="text-[9px] text-primary-500 font-bold uppercase tracking-wider flex items-center gap-1 hover:text-primary-400 transition-colors"
+                        >
+                            <History size={12} /> View History
+                        </button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                        <div className="bg-neutral-900/50 rounded-lg p-2 border border-neutral-800">
                             <div className="text-[10px] uppercase font-bold text-neutral-500 mb-1">Duration</div>
                             {[{ label: 'Mac', val: metrics.duration.macaulay }, { label: 'Mod', val: metrics.duration.modified }].map(d => (
                                 <div key={d.label} className="flex justify-between items-end">
@@ -117,17 +128,17 @@ const BondCalculator = ({ toggleHelp, toggleSettings }) => {
                                 </div>
                             ))}
                         </div>
-                        <div className="bg-neutral-900/50 rounded-xl p-3 border border-neutral-800 flex flex-col justify-between">
+                        <div className="bg-neutral-900/50 rounded-lg p-2 border border-neutral-800 flex flex-col justify-between">
                             <div className="text-[10px] uppercase font-bold text-neutral-500 mb-1">Convexity</div>
                             <span className="text-sm font-bold text-white font-mono self-end">{metrics.convexity.toFixed(2)}</span>
                         </div>
-                        <div className="bg-neutral-900/50 rounded-xl p-3 border border-neutral-800 flex flex-col justify-between">
+                        <div className="bg-neutral-900/50 rounded-lg p-2 border border-neutral-800 flex flex-col justify-between">
                             <div className="text-[10px] uppercase font-bold text-neutral-500 mb-1">{target === 'price' ? 'Bond Price' : 'Yield (YTM)'}</div>
                             <span className="text-lg font-bold text-primary-500 font-mono self-end">
                                 {target === 'price' ? result.toLocaleString('en-US', { style: 'currency', currency: 'USD' }) : `${result.toFixed(3)}%`}
                             </span>
                         </div>
-                        <div className="bg-neutral-900/50 rounded-xl p-3 border border-neutral-800 flex flex-col justify-between">
+                        <div className="bg-neutral-900/50 rounded-lg p-2 border border-neutral-800 flex flex-col justify-between">
                             <div className="text-[10px] uppercase font-bold text-neutral-500 mb-1">Yield to Call</div>
                             <span className="text-lg font-bold text-secondary-400 font-mono self-end">{metrics.ytc ? `${metrics.ytc.toFixed(3)}%` : 'N/A'}</span>
                         </div>
@@ -135,7 +146,7 @@ const BondCalculator = ({ toggleHelp, toggleSettings }) => {
                 </div>
             )}
 
-            <div className="flex gap-2 mt-1">
+            <div className="flex gap-1.5 mt-1">
                 <button
                     onClick={() => {
                         setValues({
@@ -144,30 +155,38 @@ const BondCalculator = ({ toggleHelp, toggleSettings }) => {
                         setResult(null);
                         setMetrics(null);
                     }}
-                    className="w-1/4 bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-sm py-3.5 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center gap-1.5 uppercase tracking-wider"
+                    className="w-[15%] bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-xs py-3.5 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center gap-1 uppercase tracking-wider"
                     title="Clear all values"
                 >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-3.5 h-3.5" />
                     CLR
                 </button>
                 <button
                     onClick={toggleHelp}
-                    className="bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-sm px-4 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center"
+                    className="bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-sm px-2 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center"
                     title="Help Guide"
                 >
-                    <HelpCircle className="w-5 h-5" />
+                    <HelpCircle className="w-4 h-4" />
                 </button>
                 <button
                     onClick={toggleSettings}
-                    className="bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-sm px-4 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center"
+                    className="bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-sm px-2 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center"
                     title="Settings"
                 >
-                    <Settings className="w-5 h-5" />
+                    <Settings className="w-4 h-4" />
                 </button>
                 <button onClick={handleCalculate} className="flex-1 bg-gradient-to-r from-primary-600 to-primary-500 text-neutral-900 font-black text-base py-3.5 rounded-xl shadow-lg shadow-primary-900/20 active:scale-[0.98] transition-all hover:brightness-110 flex items-center justify-center gap-2 uppercase tracking-widest">
                     <CalculateIcon className="w-5 h-5" /> Calculate
                 </button>
             </div>
+
+            {/* History Overlay */}
+            <HistoryOverlay
+                isOpen={showHistory}
+                onClose={() => setShowHistory(false)}
+                module="Bond"
+                title="Bond"
+            />
         </div>
     );
 };

@@ -21,9 +21,13 @@ const SettingsModal = ({ isOpen, onClose }) => {
 
     if (!isOpen) return null;
 
-    // Get ordered items based on tabOrder
+    // Get ordered items based on tabOrder, with history always at the bottom
     const tabOrder = settings.tabOrder || ['tvm', 'goal', 'loan', 'flow', 'bond', 'rates', 'tbill', 'history'];
-    const orderedItems = tabOrder.map(id => ({ id, ...TAB_CONFIG[id] }));
+    const orderedItems = tabOrder
+        .filter(id => id !== 'history') // Exclude history from normal order
+        .map(id => ({ id, ...TAB_CONFIG[id] }));
+    // Always append history at the end
+    orderedItems.push({ id: 'history', ...TAB_CONFIG['history'] });
 
     const enabledCount = orderedItems.filter(item => settings[item.key]).length;
 
@@ -54,9 +58,15 @@ const SettingsModal = ({ isOpen, onClose }) => {
 
         if (swapIndex < 0 || swapIndex >= newOrder.length) return;
 
+        // Prevent moving history tab or swapping with it
+        if (newOrder[index] === 'history' || newOrder[swapIndex] === 'history') return;
+
         [newOrder[index], newOrder[swapIndex]] = [newOrder[swapIndex], newOrder[index]];
         updateSetting('tabOrder', newOrder);
     };
+
+    // Check if an item is the history tab (locked position)
+    const isHistoryTab = (id) => id === 'history';
 
     return (
         <div className="absolute inset-0 bg-black/60 z-50 flex items-center justify-center animate-in fade-in duration-200">
@@ -87,23 +97,25 @@ const SettingsModal = ({ isOpen, onClose }) => {
                                 <span className="text-sm font-medium text-white">{item.label}</span>
                             </div>
                             <div className="flex items-center gap-2">
-                                {/* Reorder buttons */}
+                                {/* Reorder buttons - disabled for History tab */}
                                 <div className="flex flex-col">
                                     <button
                                         onClick={() => moveTab(index, 'up')}
-                                        disabled={index === 0}
-                                        className={`p-0.5 rounded transition-colors ${index === 0
+                                        disabled={index === 0 || isHistoryTab(item.id)}
+                                        className={`p-0.5 rounded transition-colors ${index === 0 || isHistoryTab(item.id)
                                             ? 'text-neutral-600 cursor-not-allowed'
                                             : 'text-neutral-400 hover:text-white hover:bg-neutral-700'}`}
+                                        title={isHistoryTab(item.id) ? 'History is always last' : undefined}
                                     >
                                         <ChevronUp size={14} />
                                     </button>
                                     <button
                                         onClick={() => moveTab(index, 'down')}
-                                        disabled={index === orderedItems.length - 1}
-                                        className={`p-0.5 rounded transition-colors ${index === orderedItems.length - 1
+                                        disabled={index === orderedItems.length - 1 || isHistoryTab(item.id)}
+                                        className={`p-0.5 rounded transition-colors ${index === orderedItems.length - 1 || isHistoryTab(item.id)
                                             ? 'text-neutral-600 cursor-not-allowed'
                                             : 'text-neutral-400 hover:text-white hover:bg-neutral-700'}`}
+                                        title={isHistoryTab(item.id) ? 'History is always last' : undefined}
                                     >
                                         <ChevronDown size={14} />
                                     </button>

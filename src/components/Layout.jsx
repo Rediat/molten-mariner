@@ -21,9 +21,17 @@ const Layout = ({ children, activeTab, onTabChange, showHelp, onCloseHelp }) => 
     const tabOrder = settings.tabOrder || ['tvm', 'goal', 'loan', 'flow', 'bond', 'rates', 'tbill', 'history'];
 
     // Filter nav items based on settings and sort by tabOrder
+    // History tab is always placed at the far right (last position)
     const navItems = allNavItems
         .filter(item => settings[item.settingKey])
+        .filter(item => item.id !== 'history') // Exclude history from normal sorting
         .sort((a, b) => tabOrder.indexOf(a.id) - tabOrder.indexOf(b.id));
+
+    // Always append History at the end if it's visible
+    const historyItem = allNavItems.find(item => item.id === 'history');
+    if (historyItem && settings[historyItem.settingKey]) {
+        navItems.push(historyItem);
+    }
 
     return (
         <div className="min-h-screen bg-neutral-900 text-white flex flex-col items-center justify-center p-4">

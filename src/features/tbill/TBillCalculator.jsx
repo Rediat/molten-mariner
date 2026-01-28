@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useHistory } from '../../context/HistoryContext';
-import { Receipt, Info, HelpCircle, Trash2, Settings } from 'lucide-react';
+import { Receipt, Info, HelpCircle, Trash2, Settings, History } from 'lucide-react';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
 import { CalculateIcon } from '../../components/Icons';
+import HistoryOverlay from '../../components/HistoryOverlay';
 
 const TENURES = [
     { days: 28, label: '28 Days' },
@@ -22,6 +23,7 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
 
     const [result, setResult] = useState(null);
     const [showExplanation, setShowExplanation] = useState(false);
+    const [showHistory, setShowHistory] = useState(false);
 
     const calculateMaturityDate = (issueStr, tenureDays) => {
         const issue = new Date(issueStr);
@@ -173,6 +175,15 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
             {/* Results */}
             {result && (
                 <div className="mt-2 bg-gradient-to-br from-primary-900/30 to-neutral-800/50 border border-primary-500/30 rounded-xl p-3 space-y-2">
+                    <div className="flex justify-between items-center mb-1">
+                        <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Results</span>
+                        <button
+                            onClick={() => setShowHistory(true)}
+                            className="text-[9px] text-primary-500 font-bold uppercase tracking-wider flex items-center gap-1 hover:text-primary-400 transition-colors"
+                        >
+                            <History size={12} /> View History
+                        </button>
+                    </div>
                     <div className="grid grid-cols-2 gap-2">
                         <div className="bg-neutral-900/50 rounded-lg p-2.5">
                             <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Purchase Price</p>
@@ -217,7 +228,7 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
             )}
 
             {/* Action Buttons */}
-            <div className="mt-2 flex gap-2">
+            <div className="mt-2 flex gap-1.5">
                 <button
                     onClick={() => {
                         setFaceValue(500000);
@@ -227,25 +238,25 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
                         setIssueDate(new Date().toISOString().split('T')[0]);
                         setResult(null);
                     }}
-                    className="w-1/4 bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-sm py-3.5 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center gap-1.5 uppercase tracking-wider"
+                    className="w-[15%] bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-xs py-3.5 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center gap-1 uppercase tracking-wider"
                     title="Clear all values"
                 >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-3.5 h-3.5" />
                     CLR
                 </button>
                 <button
                     onClick={toggleHelp}
-                    className="bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-sm px-4 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center"
+                    className="bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-sm px-2 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center"
                     title="Help Guide"
                 >
-                    <HelpCircle className="w-5 h-5" />
+                    <HelpCircle className="w-4 h-4" />
                 </button>
                 <button
                     onClick={toggleSettings}
-                    className="bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-sm px-4 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center"
+                    className="bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-sm px-2 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center"
                     title="Settings"
                 >
-                    <Settings className="w-5 h-5" />
+                    <Settings className="w-4 h-4" />
                 </button>
                 <button
                     onClick={handleCalculate}
@@ -255,6 +266,14 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
                     Calculate
                 </button>
             </div>
+
+            {/* History Overlay */}
+            <HistoryOverlay
+                isOpen={showHistory}
+                onClose={() => setShowHistory(false)}
+                module="T-Bill"
+                title="T-Bill"
+            />
         </div>
     );
 };

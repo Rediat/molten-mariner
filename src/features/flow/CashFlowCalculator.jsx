@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { calculateNPV, calculateIRR, calculateMIRR, calculatePaybackPeriod, calculateDiscountedPaybackPeriod, calculateProfitabilityIndex } from '../../utils/financial-utils';
 import { useHistory } from '../../context/HistoryContext';
-import { Plus, Trash2, Info, HelpCircle, Settings } from 'lucide-react';
+import { Plus, Trash2, Info, HelpCircle, Settings, History } from 'lucide-react';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
 import { CalculateIcon } from '../../components/Icons';
+import HistoryOverlay from '../../components/HistoryOverlay';
 
 const CashFlowCalculator = ({ toggleHelp, toggleSettings }) => {
     const { addToHistory } = useHistory();
@@ -12,6 +13,7 @@ const CashFlowCalculator = ({ toggleHelp, toggleSettings }) => {
     const [flows, setFlows] = useState([-10000, 2000, 3000, 4000, 5000]);
     const [result, setResult] = useState(null);
     const [showExplanation, setShowExplanation] = useState(false);
+    const [showHistory, setShowHistory] = useState(false);
 
     const handleCalculate = () => {
         const res = {
@@ -89,6 +91,15 @@ const CashFlowCalculator = ({ toggleHelp, toggleSettings }) => {
 
             {result && (
                 <div className="grid grid-cols-2 gap-3 mb-6">
+                    <div className="col-span-2 flex justify-between items-center mb-1">
+                        <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Results</span>
+                        <button
+                            onClick={() => setShowHistory(true)}
+                            className="text-[9px] text-primary-500 font-bold uppercase tracking-wider flex items-center gap-1 hover:text-primary-400 transition-colors"
+                        >
+                            <History size={12} /> View History
+                        </button>
+                    </div>
                     <div className="bg-neutral-900/80 p-3 rounded-xl border border-neutral-800 col-span-2 grid grid-cols-3 gap-3">
                         {[{ label: 'NPV', value: result.npv.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }), color: 'white' },
                         { label: 'IRR', value: `${result.irr.toFixed(2)}%`, color: 'primary-500' },
@@ -112,7 +123,7 @@ const CashFlowCalculator = ({ toggleHelp, toggleSettings }) => {
                 </div>
             )}
 
-            <div className="flex gap-2">
+            <div className="flex gap-1.5">
                 <button
                     onClick={() => {
                         setRate(0);
@@ -120,30 +131,38 @@ const CashFlowCalculator = ({ toggleHelp, toggleSettings }) => {
                         setFlows([0]);
                         setResult(null);
                     }}
-                    className="w-1/4 bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-sm py-3.5 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center gap-1.5 uppercase tracking-wider"
+                    className="w-[15%] bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-xs py-3.5 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center gap-1 uppercase tracking-wider"
                     title="Clear all values"
                 >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-3.5 h-3.5" />
                     CLR
                 </button>
                 <button
                     onClick={toggleHelp}
-                    className="bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-sm px-4 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center"
+                    className="bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-sm px-2 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center"
                     title="Help Guide"
                 >
-                    <HelpCircle className="w-5 h-5" />
+                    <HelpCircle className="w-4 h-4" />
                 </button>
                 <button
                     onClick={toggleSettings}
-                    className="bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-sm px-4 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center"
+                    className="bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-sm px-2 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center"
                     title="Settings"
                 >
-                    <Settings className="w-5 h-5" />
+                    <Settings className="w-4 h-4" />
                 </button>
                 <button onClick={handleCalculate} className="flex-1 bg-gradient-to-r from-primary-600 to-primary-500 text-neutral-900 font-black text-base py-3.5 rounded-xl shadow-lg shadow-primary-900/20 active:scale-[0.98] transition-all hover:brightness-110 flex items-center justify-center gap-2 uppercase tracking-widest">
                     <CalculateIcon className="w-5 h-5" /> Calculate
                 </button>
             </div>
+
+            {/* History Overlay */}
+            <HistoryOverlay
+                isOpen={showHistory}
+                onClose={() => setShowHistory(false)}
+                module="FLOW"
+                title="Cash Flow"
+            />
         </div>
     );
 };

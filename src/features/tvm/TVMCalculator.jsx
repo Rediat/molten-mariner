@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { calculateTVM } from '../../utils/financial-utils';
 import { useHistory } from '../../context/HistoryContext';
-import { Settings2, Info, HelpCircle, Trash2, Settings } from 'lucide-react';
+import { Settings2, Info, HelpCircle, Trash2, Settings, History } from 'lucide-react';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
 import { CalculateIcon } from '../../components/Icons';
+import HistoryOverlay from '../../components/HistoryOverlay';
 
 // Constants
 const FREQUENCIES = [
@@ -61,6 +62,7 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
     const [values, setValues] = useState(DEFAULT_VALUES);
     const [calculatedValue, setCalculatedValue] = useState(null);
     const [totalInterest, setTotalInterest] = useState(0);
+    const [showHistory, setShowHistory] = useState(false);
 
     // Determine effective sign for TI based on context
     const getEffectiveTI = (ti, calcValues, targetField) => {
@@ -361,33 +363,43 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
                 ))}
             </div>
 
+            {/* View History Link */}
+            <div className="mt-3 flex justify-end">
+                <button
+                    onClick={() => setShowHistory(true)}
+                    className="text-[9px] text-primary-500 font-bold uppercase tracking-wider flex items-center gap-1 hover:text-primary-400 transition-colors"
+                >
+                    <History size={12} /> View History
+                </button>
+            </div>
+
             {/* Action Buttons */}
-            <div className="mt-4 flex gap-2">
+            <div className="mt-2 flex gap-1.5">
                 <button
                     onClick={() => {
                         setValues({ n: 0, i: 0, pv: 0, pmt: 0, fv: 0 });
                         setTotalInterest(0);
                         setCalculatedValue(null);
                     }}
-                    className="w-1/4 bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-sm py-3.5 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center gap-1.5 uppercase tracking-wider"
+                    className="w-[15%] bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-xs py-3.5 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center gap-1 uppercase tracking-wider"
                     title="Clear all values"
                 >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-3.5 h-3.5" />
                     CLR
                 </button>
                 <button
                     onClick={toggleHelp}
-                    className="bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-sm px-4 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center"
+                    className="bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-sm px-2 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center"
                     title="Help Guide"
                 >
-                    <HelpCircle className="w-5 h-5" />
+                    <HelpCircle className="w-4 h-4" />
                 </button>
                 <button
                     onClick={toggleSettings}
-                    className="bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-sm px-4 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center"
+                    className="bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-sm px-2 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center"
                     title="Settings"
                 >
-                    <Settings className="w-5 h-5" />
+                    <Settings className="w-4 h-4" />
                 </button>
                 <button
                     onClick={handleCalculate}
@@ -397,6 +409,14 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
                     Calculate
                 </button>
             </div>
+
+            {/* History Overlay */}
+            <HistoryOverlay
+                isOpen={showHistory}
+                onClose={() => setShowHistory(false)}
+                module="TVM"
+                title="TVM"
+            />
         </div>
     );
 };
