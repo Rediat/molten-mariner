@@ -489,8 +489,8 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                 onToggle={handleToggle}
             >
                 <p>
-                    The History tab automatically tracks and stores all your calculations. This allows you
-                    to review past results, compare scenarios, and access important financial data without re-entering values.
+                    The History feature automatically tracks and stores all your calculations. Access your history
+                    from the main History tab or directly from any calculator using the "View History" link.
                 </p>
 
                 <div className="pt-2">
@@ -504,19 +504,47 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                 </div>
 
                 <div className="pt-2">
-                    <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Actions:</p>
+                    <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Accessing History:</p>
+                    <ul className="space-y-2 text-xs">
+                        <li className="flex gap-2">
+                            <History className="w-4 h-4 text-primary-400 shrink-0" />
+                            <div>
+                                <span className="font-bold text-white">History Tab:</span> View all calculations from every module in one place.
+                            </div>
+                        </li>
+                        <li className="flex gap-2">
+                            <History className="w-4 h-4 text-primary-400 shrink-0" />
+                            <div>
+                                <span className="font-bold text-white">View History Link:</span> Each calculator has a "View History" link that opens a filtered overlay showing only that module's calculations.
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+
+                <div className="pt-2">
+                    <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Managing History:</p>
                     <ul className="space-y-2">
                         <li className="flex gap-2">
-                            <Trash2 className="w-4 h-4 text-red-500 shrink-0" />
+                            <Trash2 className="w-4 h-4 text-red-400 shrink-0" />
                             <div className="text-xs">
-                                <span className="font-bold text-white">Clear History:</span> Use the trash icon in the History header to permanently delete all saved calculations.
+                                <span className="font-bold text-white">Clear All:</span> Use the trash icon in the main History tab to delete all saved calculations.
+                            </div>
+                        </li>
+                        <li className="flex gap-2">
+                            <Trash2 className="w-4 h-4 text-red-400 shrink-0" />
+                            <div className="text-xs">
+                                <span className="font-bold text-white">Clear by Module:</span> In the View History overlay, click "Clear History" to remove only that calculator's entries while preserving others.
                             </div>
                         </li>
                     </ul>
                 </div>
 
                 <InfoBox type="tip">
-                    <strong>Context Awareness:</strong> If you open the Help guide while viewing the History tab, it will automatically scroll to this section.
+                    <strong>Quick Access:</strong> Look for the "View History" link in each calculator's results section or header area to quickly review past calculations for that specific tool.
+                </InfoBox>
+
+                <InfoBox type="note">
+                    <strong>History Tab Position:</strong> The History tab is always positioned last in the navigation bar and cannot be reordered.
                 </InfoBox>
             </HelpSection>
 
@@ -587,7 +615,8 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                     </InfoBox>
 
                     <InfoBox type="tip">
-                        <strong>History:</strong> All your calculations are automatically saved. Check the History tab to review or recall previous calculations.
+                        <strong>History:</strong> All calculations are automatically saved. Use "View History" in any calculator
+                        to see that module's past calculations, or visit the History tab for all entries. You can clear history per-module or all at once.
                     </InfoBox>
 
                     <InfoBox type="tip">
