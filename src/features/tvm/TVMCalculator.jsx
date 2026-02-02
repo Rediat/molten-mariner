@@ -199,8 +199,8 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
         return values[field];
     };
 
-    // Calculate Total PMT (PMT × N)
-    const totalPMT = values.pmt * values.n;
+    // Calculate Total PMT (PV + PMT × N)
+    const totalPMT = values.pv + (values.pmt * values.n);
 
     // Field definitions
     const fields = [
@@ -210,7 +210,7 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
         { id: 'pmt', label: 'PMT', sub: 'Payment' },
         { id: 'fv', label: 'FV', sub: 'Fut Val' },
         { id: 'totalInterest', label: 'TI', sub: 'Total Interest' },
-        { id: 'totalPMT', label: 'ΣPmt', sub: 'Total PMT (PMT × N)', isReadOnly: true },
+        { id: 'totalPMT', label: 'ΣPmt', sub: 'Total PMT (PV + PMT × N)', isReadOnly: true },
     ];
 
     return (
