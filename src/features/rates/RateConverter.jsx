@@ -122,11 +122,8 @@ const RateConverter = ({ toggleHelp, toggleSettings }) => {
             </div>
 
             {doublingTime && (
-                <div className="mt-2 bg-gradient-to-br from-neutral-800/80 to-neutral-900/80 rounded-xl p-3 shrink-0 border border-white/10 relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity">
-                        <CalculateIcon className="w-8 h-8 text-primary-500" />
-                    </div>
-                    <div className="relative z-10">
+                <div className="mt-2 bg-gradient-to-br from-neutral-800/80 to-neutral-900/80 rounded-xl p-3 shrink-0 border border-white/10">
+                    <div>
                         <span className="text-[10px] font-bold text-primary-400 uppercase tracking-widest mb-2 block">Investment Doubling Time</span>
                         <div className="grid grid-cols-3 gap-2">
                             <div className="bg-neutral-900/50 rounded-lg p-1.5 border border-white/5">
