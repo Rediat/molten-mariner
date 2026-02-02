@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
     HelpCircle, Calculator, Target, DollarSign, Activity, FileText, Percent,
-    ChevronDown, ChevronUp, Book, Lightbulb, Hash, ArrowRight, History, Trash2, Receipt
+    ChevronDown, ChevronUp, Book, Lightbulb, Hash, ArrowRight, History, Trash2, Receipt, Settings
 } from 'lucide-react';
 
 // Map tab IDs to section IDs
@@ -13,7 +13,8 @@ const TAB_TO_SECTION = {
     bond: 'bond',
     rates: 'rates',
     tbill: 'tbill',
-    history: 'history'
+    history: 'history',
+    settings: 'settings'
 };
 
 const HelpSection = ({ id, title, icon: Icon, children, isOpen, onToggle }) => {
@@ -545,6 +546,62 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
 
                 <InfoBox type="note">
                     <strong>History Tab Position:</strong> The History tab is always positioned last in the navigation bar and cannot be reordered.
+                </InfoBox>
+            </HelpSection>
+
+            {/* Settings */}
+            <HelpSection
+                id="settings"
+                title="Settings"
+                icon={Settings}
+                isOpen={openSection === 'settings'}
+                onToggle={handleToggle}
+            >
+                <p>
+                    Customize your app experience by choosing which calculator tabs are visible and
+                    arranging them in your preferred order. Access Settings by clicking the gear icon
+                    in the app header.
+                </p>
+
+                <div className="pt-2">
+                    <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Tab Visibility:</p>
+                    <FieldList fields={[
+                        { name: 'Toggle On/Off', description: 'Use the toggle switch next to each tab to show or hide it' },
+                        { name: 'Minimum Tabs', description: 'At least 5 tabs must remain visible at all times' },
+                        { name: 'Maximum Tabs', description: 'Up to 7 tabs can be displayed simultaneously' }
+                    ]} />
+                </div>
+
+                <div className="pt-2">
+                    <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Tab Reordering:</p>
+                    <FieldList fields={[
+                        { name: 'Up/Down Arrows', description: 'Click the arrows next to each tab to change its position in the navigation bar' },
+                        { name: 'History Position', description: 'The History tab is always positioned last and cannot be reordered' }
+                    ]} />
+                </div>
+
+                <div className="pt-2">
+                    <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Available Tabs:</p>
+                    <ul className="space-y-1 text-xs">
+                        <li>• <strong>TVM</strong> - Time Value of Money</li>
+                        <li>• <strong>Goal</strong> - Goal Planner</li>
+                        <li>• <strong>Loan</strong> - Loan Calculator</li>
+                        <li>• <strong>Cash Flow</strong> - NPV, IRR & cash flow analysis</li>
+                        <li>• <strong>Bond</strong> - Bond pricing & yields</li>
+                        <li>• <strong>Rate Converter</strong> - Interest rate conversions</li>
+                        <li>• <strong>T-Bill</strong> - Treasury Bill calculator</li>
+                        <li>• <strong>History</strong> - View past calculations</li>
+                    </ul>
+                </div>
+
+                <InfoBox type="tip">
+                    <strong>Persistence:</strong> Your settings are saved locally and will persist
+                    even after closing the app or refreshing the page.
+                </InfoBox>
+
+                <InfoBox type="note">
+                    <strong>Auto-Swap:</strong> If you try to enable an 8th tab, the first enabled tab
+                    (other than the one being enabled) will automatically be disabled to maintain the maximum of 7.
                 </InfoBox>
             </HelpSection>
 
