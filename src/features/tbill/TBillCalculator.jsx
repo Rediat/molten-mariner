@@ -107,7 +107,7 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
                             value={faceValue}
                             onChange={(e) => setFaceValue(parseFloat(e.target.value.replace(/,/g, '')) || 0)}
                             decimals={2}
-                            className="bg-transparent text-right text-lg font-mono focus:outline-none text-primary-400 font-black min-w-0 w-32"
+                            className="bg-transparent text-right text-lg font-mono focus:outline-none text-primary-400 font-black min-w-0 flex-1"
                             placeholder="500,000"
                         />
                     </div>
