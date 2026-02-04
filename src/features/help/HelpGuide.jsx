@@ -422,9 +422,23 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                     ]} />
                 </div>
 
+                <div className="pt-2">
+                    <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Period Rates Mode Toggle:</p>
+                    <FieldList fields={[
+                        { name: 'APR → Periodic', description: 'Breaks down your nominal rate into periodic rates (daily, weekly, monthly, etc.)' },
+                        { name: 'Periodic → APR', description: 'Enter a periodic rate (e.g., 2% daily) and see the equivalent Simple APR and Compound APY' }
+                    ]} />
+                </div>
+
                 <InfoBox type="formula">
                     <strong>EAR = (1 + r/n)^n - 1</strong>
                     <br />where r = nominal rate, n = compounding periods per year
+                </InfoBox>
+
+                <InfoBox type="formula">
+                    <strong>Periodic → APR Formulas:</strong>
+                    <br />• Simple APR = Periodic Rate × Periods per Year
+                    <br />• Compound APY = (1 + Periodic Rate)^Periods - 1
                 </InfoBox>
 
                 <InfoBox type="tip">

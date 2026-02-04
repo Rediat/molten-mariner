@@ -26,6 +26,11 @@ const RateConverter = ({ toggleHelp, toggleSettings }) => {
     const [showExplanation, setShowExplanation] = useState(false);
     const [showHistory, setShowHistory] = useState(false);
 
+    // Mode toggle: 'toPeriodc' = APR → Periodic, 'toAPR' = Periodic → APR
+    const [breakdownMode, setBreakdownMode] = useState('toPeriodic');
+    const [periodicRate, setPeriodicRate] = useState(2);
+    const [selectedFrequency, setSelectedFrequency] = useState(365); // Default to Daily
+
     const handleCalculate = () => {
         const res = calculateEAR(nominal, compounding);
         setResult(res);
@@ -68,16 +73,16 @@ const RateConverter = ({ toggleHelp, toggleSettings }) => {
 
             <div className="flex-1 flex flex-col min-h-0 space-y-2 overflow-y-auto custom-scrollbar pb-1">
                 <div className="bg-neutral-800/50 rounded-xl p-2 shrink-0">
-                    <div className="flex items-center gap-4 mb-3">
+                    <div className="flex items-center gap-4 mb-2">
                         <label className="text-xs font-bold text-neutral-400 shrink-0">Nominal (%)</label>
                         <FormattedNumberInput value={nominal} onChange={(e) => setNominal(parseFloat(e.target.value) || 0)} className="flex-1 w-full bg-transparent text-xl font-mono text-white focus:outline-none border-b border-neutral-700 focus:border-primary-500 transition-colors pb-1 text-right" />
                     </div>
                     <div className="space-y-1">
                         <label className="block text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Compounding</label>
-                        <div className="grid grid-cols-2 gap-1.5">
+                        <div className="grid grid-cols-4 gap-1">
                             {FREQUENCIES.map(freq => (
                                 <button key={freq.n} onClick={() => setCompounding(freq.n)}
-                                    className={`py-1.5 px-3 rounded-lg text-[10px] font-bold transition-all ${compounding === freq.n ? 'bg-primary-600/20 text-primary-400 ring-1 ring-primary-500/50' : 'bg-neutral-900/50 text-neutral-500 hover:bg-neutral-900'}`}>
+                                    className={`py-1 px-1 rounded text-[9px] font-bold transition-all ${compounding === freq.n ? 'bg-primary-600/20 text-primary-400 ring-1 ring-primary-500/50' : 'bg-neutral-900/50 text-neutral-500 hover:bg-neutral-900'}`}>
                                     {freq.label}
                                 </button>
                             ))}
@@ -101,15 +106,75 @@ const RateConverter = ({ toggleHelp, toggleSettings }) => {
                                 <div className="text-2xl font-bold text-white font-mono text-center">{result.toFixed(4)}%</div>
                             </div>
                             <div className="flex-1 overflow-y-auto custom-scrollbar p-3">
-                                <h3 className="text-[10px] font-bold text-neutral-500 mb-2 uppercase tracking-wide border-b border-neutral-800/50 pb-1">Period Rates Breakdown</h3>
-                                <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-                                    {FREQUENCIES.map(freq => (
-                                        <div key={freq.n} className="flex justify-between items-center py-1 border-b border-neutral-800/50 last:border-0 text-xs">
-                                            <span className="text-neutral-500 truncate mr-2">{freq.label}</span>
-                                            <span className="font-mono text-primary-400">{(nominal / freq.n).toFixed(4)}%</span>
-                                        </div>
-                                    ))}
+                                {/* Mode Toggle */}
+                                <div className="flex mb-2 bg-neutral-900/50 rounded-lg p-0.5">
+                                    <button
+                                        onClick={() => setBreakdownMode('toPeriodic')}
+                                        className={`flex-1 py-1 px-2 text-[9px] font-bold uppercase tracking-wider rounded-md transition-all ${breakdownMode === 'toPeriodic' ? 'bg-primary-600/20 text-primary-400' : 'text-neutral-500 hover:text-neutral-300'}`}
+                                    >
+                                        APR → Periodic
+                                    </button>
+                                    <button
+                                        onClick={() => setBreakdownMode('toAPR')}
+                                        className={`flex-1 py-1 px-2 text-[9px] font-bold uppercase tracking-wider rounded-md transition-all ${breakdownMode === 'toAPR' ? 'bg-primary-600/20 text-primary-400' : 'text-neutral-500 hover:text-neutral-300'}`}
+                                    >
+                                        Periodic → APR
+                                    </button>
                                 </div>
+
+                                {breakdownMode === 'toPeriodic' ? (
+                                    /* APR → Periodic Mode (Original) */
+                                    <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                                        {FREQUENCIES.map(freq => (
+                                            <div key={freq.n} className="flex justify-between items-center py-1 border-b border-neutral-800/50 last:border-0 text-xs">
+                                                <span className="text-neutral-500 truncate mr-2">{freq.label}</span>
+                                                <span className="font-mono text-primary-400">{(nominal / freq.n).toFixed(4)}%</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    /* Periodic → APR Mode (New) */
+                                    <div className="space-y-3">
+                                        {/* Periodic Rate Input */}
+                                        <div className="flex items-center gap-2">
+                                            <label className="text-[10px] font-bold text-neutral-500 shrink-0">Rate (%)</label>
+                                            <FormattedNumberInput
+                                                value={periodicRate}
+                                                onChange={(e) => setPeriodicRate(parseFloat(e.target.value) || 0)}
+                                                className="flex-1 bg-transparent text-sm font-mono text-white focus:outline-none border-b border-neutral-700 focus:border-primary-500 transition-colors pb-0.5 text-right"
+                                            />
+                                        </div>
+
+                                        {/* Frequency Selector */}
+                                        <div className="grid grid-cols-4 gap-1">
+                                            {FREQUENCIES.map(freq => (
+                                                <button
+                                                    key={freq.n}
+                                                    onClick={() => setSelectedFrequency(freq.n)}
+                                                    className={`py-1 px-1 rounded text-[9px] font-bold transition-all ${selectedFrequency === freq.n ? 'bg-primary-600/20 text-primary-400 ring-1 ring-primary-500/50' : 'bg-neutral-900/50 text-neutral-500 hover:bg-neutral-800'}`}
+                                                >
+                                                    {freq.label}
+                                                </button>
+                                            ))}
+                                        </div>
+
+                                        {/* Results */}
+                                        <div className="grid grid-cols-2 gap-2 mt-2">
+                                            <div className="bg-neutral-900/50 rounded-lg p-2 border border-white/5">
+                                                <div className="text-[8px] text-neutral-500 uppercase font-bold mb-0.5">Simple APR</div>
+                                                <div className="text-sm font-bold text-white font-mono">
+                                                    {(periodicRate * selectedFrequency).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%
+                                                </div>
+                                            </div>
+                                            <div className="bg-neutral-900/50 rounded-lg p-2 border border-white/5">
+                                                <div className="text-[8px] text-neutral-500 uppercase font-bold mb-0.5">Compound APY</div>
+                                                <div className="text-sm font-bold text-primary-400 font-mono">
+                                                    {((Math.pow(1 + periodicRate / 100, selectedFrequency) - 1) * 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </>
                     ) : (
@@ -144,7 +209,7 @@ const RateConverter = ({ toggleHelp, toggleSettings }) => {
             )}
 
             {/* Action Buttons */}
-            <div className="flex gap-2 shrink-0 mt-3">
+            <div className="mt-2 flex gap-1.5 shrink-0">
                 <button
                     onClick={() => {
                         setNominal(5);
@@ -152,28 +217,32 @@ const RateConverter = ({ toggleHelp, toggleSettings }) => {
                         setResult(null);
                         setDoublingTime(null);
                     }}
-                    className="w-1/4 bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-sm py-3.5 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center gap-1.5 uppercase tracking-wider"
+                    className="w-[15%] bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-xs py-3.5 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center gap-1 uppercase tracking-wider"
                     title="Clear all values"
                 >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-3.5 h-3.5" />
                     CLR
                 </button>
                 <button
                     onClick={toggleHelp}
-                    className="bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-sm px-4 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center"
+                    className="bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-sm px-2 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center"
                     title="Help Guide"
                 >
-                    <HelpCircle className="w-5 h-5" />
+                    <HelpCircle className="w-4 h-4" />
                 </button>
                 <button
                     onClick={toggleSettings}
-                    className="bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-sm px-4 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center"
+                    className="bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-sm px-2 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center"
                     title="Settings"
                 >
-                    <Settings className="w-5 h-5" />
+                    <Settings className="w-4 h-4" />
                 </button>
-                <button onClick={handleCalculate} className="flex-1 bg-gradient-to-r from-primary-600 to-primary-500 text-neutral-900 font-black text-base py-3.5 rounded-xl shadow-lg shadow-primary-900/20 active:scale-[0.98] transition-all hover:brightness-110 flex items-center justify-center gap-2 uppercase tracking-widest">
-                    <CalculateIcon className="w-5 h-5" /> Calculate
+                <button
+                    onClick={handleCalculate}
+                    className="flex-1 bg-gradient-to-r from-primary-600 to-primary-500 text-neutral-900 font-black text-base py-3.5 rounded-xl shadow-lg shadow-primary-900/20 active:scale-[0.98] transition-all hover:brightness-110 flex items-center justify-center gap-2 uppercase tracking-widest"
+                >
+                    <CalculateIcon className="w-5 h-5" />
+                    Calculate
                 </button>
             </div>
 
