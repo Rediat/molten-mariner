@@ -11,9 +11,10 @@ const DEFAULT_SETTINGS = {
     showBond: false,
     showRates: true,
     showTBill: true,
+    showPension: true,
     showGoal: true,
     showHistory: true,
-    tabOrder: ['tvm', 'goal', 'loan', 'tbill', 'rates', 'history', 'flow', 'bond'],
+    tabOrder: ['tvm', 'goal', 'loan', 'pension', 'tbill', 'rates', 'history', 'flow', 'bond'],
 };
 
 export const SettingsProvider = ({ children }) => {

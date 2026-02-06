@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calculator, DollarSign, Activity, FileText, History, Percent, Target, HelpCircle, X, Receipt } from 'lucide-react';
+import { Calculator, DollarSign, Activity, FileText, History, Percent, Target, HelpCircle, X, Receipt, Wallet } from 'lucide-react';
 import HelpGuide from '../features/help/HelpGuide';
 import { useSettings } from '../context/SettingsContext';
 
@@ -10,6 +10,7 @@ const Layout = ({ children, activeTab, onTabChange, showHelp, onCloseHelp }) => 
         { id: 'tvm', label: 'TVM', icon: Calculator, settingKey: 'showTVM' },
         { id: 'goal', label: 'GOAL', icon: Target, settingKey: 'showGoal' },
         { id: 'loan', label: 'LOAN', icon: DollarSign, settingKey: 'showLoan' },
+        { id: 'pension', label: 'PENSION', icon: Wallet, settingKey: 'showPension' },
         { id: 'flow', label: 'FLOW', icon: Activity, settingKey: 'showFlow' },
         { id: 'bond', label: 'BOND', icon: FileText, settingKey: 'showBond' },
         { id: 'rates', label: 'RATES', icon: Percent, settingKey: 'showRates' },

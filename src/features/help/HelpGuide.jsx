@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
     HelpCircle, Calculator, Target, DollarSign, Activity, FileText, Percent,
-    ChevronDown, ChevronUp, Book, Lightbulb, Hash, ArrowRight, History, Trash2, Receipt, Settings
+    ChevronDown, ChevronUp, Book, Lightbulb, Hash, ArrowRight, History, Trash2, Receipt, Settings, Wallet
 } from 'lucide-react';
 
 // Map tab IDs to section IDs
@@ -9,6 +9,7 @@ const TAB_TO_SECTION = {
     tvm: 'tvm',
     goal: 'goal',
     loan: 'loan',
+    pension: 'pension',
     flow: 'flow',
     bond: 'bond',
     rates: 'rates',
@@ -133,6 +134,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                         <li>• <strong>TVM</strong> - Time Value of Money calculations</li>
                         <li>• <strong>Goal</strong> - Financial goal planning</li>
                         <li>• <strong>Loan</strong> - Loan payments & amortization</li>
+                        <li>• <strong>Pension</strong> - Ethiopian pension calculator</li>
                         <li>• <strong>Flow</strong> - NPV, IRR & cash flow analysis</li>
                         <li>• <strong>Bond</strong> - Bond pricing & yields</li>
                         <li>• <strong>Rates</strong> - Interest rate conversions</li>
@@ -291,6 +293,58 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                 <InfoBox type="formula">
                     <strong>Payment Formula:</strong> PMT = PV × [r(1+r)^n] / [(1+r)^n - 1]
                     <br />where r = periodic rate, n = total periods
+                </InfoBox>
+            </HelpSection>
+
+            {/* Pension Calculator */}
+            <HelpSection
+                id="pension"
+                title="Pension Calculator"
+                icon={Wallet}
+                isOpen={openSection === 'pension'}
+                onToggle={handleToggle}
+            >
+                <p>
+                    Calculate your Ethiopian pension based on the Defined Benefit plan.
+                    Supports both Civil Servant and Military/Police pension schemes with
+                    their respective accrual rates.
+                </p>
+
+                <div className="pt-2">
+                    <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Inputs:</p>
+                    <FieldList fields={[
+                        { name: 'Pension Type', description: 'Civil Servant or Military/Police (different accrual rates)' },
+                        { name: 'Average Salary', description: 'Last 3 years average salary before retirement' },
+                        { name: 'Years of Service', description: 'Total number of years worked' },
+                        { name: 'Retirement Age', description: 'Expected age at retirement (default: 60)' }
+                    ]} />
+                </div>
+
+                <div className="pt-2">
+                    <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Results:</p>
+                    <FieldList fields={[
+                        { name: 'Monthly Pension', description: 'Your monthly pension payment amount' },
+                        { name: 'Annual Pension', description: 'Total pension received per year' },
+                        { name: 'Replacement Rate', description: 'Percentage of salary replaced by pension' }
+                    ]} />
+                </div>
+
+                <InfoBox type="formula">
+                    <strong>Civil Servant Formula:</strong>
+                    <br />Replacement Rate = 30% + (1.25% × years beyond 10)
+                    <br /><br />
+                    <strong>Military/Police Formula:</strong>
+                    <br />Replacement Rate = 30% + (1.65% × years beyond 10)
+                </InfoBox>
+
+                <InfoBox type="note">
+                    <strong>Eligibility:</strong> Minimum 10 years of service required.
+                    Maximum replacement rate is capped at 70%.
+                </InfoBox>
+
+                <InfoBox type="tip">
+                    <strong>Example:</strong> A civil servant with 25 years of service gets:
+                    30% + (1.25% × 15) = 48.75% replacement rate.
                 </InfoBox>
             </HelpSection>
 
@@ -600,6 +654,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                         <li>• <strong>TVM</strong> - Time Value of Money</li>
                         <li>• <strong>Goal</strong> - Goal Planner</li>
                         <li>• <strong>Loan</strong> - Loan Calculator</li>
+                        <li>• <strong>Pension</strong> - Ethiopian Pension Calculator</li>
                         <li>• <strong>Cash Flow</strong> - NPV, IRR & cash flow analysis</li>
                         <li>• <strong>Bond</strong> - Bond pricing & yields</li>
                         <li>• <strong>Rate Converter</strong> - Interest rate conversions</li>
