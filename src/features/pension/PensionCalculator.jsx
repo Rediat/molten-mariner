@@ -109,7 +109,7 @@ const PensionCalculator = ({ toggleHelp, toggleSettings }) => {
             <div className="space-y-1.5 flex-1 overflow-y-auto pr-1 scrollbar-hide">
                 {/* Pension Type Selector */}
                 <div className="bg-neutral-800/40 rounded-xl p-2.5 border border-transparent hover:border-neutral-700">
-                    <label className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold block mb-1 text-left">Pension Type</label>
+                    <label className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold block mb-1 text-center">Pension Type</label>
                     <div className="grid grid-cols-2 gap-1">
                         {PENSION_TYPES.map(type => (
                             <button
