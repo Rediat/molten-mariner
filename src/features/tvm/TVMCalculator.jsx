@@ -20,8 +20,8 @@ const FREQUENCIES = [
 
 const DEFAULT_VALUES = {
     n: 360,
-    i: 6,
-    pv: -100000,
+    i: 6.975,
+    pv: -3000000,
     pmt: 0,
     fv: 0
 };
@@ -211,7 +211,7 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
         { id: 'pmt', label: 'PMT', sub: 'Payment' },
         { id: 'fv', label: 'FV', sub: 'Fut Val' },
         { id: 'totalInterest', label: 'TI', sub: 'Total Interest' },
-        { id: 'totalPMT', label: 'ΣPmt', sub: 'Total PMT (PV + PMT × N)', isReadOnly: true },
+        { id: 'totalPMT', label: 'ΣPmt', sub: pvPmtDifferentSigns ? 'Total PMT (PMT × N)' : 'Total PMT (PV + PMT × N)', isReadOnly: true },
     ];
 
     return (
