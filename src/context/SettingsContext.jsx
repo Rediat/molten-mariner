@@ -2,7 +2,17 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const SettingsContext = createContext();
 
+// Increment this version when deploying updates that require clearing localStorage
+const APP_VERSION = '1.0.0';
+const VERSION_KEY = 'molten-mariner-version';
 const STORAGE_KEY = 'molten-mariner-settings';
+
+// Check and clear localStorage if version changed
+const storedVersion = localStorage.getItem(VERSION_KEY);
+if (storedVersion !== APP_VERSION) {
+    localStorage.clear();
+    localStorage.setItem(VERSION_KEY, APP_VERSION);
+}
 
 const DEFAULT_SETTINGS = {
     showTVM: true,
