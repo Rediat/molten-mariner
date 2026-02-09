@@ -2,8 +2,10 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const SettingsContext = createContext();
 
-// Increment this version when deploying updates that require clearing localStorage
-const APP_VERSION = '1.0.0';
+// Build timestamp is automatically injected by Vite at build time
+// This ensures localStorage is cleared with every new deployment
+/* global __BUILD_TIMESTAMP__ */
+const APP_VERSION = typeof __BUILD_TIMESTAMP__ !== 'undefined' ? __BUILD_TIMESTAMP__ : 'dev';
 const VERSION_KEY = 'molten-mariner-version';
 const STORAGE_KEY = 'molten-mariner-settings';
 

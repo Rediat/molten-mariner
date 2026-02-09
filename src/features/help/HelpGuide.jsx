@@ -167,7 +167,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                         { name: 'PMT', description: 'Payment - periodic payment amount' },
                         { name: 'FV', description: 'Future Value - the target amount at the end' },
                         { name: 'TI', description: 'Total Interest - total interest over the period' },
-                        { name: 'ΣPmt', description: 'Sum of all payments (PV + PMT × N) - read only' }
+                        { name: 'ΣPmt', description: 'Total Payment - shows PMT × N when PV and PMT have opposite signs, otherwise PV + PMT × N (read only)' }
                     ]} />
                 </div>
 
