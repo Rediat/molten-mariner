@@ -199,8 +199,9 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
         return values[field];
     };
 
-    // Calculate Total PMT (PV + PMT × N)
-    const totalPMT = values.pv + (values.pmt * values.n);
+    // Calculate Total PMT - when PV and PMT have different signs, use only PMT × N
+    const pvPmtDifferentSigns = (values.pv > 0 && values.pmt < 0) || (values.pv < 0 && values.pmt > 0);
+    const totalPMT = pvPmtDifferentSigns ? (values.pmt * values.n) : (values.pv + (values.pmt * values.n));
 
     // Field definitions
     const fields = [

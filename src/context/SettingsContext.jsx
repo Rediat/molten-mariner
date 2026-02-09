@@ -13,7 +13,7 @@ const DEFAULT_SETTINGS = {
     showTBill: true,
     showPension: true,
     showGoal: true,
-    showHistory: true,
+    showHistory: false,
     tabOrder: ['tvm', 'goal', 'loan', 'pension', 'tbill', 'rates', 'history', 'flow', 'bond'],
 };
 
