@@ -81,6 +81,7 @@ const InflationCalculator = ({ toggleHelp, toggleSettings }) => {
 
     const [startYear, setStartYear] = useState(2025);
     const [endYear, setEndYear] = useState(new Date().getFullYear() + 4);
+    const [endYearMode, setEndYearMode] = useState('YEAR'); // 'YEAR' or 'DURATION'
     const [amount, setAmount] = useState(1000);
     const [result, setResult] = useState(null);
     const [showExplanation, setShowExplanation] = useState(false);
@@ -171,6 +172,7 @@ const InflationCalculator = ({ toggleHelp, toggleSettings }) => {
     const handleClear = () => {
         setStartYear(2025);
         setEndYear(new Date().getFullYear() + 4);
+        setEndYearMode('YEAR');
         setAmount(1000);
         setResult(null);
         setShowPrediction(false);
@@ -305,16 +307,36 @@ const InflationCalculator = ({ toggleHelp, toggleSettings }) => {
                     {/* End Year */}
                     <div className="bg-neutral-800/40 rounded-xl p-2.5 border border-transparent hover:border-neutral-700">
                         <div className="flex justify-between items-center gap-2 min-w-0">
-                            <div className="shrink-0">
-                                <label className="text-sm font-bold text-white block leading-tight text-left">End Year</label>
-                                <span className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold text-left block">{MIN_YEAR}–{FORECAST_END} (ARIMA)</span>
+                            <div className="shrink-0 flex flex-col items-start">
+                                <div className="flex items-center gap-2">
+                                    <label className="text-sm font-bold text-white block leading-tight text-left">End {endYearMode === 'YEAR' ? 'Year' : 'Duration'}</label>
+                                    <button
+                                        onClick={() => setEndYearMode(m => m === 'YEAR' ? 'DURATION' : 'YEAR')}
+                                        className="bg-neutral-900 border border-neutral-700 rounded px-1.5 py-0.5 text-[9px] font-bold text-neutral-400 hover:text-white uppercase tracking-wider"
+                                    >
+                                        {endYearMode === 'YEAR' ? 'In Years' : 'In Date'}
+                                    </button>
+                                </div>
+                                <span className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold text-left block">
+                                    {endYearMode === 'YEAR'
+                                        ? `${MIN_YEAR}–${FORECAST_END} (ARIMA)`
+                                        : `Years from ${new Date().getFullYear()}`
+                                    }
+                                </span>
                             </div>
                             <FormattedNumberInput
-                                value={endYear}
-                                onChange={(e) => setEndYear(parseFloat(e.target.value.replace(/,/g, '')) || MAX_YEAR)}
+                                value={endYearMode === 'YEAR' ? endYear : (endYear - new Date().getFullYear())}
+                                onChange={(e) => {
+                                    const val = parseFloat(e.target.value.replace(/,/g, '')) || 0;
+                                    if (endYearMode === 'YEAR') {
+                                        setEndYear(val || MAX_YEAR);
+                                    } else {
+                                        setEndYear(new Date().getFullYear() + val);
+                                    }
+                                }}
                                 decimals={0}
                                 className="bg-transparent text-right text-lg font-mono focus:outline-none text-white min-w-0 flex-1"
-                                placeholder="2024"
+                                placeholder={endYearMode === 'YEAR' ? "2024" : "4"}
                             />
                         </div>
                     </div>
