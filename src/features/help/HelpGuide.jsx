@@ -383,6 +383,14 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                     ]} />
                 </div>
 
+                <InfoBox type="tip">
+                    <strong>Interpretation:</strong> The "Interpretation" section
+                    provides a plain-English explanation of your results. It breaks
+                    down how much an amount has depreciated in value and how much
+                    prices have increased, providing a clear picture of purchasing
+                    power loss over time.
+                </InfoBox>
+
                 <InfoBox type="formula">
                     <strong>Model Selection:</strong> The best ARIMA(p,d,q) order is
                     automatically chosen using the Akaike Information Criterion (AIC).

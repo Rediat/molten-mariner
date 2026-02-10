@@ -79,8 +79,8 @@ const FORECAST_STEPS = FORECAST_END - MAX_YEAR;
 const InflationCalculator = ({ toggleHelp, toggleSettings }) => {
     const { addToHistory } = useHistory();
 
-    const [startYear, setStartYear] = useState(2000);
-    const [endYear, setEndYear] = useState(2024);
+    const [startYear, setStartYear] = useState(2025);
+    const [endYear, setEndYear] = useState(new Date().getFullYear() + 4);
     const [amount, setAmount] = useState(1000);
     const [result, setResult] = useState(null);
     const [showExplanation, setShowExplanation] = useState(false);
@@ -169,8 +169,8 @@ const InflationCalculator = ({ toggleHelp, toggleSettings }) => {
     };
 
     const handleClear = () => {
-        setStartYear(2000);
-        setEndYear(2024);
+        setStartYear(2025);
+        setEndYear(new Date().getFullYear() + 4);
         setAmount(1000);
         setResult(null);
         setShowPrediction(false);
