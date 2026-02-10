@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Activity, FileText, Percent, History, Receipt, Calculator, CreditCard, Target, ChevronUp, ChevronDown, Wallet } from 'lucide-react';
+import { X, Activity, FileText, Percent, History, Receipt, Calculator, CreditCard, Target, ChevronUp, ChevronDown, Wallet, TrendingUp } from 'lucide-react';
 import { useSettings } from '../context/SettingsContext';
 
 const MIN_TABS = 5;
@@ -14,6 +14,7 @@ const TAB_CONFIG = {
     rates: { key: 'showRates', label: 'Rate Converter', icon: Percent },
     tbill: { key: 'showTBill', label: 'T-Bill', icon: Receipt },
     goal: { key: 'showGoal', label: 'Goal Planner', icon: Target },
+    inflation: { key: 'showInflation', label: 'Inflation', icon: TrendingUp },
     history: { key: 'showHistory', label: 'History', icon: History },
 };
 
