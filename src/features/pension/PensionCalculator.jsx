@@ -131,7 +131,7 @@ const PensionCalculator = ({ toggleHelp, toggleSettings }) => {
                     <div className="flex justify-between items-center gap-2 min-w-0">
                         <div className="shrink-0">
                             <label className="text-sm font-bold text-primary-400 block leading-tight text-left">Average Salary</label>
-                            <span className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold text-left block">Last 3 Years</span>
+                            <span className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold text-left block">Last 3 Years (36 Months)</span>
                         </div>
                         <FormattedNumberInput
                             value={averageSalary}
