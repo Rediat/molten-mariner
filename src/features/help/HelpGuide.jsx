@@ -410,6 +410,20 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                 <InfoBox type="note">
                     <strong>Source:</strong> Historical data from worlddata.info.
                     Predictions are statistical estimates, not guarantees.
+                    <br /><br />
+                    <strong>Methodology Reference:</strong> The use of ARIMA models for
+                    forecasting Ethiopian inflation is supported by research published
+                    by the National Bank of Ethiopia. See <em>Birritu Magazine No. 136</em>
+                    (July 2023) for details.
+                    <br />
+                    <a
+                        href="https://nbe.gov.et/wp-content/uploads/2023/07/Birritu-Magazine-136.pdf"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary-400 underline hover:text-primary-300"
+                    >
+                        View Publication (PDF)
+                    </a>
                 </InfoBox>
             </HelpSection>
 
