@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calculator, DollarSign, Activity, FileText, History, Percent, Target, HelpCircle, X, Receipt, Wallet } from 'lucide-react';
+import { Calculator, DollarSign, Activity, FileText, History, Percent, Target, HelpCircle, X, Receipt, Wallet, TrendingUp } from 'lucide-react';
 import HelpGuide from '../features/help/HelpGuide';
 import { useSettings } from '../context/SettingsContext';
 
@@ -15,6 +15,7 @@ const Layout = ({ children, activeTab, onTabChange, showHelp, onCloseHelp }) => 
         { id: 'bond', label: 'BOND', icon: FileText, settingKey: 'showBond' },
         { id: 'rates', label: 'RATES', icon: Percent, settingKey: 'showRates' },
         { id: 'tbill', label: 'T-BILL', icon: Receipt, settingKey: 'showTBill' },
+        { id: 'inflation', label: 'INFL', icon: TrendingUp, settingKey: 'showInflation' },
         { id: 'history', label: 'HISTORY', icon: History, settingKey: 'showHistory' },
     ];
 

@@ -14,6 +14,7 @@ import GoalPlanner from './features/goal/GoalPlanner';
 import HistoryView from './features/history/HistoryView';
 import TBillCalculator from './features/tbill/TBillCalculator';
 import PensionCalculator from './features/pension/PensionCalculator';
+import InflationCalculator from './features/inflation/InflationCalculator';
 
 function App() {
     const [activeTab, setActiveTab] = useState('tvm');
@@ -60,6 +61,9 @@ function App() {
                     </div>
                     <div className={activeTab === 'pension' ? 'block h-full' : 'hidden'}>
                         <PensionCalculator toggleHelp={toggleHelp} toggleSettings={toggleSettings} />
+                    </div>
+                    <div className={activeTab === 'inflation' ? 'block h-full' : 'hidden'}>
+                        <InflationCalculator toggleHelp={toggleHelp} toggleSettings={toggleSettings} />
                     </div>
                     <SettingsModal isOpen={showSettings} onClose={closeSettings} />
                 </Layout>

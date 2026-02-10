@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
     HelpCircle, Calculator, Target, DollarSign, Activity, FileText, Percent,
-    ChevronDown, ChevronUp, Book, Lightbulb, Hash, ArrowRight, History, Trash2, Receipt, Settings, Wallet
+    ChevronDown, ChevronUp, Book, Lightbulb, Hash, ArrowRight, History, Trash2, Receipt, Settings, Wallet, TrendingUp
 } from 'lucide-react';
 
 // Map tab IDs to section IDs
@@ -10,6 +10,7 @@ const TAB_TO_SECTION = {
     goal: 'goal',
     loan: 'loan',
     pension: 'pension',
+    inflation: 'inflation',
     flow: 'flow',
     bond: 'bond',
     rates: 'rates',
@@ -135,6 +136,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                         <li>• <strong>Goal</strong> - Financial goal planning</li>
                         <li>• <strong>Loan</strong> - Loan payments & amortization</li>
                         <li>• <strong>Pension</strong> - Ethiopian pension calculator</li>
+                        <li>• <strong>Inflation</strong> - Ethiopian Birr inflation calculator</li>
                         <li>• <strong>Flow</strong> - NPV, IRR & cash flow analysis</li>
                         <li>• <strong>Bond</strong> - Bond pricing & yields</li>
                         <li>• <strong>Rates</strong> - Interest rate conversions</li>
@@ -345,6 +347,61 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                 <InfoBox type="tip">
                     <strong>Example:</strong> A civil servant with 25 years of service gets:
                     30% + (1.25% × 15) = 48.75% replacement rate.
+                </InfoBox>
+            </HelpSection>
+
+            {/* Inflation Calculator */}
+            <HelpSection
+                id="inflation"
+                title="Inflation Calculator"
+                icon={TrendingUp}
+                isOpen={openSection === 'inflation'}
+                onToggle={handleToggle}
+            >
+                <p>
+                    Calculate the impact of inflation on Ethiopian Birr over time.
+                    Uses historical data from 1966–2025 and an automatically selected
+                    ARIMA model to predict future rates through 2050.
+                </p>
+
+                <div className="pt-2">
+                    <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Inputs:</p>
+                    <FieldList fields={[
+                        { name: 'Start Year', description: 'Beginning year for the calculation (1966–2025)' },
+                        { name: 'End Year', description: 'Ending year (up to 2050 with ARIMA predictions)' },
+                        { name: 'Amount (Birr)', description: 'The amount in Birr to evaluate' }
+                    ]} />
+                </div>
+
+                <div className="pt-2">
+                    <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Results:</p>
+                    <FieldList fields={[
+                        { name: 'Adjusted Value', description: 'What the amount would be worth in the end year' },
+                        { name: 'Cumulative Rate', description: 'Total percentage change over the period' },
+                        { name: 'Avg/Year', description: 'Geometric mean annual inflation rate' },
+                        { name: 'Purchasing Power', description: 'How much the end-year Birr is worth in start-year terms' }
+                    ]} />
+                </div>
+
+                <InfoBox type="formula">
+                    <strong>Model Selection:</strong> The best ARIMA(p,d,q) order is
+                    automatically chosen using the Akaike Information Criterion (AIC).
+                    The system evaluates 50+ candidate models by grid-searching
+                    over p∈{'{0..4}'}, d∈{'{0..2}'}, q∈{'{0..3}'} and selects the one
+                    with the lowest AIC score. AIC = n·ln(MSE) + 2k, where k is
+                    the number of estimated parameters.
+                </InfoBox>
+
+                <InfoBox type="tip">
+                    <strong>Forecast:</strong> Click "Forecast" to see ARIMA-predicted
+                    inflation rates for 2026–2050. Click the ⓘ info button to view
+                    the selected model order, AIC/BIC scores, AR/MA coefficients,
+                    and the top 5 competing candidates.
+                </InfoBox>
+
+                <InfoBox type="note">
+                    <strong>Source:</strong> Historical data from worlddata.info.
+                    Predictions are statistical estimates, not guarantees.
                 </InfoBox>
             </HelpSection>
 
@@ -655,6 +712,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                         <li>• <strong>Goal</strong> - Goal Planner</li>
                         <li>• <strong>Loan</strong> - Loan Calculator</li>
                         <li>• <strong>Pension</strong> - Ethiopian Pension Calculator</li>
+                        <li>• <strong>Inflation</strong> - Ethiopian Birr Inflation Calculator</li>
                         <li>• <strong>Cash Flow</strong> - NPV, IRR & cash flow analysis</li>
                         <li>• <strong>Bond</strong> - Bond pricing & yields</li>
                         <li>• <strong>Rate Converter</strong> - Interest rate conversions</li>
