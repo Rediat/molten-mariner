@@ -408,7 +408,15 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                 </InfoBox>
 
                 <InfoBox type="note">
-                    <strong>Source:</strong> Historical data from worlddata.info.
+                    <strong>Source:</strong> Historical data from{' '}
+                    <a
+                        href="https://www.worlddata.info/africa/ethiopia/inflation-rates.php"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary-400 underline hover:text-primary-300"
+                    >
+                        WorldData.info
+                    </a>.
                     Predictions are statistical estimates, not guarantees.
                     <br /><br />
                     <strong>Methodology Reference:</strong> The use of ARIMA models for
