@@ -233,10 +233,13 @@ const InflationCalculator = ({ toggleHelp, toggleSettings }) => {
                         auto-selected via <strong className="text-cyan-400">AIC</strong> from {modelInfo.topCandidates.length}+ candidates.
                     </p>
                     <ul className="text-[11px] leading-relaxed list-disc list-inside space-y-1">
-                        <li>Average annual inflation ({MIN_YEAR}–{MAX_YEAR}): ~{avgAnnualInflation.toFixed(1)}%</li>
+                        <li>Average annual inflation ({MIN_YEAR}–{MAX_YEAR}): ~{avgAnnualInflation.toFixed(1)}% <span className="text-primary-500/70 ml-1 text-[9px] font-bold uppercase">(CAGR)</span></li>
                         <li>Overall price increase since {MIN_YEAR}: ~{overallIncrease.toLocaleString('en-US', { maximumFractionDigits: 0 })}%</li>
                         <li>Model RMSE: {modelInfo.rmse}%</li>
                     </ul>
+                    <p className="text-[9px] text-neutral-500 mt-2 leading-relaxed italic">
+                        * Statistics are dynamically calculated using the geometric mean (Compound Annual Growth Rate) for financial accuracy based on verified WorldData records.
+                    </p>
                     <div className="mt-2 bg-neutral-900/50 rounded-lg p-2">
                         <p className="text-[9px] font-bold text-amber-400 uppercase tracking-wider mb-1">Best Model: ARIMA{modelInfo.order} (via AIC)</p>
                         <div className="grid grid-cols-2 gap-1 text-[10px] font-mono text-neutral-400">
