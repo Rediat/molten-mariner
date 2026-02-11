@@ -3,6 +3,7 @@ import {
     HelpCircle, Calculator, Target, DollarSign, Activity, FileText, Percent,
     ChevronDown, ChevronUp, Book, Lightbulb, Hash, ArrowRight, History, Trash2, Receipt, Settings, Wallet, TrendingUp
 } from 'lucide-react';
+import { MIN_YEAR, MAX_YEAR, FORECAST_END } from '../inflation/data';
 
 // Map tab IDs to section IDs
 const TAB_TO_SECTION = {
@@ -360,8 +361,8 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
             >
                 <p>
                     Calculate the impact of inflation on Ethiopian Birr over time.
-                    Uses historical data from 1966–2025 and an automatically selected
-                    ARIMA model to predict future rates through 2050.
+                    Uses historical data from {MIN_YEAR}–{MAX_YEAR} and an automatically selected
+                    ARIMA model to predict future rates through {FORECAST_END}.
                 </p>
 
                 <div className="pt-2">

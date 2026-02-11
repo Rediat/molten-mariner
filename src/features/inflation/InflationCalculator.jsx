@@ -6,74 +6,8 @@ import HistoryOverlay from '../../components/HistoryOverlay';
 import { useHistory } from '../../context/HistoryContext';
 import { arimaForecast } from '../../utils/arima';
 
-// Historical inflation rates for Ethiopia (1966-2025)
-// Source: https://www.worlddata.info/africa/ethiopia/inflation-rates.php
-const INFLATION_DATA = [
-    { year: 1966, rate: -1.36 },
-    { year: 1967, rate: 0.81 },
-    { year: 1968, rate: 0.18 },
-    { year: 1969, rate: 1.43 },
-    { year: 1970, rate: 10.12 },
-    { year: 1971, rate: 0.54 },
-    { year: 1972, rate: -6.08 },
-    { year: 1973, rate: 8.91 },
-    { year: 1974, rate: 8.59 },
-    { year: 1975, rate: 6.55 },
-    { year: 1976, rate: 28.54 },
-    { year: 1977, rate: 16.66 },
-    { year: 1978, rate: 14.31 },
-    { year: 1979, rate: 16.03 },
-    { year: 1980, rate: 12.40 },
-    { year: 1981, rate: 1.90 },
-    { year: 1982, rate: 7.80 },
-    { year: 1983, rate: 3.60 },
-    { year: 1984, rate: -0.30 },
-    { year: 1985, rate: 18.40 },
-    { year: 1986, rate: 5.50 },
-    { year: 1987, rate: -9.10 },
-    { year: 1988, rate: 2.20 },
-    { year: 1989, rate: 9.60 },
-    { year: 1990, rate: 5.20 },
-    { year: 1991, rate: 20.90 },
-    { year: 1992, rate: 21.00 },
-    { year: 1993, rate: 10.00 },
-    { year: 1994, rate: 1.20 },
-    { year: 1995, rate: 13.40 },
-    { year: 1996, rate: 0.90 },
-    { year: 1997, rate: -6.40 },
-    { year: 1998, rate: 3.60 },
-    { year: 1999, rate: 7.90 },
-    { year: 2000, rate: 0.70 },
-    { year: 2001, rate: -8.20 },
-    { year: 2002, rate: 1.70 },
-    { year: 2003, rate: 17.80 },
-    { year: 2004, rate: 3.20 },
-    { year: 2005, rate: 11.70 },
-    { year: 2006, rate: 13.60 },
-    { year: 2007, rate: 17.20 },
-    { year: 2008, rate: 44.40 },
-    { year: 2009, rate: 8.50 },
-    { year: 2010, rate: 8.10 },
-    { year: 2011, rate: 33.20 },
-    { year: 2012, rate: 24.10 },
-    { year: 2013, rate: 8.10 },
-    { year: 2014, rate: 7.40 },
-    { year: 2015, rate: 9.60 },
-    { year: 2016, rate: 6.60 },
-    { year: 2017, rate: 10.70 },
-    { year: 2018, rate: 13.80 },
-    { year: 2019, rate: 15.80 },
-    { year: 2020, rate: 20.40 },
-    { year: 2021, rate: 26.80 },
-    { year: 2022, rate: 33.90 },
-    { year: 2023, rate: 30.20 },
-    { year: 2024, rate: 21.00 },
-    { year: 2025, rate: 13.00 },
-];
+import { INFLATION_DATA, MIN_YEAR, MAX_YEAR, FORECAST_END } from './data';
 
-const MIN_YEAR = INFLATION_DATA[0].year;
-const MAX_YEAR = INFLATION_DATA[INFLATION_DATA.length - 1].year;
-const FORECAST_END = 2050;
 const FORECAST_STEPS = FORECAST_END - MAX_YEAR;
 
 const InflationCalculator = ({ toggleHelp, toggleSettings }) => {
@@ -166,7 +100,7 @@ const InflationCalculator = ({ toggleHelp, toggleSettings }) => {
         // Purchasing power: how much would you need today to match the amount from startYear
         const purchasingPower = amount / cumulativeMultiplier;
 
-        const isPredicted = eYear > MAX_YEAR;
+        const isPredicted = yearlyBreakdown.some(yb => yb.predicted);
 
         const res = {
             startYear: sYear,
