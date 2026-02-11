@@ -367,9 +367,9 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                 <div className="pt-2">
                     <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Inputs:</p>
                     <FieldList fields={[
-                        { name: 'Start Year', description: 'Beginning year for the calculation (1966–2025)' },
-                        { name: 'End Year', description: 'Ending year (up to 2050 with ARIMA predictions)' },
-                        { name: 'Amount (Birr)', description: 'The amount in Birr to evaluate' }
+                        { name: 'Start Year', description: 'The year you start with (treated as January 1st of this year)' },
+                        { name: 'End Year', description: 'The year you stop at (treated as January 1st of this year; growth includes everything up until this day)' },
+                        { name: 'Amount (Birr)', description: 'The initial amount of money you are evaluating' }
                     ]} />
                 </div>
 
