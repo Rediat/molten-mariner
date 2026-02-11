@@ -399,11 +399,12 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
 
                 <InfoBox type="formula">
                     <strong>Model Selection:</strong> The best ARIMA(p,d,q) order is
-                    automatically chosen using the Akaike Information Criterion (AIC).
-                    The system evaluates 50+ candidate models by grid-searching
-                    over p∈{'{0..4}'}, d∈{'{0..2}'}, q∈{'{0..3}'} and selects the one
-                    with the lowest AIC score. AIC = n·ln(MSE) + 2k, where k is
-                    the number of estimated parameters.
+                    <strong> dynamically calculated</strong> upon loading. The system
+                    automatically evaluates 50+ candidate models by grid-searching
+                    over p∈{'{0..4}'}, d∈{'{0..2}'}, q∈{'{0..3}'} and selects the optimal order
+                    based on the lowest Akaike Information Criterion (AIC) score.
+                    This ensures the forecast always uses the most statistically
+                    robust model for the current data series.
                 </InfoBox>
 
                 <InfoBox type="tip">
