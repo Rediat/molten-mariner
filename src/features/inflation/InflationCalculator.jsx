@@ -9,66 +9,66 @@ import { arimaForecast } from '../../utils/arima';
 // Historical inflation rates for Ethiopia (1966-2025)
 // Source: https://www.worlddata.info/africa/ethiopia/inflation-rates.php
 const INFLATION_DATA = [
-    { year: 1966, rate: 2.58 },
-    { year: 1967, rate: -2.81 },
-    { year: 1968, rate: 0.60 },
-    { year: 1969, rate: 2.25 },
-    { year: 1970, rate: 1.18 },
-    { year: 1971, rate: 0.58 },
-    { year: 1972, rate: 4.09 },
-    { year: 1973, rate: 7.78 },
-    { year: 1974, rate: 5.89 },
-    { year: 1975, rate: 12.50 },
-    { year: 1976, rate: 17.59 },
-    { year: 1977, rate: 15.71 },
-    { year: 1978, rate: 13.27 },
-    { year: 1979, rate: 16.17 },
-    { year: 1980, rate: 5.77 },
-    { year: 1981, rate: 5.98 },
-    { year: 1982, rate: 7.78 },
-    { year: 1983, rate: -2.47 },
-    { year: 1984, rate: 7.00 },
-    { year: 1985, rate: 18.41 },
-    { year: 1986, rate: -6.14 },
-    { year: 1987, rate: -7.66 },
-    { year: 1988, rate: 2.24 },
-    { year: 1989, rate: 9.57 },
-    { year: 1990, rate: 5.15 },
-    { year: 1991, rate: 20.89 },
-    { year: 1992, rate: 21.03 },
-    { year: 1993, rate: 10.03 },
-    { year: 1994, rate: 1.22 },
-    { year: 1995, rate: 13.43 },
-    { year: 1996, rate: 0.87 },
-    { year: 1997, rate: -6.42 },
-    { year: 1998, rate: 3.63 },
-    { year: 1999, rate: 7.92 },
-    { year: 2000, rate: 6.21 },
-    { year: 2001, rate: -5.24 },
-    { year: 2002, rate: -7.23 },
-    { year: 2003, rate: 15.10 },
-    { year: 2004, rate: 8.63 },
-    { year: 2005, rate: 6.81 },
-    { year: 2006, rate: 12.31 },
-    { year: 2007, rate: 15.84 },
-    { year: 2008, rate: 44.39 },
-    { year: 2009, rate: 36.44 },
-    { year: 2010, rate: 2.80 },
-    { year: 2011, rate: 18.13 },
-    { year: 2012, rate: 33.25 },
-    { year: 2013, rate: 24.12 },
-    { year: 2014, rate: 8.14 },
-    { year: 2015, rate: 7.67 },
-    { year: 2016, rate: 10.68 },
-    { year: 2017, rate: 7.22 },
-    { year: 2018, rate: 13.83 },
-    { year: 2019, rate: 15.81 },
-    { year: 2020, rate: 12.59 },
-    { year: 2021, rate: 20.22 },
-    { year: 2022, rate: 26.56 },
-    { year: 2023, rate: 33.81 },
-    { year: 2024, rate: 28.67 },
-    { year: 2025, rate: 23.10 },
+    { year: 1966, rate: -1.36 },
+    { year: 1967, rate: 0.81 },
+    { year: 1968, rate: 0.18 },
+    { year: 1969, rate: 1.43 },
+    { year: 1970, rate: 10.12 },
+    { year: 1971, rate: 0.54 },
+    { year: 1972, rate: -6.08 },
+    { year: 1973, rate: 8.91 },
+    { year: 1974, rate: 8.59 },
+    { year: 1975, rate: 6.55 },
+    { year: 1976, rate: 28.54 },
+    { year: 1977, rate: 16.66 },
+    { year: 1978, rate: 14.31 },
+    { year: 1979, rate: 16.03 },
+    { year: 1980, rate: 12.40 },
+    { year: 1981, rate: 1.90 },
+    { year: 1982, rate: 7.80 },
+    { year: 1983, rate: 3.60 },
+    { year: 1984, rate: -0.30 },
+    { year: 1985, rate: 18.40 },
+    { year: 1986, rate: 5.50 },
+    { year: 1987, rate: -9.10 },
+    { year: 1988, rate: 2.20 },
+    { year: 1989, rate: 9.60 },
+    { year: 1990, rate: 5.20 },
+    { year: 1991, rate: 20.90 },
+    { year: 1992, rate: 21.00 },
+    { year: 1993, rate: 10.00 },
+    { year: 1994, rate: 1.20 },
+    { year: 1995, rate: 13.40 },
+    { year: 1996, rate: 0.90 },
+    { year: 1997, rate: -6.40 },
+    { year: 1998, rate: 3.60 },
+    { year: 1999, rate: 7.90 },
+    { year: 2000, rate: 0.70 },
+    { year: 2001, rate: -8.20 },
+    { year: 2002, rate: 1.70 },
+    { year: 2003, rate: 17.80 },
+    { year: 2004, rate: 3.20 },
+    { year: 2005, rate: 11.70 },
+    { year: 2006, rate: 13.60 },
+    { year: 2007, rate: 17.20 },
+    { year: 2008, rate: 44.40 },
+    { year: 2009, rate: 8.50 },
+    { year: 2010, rate: 8.10 },
+    { year: 2011, rate: 33.20 },
+    { year: 2012, rate: 24.10 },
+    { year: 2013, rate: 8.10 },
+    { year: 2014, rate: 7.40 },
+    { year: 2015, rate: 9.60 },
+    { year: 2016, rate: 6.60 },
+    { year: 2017, rate: 10.70 },
+    { year: 2018, rate: 13.80 },
+    { year: 2019, rate: 15.80 },
+    { year: 2020, rate: 20.40 },
+    { year: 2021, rate: 26.80 },
+    { year: 2022, rate: 33.90 },
+    { year: 2023, rate: 30.20 },
+    { year: 2024, rate: 21.00 },
+    { year: 2025, rate: 13.00 },
 ];
 
 const MIN_YEAR = INFLATION_DATA[0].year;
@@ -114,6 +114,18 @@ const InflationCalculator = ({ toggleHelp, toggleSettings }) => {
                 maCoeffs: model.maCoeffs.map(c => c.toFixed(4)),
                 topCandidates: model.topCandidates || [],
             },
+        };
+    }, []);
+
+    // Overall historical statistics
+    const { overallIncrease, avgAnnualInflation } = useMemo(() => {
+        let multiplier = 1;
+        for (const entry of INFLATION_DATA) {
+            multiplier *= (1 + entry.rate / 100);
+        }
+        return {
+            overallIncrease: (multiplier - 1) * 100,
+            avgAnnualInflation: (Math.pow(multiplier, 1 / INFLATION_DATA.length) - 1) * 100,
         };
     }, []);
 
@@ -221,8 +233,8 @@ const InflationCalculator = ({ toggleHelp, toggleSettings }) => {
                         auto-selected via <strong className="text-cyan-400">AIC</strong> from {modelInfo.topCandidates.length}+ candidates.
                     </p>
                     <ul className="text-[11px] leading-relaxed list-disc list-inside space-y-1">
-                        <li>Average annual inflation (1966–2025): ~10.6%</li>
-                        <li>Overall price increase since 1966: ~29,915%</li>
+                        <li>Average annual inflation ({MIN_YEAR}–{MAX_YEAR}): ~{avgAnnualInflation.toFixed(1)}%</li>
+                        <li>Overall price increase since {MIN_YEAR}: ~{overallIncrease.toLocaleString('en-US', { maximumFractionDigits: 0 })}%</li>
                         <li>Model RMSE: {modelInfo.rmse}%</li>
                     </ul>
                     <div className="mt-2 bg-neutral-900/50 rounded-lg p-2">
