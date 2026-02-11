@@ -378,10 +378,16 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                     <FieldList fields={[
                         { name: 'Adjusted Value', description: 'What the amount would be worth in the end year' },
                         { name: 'Cumulative Rate', description: 'Total percentage change over the period' },
-                        { name: 'Avg/Year', description: 'Geometric mean annual inflation rate' },
+                        { name: 'Avg/Year', description: 'Geometric mean (CAGR) annual inflation rate' },
                         { name: 'Purchasing Power', description: 'How much the end-year Birr is worth in start-year terms' }
                     ]} />
                 </div>
+
+                <InfoBox type="note">
+                    <strong>Dynamic Statistics:</strong> Calculations reflect real-time geometric
+                    compounding. While some sources use arithmetic averages (approx. 10.6%),
+                    this tool uses the Compound Annual Growth Rate (CAGR) for precision in financial modeling.
+                </InfoBox>
 
                 <InfoBox type="tip">
                     <strong>Interpretation:</strong> The "Interpretation" section
