@@ -120,12 +120,13 @@ const InflationCalculator = ({ toggleHelp, toggleSettings }) => {
     // Overall historical statistics
     const { overallIncrease, avgAnnualInflation } = useMemo(() => {
         let multiplier = 1;
-        for (const entry of INFLATION_DATA) {
-            multiplier *= (1 + entry.rate / 100);
+        // Start from second entry to match "since MIN_YEAR" logic (where MIN_YEAR is baseline)
+        for (let i = 1; i < INFLATION_DATA.length; i++) {
+            multiplier *= (1 + INFLATION_DATA[i].rate / 100);
         }
         return {
             overallIncrease: (multiplier - 1) * 100,
-            avgAnnualInflation: (Math.pow(multiplier, 1 / INFLATION_DATA.length) - 1) * 100,
+            avgAnnualInflation: (Math.pow(multiplier, 1 / (INFLATION_DATA.length - 1)) - 1) * 100,
         };
     }, []);
 
@@ -313,6 +314,7 @@ const InflationCalculator = ({ toggleHelp, toggleSettings }) => {
                                 value={startYear}
                                 onChange={(e) => setStartYear(parseFloat(e.target.value.replace(/,/g, '')) || MIN_YEAR)}
                                 decimals={0}
+                                useGrouping={false}
                                 className="bg-transparent text-right text-lg font-mono focus:outline-none text-white min-w-0 flex-1"
                                 placeholder="2000"
                             />
@@ -350,6 +352,7 @@ const InflationCalculator = ({ toggleHelp, toggleSettings }) => {
                                     }
                                 }}
                                 decimals={0}
+                                useGrouping={false}
                                 className="bg-transparent text-right text-lg font-mono focus:outline-none text-white min-w-0 flex-1"
                                 placeholder={endYearMode === 'YEAR' ? "2024" : "4"}
                             />
@@ -463,11 +466,11 @@ const InflationCalculator = ({ toggleHelp, toggleSettings }) => {
                             {showInterpretation && (
                                 <div className="mt-2 space-y-2 text-left">
                                     <p className="text-[11px] text-neutral-300 leading-relaxed">
-                                        Inflation-adjusted purchasing power at the beginning of {result.endYear}:{' '}
+                                        Inflation-adjusted purchasing power through the end of {result.endYear}:{' '}
                                         <strong className="text-primary-400">{formatCurrency(result.purchasingPower)} Birr</strong>.
-                                        Increase in prices in {result.endYear - result.startYear} years:{' '}
+                                        Increase in prices over {result.endYear - result.startYear} years:{' '}
                                         <strong className="text-red-400">{result.cumulativeRate.toFixed(2)}%</strong>.
-                                        Decrease in value in {result.endYear - result.startYear} years:{' '}
+                                        Decrease in currency value over {result.endYear - result.startYear} years:{' '}
                                         <strong className="text-red-400">{((1 - 1 / (1 + result.cumulativeRate / 100)) * 100).toFixed(2)}%</strong>.
                                     </p>
 
@@ -475,12 +478,12 @@ const InflationCalculator = ({ toggleHelp, toggleSettings }) => {
                                         Conversely, if an item had a price of{' '}
                                         <strong className="text-white">{formatCurrency(result.amount)} Birr</strong> in {result.startYear},
                                         it will cost{' '}
-                                        <strong className="text-primary-400">{formatCurrency(result.adjustedValue)} Birr</strong> at
-                                        the beginning of {result.endYear} due to inflation.
+                                        <strong className="text-primary-400">{formatCurrency(result.adjustedValue)} Birr</strong> by
+                                        the end of {result.endYear} due to inflation.
                                     </p>
 
                                     <p className="text-[11px] text-neutral-300 leading-relaxed">
-                                        This corresponds to an average depreciation of{' '}
+                                        This corresponds to an average price increase of{' '}
                                         <strong className="text-amber-400">
                                             {formatCurrency((result.adjustedValue - result.amount) / (result.endYear - result.startYear))} Birr
                                         </strong>{' '}

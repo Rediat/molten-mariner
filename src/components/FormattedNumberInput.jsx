@@ -6,6 +6,7 @@ const FormattedNumberInput = ({
     className,
     placeholder,
     decimals = 2,
+    useGrouping = true,
     forceFixedOnFocus = false,
     ...props
 }) => {
@@ -17,7 +18,8 @@ const FormattedNumberInput = ({
         if (num === null || num === undefined || num === '' || isNaN(num)) return '';
         return new Intl.NumberFormat('en-US', {
             minimumFractionDigits: decimals,
-            maximumFractionDigits: decimals
+            maximumFractionDigits: decimals,
+            useGrouping
         }).format(num);
     };
 
