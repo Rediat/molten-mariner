@@ -295,7 +295,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings }) => {
                 {/* Fuel Cost */}
                 <div className="bg-neutral-800/40 rounded-xl p-2 border border-transparent">
                     <label className="text-[10px] uppercase tracking-wider font-bold text-white block mb-0.5">
-                        Fuel Cost / L
+                        Fuel Cost / Liter
                     </label>
                     <FormattedNumberInput
                         value={values.costPerLiter}
