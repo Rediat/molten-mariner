@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Car, Info, HelpCircle, Trash2, Settings, History, Loader2, ArrowUpDown } from 'lucide-react';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
 import PlacesAutocomplete from '../../components/PlacesAutocomplete';
@@ -46,6 +46,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings }) => {
         if (fromInputRef.current) fromInputRef.current.value = toVal;
         if (toInputRef.current) toInputRef.current.value = fromVal;
     }, [origin, destination]);
+
 
     const fetchDistance = useCallback((from, to) => {
         if (!from || !to || !hasMapsApi()) return;
@@ -118,6 +119,17 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings }) => {
             { enableHighAccuracy: true, timeout: 10000 }
         );
     }, [destination, fetchDistance]);
+
+    // Auto-trigger current location on mount
+    const locationTriggered = useRef(false);
+    useEffect(() => {
+        if (locationTriggered.current || !hasMapsApi() || !navigator.geolocation) return;
+        locationTriggered.current = true;
+        const setFromValue = (val) => {
+            if (fromInputRef.current) fromInputRef.current.value = val;
+        };
+        useCurrentLocation(setFromValue);
+    }, [useCurrentLocation]);
 
     const handleCalculate = () => {
         if (mode === 'forward') {
