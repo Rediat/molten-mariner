@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Activity, FileText, Percent, History, Receipt, Calculator, CreditCard, Target, ChevronUp, ChevronDown, Wallet, TrendingUp } from 'lucide-react';
+import { X, Activity, FileText, Percent, History, Receipt, Calculator, CreditCard, Target, ChevronUp, ChevronDown, Wallet, TrendingUp, Car } from 'lucide-react';
 import { useSettings } from '../context/SettingsContext';
 
 const MIN_TABS = 5;
@@ -9,6 +9,7 @@ const TAB_CONFIG = {
     tvm: { key: 'showTVM', label: 'TVM', icon: Calculator },
     loan: { key: 'showLoan', label: 'Loan', icon: CreditCard },
     pension: { key: 'showPension', label: 'Pension', icon: Wallet },
+    transport: { key: 'showTransport', label: 'Ride', icon: Car },
     flow: { key: 'showFlow', label: 'Cash Flow', icon: Activity },
     bond: { key: 'showBond', label: 'Bond', icon: FileText },
     rates: { key: 'showRates', label: 'Rate Converter', icon: Percent },

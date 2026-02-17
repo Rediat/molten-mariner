@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
     HelpCircle, Calculator, Target, DollarSign, Activity, FileText, Percent,
-    ChevronDown, ChevronUp, Book, Lightbulb, Hash, ArrowRight, History, Trash2, Receipt, Settings, Wallet, TrendingUp
+    ChevronDown, ChevronUp, Book, Lightbulb, Hash, ArrowRight, History, Trash2, Receipt, Settings, Wallet, TrendingUp, Car
 } from 'lucide-react';
 import { MIN_YEAR, MAX_YEAR, FORECAST_END } from '../inflation/data';
 
@@ -16,6 +16,7 @@ const TAB_TO_SECTION = {
     bond: 'bond',
     rates: 'rates',
     tbill: 'tbill',
+    transport: 'transport',
     history: 'history',
     settings: 'settings'
 };
@@ -141,6 +142,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                         <li>• <strong>Flow</strong> - NPV, IRR & cash flow analysis</li>
                         <li>• <strong>Bond</strong> - Bond pricing & yields</li>
                         <li>• <strong>Rates</strong> - Interest rate conversions</li>
+                        <li>• <strong>Ride</strong> - Ride Fare Calculator</li>
                         <li>• <strong>T-Bill</strong> - Treasury Bill bidding calculator</li>
                         <li>• <strong>History</strong> - View past calculations</li>
                     </ul>
@@ -644,6 +646,49 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                 </InfoBox>
             </HelpSection>
 
+            {/* Ride Fare Calculator */}
+            <HelpSection
+                id="transport"
+                title="Ride Fare Calculator"
+                icon={Car}
+                isOpen={openSection === 'transport'}
+                onToggle={handleToggle}
+            >
+                <p>
+                    Calculate fuel costs and a reasonable price to charge for transport based on trip
+                    distance and vehicle efficiency.
+                </p>
+
+                <div className="pt-2">
+                    <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Inputs:</p>
+                    <FieldList fields={[
+                        { name: 'Distance (Km)', description: 'The total trip distance' },
+                        { name: 'Fuel Milage (Liter/KM)', description: 'Vehicle efficiency (fixed at 0.1 for baseline)' },
+                        { name: 'Fuel Cost (Per Liter)', description: 'Current price of fuel per liter (default 130)' },
+                        { name: 'Service Factor', description: 'Multiplier for maintenance and profit (default 3)' }
+                    ]} />
+                </div>
+
+                <div className="pt-2">
+                    <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Results:</p>
+                    <FieldList fields={[
+                        { name: 'Total Fuel Cost', description: 'Product of Distance, Milage, and Fuel Cost' },
+                        { name: 'Price to Charge', description: 'Total Fuel Cost multiplied by Service Factor' },
+                        { name: 'Revenue per Km', description: 'Price to Charge divided by Distance' },
+                        { name: 'Net Gain', description: 'Price to Charge minus Total Fuel Cost' },
+                        { name: 'Net Gain per Km', description: 'Net Gain divided by Distance' }
+                    ]} />
+                </div>
+
+                <InfoBox type="formula">
+                    <strong>Price to Charge = (Distance × Milage × Cost) × Service Factor</strong>
+                </InfoBox>
+
+                <InfoBox type="tip">
+                    <strong>History:</strong> Use the "View History" link to track past trip calculations!
+                </InfoBox>
+            </HelpSection>
+
             {/* History */}
             <HelpSection
                 id="history"
@@ -754,6 +799,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                         <li>• <strong>Cash Flow</strong> - NPV, IRR & cash flow analysis</li>
                         <li>• <strong>Bond</strong> - Bond pricing & yields</li>
                         <li>• <strong>Rate Converter</strong> - Interest rate conversions</li>
+                        <li>• <strong>Ride</strong> - Ride Fare Calculator</li>
                         <li>• <strong>T-Bill</strong> - Treasury Bill calculator</li>
                         <li>• <strong>History</strong> - View past calculations</li>
                     </ul>

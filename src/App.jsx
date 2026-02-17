@@ -15,6 +15,7 @@ import HistoryView from './features/history/HistoryView';
 import TBillCalculator from './features/tbill/TBillCalculator';
 import PensionCalculator from './features/pension/PensionCalculator';
 import InflationCalculator from './features/inflation/InflationCalculator';
+import RideFareCalculator from './features/transport/RideFareCalculator';
 
 function App() {
     const [activeTab, setActiveTab] = useState('tvm');
@@ -64,6 +65,9 @@ function App() {
                     </div>
                     <div className={activeTab === 'inflation' ? 'block h-full' : 'hidden'}>
                         <InflationCalculator toggleHelp={toggleHelp} toggleSettings={toggleSettings} />
+                    </div>
+                    <div className={activeTab === 'transport' ? 'block h-full' : 'hidden'}>
+                        <RideFareCalculator toggleHelp={toggleHelp} toggleSettings={toggleSettings} />
                     </div>
                     <SettingsModal isOpen={showSettings} onClose={closeSettings} />
                 </Layout>
