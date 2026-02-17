@@ -1,8 +1,9 @@
 import React, { useRef, useEffect, useCallback } from 'react';
-import { MapPin } from 'lucide-react';
+import { MapPin, Crosshair } from 'lucide-react';
 
-const PlacesAutocomplete = ({ placeholder, onPlaceSelected, label, accentColor = 'white', compact = false }) => {
-    const inputRef = useRef(null);
+const PlacesAutocomplete = ({ placeholder, onPlaceSelected, label, accentColor = 'white', compact = false, onUseCurrentLocation, locationLoading, externalInputRef }) => {
+    const internalRef = useRef(null);
+    const inputRef = externalInputRef || internalRef;
     const autocompleteRef = useRef(null);
     const onPlaceSelectedRef = useRef(onPlaceSelected);
 
@@ -40,6 +41,18 @@ const PlacesAutocomplete = ({ placeholder, onPlaceSelected, label, accentColor =
         };
     }, []);
 
+    // Allow parent to set input value (for current location)
+    const setInputValue = useCallback((val) => {
+        if (inputRef.current) inputRef.current.value = val;
+    }, []);
+
+    // Expose setInputValue via a ref callback pattern
+    useEffect(() => {
+        if (onPlaceSelectedRef.current && inputRef.current) {
+            inputRef.current._setInputValue = setInputValue;
+        }
+    }, [setInputValue]);
+
     const colorMap = {
         primary: 'text-primary-400',
         emerald: 'text-emerald-400',
@@ -62,6 +75,16 @@ const PlacesAutocomplete = ({ placeholder, onPlaceSelected, label, accentColor =
                         autoComplete="off"
                     />
                 </div>
+                {onUseCurrentLocation && (
+                    <button
+                        onClick={() => onUseCurrentLocation(setInputValue)}
+                        disabled={locationLoading}
+                        className={`shrink-0 p-1 rounded-md transition-colors group ${locationLoading ? 'animate-pulse' : 'hover:bg-neutral-700/50'}`}
+                        title="Use current location"
+                    >
+                        <Crosshair className={`w-3.5 h-3.5 transition-colors ${locationLoading ? 'text-primary-400' : 'text-neutral-500 group-hover:text-primary-400'}`} />
+                    </button>
+                )}
             </div>
         );
     }

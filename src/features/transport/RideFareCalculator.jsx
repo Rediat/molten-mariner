@@ -1,5 +1,5 @@
-import React, { useState, useCallback } from 'react';
-import { Car, Info, HelpCircle, Trash2, Settings, History, Loader2, ArrowDown } from 'lucide-react';
+import React, { useState, useCallback, useRef } from 'react';
+import { Car, Info, HelpCircle, Trash2, Settings, History, Loader2, ArrowUpDown } from 'lucide-react';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
 import PlacesAutocomplete from '../../components/PlacesAutocomplete';
 import { CalculateIcon } from '../../components/Icons';
@@ -29,6 +29,23 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings }) => {
     const [destination, setDestination] = useState(null);
     const [fetchingDistance, setFetchingDistance] = useState(false);
     const [distanceSource, setDistanceSource] = useState('manual');
+    const [locationLoading, setLocationLoading] = useState(false);
+
+    const fromInputRef = useRef(null);
+    const toInputRef = useRef(null);
+
+    const handleSwapLocations = useCallback(() => {
+        const prevOrigin = origin;
+        const prevDest = destination;
+        const fromVal = fromInputRef.current?.value || '';
+        const toVal = toInputRef.current?.value || '';
+
+        setOrigin(prevDest);
+        setDestination(prevOrigin);
+
+        if (fromInputRef.current) fromInputRef.current.value = toVal;
+        if (toInputRef.current) toInputRef.current.value = fromVal;
+    }, [origin, destination]);
 
     const fetchDistance = useCallback((from, to) => {
         if (!from || !to || !hasMapsApi()) return;
@@ -63,6 +80,44 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings }) => {
         setDestination(place);
         if (origin) fetchDistance(origin, place);
     }, [origin, fetchDistance]);
+
+    const useCurrentLocation = useCallback((setInputValue) => {
+        if (!navigator.geolocation) return;
+        setLocationLoading(true);
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const { latitude: lat, longitude: lng } = position.coords;
+                const place = { lat, lng, name: 'My Location', address: '' };
+
+                // Use Places nearbySearch to find the closest named place
+                if (window.google?.maps?.places?.PlacesService) {
+                    const tempDiv = document.createElement('div');
+                    const service = new window.google.maps.places.PlacesService(tempDiv);
+                    service.nearbySearch(
+                        { location: { lat, lng }, rankBy: window.google.maps.places.RankBy.DISTANCE, type: 'point_of_interest' },
+                        (results, status) => {
+                            setLocationLoading(false);
+                            if (status === 'OK' && results?.length > 0) {
+                                const nearest = results[0];
+                                place.name = nearest.name;
+                                place.address = nearest.vicinity || nearest.name;
+                            }
+                            setInputValue('📍 ' + place.name);
+                            setOrigin(place);
+                            if (destination) fetchDistance(place, destination);
+                        }
+                    );
+                } else {
+                    setLocationLoading(false);
+                    setInputValue(`📍 ${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+                    setOrigin(place);
+                    if (destination) fetchDistance(place, destination);
+                }
+            },
+            () => setLocationLoading(false),
+            { enableHighAccuracy: true, timeout: 10000 }
+        );
+    }, [destination, fetchDistance]);
 
     const handleCalculate = () => {
         if (mode === 'forward') {
@@ -172,10 +227,19 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings }) => {
                             onPlaceSelected={handleOriginSelected}
                             accentColor="primary"
                             compact
+                            onUseCurrentLocation={useCurrentLocation}
+                            locationLoading={locationLoading}
+                            externalInputRef={fromInputRef}
                         />
                         <div className="flex items-center gap-2 py-0.5 px-4">
                             <div className="flex-1 border-t border-dashed border-neutral-700/60"></div>
-                            <ArrowDown className="w-3 h-3 text-neutral-600" />
+                            <button
+                                onClick={handleSwapLocations}
+                                className="p-0.5 rounded-full hover:bg-neutral-700/50 transition-all active:scale-90 group"
+                                title="Swap From and To"
+                            >
+                                <ArrowUpDown className="w-3 h-3 text-neutral-600 group-hover:text-primary-400 transition-colors" />
+                            </button>
                             <div className="flex-1 border-t border-dashed border-neutral-700/60"></div>
                         </div>
                         <PlacesAutocomplete
@@ -184,6 +248,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings }) => {
                             onPlaceSelected={handleDestinationSelected}
                             accentColor="white"
                             compact
+                            externalInputRef={toInputRef}
                         />
                     </div>
                 </div>
