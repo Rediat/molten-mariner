@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { Car, Info, HelpCircle, Trash2, Settings, History, Loader2, ArrowUpDown } from 'lucide-react';
+import { Car, Info, HelpCircle, Trash2, Settings, History, Loader2, ArrowUpDown, Clock } from 'lucide-react';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
 import PlacesAutocomplete from '../../components/PlacesAutocomplete';
 import { CalculateIcon } from '../../components/Icons';
@@ -30,6 +30,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings }) => {
     const [fetchingDistance, setFetchingDistance] = useState(false);
     const [distanceSource, setDistanceSource] = useState('manual');
     const [locationLoading, setLocationLoading] = useState(false);
+    const [driveDuration, setDriveDuration] = useState(null);
 
     const fromInputRef = useRef(null);
     const toInputRef = useRef(null);
@@ -62,10 +63,11 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings }) => {
             (response, status) => {
                 setFetchingDistance(false);
                 if (status === 'OK' && response.rows[0]?.elements[0]?.status === 'OK') {
-                    const distanceMeters = response.rows[0].elements[0].distance.value;
-                    const distanceKm = parseFloat((distanceMeters / 1000).toFixed(2));
+                    const element = response.rows[0].elements[0];
+                    const distanceKm = parseFloat((element.distance.value / 1000).toFixed(2));
                     setValues(prev => ({ ...prev, distance: distanceKm }));
                     setDistanceSource('maps');
+                    setDriveDuration(element.duration?.text || null);
                     setResults(null);
                 }
             }
@@ -356,6 +358,17 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings }) => {
                             <History size={10} /> History
                         </button>
                     </div>
+
+                    {/* Route & drive time */}
+                    {driveDuration && origin && destination && (
+                        <div className="flex items-center gap-1.5 text-[10px] text-neutral-400 bg-neutral-900/40 rounded-md px-2 py-1">
+                            <Clock className="w-3 h-3 text-primary-400 shrink-0" />
+                            <span className="truncate">
+                                {origin.name?.replace('📍 ', '')} → {destination.name?.replace('📍 ', '')}
+                            </span>
+                            <span className="text-primary-400 font-bold whitespace-nowrap ml-auto">~{driveDuration}</span>
+                        </div>
+                    )}
 
                     {/* Main result row */}
                     <div className="bg-neutral-900/80 rounded-lg p-2.5 border border-primary-500/30">
