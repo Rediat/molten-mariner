@@ -59,6 +59,9 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings }) => {
                 destinations: [new window.google.maps.LatLng(to.lat, to.lng)],
                 travelMode: window.google.maps.TravelMode.DRIVING,
                 unitSystem: window.google.maps.UnitSystem.METRIC,
+                drivingOptions: {
+                    departureTime: new Date(),
+                },
             },
             (response, status) => {
                 setFetchingDistance(false);
@@ -67,7 +70,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings }) => {
                     const distanceKm = parseFloat((element.distance.value / 1000).toFixed(2));
                     setValues(prev => ({ ...prev, distance: distanceKm }));
                     setDistanceSource('maps');
-                    setDriveDuration(element.duration?.text || null);
+                    setDriveDuration((element.duration_in_traffic?.text || element.duration?.text) || null);
                     setResults(null);
                 }
             }
