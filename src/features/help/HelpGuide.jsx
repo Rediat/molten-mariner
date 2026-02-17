@@ -101,11 +101,25 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
             setTimeout(() => {
                 const element = document.getElementById(section);
                 if (element) {
-                    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
-            }, 300);
+            }, 350);
         }
     }, [activeTab]);
+
+    // Also scroll on initial mount (component is conditionally rendered when help opens)
+    useEffect(() => {
+        const section = TAB_TO_SECTION[activeTab];
+        if (section) {
+            setTimeout(() => {
+                const element = document.getElementById(section);
+                if (element) {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }, 400);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const handleToggle = (sectionId) => {
         setOpenSection(openSection === sectionId ? null : sectionId);
@@ -655,37 +669,58 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                 onToggle={handleToggle}
             >
                 <p>
-                    Calculate fuel costs and a reasonable price to charge for transport based on trip
-                    distance and vehicle efficiency.
+                    Calculate fuel costs and a reasonable fare for transport. Supports Google Maps
+                    integration for automatic distance lookup between locations in Ethiopia.
                 </p>
+
+                <div className="pt-2">
+                    <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Calculation Modes:</p>
+                    <FieldList fields={[
+                        { name: 'Inputs → Price', description: 'Enter distance, fuel details, and service factor to calculate the fare' },
+                        { name: 'Price → Breakdown', description: 'Enter a known fare to reverse-calculate fuel cost, net gain, and implied service factor' }
+                    ]} />
+                </div>
+
+                <div className="pt-2">
+                    <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Google Maps Integration:</p>
+                    <FieldList fields={[
+                        { name: 'From / To', description: 'Type an address and select from suggestions. Locations are restricted to Ethiopia.' },
+                        { name: 'Auto-Distance', description: 'When both From and To are selected, the driving distance is fetched automatically via the Distance Matrix API' },
+                        { name: '✓ Google Maps', description: 'A green indicator confirms the distance was auto-populated from Google Maps. You can still override it manually.' }
+                    ]} />
+                </div>
 
                 <div className="pt-2">
                     <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Inputs:</p>
                     <FieldList fields={[
-                        { name: 'Distance (Km)', description: 'The total trip distance' },
-                        { name: 'Fuel Milage (Liter/KM)', description: 'Vehicle efficiency (fixed at 0.1 for baseline)' },
-                        { name: 'Fuel Cost (Per Liter)', description: 'Current price of fuel per liter (default 130)' },
-                        { name: 'Service Factor', description: 'Multiplier for maintenance and profit (default 3)' }
+                        { name: 'Distance (Km)', description: 'Trip distance — auto-filled from Maps or entered manually' },
+                        { name: 'Mileage (L/Km)', description: 'Vehicle fuel efficiency (fixed at 0.1 L/Km baseline)' },
+                        { name: 'Fuel Cost / L', description: 'Current price of fuel per liter (default 130 ETB)' },
+                        { name: 'Service Factor', description: 'Multiplier for maintenance, time, and profit (range: 2.55 – 4.5×, default 3×). Only in Inputs → Price mode.' },
+                        { name: 'Price to Charge', description: 'The known fare amount. Only in Price → Breakdown mode.' }
                     ]} />
                 </div>
 
                 <div className="pt-2">
                     <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Results:</p>
                     <FieldList fields={[
-                        { name: 'Total Fuel Cost', description: 'Product of Distance, Milage, and Fuel Cost' },
-                        { name: 'Price to Charge', description: 'Total Fuel Cost multiplied by Service Factor' },
-                        { name: 'Revenue per Km', description: 'Price to Charge divided by Distance' },
+                        { name: 'Price to Charge', description: 'The recommended fare (forward mode) or the entered fare (reverse mode)' },
+                        { name: 'Per Head', description: 'Price divided by 4 passengers for cost-sharing' },
+                        { name: 'Total Fuel Cost', description: 'Distance × Mileage × Fuel Cost per Liter' },
                         { name: 'Net Gain', description: 'Price to Charge minus Total Fuel Cost' },
-                        { name: 'Net Gain per Km', description: 'Net Gain divided by Distance' }
+                        { name: 'Fuel / Km', description: 'Fuel cost per kilometer' },
+                        { name: 'Revenue / Km', description: 'Price to Charge per kilometer' },
+                        { name: 'Gain / Km', description: 'Net Gain per kilometer' },
+                        { name: 'Implied Service Factor', description: 'In reverse mode, shows what multiplier the entered fare represents' }
                     ]} />
                 </div>
 
                 <InfoBox type="formula">
-                    <strong>Price to Charge = (Distance × Milage × Cost) × Service Factor</strong>
+                    <strong>Price to Charge = (Distance × Mileage × Fuel Cost) × Service Factor</strong>
                 </InfoBox>
 
                 <InfoBox type="tip">
-                    <strong>History:</strong> Use the "View History" link to track past trip calculations!
+                    <strong>No API Key?</strong> The calculator works without Google Maps — just enter the distance manually. The From/To inputs only appear when a valid Google Maps API key is configured.
                 </InfoBox>
             </HelpSection>
 

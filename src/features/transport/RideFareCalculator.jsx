@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { Car, Info, HelpCircle, Trash2, Settings, History } from 'lucide-react';
+import React, { useState, useCallback } from 'react';
+import { Car, Info, HelpCircle, Trash2, Settings, History, Loader2, ArrowDown } from 'lucide-react';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
+import PlacesAutocomplete from '../../components/PlacesAutocomplete';
 import { CalculateIcon } from '../../components/Icons';
 import { useHistory } from '../../context/HistoryContext';
 import HistoryOverlay from '../../components/HistoryOverlay';
@@ -12,6 +13,8 @@ const DEFAULT_VALUES = {
     serviceFactor: 3
 };
 
+const hasMapsApi = () => !!window.google?.maps?.DistanceMatrixService;
+
 const RideFareCalculator = ({ toggleHelp, toggleSettings }) => {
     const { addToHistory } = useHistory();
     const [values, setValues] = useState(DEFAULT_VALUES);
@@ -19,9 +22,47 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings }) => {
     const [showExplanation, setShowExplanation] = useState(false);
     const [showHistory, setShowHistory] = useState(false);
 
-    // Mode: 'forward' = Inputs → Price, 'reverse' = Price → Breakdown
     const [mode, setMode] = useState('forward');
     const [priceToCharge, setPriceToCharge] = useState(585);
+
+    const [origin, setOrigin] = useState(null);
+    const [destination, setDestination] = useState(null);
+    const [fetchingDistance, setFetchingDistance] = useState(false);
+    const [distanceSource, setDistanceSource] = useState('manual');
+
+    const fetchDistance = useCallback((from, to) => {
+        if (!from || !to || !hasMapsApi()) return;
+        setFetchingDistance(true);
+        const service = new window.google.maps.DistanceMatrixService();
+        service.getDistanceMatrix(
+            {
+                origins: [new window.google.maps.LatLng(from.lat, from.lng)],
+                destinations: [new window.google.maps.LatLng(to.lat, to.lng)],
+                travelMode: window.google.maps.TravelMode.DRIVING,
+                unitSystem: window.google.maps.UnitSystem.METRIC,
+            },
+            (response, status) => {
+                setFetchingDistance(false);
+                if (status === 'OK' && response.rows[0]?.elements[0]?.status === 'OK') {
+                    const distanceMeters = response.rows[0].elements[0].distance.value;
+                    const distanceKm = parseFloat((distanceMeters / 1000).toFixed(2));
+                    setValues(prev => ({ ...prev, distance: distanceKm }));
+                    setDistanceSource('maps');
+                    setResults(null);
+                }
+            }
+        );
+    }, []);
+
+    const handleOriginSelected = useCallback((place) => {
+        setOrigin(place);
+        if (destination) fetchDistance(place, destination);
+    }, [destination, fetchDistance]);
+
+    const handleDestinationSelected = useCallback((place) => {
+        setDestination(place);
+        if (origin) fetchDistance(origin, place);
+    }, [origin, fetchDistance]);
 
     const handleCalculate = () => {
         if (mode === 'forward') {
@@ -32,12 +73,10 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings }) => {
             const netGainPerKm = values.distance > 0 ? netGain / values.distance : 0;
             const fuelPerKm = values.distance > 0 ? totalFuelCost / values.distance : 0;
             const perHead = reasonablePrice / 4;
-
             const newResults = { totalFuelCost, reasonablePrice, revenuePerKm, netGain, netGainPerKm, fuelPerKm, perHead };
             setResults(newResults);
             addToHistory('Ride', { ...values, mode: 'forward' }, newResults);
         } else {
-            // Reverse: given Price to Charge, derive everything
             const totalFuelCost = values.distance * values.mileage * values.costPerLiter;
             const netGain = priceToCharge - totalFuelCost;
             const perHead = priceToCharge / 4;
@@ -45,7 +84,6 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings }) => {
             const fuelPerKm = values.distance > 0 ? totalFuelCost / values.distance : 0;
             const netGainPerKm = values.distance > 0 ? netGain / values.distance : 0;
             const serviceFactor = totalFuelCost > 0 ? priceToCharge / totalFuelCost : 0;
-
             const newResults = { totalFuelCost, reasonablePrice: priceToCharge, revenuePerKm, netGain, netGainPerKm, fuelPerKm, perHead, serviceFactor };
             setResults(newResults);
             addToHistory('Ride', { ...values, priceToCharge, mode: 'reverse' }, newResults);
@@ -55,6 +93,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings }) => {
     const handleChange = (field, val) => {
         const numericVal = parseFloat(val) || 0;
         setValues(prev => ({ ...prev, [field]: numericVal }));
+        if (field === 'distance') setDistanceSource('manual');
         setResults(null);
     };
 
@@ -62,14 +101,18 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings }) => {
         setValues(DEFAULT_VALUES);
         setPriceToCharge(585);
         setResults(null);
+        setOrigin(null);
+        setDestination(null);
+        setDistanceSource('manual');
     };
 
     const formatNum = (val) => val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const mapsAvailable = hasMapsApi();
 
     return (
         <div className="flex flex-col h-full">
             {/* Header */}
-            <div className="flex justify-between items-start mb-4">
+            <div className="flex justify-between items-start mb-2">
                 <div>
                     <h1 className="text-xl font-bold bg-gradient-to-r from-white to-neutral-400 bg-clip-text text-transparent flex items-center gap-2">
                         <Car className="w-5 h-5 text-primary-500" />
@@ -79,26 +122,27 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings }) => {
                         Transport & Fuel Cost
                     </p>
                 </div>
-                <div className="flex gap-1.5">
-                    <button
-                        onClick={() => setShowExplanation(!showExplanation)}
-                        className={`flex items-center justify-center p-1 rounded-full transition-all ${showExplanation ? 'bg-primary-600/20 text-primary-400 ring-1 ring-primary-500/50' : 'bg-neutral-800 text-neutral-500 hover:bg-neutral-700'}`}
-                        title="Show Info"
-                    >
-                        <Info className="w-3 h-3" />
-                    </button>
-                </div>
+                <button
+                    onClick={() => setShowExplanation(!showExplanation)}
+                    className={`flex items-center justify-center p-1 rounded-full transition-all ${showExplanation ? 'bg-primary-600/20 text-primary-400 ring-1 ring-primary-500/50' : 'bg-neutral-800 text-neutral-500 hover:bg-neutral-700'}`}
+                    title="Show Info"
+                >
+                    <Info className="w-3 h-3" />
+                </button>
             </div>
 
-            {/* Explanation Panel */}
             {showExplanation && (
-                <div className="bg-gradient-to-r from-primary-900/30 to-neutral-800/50 border border-primary-500/30 rounded-xl p-3 mb-4 text-xs text-neutral-300 text-left">
-                    <p className="font-bold text-primary-400 mb-1">Ride Fare Logic</p>
-                    <p className="text-[11px] leading-relaxed">
+                <div className="bg-gradient-to-r from-primary-900/30 to-neutral-800/50 border border-primary-500/30 rounded-xl p-2.5 mb-2 text-[11px] text-neutral-300 text-left leading-relaxed space-y-1.5">
+                    <p className="font-bold text-primary-400 text-xs">How It Works</p>
+                    {mapsAvailable && (
+                        <p>📍 <strong className="text-white">Google Maps:</strong> Select From/To locations to auto-fetch the driving distance.</p>
+                    )}
+                    <p>
                         {mode === 'forward'
-                            ? 'Calculate the price to charge from distance, fuel efficiency, fuel price, and service factor.'
-                            : 'Enter a known price to charge and get the full cost breakdown (fuel, gain, per-km rates, per-head split).'}
+                            ? '📐 Enter distance, fuel price, and service factor to calculate the recommended fare. Formula: Price = Distance × Mileage × Fuel Cost × Service Factor.'
+                            : '🔄 Enter a known fare to reverse-calculate fuel cost breakdown, net gain, and the implied service factor.'}
                     </p>
+                    <p>👥 <strong className="text-white">Per Head:</strong> Total fare split by 4 passengers for cost-sharing.</p>
                 </div>
             )}
 
@@ -106,167 +150,182 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings }) => {
             <div className="flex mb-2 bg-neutral-900/50 rounded-lg p-0.5">
                 <button
                     onClick={() => { setMode('forward'); setResults(null); }}
-                    className={`flex-1 py-1.5 px-2 text-[9px] font-bold uppercase tracking-wider rounded-md transition-all ${mode === 'forward' ? 'bg-primary-600/20 text-primary-400' : 'text-neutral-500 hover:text-neutral-300'}`}
+                    className={`flex-1 py-1 px-2 text-[9px] font-bold uppercase tracking-wider rounded-md transition-all ${mode === 'forward' ? 'bg-primary-600/20 text-primary-400' : 'text-neutral-500 hover:text-neutral-300'}`}
                 >
                     Inputs → Price
                 </button>
                 <button
                     onClick={() => { setMode('reverse'); setResults(null); }}
-                    className={`flex-1 py-1.5 px-2 text-[9px] font-bold uppercase tracking-wider rounded-md transition-all ${mode === 'reverse' ? 'bg-primary-600/20 text-primary-400' : 'text-neutral-500 hover:text-neutral-300'}`}
+                    className={`flex-1 py-1 px-2 text-[9px] font-bold uppercase tracking-wider rounded-md transition-all ${mode === 'reverse' ? 'bg-primary-600/20 text-primary-400' : 'text-neutral-500 hover:text-neutral-300'}`}
                 >
                     Price → Breakdown
                 </button>
             </div>
 
-            {/* Input Fields */}
-            <div className="space-y-1.5 flex-1 overflow-y-auto pr-1 scrollbar-hide">
-                {/* Distance - shared in both modes */}
-                <div className="bg-neutral-800/40 rounded-xl p-2.5 border border-primary-500/50 ring-1 ring-primary-500/10">
-                    <div className="flex justify-between items-center gap-2 min-w-0">
-                        <div className="shrink-0">
-                            <label className="text-sm font-bold text-primary-400 block leading-tight text-left">Distance (Km)</label>
-                            <span className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold text-left block">Trip Length</span>
+            {/* Route Card - From/To combined into one compact card */}
+            {mapsAvailable && (
+                <div className="bg-neutral-800/30 rounded-xl p-2 mb-1.5 border border-neutral-700/40">
+                    <div className="space-y-0">
+                        <PlacesAutocomplete
+                            label="From"
+                            placeholder="e.g. Bole Airport"
+                            onPlaceSelected={handleOriginSelected}
+                            accentColor="primary"
+                            compact
+                        />
+                        <div className="flex items-center gap-2 py-0.5 px-4">
+                            <div className="flex-1 border-t border-dashed border-neutral-700/60"></div>
+                            <ArrowDown className="w-3 h-3 text-neutral-600" />
+                            <div className="flex-1 border-t border-dashed border-neutral-700/60"></div>
                         </div>
+                        <PlacesAutocomplete
+                            label="To"
+                            placeholder="e.g. Megenagna"
+                            onPlaceSelected={handleDestinationSelected}
+                            accentColor="white"
+                            compact
+                        />
+                    </div>
+                </div>
+            )}
+
+            {/* Inputs - 2 column grid */}
+            <div className="grid grid-cols-2 gap-1.5 mb-1.5">
+                {/* Distance */}
+                <div className={`rounded-xl p-2 border ${distanceSource === 'maps' ? 'bg-emerald-900/10 border-emerald-500/40' : 'bg-neutral-800/40 border-primary-500/40'}`}>
+                    <label className={`text-[10px] uppercase tracking-wider font-bold block mb-0.5 ${distanceSource === 'maps' ? 'text-emerald-400' : 'text-primary-400'}`}>
+                        Distance (Km)
+                    </label>
+                    {fetchingDistance ? (
+                        <div className="flex items-center gap-1 text-primary-400 text-xs py-1">
+                            <Loader2 className="w-3 h-3 animate-spin" /> Loading...
+                        </div>
+                    ) : (
                         <FormattedNumberInput
                             value={values.distance}
                             onChange={(e) => handleChange('distance', e.target.value)}
                             decimals={2}
-                            className="bg-transparent text-right text-lg font-mono focus:outline-none text-primary-400 font-black min-w-0 flex-1"
+                            className={`bg-transparent text-right text-lg font-mono focus:outline-none font-black w-full ${distanceSource === 'maps' ? 'text-emerald-400' : 'text-primary-400'}`}
                         />
-                    </div>
+                    )}
+                    <span className="text-[8px] uppercase tracking-wider text-neutral-600 font-bold block">
+                        {distanceSource === 'maps' ? '✓ Google Maps' : 'Trip Length'}
+                    </span>
                 </div>
 
-                {/* Fuel Mileage (Read-Only) - shared */}
-                <div className="bg-neutral-900/30 rounded-xl p-2.5 border border-neutral-700/50 opacity-80">
-                    <div className="flex justify-between items-center gap-2 min-w-0">
-                        <div className="shrink-0">
-                            <label className="text-sm font-bold text-neutral-500 block leading-tight text-left">Fuel Mileage (L/Km)</label>
-                            <span className="text-[9px] uppercase tracking-wider text-neutral-600 font-bold text-left block">Efficiency</span>
-                        </div>
-                        <span className="text-right text-lg font-mono text-neutral-400 min-w-0 flex-1">
-                            {values.mileage.toFixed(2)}
-                        </span>
-                    </div>
+                {/* Fuel Cost */}
+                <div className="bg-neutral-800/40 rounded-xl p-2 border border-transparent">
+                    <label className="text-[10px] uppercase tracking-wider font-bold text-white block mb-0.5">
+                        Fuel Cost / L
+                    </label>
+                    <FormattedNumberInput
+                        value={values.costPerLiter}
+                        onChange={(e) => handleChange('costPerLiter', e.target.value)}
+                        decimals={2}
+                        className="bg-transparent text-right text-lg font-mono focus:outline-none text-white w-full"
+                        placeholder="130.00"
+                    />
+                    <span className="text-[8px] uppercase tracking-wider text-neutral-600 font-bold block">Current Price</span>
                 </div>
 
-                {/* Fuel Cost - shared */}
-                <div className="bg-neutral-800/40 rounded-xl p-2.5 border border-transparent hover:border-neutral-700">
-                    <div className="flex justify-between items-center gap-2 min-w-0">
-                        <div className="shrink-0">
-                            <label className="text-sm font-bold text-white block leading-tight text-left">Fuel Cost (Per Liter)</label>
-                            <span className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold text-left block">Current Price</span>
-                        </div>
-                        <FormattedNumberInput
-                            value={values.costPerLiter}
-                            onChange={(e) => handleChange('costPerLiter', e.target.value)}
-                            decimals={2}
-                            className="bg-transparent text-right text-lg font-mono focus:outline-none text-white min-w-0 flex-1"
-                            placeholder="130.00"
-                        />
-                    </div>
+                {/* Fuel Mileage (Read-Only) */}
+                <div className="bg-neutral-900/30 rounded-xl p-2 border border-neutral-700/30 opacity-80">
+                    <label className="text-[10px] uppercase tracking-wider font-bold text-neutral-500 block mb-0.5">
+                        Mileage (L/Km)
+                    </label>
+                    <p className="text-right text-lg font-mono text-neutral-400">{values.mileage.toFixed(2)}</p>
+                    <span className="text-[8px] uppercase tracking-wider text-neutral-600 font-bold block">Efficiency</span>
                 </div>
 
+                {/* Service Factor or Price to Charge */}
                 {mode === 'forward' ? (
-                    /* Service Factor - forward mode only */
-                    <div className="bg-neutral-800/40 rounded-xl p-2.5 border border-transparent hover:border-neutral-700">
-                        <div className="flex justify-between items-center gap-2 min-w-0">
-                            <div className="shrink-0">
-                                <label className="text-sm font-bold text-white block leading-tight text-left">Service Factor</label>
-                                <span className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold text-left block">Multiplier (Min 2.55, Med 3, Max 4.5)</span>
-                            </div>
-                            <FormattedNumberInput
-                                value={values.serviceFactor}
-                                onChange={(e) => handleChange('serviceFactor', e.target.value)}
-                                decimals={1}
-                                className="bg-transparent text-right text-lg font-mono focus:outline-none text-white min-w-0 flex-1"
-                            />
-                        </div>
+                    <div className="bg-neutral-800/40 rounded-xl p-2 border border-transparent">
+                        <label className="text-[10px] uppercase tracking-wider font-bold text-white block mb-0.5">
+                            Service Factor
+                        </label>
+                        <FormattedNumberInput
+                            value={values.serviceFactor}
+                            onChange={(e) => handleChange('serviceFactor', e.target.value)}
+                            decimals={1}
+                            className="bg-transparent text-right text-lg font-mono focus:outline-none text-white w-full"
+                        />
+                        <span className="text-[8px] uppercase tracking-wider text-neutral-600 font-bold block">2.55 – 4.5×</span>
                     </div>
                 ) : (
-                    /* Price to Charge - reverse mode only */
-                    <div className="bg-neutral-800/40 rounded-xl p-2.5 border border-emerald-500/50 ring-1 ring-emerald-500/10">
-                        <div className="flex justify-between items-center gap-2 min-w-0">
-                            <div className="shrink-0">
-                                <label className="text-sm font-bold text-emerald-400 block leading-tight text-left">Price to Charge</label>
-                                <span className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold text-left block">Known Fare Amount</span>
-                            </div>
-                            <FormattedNumberInput
-                                value={priceToCharge}
-                                onChange={(e) => { setPriceToCharge(parseFloat(e.target.value.replace(/,/g, '')) || 0); setResults(null); }}
-                                decimals={2}
-                                className="bg-transparent text-right text-lg font-mono focus:outline-none text-emerald-400 font-black min-w-0 flex-1"
-                            />
-                        </div>
+                    <div className="bg-neutral-800/40 rounded-xl p-2 border border-emerald-500/40">
+                        <label className="text-[10px] uppercase tracking-wider font-bold text-emerald-400 block mb-0.5">
+                            Price to Charge
+                        </label>
+                        <FormattedNumberInput
+                            value={priceToCharge}
+                            onChange={(e) => { setPriceToCharge(parseFloat(e.target.value.replace(/,/g, '')) || 0); setResults(null); }}
+                            decimals={2}
+                            className="bg-transparent text-right text-lg font-mono focus:outline-none text-emerald-400 font-black w-full"
+                        />
+                        <span className="text-[8px] uppercase tracking-wider text-neutral-600 font-bold block">Known Fare</span>
                     </div>
                 )}
             </div>
 
             {/* Results */}
             {results && (
-                <div className="mt-2 bg-gradient-to-br from-primary-900/30 to-neutral-800/50 border border-primary-500/30 rounded-xl p-3 space-y-2">
-                    <div className="flex justify-between items-center mb-1">
+                <div className="bg-gradient-to-br from-primary-900/30 to-neutral-800/50 border border-primary-500/30 rounded-xl p-2.5 space-y-1.5 mb-1.5">
+                    <div className="flex justify-between items-center">
                         <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Results</span>
                         <button
                             onClick={() => setShowHistory(true)}
                             className="text-[9px] text-primary-500 font-bold uppercase tracking-wider flex items-center gap-1 hover:text-primary-400 transition-colors"
                         >
-                            <History size={12} /> View History
+                            <History size={10} /> History
                         </button>
                     </div>
 
-                    {/* Price to Charge - Main Result */}
-                    <div className="bg-neutral-900/80 rounded-lg p-3 border border-primary-500/30">
+                    {/* Main result row */}
+                    <div className="bg-neutral-900/80 rounded-lg p-2.5 border border-primary-500/30">
                         <div className="flex justify-between items-end">
                             <div>
-                                <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Price to Charge</p>
-                                <p className="text-2xl font-black text-primary-400">
-                                    {formatNum(results.reasonablePrice)}
-                                </p>
+                                <p className="text-[8px] font-bold text-neutral-500 uppercase tracking-wider">Price to Charge</p>
+                                <p className="text-2xl font-black text-primary-400">{formatNum(results.reasonablePrice)}</p>
                             </div>
                             <div className="text-right">
-                                <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Per Head</p>
-                                <p className="text-lg font-black text-primary-300">
-                                    {formatNum(results.perHead)}
-                                </p>
+                                <p className="text-[8px] font-bold text-neutral-500 uppercase tracking-wider">Per Head</p>
+                                <p className="text-lg font-black text-primary-300">{formatNum(results.perHead)}</p>
                             </div>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2">
-                        <div className="bg-neutral-900/50 rounded-lg p-2.5">
-                            <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Total Fuel Cost</p>
-                            <p className="text-lg font-black text-amber-400">
-                                {formatNum(results.totalFuelCost)}
-                            </p>
+                    {/* Secondary metrics */}
+                    <div className="grid grid-cols-2 gap-1.5">
+                        <div className="bg-neutral-900/50 rounded-lg p-2">
+                            <p className="text-[8px] font-bold text-neutral-500 uppercase tracking-wider">Total Fuel Cost</p>
+                            <p className="text-base font-black text-amber-400">{formatNum(results.totalFuelCost)}</p>
                         </div>
-                        <div className="bg-neutral-900/50 rounded-lg p-2.5">
-                            <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Net Gain</p>
-                            <p className="text-lg font-black text-emerald-400">
-                                {formatNum(results.netGain)}
-                            </p>
+                        <div className="bg-neutral-900/50 rounded-lg p-2">
+                            <p className="text-[8px] font-bold text-neutral-500 uppercase tracking-wider">Net Gain</p>
+                            <p className="text-base font-black text-emerald-400">{formatNum(results.netGain)}</p>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-2 pt-2 border-t border-neutral-700">
+                    {/* Per-km breakdown */}
+                    <div className="grid grid-cols-3 gap-1.5 pt-1.5 border-t border-neutral-700/50">
                         <div>
-                            <p className="text-[9px] font-bold text-neutral-500 uppercase">Fuel / Km</p>
+                            <p className="text-[8px] font-bold text-neutral-500 uppercase">Fuel / Km</p>
                             <p className="text-[10px] font-bold text-white">{formatNum(results.fuelPerKm)}</p>
                         </div>
                         <div>
-                            <p className="text-[9px] font-bold text-neutral-500 uppercase">Revenue / Km</p>
+                            <p className="text-[8px] font-bold text-neutral-500 uppercase">Rev / Km</p>
                             <p className="text-[10px] font-bold text-white">{formatNum(results.revenuePerKm)}</p>
                         </div>
                         <div>
-                            <p className="text-[9px] font-bold text-neutral-500 uppercase">Gain / Km</p>
+                            <p className="text-[8px] font-bold text-neutral-500 uppercase">Gain / Km</p>
                             <p className="text-[10px] font-bold text-white">{formatNum(results.netGainPerKm)}</p>
                         </div>
                     </div>
 
-                    {/* Show derived service factor in reverse mode */}
                     {mode === 'reverse' && results.serviceFactor !== undefined && (
-                        <div className="pt-2 border-t border-neutral-700">
+                        <div className="pt-1.5 border-t border-neutral-700/50">
                             <div className="flex justify-between items-center">
-                                <p className="text-[9px] font-bold text-neutral-500 uppercase">Implied Service Factor</p>
+                                <p className="text-[8px] font-bold text-neutral-500 uppercase">Implied Service Factor</p>
                                 <p className="text-xs font-bold text-white">{results.serviceFactor.toFixed(2)}x</p>
                             </div>
                         </div>
@@ -275,10 +334,10 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings }) => {
             )}
 
             {/* Action Buttons */}
-            <div className="mt-2 flex gap-1.5">
+            <div className="mt-auto flex gap-1.5 pt-1">
                 <button
                     onClick={handleClear}
-                    className="w-[15%] bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-xs py-3.5 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center gap-1 uppercase tracking-wider"
+                    className="w-[15%] bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-xs py-3 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center gap-1 uppercase tracking-wider"
                     title="Clear all values"
                 >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -300,14 +359,13 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings }) => {
                 </button>
                 <button
                     onClick={handleCalculate}
-                    className="flex-1 bg-gradient-to-r from-primary-600 to-primary-500 text-neutral-900 font-black text-base py-3.5 rounded-xl shadow-lg shadow-primary-900/20 active:scale-[0.98] transition-all hover:brightness-110 flex items-center justify-center gap-2 uppercase tracking-widest"
+                    className="flex-1 bg-gradient-to-r from-primary-600 to-primary-500 text-neutral-900 font-black text-base py-3 rounded-xl shadow-lg shadow-primary-900/20 active:scale-[0.98] transition-all hover:brightness-110 flex items-center justify-center gap-2 uppercase tracking-widest"
                 >
                     <CalculateIcon className="w-5 h-5" />
                     Calculate
                 </button>
             </div>
 
-            {/* History Overlay */}
             <HistoryOverlay
                 isOpen={showHistory}
                 onClose={() => setShowHistory(false)}

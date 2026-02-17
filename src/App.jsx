@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { LoadScript } from '@react-google-maps/api';
 import Layout from './components/Layout';
 import { HistoryProvider } from './context/HistoryContext';
 import { SettingsProvider } from './context/SettingsContext';
@@ -17,6 +18,9 @@ import PensionCalculator from './features/pension/PensionCalculator';
 import InflationCalculator from './features/inflation/InflationCalculator';
 import RideFareCalculator from './features/transport/RideFareCalculator';
 
+const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
+const GOOGLE_MAPS_LIBRARIES = ['places'];
+
 function App() {
     const [activeTab, setActiveTab] = useState('tvm');
     const [showHelp, setShowHelp] = useState(false);
@@ -27,7 +31,7 @@ function App() {
     const toggleSettings = () => setShowSettings(true);
     const closeSettings = () => setShowSettings(false);
 
-    return (
+    const appContent = (
         <SettingsProvider>
             <HistoryProvider>
                 <Layout
@@ -74,8 +78,20 @@ function App() {
             </HistoryProvider>
         </SettingsProvider>
     );
+
+    // Only wrap with LoadScript if API key is available
+    if (GOOGLE_MAPS_API_KEY && GOOGLE_MAPS_API_KEY !== 'YOUR_API_KEY_HERE') {
+        return (
+            <LoadScript googleMapsApiKey={GOOGLE_MAPS_API_KEY} libraries={GOOGLE_MAPS_LIBRARIES}>
+                {appContent}
+            </LoadScript>
+        );
+    }
+
+    return appContent;
 }
 
 export default App;
+
 
 
