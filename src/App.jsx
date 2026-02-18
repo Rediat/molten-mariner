@@ -28,22 +28,32 @@ function App() {
     const toggleSettings = () => setShowSettings(true);
     const closeSettings = () => setShowSettings(false);
 
-    // Fetch the Maps script URL from the serverless proxy (API key stays server-side)
-    // and dynamically inject the <script> tag into the page
+    // Load Google Maps: try the serverless proxy first (production),
+    // fall back to VITE_GOOGLE_MAPS_API_KEY from .env (local dev)
     useEffect(() => {
+        const loadScript = (url) => {
+            const script = document.createElement('script');
+            script.src = url;
+            script.async = true;
+            script.onload = () => setMapsReady(true);
+            script.onerror = () => console.error('Failed to load Google Maps script');
+            document.head.appendChild(script);
+        };
+
         fetch('/api/maps')
             .then(res => res.json())
             .then(data => {
                 if (data.scriptUrl) {
-                    const script = document.createElement('script');
-                    script.src = data.scriptUrl;
-                    script.async = true;
-                    script.onload = () => setMapsReady(true);
-                    script.onerror = () => console.error('Failed to load Google Maps script');
-                    document.head.appendChild(script);
+                    loadScript(data.scriptUrl);
                 }
             })
-            .catch(err => console.error('Maps config error:', err));
+            .catch(() => {
+                // Fallback for local dev (npm run dev) where /api/maps doesn't exist
+                const devKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+                if (devKey && devKey !== 'YOUR_API_KEY_HERE') {
+                    loadScript(`https://maps.googleapis.com/maps/api/js?key=${devKey}&libraries=places&v=weekly`);
+                }
+            });
     }, []);
 
     return (
