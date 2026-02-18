@@ -19,7 +19,7 @@ import InflationCalculator from './features/inflation/InflationCalculator';
 import RideFareCalculator from './features/transport/RideFareCalculator';
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
-const GOOGLE_MAPS_LIBRARIES = ['places'];
+// const GOOGLE_MAPS_LIBRARIES = ['places'];
 
 function App() {
     const [activeTab, setActiveTab] = useState('tvm');
