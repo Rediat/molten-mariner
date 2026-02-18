@@ -15,7 +15,7 @@ const DEFAULT_VALUES = {
 
 const hasMapsApi = () => !!window.google?.maps?.DistanceMatrixService;
 
-const RideFareCalculator = ({ toggleHelp, toggleSettings }) => {
+const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady }) => {
     const { addToHistory } = useHistory();
     const [values, setValues] = useState(DEFAULT_VALUES);
     const [results, setResults] = useState(null);
@@ -247,6 +247,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings }) => {
                             onUseCurrentLocation={useCurrentLocation}
                             locationLoading={locationLoading}
                             externalInputRef={fromInputRef}
+                            mapsReady={mapsReady}
                         />
                         <div className="flex items-center gap-2 py-0.5 px-4">
                             <div className="flex-1 border-t border-dashed border-neutral-700/60"></div>
@@ -266,6 +267,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings }) => {
                             accentColor="white"
                             compact
                             externalInputRef={toInputRef}
+                            mapsReady={mapsReady}
                         />
                     </div>
                 </div>

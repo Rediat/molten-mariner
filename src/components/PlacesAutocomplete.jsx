@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useCallback } from 'react';
 import { MapPin, Crosshair } from 'lucide-react';
 
-const PlacesAutocomplete = ({ placeholder, onPlaceSelected, label, accentColor = 'white', compact = false, onUseCurrentLocation, locationLoading, externalInputRef }) => {
+const PlacesAutocomplete = ({ placeholder, onPlaceSelected, label, accentColor = 'white', compact = false, onUseCurrentLocation, locationLoading, externalInputRef, mapsReady }) => {
     const internalRef = useRef(null);
     const inputRef = externalInputRef || internalRef;
     const autocompleteRef = useRef(null);
@@ -39,7 +39,7 @@ const PlacesAutocomplete = ({ placeholder, onPlaceSelected, label, accentColor =
                 autocompleteRef.current = null;
             }
         };
-    }, []);
+    }, [mapsReady]);
 
     // Allow parent to set input value (for current location)
     const setInputValue = useCallback((val) => {
