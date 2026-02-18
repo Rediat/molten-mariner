@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { LoadScript } from '@react-google-maps/api';
 import Layout from './components/Layout';
 import { HistoryProvider } from './context/HistoryContext';
@@ -30,6 +30,19 @@ function App() {
     const closeHelp = () => setShowHelp(false);
     const toggleSettings = () => setShowSettings(true);
     const closeSettings = () => setShowSettings(false);
+
+    const [mapsConfig, setMapsConfig] = useState({ libraries: [], scriptUrl: '' });
+
+    useEffect(() => {
+        fetch('/api/maps')
+            .then(res => res.json())
+            .then(data => setMapsConfig(data))
+            .catch(err => console.error('Maps config error:', err));
+    }, []);
+
+    // Use mapsConfig.scriptUrl for <script src={mapsConfig.scriptUrl} />
+    // Or mapsConfig.libraries for Google Maps loader
+    const GOOGLE_MAPS_LIBRARIES = mapsConfig.libraries; // ['places']
 
     const appContent = (
         <SettingsProvider>
