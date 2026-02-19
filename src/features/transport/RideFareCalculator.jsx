@@ -31,6 +31,8 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady }) => {
     const [distanceSource, setDistanceSource] = useState('manual');
     const [locationLoading, setLocationLoading] = useState(false);
     const [driveDuration, setDriveDuration] = useState(null);
+    const [driveDurationMinutes, setDriveDurationMinutes] = useState(null);
+    const [waitMultiplier, setWaitMultiplier] = useState(2.5);
 
     const fromInputRef = useRef(null);
     const toInputRef = useRef(null);
@@ -71,6 +73,8 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady }) => {
                     setValues(prev => ({ ...prev, distance: distanceKm }));
                     setDistanceSource('maps');
                     setDriveDuration((element.duration_in_traffic?.text || element.duration?.text) || null);
+                    const durationSec = element.duration_in_traffic?.value || element.duration?.value || 0;
+                    setDriveDurationMinutes(durationSec > 0 ? durationSec / 60 : null);
                     setResults(null);
                 }
             }
@@ -176,6 +180,9 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady }) => {
         setOrigin(null);
         setDestination(null);
         setDistanceSource('manual');
+        setDriveDuration(null);
+        setDriveDurationMinutes(null);
+        setWaitMultiplier(2.5);
     };
 
     const formatNum = (val) => val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -211,9 +218,11 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady }) => {
                     )}
                     <p>
                         {mode === 'forward'
-                            ? '📐 Enter distance, fuel price, and service factor to calculate the recommended fare. Formula: Price = Distance × Mileage × Fuel Cost × Service Factor.'
-                            : '🔄 Enter a known fare to reverse-calculate fuel cost breakdown, net gain, and the implied service factor.'}
+                            ? '📐 Enter distance, fuel price, and service multiplier to calculate the recommended fare. Formula: Price = Distance × Mileage × Fuel Cost × Service Factor.'
+                            : '🔄 Enter a known fare to reverse-calculate fuel cost breakdown, net gain, and the implied service multiplier.'}
                     </p>
+                    <p>⛽ <strong className="text-white">Mileage:</strong> Fixed at 0.10 L/Km — the baseline fuel consumption rate used in all calculations.</p>
+                    <p>⏱️ <strong className="text-white">Wait Time:</strong> Estimated travel time + 10% buffer, multiplied by a configurable factor (default 2.5) to estimate total charge for wait time.</p>
                     <p>👥 <strong className="text-white">Per Head:</strong> Total fare split by 4 passengers for cost-sharing.</p>
                 </div>
             )}
@@ -312,13 +321,18 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady }) => {
                     <span className="text-[8px] uppercase tracking-wider text-neutral-600 font-bold block">Current Price</span>
                 </div>
 
-                {/* Fuel Mileage (Read-Only) */}
-                <div className="bg-neutral-900/30 rounded-xl p-2 border border-neutral-700/30 opacity-80">
-                    <label className="text-[10px] uppercase tracking-wider font-bold text-neutral-500 block mb-0.5">
-                        Mileage (L/Km)
+                {/* Wait Multiplier */}
+                <div className="bg-neutral-800/40 rounded-xl p-2 border border-amber-500/30">
+                    <label className="text-[10px] uppercase tracking-wider font-bold text-amber-400 block mb-0.5">
+                        Wait Multiplier
                     </label>
-                    <p className="text-right text-lg font-mono text-neutral-400">{values.mileage.toFixed(2)}</p>
-                    <span className="text-[8px] uppercase tracking-wider text-neutral-600 font-bold block">Efficiency</span>
+                    <FormattedNumberInput
+                        value={waitMultiplier}
+                        onChange={(e) => { setWaitMultiplier(parseFloat(e.target.value.replace(/,/g, '')) || 0); setResults(null); }}
+                        decimals={1}
+                        className="bg-transparent text-right text-lg font-mono focus:outline-none text-amber-400 font-black w-full"
+                    />
+                    <span className="text-[8px] uppercase tracking-wider text-neutral-600 font-bold block">Time Factor</span>
                 </div>
 
                 {/* Service Factor or Price to Charge */}
@@ -351,6 +365,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady }) => {
                 )}
             </div>
 
+
             {/* Results */}
             {results && (
                 <div className="bg-gradient-to-br from-primary-900/30 to-neutral-800/50 border border-primary-500/30 rounded-xl p-2.5 space-y-1.5 mb-1.5">
@@ -375,19 +390,35 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady }) => {
                         </div>
                     )}
 
+
                     {/* Main result row */}
-                    <div className="bg-neutral-900/80 rounded-lg p-2.5 border border-primary-500/30">
-                        <div className="flex justify-between items-end">
-                            <div>
-                                <p className="text-[8px] font-bold text-neutral-500 uppercase tracking-wider">Price to Charge</p>
-                                <p className="text-2xl font-black text-primary-400">{formatNum(results.reasonablePrice)}</p>
+                    {(() => {
+                        const waitTime = driveDurationMinutes != null ? driveDurationMinutes * 1.1 * waitMultiplier : 0;
+                        const totalPrice = results.reasonablePrice + waitTime;
+                        return (
+                            <div className="bg-neutral-900/80 rounded-lg p-2.5 border border-primary-500/30">
+                                <div className="flex justify-between items-end">
+                                    <div>
+                                        <p className="text-[8px] font-bold text-neutral-500 uppercase tracking-wider">Total to Charge</p>
+                                        <p className="text-2xl font-black text-primary-400">{formatNum(totalPrice)}</p>
+                                        {waitTime > 0 && (
+                                            <p className="text-[8px] text-neutral-600">{formatNum(results.reasonablePrice)} + {formatNum(waitTime)}</p>
+                                        )}
+                                    </div>
+                                    {waitTime > 0 && (
+                                        <div className="text-center">
+                                            <p className="text-[8px] font-bold text-amber-400 uppercase tracking-wider">Wait Time Charge</p>
+                                            <p className="text-base font-black text-amber-400">{formatNum(waitTime)}</p>
+                                        </div>
+                                    )}
+                                    <div className="text-right">
+                                        <p className="text-[8px] font-bold text-neutral-500 uppercase tracking-wider">Per Head</p>
+                                        <p className="text-lg font-black text-primary-300">{formatNum(totalPrice / 4)}</p>
+                                    </div>
+                                </div>
                             </div>
-                            <div className="text-right">
-                                <p className="text-[8px] font-bold text-neutral-500 uppercase tracking-wider">Per Head</p>
-                                <p className="text-lg font-black text-primary-300">{formatNum(results.perHead)}</p>
-                            </div>
-                        </div>
-                    </div>
+                        );
+                    })()}
 
                     {/* Secondary metrics */}
                     <div className="grid grid-cols-2 gap-1.5">
@@ -402,20 +433,28 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady }) => {
                     </div>
 
                     {/* Per-km breakdown */}
-                    <div className="grid grid-cols-3 gap-1.5 pt-1.5 border-t border-neutral-700/50">
-                        <div>
-                            <p className="text-[8px] font-bold text-neutral-500 uppercase">Fuel / Km</p>
-                            <p className="text-[10px] font-bold text-white">{formatNum(results.fuelPerKm)}</p>
-                        </div>
-                        <div>
-                            <p className="text-[8px] font-bold text-neutral-500 uppercase">Rev / Km</p>
-                            <p className="text-[10px] font-bold text-white">{formatNum(results.revenuePerKm)}</p>
-                        </div>
-                        <div>
-                            <p className="text-[8px] font-bold text-neutral-500 uppercase">Gain / Km</p>
-                            <p className="text-[10px] font-bold text-white">{formatNum(results.netGainPerKm)}</p>
-                        </div>
-                    </div>
+                    {(() => {
+                        const wt = driveDurationMinutes != null ? driveDurationMinutes * 1.1 * waitMultiplier : 0;
+                        const tp = results.reasonablePrice + wt;
+                        const revPerKm = values.distance > 0 ? tp / values.distance : 0;
+                        const gainPerKm = values.distance > 0 ? (tp - results.totalFuelCost) / values.distance : 0;
+                        return (
+                            <div className="grid grid-cols-3 gap-1.5 pt-1.5 border-t border-neutral-700/50">
+                                <div>
+                                    <p className="text-[8px] font-bold text-neutral-500 uppercase">Fuel / Km</p>
+                                    <p className="text-[10px] font-bold text-white">{formatNum(results.fuelPerKm)}</p>
+                                </div>
+                                <div>
+                                    <p className="text-[8px] font-bold text-neutral-500 uppercase">Rev / Km</p>
+                                    <p className="text-[10px] font-bold text-white">{formatNum(revPerKm)}</p>
+                                </div>
+                                <div>
+                                    <p className="text-[8px] font-bold text-neutral-500 uppercase">Gain / Km</p>
+                                    <p className="text-[10px] font-bold text-white">{formatNum(gainPerKm)}</p>
+                                </div>
+                            </div>
+                        );
+                    })()}
 
                     {mode === 'reverse' && results.serviceFactor !== undefined && (
                         <div className="pt-1.5 border-t border-neutral-700/50">

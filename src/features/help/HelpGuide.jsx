@@ -676,8 +676,8 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                 <div className="pt-2">
                     <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Calculation Modes:</p>
                     <FieldList fields={[
-                        { name: 'Inputs → Price', description: 'Enter distance, fuel details, and service factor to calculate the fare' },
-                        { name: 'Price → Breakdown', description: 'Enter a known fare to reverse-calculate fuel cost, net gain, and implied service factor' }
+                        { name: 'Inputs → Price', description: 'Enter distance, fuel details, and service multiplier to calculate the fare' },
+                        { name: 'Price → Breakdown', description: 'Enter a known fare to reverse-calculate fuel cost, net gain, and implied service multiplier' }
                     ]} />
                 </div>
 
@@ -694,16 +694,21 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                     <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Inputs:</p>
                     <FieldList fields={[
                         { name: 'Distance (Km)', description: 'Trip distance — auto-filled from Maps or entered manually' },
-                        { name: 'Mileage (L/Km)', description: 'Vehicle fuel efficiency (fixed at 0.1 L/Km baseline)' },
                         { name: 'Fuel Cost / L', description: 'Current price of fuel per liter (default 130 ETB)' },
+                        { name: 'Wait Multiplier', description: 'Factor applied to estimated travel time (+10%) to calculate total charge for wait time (default 2.5)' },
                         { name: 'Service Factor', description: 'Multiplier for maintenance, time, and profit (range: 2.55 – 4.5×, default 3×). Only in Inputs → Price mode.' },
                         { name: 'Price to Charge', description: 'The known fare amount. Only in Price → Breakdown mode.' }
                     ]} />
                 </div>
 
+                <InfoBox type="note">
+                    <strong>Mileage (L/Km):</strong> Fixed at 0.10 L/Km — the baseline fuel consumption rate used in all fare calculations. This value is not editable and represents a standard vehicle efficiency.
+                </InfoBox>
+
                 <div className="pt-2">
                     <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Results:</p>
                     <FieldList fields={[
+                        { name: 'Wait Time Total', description: 'Total charge for wait time — estimated travel time + 10% buffer, multiplied by the Wait Multiplier. Added to Price to Charge. Only shown when using Google Maps route.' },
                         { name: 'Price to Charge', description: 'The recommended fare (forward mode) or the entered fare (reverse mode)' },
                         { name: 'Per Head', description: 'Price divided by 4 passengers for cost-sharing' },
                         { name: 'Total Fuel Cost', description: 'Distance × Mileage × Fuel Cost per Liter' },
