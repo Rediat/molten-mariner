@@ -159,8 +159,8 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady }) => {
             const revenuePerKm = values.distance > 0 ? priceToCharge / values.distance : 0;
             const fuelPerKm = values.distance > 0 ? totalFuelCost / values.distance : 0;
             const netGainPerKm = values.distance > 0 ? netGain / values.distance : 0;
-            const serviceFactor = totalFuelCost > 0 ? priceToCharge / totalFuelCost : 0;
-            const newResults = { totalFuelCost, reasonablePrice: priceToCharge, revenuePerKm, netGain, netGainPerKm, fuelPerKm, perHead, serviceFactor };
+            const serviceMultiplier = totalFuelCost > 0 ? priceToCharge / totalFuelCost : 0;
+            const newResults = { totalFuelCost, reasonablePrice: priceToCharge, revenuePerKm, netGain, netGainPerKm, fuelPerKm, perHead, serviceMultiplier };
             setResults(newResults);
             addToHistory('Ride', { ...values, priceToCharge, mode: 'reverse' }, newResults);
         }
@@ -218,7 +218,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady }) => {
                     )}
                     <p>
                         {mode === 'forward'
-                            ? '📐 Enter distance, fuel price, and service multiplier to calculate the recommended fare. Formula: Price = Distance × Mileage × Fuel Cost × Service Factor.'
+                            ? '📐 Enter distance, fuel price, and service multiplier to calculate the recommended fare. Formula: Price = Distance × Mileage × Fuel Cost × Service Multiplier + Wait Time Charge.'
                             : '🔄 Enter a known fare to reverse-calculate fuel cost breakdown, net gain, and the implied service multiplier.'}
                     </p>
                     <p>⛽ <strong className="text-white">Mileage:</strong> Fixed at 0.10 L/Km — the baseline fuel consumption rate used in all calculations.</p>
@@ -343,7 +343,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady }) => {
                         </label>
                         <FormattedNumberInput
                             value={values.serviceMultiplier}
-                            onChange={(e) => handleChange('serviceFactor', e.target.value)}
+                            onChange={(e) => handleChange('serviceMultiplier', e.target.value)}
                             decimals={1}
                             className="bg-transparent text-right text-lg font-mono focus:outline-none text-white w-full"
                         />
@@ -456,11 +456,11 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady }) => {
                         );
                     })()}
 
-                    {mode === 'reverse' && results.serviceFactor !== undefined && (
+                    {mode === 'reverse' && results.serviceMultiplier !== undefined && (
                         <div className="pt-1.5 border-t border-neutral-700/50">
                             <div className="flex justify-between items-center">
                                 <p className="text-[8px] font-bold text-neutral-500 uppercase">Implied Service Multiplier</p>
-                                <p className="text-xs font-bold text-white">{results.serviceFactor.toFixed(2)}x</p>
+                                <p className="text-xs font-bold text-white">{results.serviceMultiplier.toFixed(2)}x</p>
                             </div>
                         </div>
                     )}

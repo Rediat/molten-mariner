@@ -676,7 +676,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                 <div className="pt-2">
                     <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Calculation Modes:</p>
                     <FieldList fields={[
-                        { name: 'Inputs → Price', description: 'Enter distance, fuel details, and service multiplier to calculate the fare' },
+                        { name: 'Inputs → Price', description: 'Enter distance, fuel details, and service multiplier and wait time multiplier to calculate the fare' },
                         { name: 'Price → Breakdown', description: 'Enter a known fare to reverse-calculate fuel cost, net gain, and implied service multiplier' }
                     ]} />
                 </div>
@@ -721,7 +721,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                 </div>
 
                 <InfoBox type="formula">
-                    <strong>Price to Charge = (Distance × Mileage × Fuel Cost) × Service Multiplier</strong>
+                    <strong>Price to Charge = (Distance × Mileage × Fuel Cost) × Service Multiplier + Wait Time Charge</strong>
                 </InfoBox>
 
                 <InfoBox type="tip">
