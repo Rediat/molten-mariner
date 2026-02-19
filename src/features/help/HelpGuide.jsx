@@ -696,7 +696,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                         { name: 'Distance (Km)', description: 'Trip distance — auto-filled from Maps or entered manually' },
                         { name: 'Fuel Cost / L', description: 'Current price of fuel per liter (default 130 ETB)' },
                         { name: 'Wait Multiplier', description: 'Factor applied to estimated travel time (+10%) to calculate total charge for wait time (default 2.5)' },
-                        { name: 'Service Factor', description: 'Multiplier for maintenance, time, and profit (range: 2.55 – 4.5×, default 3×). Only in Inputs → Price mode.' },
+                        { name: 'Service Multiplier', description: 'Multiplier for maintenance, time, and profit (range: 2.55 – 4.5×, default 3×). Only in Inputs → Price mode.' },
                         { name: 'Price to Charge', description: 'The known fare amount. Only in Price → Breakdown mode.' }
                     ]} />
                 </div>
@@ -716,12 +716,12 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                         { name: 'Fuel / Km', description: 'Fuel cost per kilometer' },
                         { name: 'Revenue / Km', description: 'Price to Charge per kilometer' },
                         { name: 'Gain / Km', description: 'Net Gain per kilometer' },
-                        { name: 'Implied Service Factor', description: 'In reverse mode, shows what multiplier the entered fare represents' }
+                        { name: 'Implied Service Multiplier', description: 'In reverse mode, shows what multiplier the entered fare represents' }
                     ]} />
                 </div>
 
                 <InfoBox type="formula">
-                    <strong>Price to Charge = (Distance × Mileage × Fuel Cost) × Service Factor</strong>
+                    <strong>Price to Charge = (Distance × Mileage × Fuel Cost) × Service Multiplier</strong>
                 </InfoBox>
 
                 <InfoBox type="tip">

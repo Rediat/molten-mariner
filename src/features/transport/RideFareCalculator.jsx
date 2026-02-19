@@ -10,7 +10,7 @@ const DEFAULT_VALUES = {
     distance: 15,
     mileage: 0.1,
     costPerLiter: 130,
-    serviceFactor: 3
+    serviceMultiplier: 3
 };
 
 const hasMapsApi = () => !!window.google?.maps?.DistanceMatrixService;
@@ -143,7 +143,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady }) => {
     const handleCalculate = () => {
         if (mode === 'forward') {
             const totalFuelCost = values.distance * values.mileage * values.costPerLiter;
-            const reasonablePrice = totalFuelCost * values.serviceFactor;
+            const reasonablePrice = totalFuelCost * values.serviceMultiplier;
             const revenuePerKm = values.distance > 0 ? reasonablePrice / values.distance : 0;
             const netGain = reasonablePrice - totalFuelCost;
             const netGainPerKm = values.distance > 0 ? netGain / values.distance : 0;
@@ -342,7 +342,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady }) => {
                             Service Factor
                         </label>
                         <FormattedNumberInput
-                            value={values.serviceFactor}
+                            value={values.serviceMultiplier}
                             onChange={(e) => handleChange('serviceFactor', e.target.value)}
                             decimals={1}
                             className="bg-transparent text-right text-lg font-mono focus:outline-none text-white w-full"
@@ -459,7 +459,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady }) => {
                     {mode === 'reverse' && results.serviceFactor !== undefined && (
                         <div className="pt-1.5 border-t border-neutral-700/50">
                             <div className="flex justify-between items-center">
-                                <p className="text-[8px] font-bold text-neutral-500 uppercase">Implied Service Factor</p>
+                                <p className="text-[8px] font-bold text-neutral-500 uppercase">Implied Service Multiplier</p>
                                 <p className="text-xs font-bold text-white">{results.serviceFactor.toFixed(2)}x</p>
                             </div>
                         </div>
