@@ -15,9 +15,10 @@ const DEFAULT_VALUES = {
 
 const hasMapsApi = () => !!window.google?.maps?.DistanceMatrixService;
 
-const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady }) => {
+const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive }) => {
     const { addToHistory } = useHistory();
     const [values, setValues] = useState(DEFAULT_VALUES);
+    const [locationError, setLocationError] = useState(null);
     const [results, setResults] = useState(null);
     const [showExplanation, setShowExplanation] = useState(false);
     const [showHistory, setShowHistory] = useState(false);
@@ -94,6 +95,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady }) => {
     const useCurrentLocation = useCallback((setInputValue) => {
         if (!navigator.geolocation) return;
         setLocationLoading(true);
+        setLocationError(null);
         navigator.geolocation.getCurrentPosition(
             (position) => {
                 const { latitude: lat, longitude: lng } = position.coords;
@@ -124,21 +126,25 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady }) => {
                     if (destination) fetchDistance(place, destination);
                 }
             },
-            () => setLocationLoading(false),
+            (error) => {
+                setLocationLoading(false);
+                if (error.code === 1) setLocationError('Location access denied');
+                else if (error.code === 2 || error.code === 3) setLocationError('Location unavailable');
+            },
             { enableHighAccuracy: true, timeout: 10000 }
         );
     }, [destination, fetchDistance]);
 
-    // Auto-trigger current location on mount
+    // Auto-trigger current location on mount (only when active)
     const locationTriggered = useRef(false);
     useEffect(() => {
-        if (locationTriggered.current || !hasMapsApi() || !navigator.geolocation) return;
+        if (!isActive || locationTriggered.current || !hasMapsApi() || !navigator.geolocation) return;
         locationTriggered.current = true;
         const setFromValue = (val) => {
             if (fromInputRef.current) fromInputRef.current.value = val;
         };
         useCurrentLocation(setFromValue);
-    }, [useCurrentLocation]);
+    }, [useCurrentLocation, mapsReady, isActive]);
 
     const handleCalculate = () => {
         if (mode === 'forward') {
@@ -257,6 +263,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady }) => {
                             locationLoading={locationLoading}
                             externalInputRef={fromInputRef}
                             mapsReady={mapsReady}
+                            locationError={locationError}
                         />
                         <div className="flex items-center gap-2 py-0.5 px-4">
                             <div className="flex-1 border-t border-dashed border-neutral-700/60"></div>

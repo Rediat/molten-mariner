@@ -96,7 +96,7 @@ function App() {
                         <InflationCalculator toggleHelp={toggleHelp} toggleSettings={toggleSettings} />
                     </div>
                     <div className={activeTab === 'transport' ? 'block h-full' : 'hidden'}>
-                        <RideFareCalculator toggleHelp={toggleHelp} toggleSettings={toggleSettings} mapsReady={mapsReady} />
+                        <RideFareCalculator toggleHelp={toggleHelp} toggleSettings={toggleSettings} mapsReady={mapsReady} isActive={activeTab === 'transport'} />
                     </div>
                     <SettingsModal isOpen={showSettings} onClose={closeSettings} />
                 </Layout>
