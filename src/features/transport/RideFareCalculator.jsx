@@ -339,7 +339,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady }) => {
                 {mode === 'forward' ? (
                     <div className="bg-neutral-800/40 rounded-xl p-2 border border-transparent">
                         <label className="text-[10px] uppercase tracking-wider font-bold text-white block mb-0.5">
-                            Service Factor
+                            Service Multiplier
                         </label>
                         <FormattedNumberInput
                             value={values.serviceMultiplier}
@@ -421,7 +421,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady }) => {
                     })()}
 
                     {/* Secondary metrics */}
-                    <div className="grid grid-cols-2 gap-1.5">
+                    <div className={`grid ${mode === 'reverse' && results.serviceMultiplier !== undefined ? 'grid-cols-3' : 'grid-cols-2'} gap-1.5`}>
                         <div className="bg-neutral-900/50 rounded-lg p-2">
                             <p className="text-[8px] font-bold text-neutral-500 uppercase tracking-wider">Total Fuel Cost</p>
                             <p className="text-base font-black text-amber-400">{formatNum(results.totalFuelCost)}</p>
@@ -430,6 +430,12 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady }) => {
                             <p className="text-[8px] font-bold text-neutral-500 uppercase tracking-wider">Net Gain</p>
                             <p className="text-base font-black text-emerald-400">{formatNum(results.netGain)}</p>
                         </div>
+                        {mode === 'reverse' && results.serviceMultiplier !== undefined && (
+                            <div className="bg-neutral-900/50 rounded-lg p-2">
+                                <p className="text-[8px] font-bold text-neutral-500 uppercase tracking-wider">Implied Mult</p>
+                                <p className="text-base font-black text-white">{results.serviceMultiplier.toFixed(2)}x</p>
+                            </div>
+                        )}
                     </div>
 
                     {/* Per-km breakdown */}
@@ -455,15 +461,6 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady }) => {
                             </div>
                         );
                     })()}
-
-                    {mode === 'reverse' && results.serviceMultiplier !== undefined && (
-                        <div className="pt-1.5 border-t border-neutral-700/50">
-                            <div className="flex justify-between items-center">
-                                <p className="text-[8px] font-bold text-neutral-500 uppercase">Implied Service Multiplier</p>
-                                <p className="text-xs font-bold text-white">{results.serviceMultiplier.toFixed(2)}x</p>
-                            </div>
-                        </div>
-                    )}
                 </div>
             )}
 
