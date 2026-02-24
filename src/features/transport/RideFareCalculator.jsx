@@ -97,43 +97,81 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
         if (!navigator.geolocation) return;
         setLocationLoading(true);
         setLocationError(null);
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                const { latitude: lat, longitude: lng } = position.coords;
-                const place = { lat, lng, name: 'My Location', address: '' };
 
-                // Use Places nearbySearch to find the closest named place
-                if (window.google?.maps?.places?.PlacesService) {
-                    const tempDiv = document.createElement('div');
-                    const service = new window.google.maps.places.PlacesService(tempDiv);
-                    service.nearbySearch(
-                        { location: { lat, lng }, rankBy: window.google.maps.places.RankBy.DISTANCE, type: 'point_of_interest' },
-                        (results, status) => {
-                            setLocationLoading(false);
-                            if (status === 'OK' && results?.length > 0) {
-                                const nearest = results[0];
-                                place.name = nearest.name;
-                                place.address = nearest.vicinity || nearest.name;
-                            }
-                            setInputValue('📍 ' + place.name);
-                            setOrigin(place);
-                            if (destination) fetchDistance(place, destination);
-                        }
-                    );
-                } else {
+        let watchId;
+        let bestPosition = null;
+        const TARGET_ACCURACY = 40; // meters
+        const TIMEOUT_MS = 10000;   // 10 seconds
+
+        const processLocation = (position) => {
+            const { latitude: lat, longitude: lng } = position.coords;
+            const place = { lat, lng, name: 'My Location', address: '' };
+
+            if (window.google?.maps?.Geocoder) {
+                const geocoder = new window.google.maps.Geocoder();
+                geocoder.geocode({ location: { lat, lng } }, (results, status) => {
                     setLocationLoading(false);
-                    setInputValue(`📍 ${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+                    if (status === 'OK' && results?.[0]) {
+                        const result = results[0];
+                        const addressComponents = result.address_components;
+                        const streetNumber = addressComponents.find(c => c.types.includes('street_number'))?.long_name;
+                        const route = addressComponents.find(c => c.types.includes('route'))?.long_name;
+
+                        if (route) {
+                            place.name = streetNumber ? `${streetNumber} ${route}` : route;
+                        } else {
+                            place.name = result.formatted_address.split(',')[0];
+                        }
+                        place.address = result.formatted_address;
+                    }
+                    setInputValue('📍 ' + place.name);
                     setOrigin(place);
                     if (destination) fetchDistance(place, destination);
+                });
+            } else {
+                setLocationLoading(false);
+                setInputValue(`📍 ${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+                setOrigin(place);
+                if (destination) fetchDistance(place, destination);
+            }
+        };
+
+        const timeoutId = setTimeout(() => {
+            if (watchId) navigator.geolocation.clearWatch(watchId);
+            if (bestPosition) {
+                processLocation(bestPosition);
+            } else {
+                setLocationLoading(false);
+                setLocationError('Location timeout');
+            }
+        }, TIMEOUT_MS);
+
+        watchId = navigator.geolocation.watchPosition(
+            (position) => {
+                if (!bestPosition || position.coords.accuracy < bestPosition.coords.accuracy) {
+                    bestPosition = position;
+                }
+
+                // If we get a highly accurate fix quickly, stop watching and use it
+                if (bestPosition.coords.accuracy <= TARGET_ACCURACY) {
+                    navigator.geolocation.clearWatch(watchId);
+                    clearTimeout(timeoutId);
+                    processLocation(bestPosition);
                 }
             },
             (error) => {
-                setLocationLoading(false);
-                if (error.code === 1) setLocationError('Location access denied');
-                else if (error.code === 2 || error.code === 3) setLocationError('Location unavailable');
+                // If we already have *some* position, don't fail completely on a subsequent error
+                if (!bestPosition) {
+                    setLocationLoading(false);
+                    clearTimeout(timeoutId);
+                    if (watchId) navigator.geolocation.clearWatch(watchId);
+                    if (error.code === 1) setLocationError('Location access denied');
+                    else if (error.code === 2 || error.code === 3) setLocationError('Location unavailable');
+                }
             },
-            { enableHighAccuracy: true, timeout: 10000 }
+            { enableHighAccuracy: true, timeout: TIMEOUT_MS, maximumAge: 0 }
         );
+
     }, [destination, fetchDistance]);
 
     // Auto-trigger current location on mount (only when active)
