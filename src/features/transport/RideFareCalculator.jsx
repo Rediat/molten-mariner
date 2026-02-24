@@ -105,7 +105,8 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
 
         const processLocation = (position) => {
             const { latitude: lat, longitude: lng } = position.coords;
-            const place = { lat, lng, name: 'My Location', address: '' };
+            const coordsLabel = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+            const place = { lat, lng, name: coordsLabel, address: '' };
 
             if (window.google?.maps?.Geocoder) {
                 const geocoder = new window.google.maps.Geocoder();
@@ -123,6 +124,8 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                             place.name = result.formatted_address.split(',')[0];
                         }
                         place.address = result.formatted_address;
+                    } else {
+                        console.warn('Geocoder failed:', status, '— showing coordinates instead');
                     }
                     setInputValue('📍 ' + place.name);
                     setOrigin(place);
