@@ -93,7 +93,7 @@ function AppContent() {
                 // Fallback for local dev (npm run dev) where /api/maps doesn't exist
                 const devKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
                 if (devKey && devKey !== 'YOUR_API_KEY_HERE') {
-                    loadScript(`https://maps.googleapis.com/maps/api/js?key=${devKey}&libraries=places&v=weekly`);
+                    loadScript(`https://maps.googleapis.com/maps/api/js?key=${devKey}&libraries=places&v=weekly&loading=async`);
                 }
             });
     }, []);
