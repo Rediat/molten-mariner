@@ -108,34 +108,94 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
             const coordsLabel = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
             const place = { lat, lng, name: coordsLabel, address: '' };
 
-            if (window.google?.maps?.Geocoder) {
-                const geocoder = new window.google.maps.Geocoder();
-                geocoder.geocode({ location: { lat, lng } }, (results, status) => {
-                    setLocationLoading(false);
-                    if (status === 'OK' && results?.[0]) {
-                        const result = results[0];
-                        const addressComponents = result.address_components;
-                        const streetNumber = addressComponents.find(c => c.types.includes('street_number'))?.long_name;
-                        const route = addressComponents.find(c => c.types.includes('route'))?.long_name;
-
-                        if (route) {
-                            place.name = streetNumber ? `${streetNumber} ${route}` : route;
-                        } else {
-                            place.name = result.formatted_address.split(',')[0];
-                        }
-                        place.address = result.formatted_address;
-                    } else {
-                        console.warn('Geocoder failed:', status, '— showing coordinates instead');
-                    }
-                    setInputValue('📍 ' + place.name);
-                    setOrigin(place);
-                    if (destination) fetchDistance(place, destination);
-                });
-            } else {
+            const finalize = (name) => {
                 setLocationLoading(false);
-                setInputValue(`📍 ${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+                place.name = name;
+                place.address = name;
+                setInputValue('📍 ' + name);
                 setOrigin(place);
                 if (destination) fetchDistance(place, destination);
+            };
+
+            const fallbackToCoords = () => {
+                finalize(`${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+            };
+
+            // Primary: Use Places API nearbySearch to find actual building/POI names
+            if (window.google?.maps?.places) {
+                const dummyEl = document.createElement('div');
+                dummyEl.style.display = 'none';
+                document.body.appendChild(dummyEl);
+                const svc = new window.google.maps.places.PlacesService(dummyEl);
+                const cleanUp = () => { try { document.body.removeChild(dummyEl); } catch (ex) { } };
+
+                const request = {
+                    location: new window.google.maps.LatLng(lat, lng),
+                    rankBy: window.google.maps.places.RankBy.DISTANCE,
+                    type: 'establishment'
+                };
+
+                // Timeout safety net
+                let resolved = false;
+                const timer = setTimeout(() => {
+                    if (!resolved) {
+                        resolved = true;
+                        cleanUp();
+                        console.warn('nearbySearch timed out, falling back to Geocoder');
+                        geocoderFallback();
+                    }
+                }, 4000);
+
+                svc.nearbySearch(request, (places, nearbyStatus) => {
+                    if (resolved) return;
+                    resolved = true;
+                    clearTimeout(timer);
+                    cleanUp();
+
+                    console.log('nearbySearch status:', nearbyStatus, 'results:', places);
+
+                    if (nearbyStatus === window.google.maps.places.PlacesServiceStatus.OK && places?.length > 0) {
+                        const bestPlace = places[0];
+                        const label = bestPlace.name + (bestPlace.vicinity ? `, ${bestPlace.vicinity}` : '');
+                        finalize(label);
+                    } else {
+                        geocoderFallback();
+                    }
+                });
+            } else {
+                geocoderFallback();
+            }
+
+            // Fallback: Use Geocoder to get neighborhood/sublocality
+            function geocoderFallback() {
+                if (window.google?.maps?.Geocoder) {
+                    const geocoder = new window.google.maps.Geocoder();
+                    geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+                        if (status === 'OK' && results?.length) {
+                            const cleanResults = results.filter(r =>
+                                !r.types.includes('plus_code') && !r.formatted_address.includes('+')
+                            );
+
+                            // Prefer neighborhood or sublocality over unnamed roads
+                            const neighborhood = cleanResults.find(r =>
+                                r.types.includes('neighborhood') ||
+                                r.types.includes('sublocality') ||
+                                r.types.includes('administrative_area_level_4') ||
+                                r.types.includes('administrative_area_level_3')
+                            );
+
+                            // Skip unnamed roads
+                            const nonRoute = cleanResults.find(r => !r.types.includes('route'));
+
+                            const fallback = neighborhood || nonRoute || cleanResults[0] || results[0];
+                            finalize(fallback.formatted_address);
+                        } else {
+                            fallbackToCoords();
+                        }
+                    });
+                } else {
+                    fallbackToCoords();
+                }
             }
         };
 

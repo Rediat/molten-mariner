@@ -2,7 +2,7 @@ import React from 'react';
 import { X, Activity, FileText, Percent, History, Receipt, Calculator, CreditCard, Target, ChevronUp, ChevronDown, Wallet, TrendingUp, Car } from 'lucide-react';
 import { useSettings } from '../context/SettingsContext';
 
-const MIN_TABS = 5;
+const MIN_TABS = 1;
 const MAX_TABS = 7;
 
 const TAB_CONFIG = {

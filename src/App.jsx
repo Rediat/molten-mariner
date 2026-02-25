@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Layout from './components/Layout';
 import { HistoryProvider } from './context/HistoryContext';
-import { SettingsProvider } from './context/SettingsContext';
+import { SettingsProvider, useSettings } from './context/SettingsContext';
 import SettingsModal from './components/SettingsModal';
 
 // Features
@@ -17,8 +17,28 @@ import PensionCalculator from './features/pension/PensionCalculator';
 import InflationCalculator from './features/inflation/InflationCalculator';
 import RideFareCalculator from './features/transport/RideFareCalculator';
 
-function App() {
-    const [activeTab, setActiveTab] = useState('tvm');
+const TAB_TO_SETTING = {
+    tvm: 'showTVM',
+    goal: 'showGoal',
+    loan: 'showLoan',
+    pension: 'showPension',
+    transport: 'showTransport',
+    flow: 'showFlow',
+    bond: 'showBond',
+    rates: 'showRates',
+    tbill: 'showTBill',
+    inflation: 'showInflation',
+    history: 'showHistory'
+};
+
+function AppContent() {
+    const { settings } = useSettings();
+    const [activeTab, setActiveTab] = useState(() => {
+        // Initialize to first enabled tab
+        const tabOrder = settings.tabOrder || ['tvm', 'goal', 'loan', 'pension', 'transport', 'flow', 'bond', 'rates', 'tbill', 'inflation', 'history'];
+        const firstEnabled = tabOrder.find(id => settings[TAB_TO_SETTING[id]]);
+        return firstEnabled || 'tvm';
+    });
     const [showHelp, setShowHelp] = useState(false);
     const [showSettings, setShowSettings] = useState(false);
     const [mapsReady, setMapsReady] = useState(false);
@@ -28,10 +48,32 @@ function App() {
     const toggleSettings = () => setShowSettings(true);
     const closeSettings = () => setShowSettings(false);
 
+    // Auto-switch away from disabled tab
+    useEffect(() => {
+        const settingKey = TAB_TO_SETTING[activeTab];
+        if (settingKey && !settings[settingKey]) {
+            const tabOrder = settings.tabOrder || ['tvm', 'goal', 'loan', 'pension', 'transport', 'flow', 'bond', 'rates', 'tbill', 'inflation', 'history'];
+            const firstEnabled = tabOrder.find(id => settings[TAB_TO_SETTING[id]]);
+            if (firstEnabled) {
+                setActiveTab(firstEnabled);
+            }
+        }
+    }, [settings, activeTab]);
+
     // Load Google Maps: try the serverless proxy first (production),
     // fall back to VITE_GOOGLE_MAPS_API_KEY from .env (local dev)
     useEffect(() => {
+        if (window.google?.maps) {
+            setMapsReady(true);
+            return;
+        }
+
         const loadScript = (url) => {
+            // Check if this specific script is already in the document (avoids StrictMode duplicates)
+            if (document.querySelector(`script[src="${url}"]`)) {
+                return;
+            }
+
             const script = document.createElement('script');
             script.src = url;
             script.async = true;
@@ -57,49 +99,55 @@ function App() {
     }, []);
 
     return (
+        <Layout
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            showHelp={showHelp}
+            onCloseHelp={closeHelp}
+        >
+            <div className={activeTab === 'tvm' ? 'block h-full' : 'hidden'}>
+                <TVMCalculator toggleHelp={toggleHelp} toggleSettings={toggleSettings} />
+            </div>
+            <div className={activeTab === 'loan' ? 'block h-full' : 'hidden'}>
+                <LoanCalculator toggleHelp={toggleHelp} toggleSettings={toggleSettings} />
+            </div>
+            <div className={activeTab === 'flow' ? 'block h-full' : 'hidden'}>
+                <CashFlowCalculator toggleHelp={toggleHelp} toggleSettings={toggleSettings} />
+            </div>
+            <div className={activeTab === 'bond' ? 'block h-full' : 'hidden'}>
+                <BondCalculator toggleHelp={toggleHelp} toggleSettings={toggleSettings} />
+            </div>
+            <div className={activeTab === 'rates' ? 'block h-full' : 'hidden'}>
+                <RateConverter toggleHelp={toggleHelp} toggleSettings={toggleSettings} />
+            </div>
+            <div className={activeTab === 'goal' ? 'block h-full' : 'hidden'}>
+                <GoalPlanner toggleHelp={toggleHelp} toggleSettings={toggleSettings} />
+            </div>
+            <div className={activeTab === 'history' ? 'block h-full' : 'hidden'}>
+                <HistoryView toggleHelp={toggleHelp} toggleSettings={toggleSettings} />
+            </div>
+            <div className={activeTab === 'tbill' ? 'block h-full' : 'hidden'}>
+                <TBillCalculator toggleHelp={toggleHelp} toggleSettings={toggleSettings} />
+            </div>
+            <div className={activeTab === 'pension' ? 'block h-full' : 'hidden'}>
+                <PensionCalculator toggleHelp={toggleHelp} toggleSettings={toggleSettings} />
+            </div>
+            <div className={activeTab === 'inflation' ? 'block h-full' : 'hidden'}>
+                <InflationCalculator toggleHelp={toggleHelp} toggleSettings={toggleSettings} />
+            </div>
+            <div className={activeTab === 'transport' ? 'block h-full' : 'hidden'}>
+                <RideFareCalculator toggleHelp={toggleHelp} toggleSettings={toggleSettings} mapsReady={mapsReady} isActive={activeTab === 'transport'} />
+            </div>
+            <SettingsModal isOpen={showSettings} onClose={closeSettings} />
+        </Layout>
+    );
+}
+
+function App() {
+    return (
         <SettingsProvider>
             <HistoryProvider>
-                <Layout
-                    activeTab={activeTab}
-                    onTabChange={setActiveTab}
-                    showHelp={showHelp}
-                    onCloseHelp={closeHelp}
-                >
-                    <div className={activeTab === 'tvm' ? 'block h-full' : 'hidden'}>
-                        <TVMCalculator toggleHelp={toggleHelp} toggleSettings={toggleSettings} />
-                    </div>
-                    <div className={activeTab === 'loan' ? 'block h-full' : 'hidden'}>
-                        <LoanCalculator toggleHelp={toggleHelp} toggleSettings={toggleSettings} />
-                    </div>
-                    <div className={activeTab === 'flow' ? 'block h-full' : 'hidden'}>
-                        <CashFlowCalculator toggleHelp={toggleHelp} toggleSettings={toggleSettings} />
-                    </div>
-                    <div className={activeTab === 'bond' ? 'block h-full' : 'hidden'}>
-                        <BondCalculator toggleHelp={toggleHelp} toggleSettings={toggleSettings} />
-                    </div>
-                    <div className={activeTab === 'rates' ? 'block h-full' : 'hidden'}>
-                        <RateConverter toggleHelp={toggleHelp} toggleSettings={toggleSettings} />
-                    </div>
-                    <div className={activeTab === 'goal' ? 'block h-full' : 'hidden'}>
-                        <GoalPlanner toggleHelp={toggleHelp} toggleSettings={toggleSettings} />
-                    </div>
-                    <div className={activeTab === 'history' ? 'block h-full' : 'hidden'}>
-                        <HistoryView toggleHelp={toggleHelp} toggleSettings={toggleSettings} />
-                    </div>
-                    <div className={activeTab === 'tbill' ? 'block h-full' : 'hidden'}>
-                        <TBillCalculator toggleHelp={toggleHelp} toggleSettings={toggleSettings} />
-                    </div>
-                    <div className={activeTab === 'pension' ? 'block h-full' : 'hidden'}>
-                        <PensionCalculator toggleHelp={toggleHelp} toggleSettings={toggleSettings} />
-                    </div>
-                    <div className={activeTab === 'inflation' ? 'block h-full' : 'hidden'}>
-                        <InflationCalculator toggleHelp={toggleHelp} toggleSettings={toggleSettings} />
-                    </div>
-                    <div className={activeTab === 'transport' ? 'block h-full' : 'hidden'}>
-                        <RideFareCalculator toggleHelp={toggleHelp} toggleSettings={toggleSettings} mapsReady={mapsReady} isActive={activeTab === 'transport'} />
-                    </div>
-                    <SettingsModal isOpen={showSettings} onClose={closeSettings} />
-                </Layout>
+                <AppContent />
             </HistoryProvider>
         </SettingsProvider>
     );
