@@ -27,7 +27,7 @@ const SettingsModal = ({ isOpen, onClose }) => {
     // Get ordered items based on tabOrder, with history always at the bottom
     const tabOrder = settings.tabOrder || ['tvm', 'goal', 'loan', 'pension', 'flow', 'bond', 'rates', 'tbill', 'history'];
     const orderedItems = tabOrder
-        .filter(id => id !== 'history') // Exclude history from normal order
+        .filter(id => id !== 'history' && TAB_CONFIG[id]) // Exclude history and unknown tabs from normal order
         .map(id => ({ id, ...TAB_CONFIG[id] }));
     // Always append history at the end
     orderedItems.push({ id: 'history', ...TAB_CONFIG['history'] });

@@ -27,9 +27,8 @@ const DEFAULT_SETTINGS = {
     showInflation: false,
     showGoal: true,
     showTransport: true,
-    showDriving: true,
     showHistory: false,
-    tabOrder: ['tvm', 'goal', 'loan', 'pension', 'inflation', 'transport', 'driving', 'tbill', 'rates', 'history', 'flow', 'bond'],
+    tabOrder: ['tvm', 'goal', 'loan', 'pension', 'inflation', 'transport', 'tbill', 'rates', 'history', 'flow', 'bond'],
 };
 
 export const SettingsProvider = ({ children }) => {
