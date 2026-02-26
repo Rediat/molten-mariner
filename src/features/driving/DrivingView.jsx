@@ -161,7 +161,15 @@ const DrivingView = ({ onClose }) => {
                 });
 
                 if (!response.ok) {
-                    throw new Error(`Route request failed: ${response.statusText}`);
+                    let errMsg = response.statusText;
+                    try {
+                        const errData = await response.json();
+                        if (errData.error?.message) errMsg = errData.error.message;
+                        else if (typeof errData.error === 'string') errMsg = errData.error;
+                    } catch (e) {
+                        // Not JSON
+                    }
+                    throw new Error(errMsg ? `Failed: ${errMsg}` : 'Route request failed');
                 }
 
                 const data = await response.json();
@@ -339,7 +347,7 @@ const DrivingView = ({ onClose }) => {
                         </div>
                         <div className="flex items-center gap-2 ml-1 border-l-2 border-dashed border-neutral-700 pl-3 py-1 my-0.5">
                             <span className="text-[10px] text-neutral-400 font-medium tracking-wider flex flex-col">
-                                <span>{routeInfo ? routeInfo.distance : 'Calculating...'} • {routeInfo ? routeInfo.duration : ''}</span>
+                                <span>{error ? 'Route Unavailable' : (routeInfo ? `${routeInfo.distance} • ${routeInfo.duration}` : 'Calculating...')}</span>
                                 {routeInfo && cachedRoutesData.length > 1 && (
                                     <span className="text-[9px] text-neutral-500 mt-0.5 italic">Tap grey lines for alternative routes</span>
                                 )}
