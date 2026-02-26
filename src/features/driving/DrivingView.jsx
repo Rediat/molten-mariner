@@ -12,7 +12,7 @@ const DrivingView = ({ toggleHelp, toggleSettings, isActive }) => {
     const [routeInfo, setRouteInfo] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-    const [showSteps, setShowSteps] = useState(true);
+    const [showSteps, setShowSteps] = useState(false);
 
     // Initialize Map and DirectionsRenderer
     useEffect(() => {
@@ -350,7 +350,7 @@ const DrivingView = ({ toggleHelp, toggleSettings, isActive }) => {
 
             {/* Turn-by-turn Navigation Bottom Sheet */}
             {routeInfo && (
-                <div className={`absolute bottom- 0 left - 0 right - 0 bg - neutral - 900 border - t border - neutral - 700 transition - all duration - 300 ease -in -out z - 30 flex flex - col shadow - [0_ - 10px_40px_rgba(0, 0, 0, 0.5)] ${showSteps ? 'h-[45%]' : 'h-14'}`}>
+                <div className={`absolute bottom-0 left-0 right-0 bg-neutral-900 border-t border-neutral-700 transition-all duration-300 ease-in-out z-30 flex flex-col shadow-[0_-10px_40px_rgba(0,0,0,0.5)] ${showSteps ? 'h-[45%]' : 'h-14'}`}>
                     <div
                         className="flex items-center justify-between p-3 cursor-pointer hover:bg-neutral-800/50 transition-colors"
                         onClick={() => setShowSteps(!showSteps)}
