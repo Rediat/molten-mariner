@@ -382,7 +382,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                 <div className="bg-gradient-to-r from-primary-900/30 to-neutral-800/50 border border-primary-500/30 rounded-xl p-2.5 mb-2 text-[11px] text-neutral-300 text-left leading-relaxed space-y-1.5">
                     <p className="font-bold text-primary-400 text-xs">How It Works</p>
                     {mapsAvailable && (
-                        <p>📍 <strong className="text-white">Google Maps:</strong> Select From/To locations to auto-fetch the driving distance.</p>
+                        <p>📍 <strong className="text-white">Google Maps:</strong> Select From/To locations to auto-fetch driving distance. Your current location is auto-detected on launch using GPS + Places API.</p>
                     )}
                     <p>
                         {mode === 'forward'
@@ -390,9 +390,18 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                             : `🔄 Enter a known fare to reverse-calculate fuel cost breakdown, net gain, and the implied service multiplier.`}
                     </p>
                     <p>⛽ <strong className="text-white">Mileage:</strong> Fixed at 0.10 L/Km — the baseline fuel consumption rate used in all calculations.</p>
-                    <p>🔄 <strong className="text-white">Round Trip:</strong> {roundTrip ? 'Enabled (2x fuel cost)' : 'Disabled (1x fuel cost)'} – applies a 2x factor to fuel costs when calculating total fare.</p>
+                    <p>🔄 <strong className="text-white">Round Trip (1× / 2×):</strong> {roundTrip ? 'Enabled (2x fuel cost)' : 'Disabled (1x fuel cost)'} – applies a 2x factor to fuel costs when calculating total fare.</p>
                     <p>⏱️ <strong className="text-white">Wait Time:</strong> Estimated travel time + 10% buffer, multiplied by a configurable factor (default 2.5) to estimate total charge for wait time.</p>
                     <p>👥 <strong className="text-white">Per Head:</strong> Total fare split by 4 passengers for cost-sharing.</p>
+                    {mapsAvailable && (
+                        <>
+                            <p className="font-bold text-primary-400 text-xs pt-1">Map & Routes</p>
+                            <p>🗺️ <strong className="text-white">View Map:</strong> When both From and To are set, tap "View Map & Alternate Routes" for a full-screen interactive map with traffic-colored polylines (blue = normal, yellow = slow, red = jam).</p>
+                            <p>🔀 <strong className="text-white">Alternate Routes:</strong> Grey lines on the map show alternative routes — tap one to switch. The selected route's distance and time sync back to the calculator automatically.</p>
+                            <p>🧭 <strong className="text-white">Turn-by-Turn:</strong> Expand the bottom sheet on the map view for step-by-step navigation directions.</p>
+                            <p>⇅ <strong className="text-white">Swap:</strong> Use the swap button between From/To to instantly reverse your route.</p>
+                        </>
+                    )}
                 </div>
             )}
 

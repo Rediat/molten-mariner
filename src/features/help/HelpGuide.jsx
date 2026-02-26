@@ -670,7 +670,8 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
             >
                 <p>
                     Calculate fuel costs and a reasonable fare for transport. Supports Google Maps
-                    integration for automatic distance lookup between locations in Ethiopia.
+                    integration for automatic distance lookup, interactive route maps with live
+                    traffic visualization, and alternate route comparison — all in one tab.
                 </p>
 
                 <div className="pt-2">
@@ -684,18 +685,33 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                 <div className="pt-2">
                     <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Google Maps Integration:</p>
                     <FieldList fields={[
-                        { name: 'From / To', description: 'Type an address and select from suggestions. Locations are restricted to Ethiopia.' },
-                        { name: 'Auto-Distance', description: 'When both From and To are selected, the driving distance is fetched automatically via the Distance Matrix API' },
-                        { name: '✓ Google Maps', description: 'A green indicator confirms the distance was auto-populated from Google Maps. You can still override it manually.' }
+                        { name: 'From / To', description: 'Type an address and select from autocomplete suggestions. Locations are restricted to Ethiopia.' },
+                        { name: 'Auto-Distance', description: 'When both From and To are selected, the driving distance and estimated travel time are fetched automatically via the Distance Matrix API' },
+                        { name: '✓ Google Maps', description: 'A green indicator confirms the distance was auto-populated from Google Maps. You can still override it manually.' },
+                        { name: '⇅ Swap Button', description: 'Click the swap icon between From and To fields to instantly reverse your origin and destination.' },
+                        { name: '📍 Current Location', description: 'Auto-detects your GPS position on launch. Uses the Places API to resolve your coordinates to the nearest building or POI name (e.g., "Marketing Complex") with Geocoder fallback.' }
+                    ]} />
+                </div>
+
+                <div className="pt-2">
+                    <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Map & Driving View:</p>
+                    <FieldList fields={[
+                        { name: 'View Map & Alternate Routes', description: 'Appears when both From and To are populated. Opens a full-screen interactive map overlay directly within the Ride tab.' },
+                        { name: 'Traffic-Aware Routing', description: 'Routes are fetched using the Google Routes API v2 with TRAFFIC_AWARE preference. Polylines are color-coded: blue (normal), yellow (slow), red (traffic jam).' },
+                        { name: 'Alternative Routes', description: 'When available, alternative routes are displayed as grey lines on the map. Tap any grey line to switch to that route.' },
+                        { name: 'Route Sync', description: 'Selecting a route on the map automatically updates the distance and travel time in the fare calculator — no need to re-enter values.' },
+                        { name: 'Turn-by-Turn Steps', description: 'An expandable bottom sheet on the map view shows step-by-step navigation directions with distance and time for each step.' },
+                        { name: '← Back Button', description: 'Press the back arrow on the map overlay to return to the fare calculator with your selected route data preserved.' }
                     ]} />
                 </div>
 
                 <div className="pt-2">
                     <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Inputs:</p>
                     <FieldList fields={[
-                        { name: 'Distance (Km)', description: 'Trip distance — auto-filled from Maps or entered manually' },
+                        { name: 'Distance (Km)', description: 'Trip distance — auto-filled from Maps or the Driving view, or entered manually' },
                         { name: 'Fuel Cost / L', description: 'Current price of fuel per liter (default 130 ETB)' },
-                        { name: 'Wait Multiplier', description: 'Factor applied to estimated travel time (+10%) to calculate total charge for wait time (default 2.5)' },
+                        { name: '1× / 2× Toggle', description: 'Switch between one-way and round-trip fare calculation. Round-trip doubles the fuel cost component of the fare.' },
+                        { name: 'Wait Multiplier', description: 'Factor applied to estimated travel time (+10% buffer) to calculate total charge for wait time (default 2.5)' },
                         { name: 'Service Multiplier', description: 'Multiplier for maintenance, time, and profit (range: 2.55 – 4.5×, default 3×). Only in Inputs → Price mode.' },
                         { name: 'Price to Charge', description: 'The known fare amount. Only in Price → Breakdown mode.' }
                     ]} />
@@ -708,13 +724,14 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                 <div className="pt-2">
                     <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Results:</p>
                     <FieldList fields={[
-                        { name: 'Wait Time Total', description: 'Total charge for wait time — estimated travel time + 10% buffer, multiplied by the Wait Multiplier. Added to Price to Charge. Only shown when using Google Maps route.' },
-                        { name: 'Price to Charge', description: 'The recommended fare (forward mode) or the entered fare (reverse mode)' },
+                        { name: 'Route & Drive Time', description: 'Shows the origin → destination names with estimated drive time. Appears when a Google Maps route is active.' },
+                        { name: 'Wait Time Charge', description: 'Total charge for wait time — estimated travel time + 10% buffer, multiplied by the Wait Multiplier. Added to the fare. Only shown when using Google Maps route.' },
+                        { name: 'Total to Charge', description: 'The recommended fare (forward mode) or the entered fare (reverse mode), including wait time charge' },
                         { name: 'Per Head', description: 'Price divided by 4 passengers for cost-sharing' },
-                        { name: 'Total Fuel Cost', description: 'Distance × Mileage × Fuel Cost per Liter' },
-                        { name: 'Net Gain', description: 'Price to Charge minus Total Fuel Cost' },
-                        { name: 'Fuel / Km', description: 'Fuel cost per kilometer' },
-                        { name: 'Revenue / Km', description: 'Price to Charge per kilometer' },
+                        { name: 'Total Fuel Cost', description: 'Distance × Mileage × Fuel Cost per Liter (always calculated as round-trip for true out-of-pocket cost)' },
+                        { name: 'Net Gain', description: 'Total to Charge minus Total Fuel Cost' },
+                        { name: 'Fuel / Km', description: 'Fuel cost per kilometer (one-way)' },
+                        { name: 'Revenue / Km', description: 'Total to Charge per kilometer' },
                         { name: 'Gain / Km', description: 'Net Gain per kilometer' },
                         { name: 'Implied Service Multiplier', description: 'In reverse mode, shows what multiplier the entered fare represents' }
                     ]} />
@@ -725,7 +742,11 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                 </InfoBox>
 
                 <InfoBox type="tip">
-                    <strong>No API Key?</strong> The calculator works without Google Maps — just enter the distance manually. The From/To inputs only appear when a valid Google Maps API key is configured.
+                    <strong>Map Overlay:</strong> The interactive map is embedded directly within the Ride tab as an overlay — no need to switch tabs. Select a route on the map and it automatically syncs back to your fare calculation.
+                </InfoBox>
+
+                <InfoBox type="tip">
+                    <strong>No API Key?</strong> The calculator works without Google Maps — just enter the distance manually. The From/To inputs and map features only appear when a valid Google Maps API key is configured.
                 </InfoBox>
             </HelpSection>
 
