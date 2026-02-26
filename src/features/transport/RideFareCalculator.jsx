@@ -354,7 +354,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
     };
 
     const formatNum = (val) => val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    const mapsAvailable = hasMapsApi();
+    const mapsAvailable = mapsReady && hasMapsApi();
 
     return (
         <div className="flex flex-col h-full relative">

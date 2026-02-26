@@ -64,7 +64,7 @@ function AppContent() {
     // Load Google Maps: try the serverless proxy first (production),
     // fall back to VITE_GOOGLE_MAPS_API_KEY from .env (local dev)
     useEffect(() => {
-        if (window.google?.maps) {
+        if (window.google?.maps?.DistanceMatrixService) {
             setMapsReady(true);
             return;
         }
@@ -78,7 +78,22 @@ function AppContent() {
             const script = document.createElement('script');
             script.src = url;
             script.async = true;
-            script.onload = () => setMapsReady(true);
+            script.onload = () => {
+                // With loading=async, sub-modules (DistanceMatrixService, Places, etc.)
+                // may not be available immediately when the script element fires onload.
+                // Poll until the full API is ready.
+                let attempts = 0;
+                const poll = setInterval(() => {
+                    attempts++;
+                    if (window.google?.maps?.DistanceMatrixService) {
+                        clearInterval(poll);
+                        setMapsReady(true);
+                    } else if (attempts > 30) {
+                        clearInterval(poll);
+                        console.error('Google Maps sub-modules did not initialize in time');
+                    }
+                }, 100);
+            };
             script.onerror = () => console.error('Failed to load Google Maps script');
             document.head.appendChild(script);
         };
