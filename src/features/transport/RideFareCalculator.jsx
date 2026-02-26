@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { Car, Info, HelpCircle, Trash2, Settings, History, Loader2, ArrowUpDown, Clock, Map as MapIcon } from 'lucide-react';
+import { Car, Info, HelpCircle, Trash2, Settings, History, Loader2, ArrowUpDown, Clock, Map as MapIcon, Navigation } from 'lucide-react';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
 import PlacesAutocomplete from '../../components/PlacesAutocomplete';
 import { CalculateIcon } from '../../components/Icons';
@@ -353,6 +353,16 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
         if (toInputRef.current) toInputRef.current.value = '';
     };
 
+    const openInGoogleMaps = () => {
+        if (!origin || !destination) return;
+        const baseUrl = 'https://www.google.com/maps/dir/?api=1';
+        const originParam = `&origin=${origin.lat},${origin.lng}`;
+        const destParam = `&destination=${destination.lat},${destination.lng}`;
+        const travelMode = '&travelmode=driving';
+        const navigate = '&dir_action=navigate';
+        window.open(`${baseUrl}${originParam}${destParam}${travelMode}${navigate}`, '_blank');
+    };
+
     const formatNum = (val) => val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     const mapsAvailable = mapsReady && hasMapsApi();
 
@@ -458,13 +468,23 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                             mapsReady={mapsReady}
                         />
                         {origin && destination && (
-                            <button
-                                onClick={() => setShowMap(true)}
-                                className="w-full mt-2 bg-primary-500/10 hover:bg-primary-500/20 text-primary-400 font-bold text-xs py-2 rounded-lg transition-colors flex items-center justify-center gap-2 border border-primary-500/30 active:scale-[0.98]"
-                            >
-                                <MapIcon className="w-4 h-4 text-primary-400" />
-                                View Map & Alternate Routes
-                            </button>
+                            <div className="flex gap-1.5 mt-2">
+                                <button
+                                    onClick={() => setShowMap(true)}
+                                    className="flex-1 bg-primary-500/10 hover:bg-primary-500/20 text-primary-400 font-bold text-xs py-2 rounded-lg transition-colors flex items-center justify-center gap-2 border border-primary-500/30 active:scale-[0.98]"
+                                >
+                                    <MapIcon className="w-4 h-4 text-primary-400" />
+                                    View Map & Routes
+                                </button>
+                                <button
+                                    onClick={openInGoogleMaps}
+                                    className="bg-neutral-800/80 hover:bg-neutral-700 text-neutral-300 hover:text-white font-bold text-xs py-2 px-3 rounded-lg transition-all flex items-center justify-center gap-1.5 border border-neutral-700/50 active:scale-[0.98]"
+                                    title="Open in Google Maps app to compare ride prices"
+                                >
+                                    <Navigation className="w-3.5 h-3.5 text-primary-400" />
+                                    Google Maps
+                                </button>
+                            </div>
                         )}
                     </div>
                 </div>
