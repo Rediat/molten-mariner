@@ -24,6 +24,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
         distanceKm, setDistanceKm,
         durationText, setDurationText,
         durationValue, setDurationValue,
+        routeVersion,
         clearTransportState
     } = useTransport();
 
@@ -93,6 +94,15 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
             }
         );
     }, [setDistanceKm, setDurationText, setDurationValue]);
+
+    // Sync distance when route is selected/changed on the Driving tab
+    useEffect(() => {
+        if (routeVersion > 0 && distanceKm !== null) {
+            setValues(prev => ({ ...prev, distance: distanceKm }));
+            setDistanceSource('maps');
+            setResults(null); // Clear previous calculation to prompt recalculation with new duration
+        }
+    }, [routeVersion]);
 
     const handleOriginSelected = useCallback((place) => {
         setOrigin(place);

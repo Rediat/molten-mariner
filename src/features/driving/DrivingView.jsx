@@ -3,12 +3,15 @@ import { MapPin, Navigation, Info, Loader2, ArrowLeft } from 'lucide-react';
 import { useTransport } from '../../context/TransportContext';
 
 const DrivingView = ({ toggleHelp, toggleSettings, isActive }) => {
-    const { origin, destination } = useTransport();
+    const {
+        origin, destination,
+        setDistanceKm, setDurationValue, setDurationText, setRouteVersion,
+        cachedRoutesData, setCachedRoutesData,
+        cachedActiveRouteIndex, setCachedActiveRouteIndex
+    } = useTransport();
     const mapRef = useRef(null);
     const [mapInstance, setMapInstance] = useState(null);
     const polylinesRef = useRef([]);
-    const [routesData, setRoutesData] = useState([]);
-    const [activeRouteIndex, setActiveRouteIndex] = useState(0);
     const [routeInfo, setRouteInfo] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -110,9 +113,15 @@ const DrivingView = ({ toggleHelp, toggleSettings, isActive }) => {
         if (!origin || !destination) {
             polylinesRef.current.forEach(p => p.setMap(null));
             polylinesRef.current = [];
-            setRoutesData([]);
+            setCachedRoutesData([]);
+            setCachedActiveRouteIndex(0);
             setRouteInfo(null);
             setError(null);
+            return;
+        }
+
+        // If we already have cached routes for these exact coordinates, don't fetch again
+        if (cachedRoutesData.length > 0 && routeInfo) {
             return;
         }
 
@@ -161,15 +170,16 @@ const DrivingView = ({ toggleHelp, toggleSettings, isActive }) => {
                     throw new Error('No route found');
                 }
 
-                setRoutesData(data.routes);
-                setActiveRouteIndex(0);
+                setCachedRoutesData(data.routes);
+                setCachedActiveRouteIndex(0);
 
             } catch (err) {
                 console.error(err);
                 setError(err.message || 'Failed to calculate route');
                 polylinesRef.current.forEach(p => p.setMap(null));
                 polylinesRef.current = [];
-                setRoutesData([]);
+                setCachedRoutesData([]);
+                setCachedActiveRouteIndex(0);
                 setRouteInfo(null);
             } finally {
                 setLoading(false);
@@ -179,9 +189,9 @@ const DrivingView = ({ toggleHelp, toggleSettings, isActive }) => {
         fetchRoute();
     }, [origin, destination, isActive, mapInstance]);
 
-    // Draw polylines and update route info when routesData or activeRouteIndex changes
+    // Draw polylines and update route info when cachedRoutesData or cachedActiveRouteIndex changes
     useEffect(() => {
-        if (!mapInstance || !window.google?.maps || routesData.length === 0) return;
+        if (!mapInstance || !window.google?.maps || cachedRoutesData.length === 0) return;
 
         // Clear existing polylines
         polylinesRef.current.forEach(p => p.setMap(null));
@@ -198,8 +208,8 @@ const DrivingView = ({ toggleHelp, toggleSettings, isActive }) => {
         };
 
         // Draw alternative routes first (so they are underneath)
-        routesData.forEach((route, index) => {
-            if (index === activeRouteIndex) return; // Draw active route last
+        cachedRoutesData.forEach((route, index) => {
+            if (index === cachedActiveRouteIndex) return; // Draw active route last
 
             if (route.polyline?.encodedPolyline) {
                 const path = window.google.maps.geometry.encoding.decodePath(route.polyline.encodedPolyline);
@@ -216,7 +226,7 @@ const DrivingView = ({ toggleHelp, toggleSettings, isActive }) => {
 
                 // Listen for clicks on alternative routes
                 poly.addListener('click', () => {
-                    setActiveRouteIndex(index);
+                    setCachedActiveRouteIndex(index);
                 });
 
                 polylinesRef.current.push(poly);
@@ -228,7 +238,7 @@ const DrivingView = ({ toggleHelp, toggleSettings, isActive }) => {
         });
 
         // Draw active route
-        const activeRoute = routesData[activeRouteIndex];
+        const activeRoute = cachedRoutesData[cachedActiveRouteIndex];
         if (activeRoute?.polyline?.encodedPolyline) {
             const path = window.google.maps.geometry.encoding.decodePath(activeRoute.polyline.encodedPolyline);
             const intervals = activeRoute.travelAdvisory?.speedReadingIntervals || [];
@@ -279,17 +289,24 @@ const DrivingView = ({ toggleHelp, toggleSettings, isActive }) => {
             })) : [];
 
             const durationSecs = activeRoute.duration ? parseInt(activeRoute.duration) : 0;
+            const distanceKms = parseFloat((activeRoute.distanceMeters / 1000).toFixed(2));
+            const durationMins = Math.ceil(durationSecs / 60);
 
             setRouteInfo({
-                distance: `${(activeRoute.distanceMeters / 1000).toFixed(1)} km`,
-                duration: `${Math.ceil(durationSecs / 60)} mins`,
+                distance: `${distanceKms} km`,
+                duration: `${durationMins} mins`,
                 startAddress: origin.name,
                 endAddress: destination.name,
                 steps: formattedSteps,
             });
+
+            setDistanceKm(distanceKms);
+            setDurationValue(durationSecs / 60);
+            setDurationText(`${durationMins} mins`);
+            setRouteVersion(v => v + 1);
         }
 
-    }, [routesData, activeRouteIndex, mapInstance, origin, destination]);
+    }, [cachedRoutesData, cachedActiveRouteIndex, mapInstance, origin, destination, setDistanceKm, setDurationValue, setDurationText, setRouteVersion]);
 
     if (!origin || !destination) {
         return (
@@ -316,7 +333,7 @@ const DrivingView = ({ toggleHelp, toggleSettings, isActive }) => {
                         <div className="flex items-center gap-2 ml-1 border-l-2 border-dashed border-neutral-700 pl-3 py-1 my-0.5">
                             <span className="text-[10px] text-neutral-400 font-medium tracking-wider flex flex-col">
                                 <span>{routeInfo ? routeInfo.distance : 'Calculating...'} • {routeInfo ? routeInfo.duration : ''}</span>
-                                {routeInfo && routesData.length > 1 && (
+                                {routeInfo && cachedRoutesData.length > 1 && (
                                     <span className="text-[9px] text-neutral-500 mt-0.5 italic">Tap grey lines for alternative routes</span>
                                 )}
                             </span>
