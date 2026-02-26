@@ -368,28 +368,47 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
 
     return (
         <div className="flex flex-col h-full relative">
-            {/* Header */}
-            <div className="flex justify-between items-start mb-2">
-                <div>
-                    <h1 className="text-xl font-bold bg-gradient-to-r from-white to-neutral-400 bg-clip-text text-transparent flex items-center gap-2">
-                        <Car className="w-5 h-5 text-primary-500" />
-                        Ride Fare Calculator
-                    </h1>
-                    <p className="text-neutral-500 text-[10px] font-medium uppercase tracking-wider">
-                        Transport & Fuel Cost
-                    </p>
+            {/* Header + Mode Toggle (combined) */}
+            <div className="flex justify-between items-center mb-1.5">
+                <div className="flex items-center gap-2 min-w-0">
+                    <Car className="w-5 h-5 text-primary-500 shrink-0" />
+                    <div className="min-w-0">
+                        <h1 className="text-lg font-bold bg-gradient-to-r from-white to-neutral-400 bg-clip-text text-transparent leading-tight">
+                            Ride Fare
+                        </h1>
+                        <p className="text-neutral-500 text-[9px] font-medium uppercase tracking-wider">
+                            Transport & Fuel
+                        </p>
+                    </div>
                 </div>
-                <button
-                    onClick={() => setShowExplanation(!showExplanation)}
-                    className={`flex items-center justify-center p-1 rounded-full transition-all ${showExplanation ? 'bg-primary-600/20 text-primary-400 ring-1 ring-primary-500/50' : 'bg-neutral-800 text-neutral-500 hover:bg-neutral-700'}`}
-                    title="Show Info"
-                >
-                    <Info className="w-3 h-3" />
-                </button>
+                <div className="flex items-center gap-1">
+                    <div className="flex bg-neutral-900/70 rounded-md p-0.5 ring-1 ring-neutral-800">
+                        <button
+                            onClick={() => { if (mode !== 'forward') { setMode('forward'); setResults(null); } }}
+                            className={`px-2 py-1 text-[8px] font-bold uppercase tracking-wider rounded transition-all ${mode === 'forward' ? 'bg-primary-600/25 text-primary-400 ring-1 ring-primary-500/40' : 'text-neutral-500 hover:text-neutral-300'}`}
+                        >
+                            Input→Price
+                        </button>
+                        <button
+                            onClick={() => { if (mode !== 'reverse') { setMode('reverse'); setResults(null); } }}
+                            className={`px-2 py-1 text-[8px] font-bold uppercase tracking-wider rounded transition-all ${mode === 'reverse' ? 'bg-emerald-600/25 text-emerald-400 ring-1 ring-emerald-500/40' : 'text-neutral-500 hover:text-neutral-300'}`}
+                        >
+                            Price→Split
+                        </button>
+                    </div>
+                    <button
+                        onClick={() => setShowExplanation(!showExplanation)}
+                        className={`flex items-center justify-center p-1 rounded-full transition-all ${showExplanation ? 'bg-primary-600/20 text-primary-400 ring-1 ring-primary-500/50' : 'bg-neutral-800 text-neutral-500 hover:bg-neutral-700'}`}
+                        title="Show Info"
+                    >
+                        <Info className="w-3 h-3" />
+                    </button>
+                </div>
             </div>
 
+
             {showExplanation && (
-                <div className="bg-gradient-to-r from-primary-900/30 to-neutral-800/50 border border-primary-500/30 rounded-xl p-2.5 mb-2 text-[11px] text-neutral-300 text-left leading-relaxed space-y-1.5">
+                <div className="bg-gradient-to-r from-primary-900/30 to-neutral-800/50 border border-primary-500/30 rounded-xl p-2.5 mb-1.5 text-[11px] text-neutral-300 text-left leading-relaxed space-y-1.5">
                     <p className="font-bold text-primary-400 text-xs">How It Works</p>
                     {mapsAvailable && (
                         <p>📍 <strong className="text-white">Google Maps:</strong> Select From/To locations to auto-fetch driving distance. Your current location is auto-detected on launch using GPS + Places API.</p>
@@ -414,22 +433,6 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                     )}
                 </div>
             )}
-
-            {/* Mode Toggle */}
-            <div className="flex mb-2 bg-neutral-900/50 rounded-lg p-0.5 w-full relative z-10">
-                <button
-                    onClick={() => { if (mode !== 'forward') { setMode('forward'); setResults(null); } }}
-                    className={`flex-1 flex items-center justify-center py-2 px-2 text-[10px] font-bold uppercase tracking-wider rounded-md transition-all ${mode === 'forward' ? 'bg-primary-600/20 text-primary-400 ring-1 ring-primary-500/30' : 'text-neutral-500 hover:bg-neutral-800/40 hover:text-neutral-300'}`}
-                >
-                    Inputs → Price
-                </button>
-                <button
-                    onClick={() => { if (mode !== 'reverse') { setMode('reverse'); setResults(null); } }}
-                    className={`flex-1 flex items-center justify-center py-2 px-2 text-[10px] font-bold uppercase tracking-wider rounded-md transition-all ${mode === 'reverse' ? 'bg-emerald-600/20 text-white ring-1 ring-emerald-500/30' : 'text-neutral-500 hover:bg-neutral-800/40 hover:text-neutral-300'}`}
-                >
-                    Price → Breakdown
-                </button>
-            </div>
 
             {/* Route Card - From/To combined into one compact card */}
             {mapsAvailable && (
@@ -468,7 +471,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                             mapsReady={mapsReady}
                         />
                         {origin && destination && (
-                            <div className="flex gap-1.5 mt-2">
+                            <div className="flex gap-1.5 mt-2 pt-2 border-t border-neutral-700/40">
                                 <button
                                     onClick={() => setShowMap(true)}
                                     className="flex-1 bg-primary-500/10 hover:bg-primary-500/20 text-primary-400 font-bold text-xs py-2 rounded-lg transition-colors flex items-center justify-center gap-2 border border-primary-500/30 active:scale-[0.98]"
