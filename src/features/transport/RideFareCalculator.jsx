@@ -106,6 +106,20 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
         }
     }, [routeVersion]);
 
+    // Trigger fetchDistance when both origin and destination become available
+    // This covers the race condition where useCurrentLocation and destination selection
+    // happen asynchronously and neither handler sees the other value in time.
+    const hasFetchedRef = useRef(false);
+    useEffect(() => {
+        if (origin && destination && !hasFetchedRef.current) {
+            hasFetchedRef.current = true;
+            fetchDistance(origin, destination);
+        }
+        if (!origin || !destination) {
+            hasFetchedRef.current = false;
+        }
+    }, [origin, destination, fetchDistance]);
+
     const handleOriginSelected = useCallback((place) => {
         setOrigin(place);
         if (destination) fetchDistance(place, destination);
@@ -434,7 +448,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                             externalInputRef={toInputRef}
                             mapsReady={mapsReady}
                         />
-                        {durationText && origin && destination && (
+                        {origin && destination && (
                             <button
                                 onClick={() => setShowMap(true)}
                                 className="w-full mt-2 bg-primary-500/10 hover:bg-primary-500/20 text-primary-400 font-bold text-xs py-2 rounded-lg transition-colors flex items-center justify-center gap-2 border border-primary-500/30 active:scale-[0.98]"
