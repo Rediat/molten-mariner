@@ -62,9 +62,26 @@ const PlacesAutocomplete = ({ placeholder, onPlaceSelected, label, accentColor =
     if (compact) {
         return (
             <div className="flex items-center gap-2 min-w-0 py-1">
-                <MapPin className={`w-3.5 h-3.5 shrink-0 ${colorMap[accentColor] || 'text-white'}`} />
-                <div className="flex-1 min-w-0 flex items-center gap-2">
-                    <label className={`text-[8px] uppercase tracking-wider font-bold shrink-0 w-8 ${accentColor === 'primary' ? 'text-primary-400' : 'text-neutral-500'}`}>
+                <button
+                    onClick={() => {
+                        if (inputRef.current) {
+                            inputRef.current.value = '';
+                            inputRef.current.focus();
+                        }
+                        if (onPlaceSelectedRef.current) {
+                            onPlaceSelectedRef.current(null);
+                        }
+                    }}
+                    className="shrink-0 p-1 -m-1 rounded-full hover:bg-neutral-800/50 transition-colors focus:outline-none focus:ring-1 focus:ring-primary-500/50"
+                    title="Clear and focus input"
+                >
+                    <MapPin className={`w-3.5 h-3.5 ${colorMap[accentColor] || 'text-white'}`} />
+                </button>
+                <div
+                    className="flex-1 min-w-0 flex items-center gap-2 cursor-text"
+                    onClick={() => inputRef.current?.focus()}
+                >
+                    <label className={`text-[8px] uppercase tracking-wider font-bold shrink-0 w-8 text-left ${accentColor === 'primary' ? 'text-primary-400' : 'text-neutral-500'}`}>
                         {label}
                     </label>
                     <input
@@ -92,9 +109,26 @@ const PlacesAutocomplete = ({ placeholder, onPlaceSelected, label, accentColor =
     return (
         <div className="bg-neutral-800/40 rounded-xl p-2.5 border border-transparent hover:border-neutral-700">
             <div className="flex items-center gap-2 min-w-0">
-                <MapPin className={`w-4 h-4 shrink-0 ${colorMap[accentColor] || 'text-white'}`} />
-                <div className="flex-1 min-w-0 flex items-center gap-2">
-                    <label className={`text-[10px] uppercase tracking-wider font-bold shrink-0 w-10 ${accentColor === 'primary' ? 'text-primary-400' : 'text-neutral-500'}`}>
+                <button
+                    onClick={() => {
+                        if (inputRef.current) {
+                            inputRef.current.value = '';
+                            inputRef.current.focus();
+                        }
+                        if (onPlaceSelectedRef.current) {
+                            onPlaceSelectedRef.current(null);
+                        }
+                    }}
+                    className="shrink-0 p-1.5 -m-1.5 rounded-full hover:bg-neutral-700/50 transition-colors focus:outline-none focus:ring-1 focus:ring-primary-500/50"
+                    title="Clear and focus input"
+                >
+                    <MapPin className={`w-4 h-4 ${colorMap[accentColor] || 'text-white'}`} />
+                </button>
+                <div
+                    className="flex-1 min-w-0 flex items-center gap-2 cursor-text"
+                    onClick={() => inputRef.current?.focus()}
+                >
+                    <label className={`text-[10px] uppercase tracking-wider font-bold shrink-0 w-10 text-left ${accentColor === 'primary' ? 'text-primary-400' : 'text-neutral-500'}`}>
                         {label}
                     </label>
                     <input

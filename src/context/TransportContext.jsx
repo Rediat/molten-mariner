@@ -14,6 +14,7 @@ export const TransportProvider = ({ children }) => {
     // Drive tab specific caching
     const [cachedRoutesData, setCachedRoutesData] = useState([]);
     const [cachedActiveRouteIndex, setCachedActiveRouteIndex] = useState(0);
+    const [cachedCoordsKey, setCachedCoordsKey] = useState(null);
 
     // Helpers to clear or bulk-update context easily
     const clearTransportState = () => {
@@ -25,6 +26,7 @@ export const TransportProvider = ({ children }) => {
         setRouteVersion(0);
         setCachedRoutesData([]);
         setCachedActiveRouteIndex(0);
+        setCachedCoordsKey(null);
     };
 
     return (
@@ -37,6 +39,7 @@ export const TransportProvider = ({ children }) => {
             routeVersion, setRouteVersion,
             cachedRoutesData, setCachedRoutesData,
             cachedActiveRouteIndex, setCachedActiveRouteIndex,
+            cachedCoordsKey, setCachedCoordsKey,
             clearTransportState
         }}>
             {children}

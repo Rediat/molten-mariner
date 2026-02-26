@@ -7,7 +7,8 @@ const DrivingView = ({ onClose }) => {
         origin, destination,
         setDistanceKm, setDurationValue, setDurationText, setRouteVersion,
         cachedRoutesData, setCachedRoutesData,
-        cachedActiveRouteIndex, setCachedActiveRouteIndex
+        cachedActiveRouteIndex, setCachedActiveRouteIndex,
+        cachedCoordsKey, setCachedCoordsKey
     } = useTransport();
     const mapRef = useRef(null);
     const [mapInstance, setMapInstance] = useState(null);
@@ -19,92 +20,88 @@ const DrivingView = ({ onClose }) => {
 
     // Initialize Map and DirectionsRenderer
     useEffect(() => {
-        if (!window.google?.maps || !mapRef.current) return;
+        if (!window.google?.maps || !mapRef.current || mapInstance) return;
 
-        if (!mapInstance) {
-            const map = new window.google.maps.Map(mapRef.current, {
-                center: { lat: 9.03, lng: 38.74 }, // Addis Ababa default
-                zoom: 12,
-                disableDefaultUI: true, // cleaner interface
-                zoomControl: true,
-                mapTypeControl: false,
-                scaleControl: true,
-                streetViewControl: false,
-                rotateControl: false,
-                fullscreenControl: false,
-                styles: [
-                    {
-                        featureType: "all",
-                        elementType: "labels.text.fill",
-                        stylers: [{ color: "#ffffff" }]
-                    },
-                    {
-                        featureType: "all",
-                        elementType: "labels.text.stroke",
-                        stylers: [{ color: "#000000" }, { lightness: 13 }]
-                    },
-                    {
-                        featureType: "administrative",
-                        elementType: "geometry.fill",
-                        stylers: [{ color: "#000000" }]
-                    },
-                    {
-                        featureType: "administrative",
-                        elementType: "geometry.stroke",
-                        stylers: [{ color: "#144b53" }, { lightness: 14 }, { weight: 1.4 }]
-                    },
-                    {
-                        featureType: "landscape",
-                        elementType: "all",
-                        stylers: [{ color: "#08304b" }]
-                    },
-                    {
-                        featureType: "poi",
-                        elementType: "geometry",
-                        stylers: [{ color: "#0c4152" }, { lightness: 5 }]
-                    },
-                    {
-                        featureType: "road.highway",
-                        elementType: "geometry.fill",
-                        stylers: [{ color: "#000000" }]
-                    },
-                    {
-                        featureType: "road.highway",
-                        elementType: "geometry.stroke",
-                        stylers: [{ color: "#0b434f" }, { lightness: 25 }]
-                    },
-                    {
-                        featureType: "road.arterial",
-                        elementType: "geometry.fill",
-                        stylers: [{ color: "#000000" }]
-                    },
-                    {
-                        featureType: "road.arterial",
-                        elementType: "geometry.stroke",
-                        stylers: [{ color: "#0b3d51" }, { lightness: 16 }]
-                    },
-                    {
-                        featureType: "road.local",
-                        elementType: "geometry",
-                        stylers: [{ color: "#000000" }]
-                    },
-                    {
-                        featureType: "transit",
-                        elementType: "all",
-                        stylers: [{ color: "#146474" }]
-                    },
-                    {
-                        featureType: "water",
-                        elementType: "all",
-                        stylers: [{ color: "#021019" }]
-                    }
-                ]
-            });
-            setMapInstance(map);
-
-            // We will manage polylines manually using polylinesRef
-        }
-    }, [mapInstance]);
+        const map = new window.google.maps.Map(mapRef.current, {
+            center: { lat: 9.03, lng: 38.74 }, // Addis Ababa default
+            zoom: 12,
+            disableDefaultUI: true, // cleaner interface
+            zoomControl: true,
+            mapTypeControl: false,
+            scaleControl: true,
+            streetViewControl: false,
+            rotateControl: false,
+            fullscreenControl: false,
+            styles: [
+                {
+                    featureType: "all",
+                    elementType: "labels.text.fill",
+                    stylers: [{ color: "#ffffff" }]
+                },
+                {
+                    featureType: "all",
+                    elementType: "labels.text.stroke",
+                    stylers: [{ color: "#000000" }, { lightness: 13 }]
+                },
+                {
+                    featureType: "administrative",
+                    elementType: "geometry.fill",
+                    stylers: [{ color: "#000000" }]
+                },
+                {
+                    featureType: "administrative",
+                    elementType: "geometry.stroke",
+                    stylers: [{ color: "#144b53" }, { lightness: 14 }, { weight: 1.4 }]
+                },
+                {
+                    featureType: "landscape",
+                    elementType: "all",
+                    stylers: [{ color: "#08304b" }]
+                },
+                {
+                    featureType: "poi",
+                    elementType: "geometry",
+                    stylers: [{ color: "#0c4152" }, { lightness: 5 }]
+                },
+                {
+                    featureType: "road.highway",
+                    elementType: "geometry.fill",
+                    stylers: [{ color: "#000000" }]
+                },
+                {
+                    featureType: "road.highway",
+                    elementType: "geometry.stroke",
+                    stylers: [{ color: "#0b434f" }, { lightness: 25 }]
+                },
+                {
+                    featureType: "road.arterial",
+                    elementType: "geometry.fill",
+                    stylers: [{ color: "#000000" }]
+                },
+                {
+                    featureType: "road.arterial",
+                    elementType: "geometry.stroke",
+                    stylers: [{ color: "#0b3d51" }, { lightness: 16 }]
+                },
+                {
+                    featureType: "road.local",
+                    elementType: "geometry",
+                    stylers: [{ color: "#000000" }]
+                },
+                {
+                    featureType: "transit",
+                    elementType: "all",
+                    stylers: [{ color: "#146474" }]
+                },
+                {
+                    featureType: "water",
+                    elementType: "all",
+                    stylers: [{ color: "#021019" }]
+                }
+            ]
+        });
+        setMapInstance(map);
+    }, [mapInstance, origin, destination]);
 
     // Fetch Directions when Origin or Destination changes
     useEffect(() => {
@@ -120,10 +117,16 @@ const DrivingView = ({ onClose }) => {
             return;
         }
 
-        // If we already have cached routes for these exact coordinates, don't fetch again
-        if (cachedRoutesData.length > 0 && routeInfo) {
+        // Check if we already have cached routes for these exact coordinates
+        const coordsKey = `${origin.lat},${origin.lng}-${destination.lat},${destination.lng}`;
+        if (cachedRoutesData.length > 0 && cachedCoordsKey === coordsKey) {
             return;
         }
+
+        // New route requested — clear stale data
+        setRouteInfo(null);
+        polylinesRef.current.forEach(p => p.setMap(null));
+        polylinesRef.current = [];
 
         const fetchRoute = async () => {
             setLoading(true);
@@ -180,6 +183,7 @@ const DrivingView = ({ onClose }) => {
 
                 setCachedRoutesData(data.routes);
                 setCachedActiveRouteIndex(0);
+                setCachedCoordsKey(coordsKey);
 
             } catch (err) {
                 console.error(err);
@@ -199,7 +203,7 @@ const DrivingView = ({ onClose }) => {
 
     // Draw polylines and update route info when cachedRoutesData or cachedActiveRouteIndex changes
     useEffect(() => {
-        if (!mapInstance || !window.google?.maps || cachedRoutesData.length === 0) return;
+        if (!mapInstance || !window.google?.maps || cachedRoutesData.length === 0 || !origin || !destination) return;
 
         // Clear existing polylines
         polylinesRef.current.forEach(p => p.setMap(null));
@@ -316,52 +320,55 @@ const DrivingView = ({ onClose }) => {
 
     }, [cachedRoutesData, cachedActiveRouteIndex, mapInstance, origin, destination, setDistanceKm, setDurationValue, setDurationText, setRouteVersion]);
 
-    if (!origin || !destination) {
-        return (
-            <div className="flex flex-col h-full bg-neutral-900 border border-neutral-800 rounded-2xl overflow-hidden p-6 items-center justify-center text-center">
-                <Navigation className="w-16 h-16 text-neutral-700 mb-4" />
-                <h2 className="text-xl font-bold text-white mb-2">No Route Selected</h2>
-                <p className="text-sm text-neutral-400">
-                    Go to the <strong>Ride</strong> tab to select an Origin and Destination to view the driving route here.
-                </p>
-            </div>
-        );
-    }
+    const hasRoute = origin && destination;
 
     return (
         <div className="flex flex-col h-full bg-neutral-900 border border-neutral-700 rounded-2xl overflow-hidden relative shadow-xl">
+            {/* No Route Selected overlay */}
+            {!hasRoute && (
+                <div className="absolute inset-0 z-40 bg-neutral-900 rounded-2xl flex flex-col items-center justify-center text-center p-6">
+                    <Navigation className="w-16 h-16 text-neutral-700 mb-4" />
+                    <h2 className="text-xl font-bold text-white mb-2">No Route Selected</h2>
+                    <p className="text-sm text-neutral-400">
+                        Select an Origin and Destination to view the driving route here.
+                    </p>
+                </div>
+            )}
+
             {/* Top Bar overlay */}
-            <div className="absolute top-0 left-0 right-0 z-10 p-4 bg-gradient-to-b from-neutral-900/90 to-transparent pointer-events-none">
-                <div className="flex gap-2 items-start pointer-events-auto max-w-[95%]">
-                    <button
-                        onClick={onClose}
-                        className="p-3.5 bg-neutral-900/80 backdrop-blur-md border border-neutral-700/50 rounded-xl shadow-lg text-neutral-400 hover:text-white transition-all hover:bg-neutral-800 shrink-0"
-                        title="Back to Calculator"
-                    >
-                        <ArrowLeft className="w-5 h-5" />
-                    </button>
-                    <div className="bg-neutral-900/80 backdrop-blur-md border border-neutral-700/50 p-2.5 rounded-xl shadow-lg flex-1 overflow-hidden">
-                        <div className="flex items-center gap-2 mb-1.5">
-                            <div className="w-2 h-2 rounded-full bg-primary-500 shrink-0 shadow-[0_0_8px_rgba(14,165,233,0.8)]" />
-                            <span className="text-xs font-bold text-white truncate">{origin?.name || 'Origin'}</span>
-                        </div>
-                        <div className="flex items-center gap-2 ml-1 border-l-2 border-dashed border-neutral-700 pl-3 py-1 my-0.5">
-                            <span className="text-[10px] text-neutral-400 font-medium tracking-wider flex flex-col">
-                                <span>{error ? 'Route Unavailable' : (routeInfo ? `${routeInfo.distance} • ${routeInfo.duration}` : 'Calculating...')}</span>
-                                {routeInfo && cachedRoutesData.length > 1 && (
-                                    <span className="text-[9px] text-neutral-500 mt-0.5 italic">Tap grey lines for alternative routes</span>
-                                )}
-                            </span>
-                        </div>
-                        <div className="flex items-center gap-2 mt-1.5">
-                            <div className="w-2 h-2 rounded-full bg-rose-500 shrink-0 shadow-[0_0_8px_rgba(244,63,94,0.8)]" />
-                            <span className="text-xs font-bold text-white truncate">{destination?.name || 'Destination'}</span>
+            {hasRoute && (
+                <div className="absolute top-0 left-0 right-0 z-10 p-4 bg-gradient-to-b from-neutral-900/90 to-transparent pointer-events-none">
+                    <div className="flex gap-2 items-start pointer-events-auto max-w-[95%]">
+                        <button
+                            onClick={onClose}
+                            className="p-3.5 bg-neutral-900/80 backdrop-blur-md border border-neutral-700/50 rounded-xl shadow-lg text-neutral-400 hover:text-white transition-all hover:bg-neutral-800 shrink-0"
+                            title="Back to Calculator"
+                        >
+                            <ArrowLeft className="w-5 h-5" />
+                        </button>
+                        <div className="bg-neutral-900/80 backdrop-blur-md border border-neutral-700/50 p-2.5 rounded-xl shadow-lg flex-1 overflow-hidden">
+                            <div className="flex items-center gap-2 mb-1.5">
+                                <div className="w-2 h-2 rounded-full bg-primary-500 shrink-0 shadow-[0_0_8px_rgba(14,165,233,0.8)]" />
+                                <span className="text-xs font-bold text-white truncate">{origin?.name || 'Origin'}</span>
+                            </div>
+                            <div className="flex items-center gap-2 ml-1 border-l-2 border-dashed border-neutral-700 pl-3 py-1 my-0.5">
+                                <span className="text-[10px] text-neutral-400 font-medium tracking-wider flex flex-col">
+                                    <span>{error ? 'Route Unavailable' : (routeInfo ? `${routeInfo.distance} • ${routeInfo.duration}` : 'Calculating...')}</span>
+                                    {routeInfo && cachedRoutesData.length > 1 && (
+                                        <span className="text-[9px] text-neutral-500 mt-0.5 italic">Tap grey lines for alternative routes</span>
+                                    )}
+                                </span>
+                            </div>
+                            <div className="flex items-center gap-2 mt-1.5">
+                                <div className="w-2 h-2 rounded-full bg-rose-500 shrink-0 shadow-[0_0_8px_rgba(244,63,94,0.8)]" />
+                                <span className="text-xs font-bold text-white truncate">{destination?.name || 'Destination'}</span>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            )}
 
-            {/* Map Container */}
+            {/* Map Container - always rendered so mapRef stays in the DOM */}
             <div className="flex-1 relative">
                 <div ref={mapRef} className="absolute inset-0 w-full h-full" />
                 {loading && (

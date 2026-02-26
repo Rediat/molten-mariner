@@ -383,16 +383,16 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
             )}
 
             {/* Mode Toggle */}
-            <div className="flex mb-2 bg-neutral-900/50 rounded-lg p-0.5 w-full">
+            <div className="flex mb-2 bg-neutral-900/50 rounded-lg p-0.5 w-full relative z-10">
                 <button
-                    onClick={() => { setMode('forward'); setResults(null); }}
-                    className={`flex-1 w-full flex items-center justify-center py-1.5 px-2 text-[9px] font-bold uppercase tracking-wider rounded-md transition-all ${mode === 'forward' ? 'bg-primary-600/20 text-primary-400' : 'text-neutral-500 hover:bg-neutral-800/50 hover:text-neutral-300'}`}
+                    onClick={() => { if (mode !== 'forward') { setMode('forward'); setResults(null); } }}
+                    className={`flex-1 flex items-center justify-center py-2 px-2 text-[10px] font-bold uppercase tracking-wider rounded-md transition-all ${mode === 'forward' ? 'bg-primary-600/20 text-primary-400 ring-1 ring-primary-500/30' : 'text-neutral-500 hover:bg-neutral-800/40 hover:text-neutral-300'}`}
                 >
                     Inputs → Price
                 </button>
                 <button
-                    onClick={() => { setMode('reverse'); setResults(null); }}
-                    className={`flex-1 w-full flex items-center justify-center py-1.5 px-2 text-[9px] font-bold uppercase tracking-wider rounded-md transition-all ${mode === 'reverse' ? 'bg-emerald-600/20 text-white' : 'text-neutral-500 hover:bg-neutral-800/50 hover:text-neutral-300'}`}
+                    onClick={() => { if (mode !== 'reverse') { setMode('reverse'); setResults(null); } }}
+                    className={`flex-1 flex items-center justify-center py-2 px-2 text-[10px] font-bold uppercase tracking-wider rounded-md transition-all ${mode === 'reverse' ? 'bg-emerald-600/20 text-white ring-1 ring-emerald-500/30' : 'text-neutral-500 hover:bg-neutral-800/40 hover:text-neutral-300'}`}
                 >
                     Price → Breakdown
                 </button>
@@ -429,7 +429,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                             label="To"
                             placeholder="e.g. Megenagna"
                             onPlaceSelected={handleDestinationSelected}
-                            accentColor="white"
+                            accentColor="primary"
                             compact
                             externalInputRef={toInputRef}
                             mapsReady={mapsReady}
@@ -637,7 +637,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
             <div className="mt-auto flex gap-1.5 pt-1">
                 <button
                     onClick={handleClear}
-                    className="w-[15%] bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-xs py-3 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center gap-1 uppercase tracking-wider"
+                    className="flex-[0.25] bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-xs py-3.5 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center gap-1 uppercase tracking-wider"
                     title="Clear all values"
                 >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -645,21 +645,21 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                 </button>
                 <button
                     onClick={toggleHelp}
-                    className="bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-sm px-2 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center"
+                    className="bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-sm px-4 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center"
                     title="Help Guide"
                 >
                     <HelpCircle className="w-4 h-4" />
                 </button>
                 <button
                     onClick={toggleSettings}
-                    className="bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-sm px-2 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center"
+                    className="bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-sm px-4 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center"
                     title="Settings"
                 >
                     <Settings className="w-4 h-4" />
                 </button>
                 <button
                     onClick={handleCalculate}
-                    className="flex-1 bg-gradient-to-r from-primary-600 to-primary-500 text-neutral-900 font-black text-base py-3 rounded-xl shadow-lg shadow-primary-900/20 active:scale-[0.98] transition-all hover:brightness-110 flex items-center justify-center gap-2 uppercase tracking-widest"
+                    className="flex-1 bg-gradient-to-r from-primary-600 to-primary-500 text-neutral-900 font-black text-base py-3.5 rounded-xl shadow-lg shadow-primary-900/20 active:scale-[0.98] transition-all hover:brightness-110 flex items-center justify-center gap-2 uppercase tracking-widest"
                 >
                     <CalculateIcon className="w-5 h-5" />
                     Calculate
@@ -673,14 +673,13 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                 title="Ride Fare"
             />
 
-            <div
-                className={`absolute inset-0 z-50 bg-neutral-900 rounded-2xl overflow-hidden shadow-2xl transition-all duration-300 ease-in-out ${showMap
-                    ? 'opacity-100 pointer-events-auto scale-100'
-                    : 'opacity-0 pointer-events-none scale-95'
-                    }`}
-            >
-                <DrivingView onClose={() => setShowMap(false)} />
-            </div>
+            {showMap && (
+                <div
+                    className="absolute inset-0 z-50 bg-neutral-900 rounded-2xl overflow-hidden shadow-2xl transition-all duration-300 ease-in-out opacity-100 pointer-events-auto scale-100"
+                >
+                    <DrivingView onClose={() => setShowMap(false)} />
+                </div>
+            )}
         </div >
     );
 };
