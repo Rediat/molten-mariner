@@ -63,15 +63,15 @@ const PlacesAutocomplete = ({ placeholder, onPlaceSelected, label, accentColor =
         return (
             <div className="flex items-center gap-2 min-w-0 py-1">
                 <MapPin className={`w-3.5 h-3.5 shrink-0 ${colorMap[accentColor] || 'text-white'}`} />
-                <div className="flex-1 min-w-0">
-                    <label className={`text-[8px] uppercase tracking-wider font-bold block ${accentColor === 'primary' ? 'text-primary-400' : 'text-neutral-500'}`}>
+                <div className="flex-1 min-w-0 flex items-center gap-2">
+                    <label className={`text-[8px] uppercase tracking-wider font-bold shrink-0 w-8 ${accentColor === 'primary' ? 'text-primary-400' : 'text-neutral-500'}`}>
                         {label}
                     </label>
                     <input
                         ref={inputRef}
                         type="text"
                         placeholder={placeholder}
-                        className="w-full bg-transparent text-xs font-medium focus:outline-none text-white placeholder-neutral-600 min-w-0"
+                        className="w-full bg-transparent text-xs font-medium focus:outline-none text-white placeholder-neutral-600 min-w-0 py-1"
                         autoComplete="off"
                     />
                 </div>
@@ -93,15 +93,15 @@ const PlacesAutocomplete = ({ placeholder, onPlaceSelected, label, accentColor =
         <div className="bg-neutral-800/40 rounded-xl p-2.5 border border-transparent hover:border-neutral-700">
             <div className="flex items-center gap-2 min-w-0">
                 <MapPin className={`w-4 h-4 shrink-0 ${colorMap[accentColor] || 'text-white'}`} />
-                <div className="flex-1 min-w-0">
-                    <label className={`text-[10px] uppercase tracking-wider font-bold block ${accentColor === 'primary' ? 'text-primary-400' : 'text-neutral-500'}`}>
+                <div className="flex-1 min-w-0 flex items-center gap-2">
+                    <label className={`text-[10px] uppercase tracking-wider font-bold shrink-0 w-10 ${accentColor === 'primary' ? 'text-primary-400' : 'text-neutral-500'}`}>
                         {label}
                     </label>
                     <input
                         ref={inputRef}
                         type="text"
                         placeholder={placeholder}
-                        className="w-full bg-transparent text-sm font-medium focus:outline-none text-white placeholder-neutral-600 min-w-0"
+                        className="w-full bg-transparent text-sm font-medium focus:outline-none text-white placeholder-neutral-600 min-w-0 py-1"
                         autoComplete="off"
                     />
                 </div>

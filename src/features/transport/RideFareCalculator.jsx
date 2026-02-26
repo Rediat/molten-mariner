@@ -1,11 +1,12 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { Car, Info, HelpCircle, Trash2, Settings, History, Loader2, ArrowUpDown, Clock } from 'lucide-react';
+import { Car, Info, HelpCircle, Trash2, Settings, History, Loader2, ArrowUpDown, Clock, Map as MapIcon } from 'lucide-react';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
 import PlacesAutocomplete from '../../components/PlacesAutocomplete';
 import { CalculateIcon } from '../../components/Icons';
 import { useHistory } from '../../context/HistoryContext';
 import { useTransport } from '../../context/TransportContext';
 import HistoryOverlay from '../../components/HistoryOverlay';
+import DrivingView from '../driving/DrivingView';
 
 const DEFAULT_VALUES = {
     distance: 15,
@@ -33,6 +34,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
     const [results, setResults] = useState(null);
     const [showExplanation, setShowExplanation] = useState(false);
     const [showHistory, setShowHistory] = useState(false);
+    const [showMap, setShowMap] = useState(false);
 
     const [mode, setMode] = useState('forward');
     const [priceToCharge, setPriceToCharge] = useState(585);
@@ -341,7 +343,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
     const mapsAvailable = hasMapsApi();
 
     return (
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full relative">
             {/* Header */}
             <div className="flex justify-between items-start mb-2">
                 <div>
@@ -432,6 +434,15 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                             externalInputRef={toInputRef}
                             mapsReady={mapsReady}
                         />
+                        {durationText && origin && destination && (
+                            <button
+                                onClick={() => setShowMap(true)}
+                                className="w-full mt-2 bg-primary-500/10 hover:bg-primary-500/20 text-primary-400 font-bold text-xs py-2 rounded-lg transition-colors flex items-center justify-center gap-2 border border-primary-500/30 active:scale-[0.98]"
+                            >
+                                <MapIcon className="w-4 h-4 text-primary-400" />
+                                View Map & Alternate Routes
+                            </button>
+                        )}
                     </div>
                 </div>
             )}
@@ -661,6 +672,15 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                 module="Ride"
                 title="Ride Fare"
             />
+
+            <div
+                className={`absolute inset-0 z-50 bg-neutral-900 rounded-2xl overflow-hidden shadow-2xl transition-all duration-300 ease-in-out ${showMap
+                        ? 'opacity-100 pointer-events-auto scale-100'
+                        : 'opacity-0 pointer-events-none scale-95'
+                    }`}
+            >
+                <DrivingView onClose={() => setShowMap(false)} />
+            </div>
         </div >
     );
 };

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { MapPin, Navigation, Info, Loader2, ArrowLeft } from 'lucide-react';
 import { useTransport } from '../../context/TransportContext';
 
-const DrivingView = ({ toggleHelp, toggleSettings, isActive }) => {
+const DrivingView = ({ onClose }) => {
     const {
         origin, destination,
         setDistanceKm, setDurationValue, setDurationText, setRouteVersion,
@@ -19,7 +19,7 @@ const DrivingView = ({ toggleHelp, toggleSettings, isActive }) => {
 
     // Initialize Map and DirectionsRenderer
     useEffect(() => {
-        if (!isActive || !window.google?.maps || !mapRef.current) return;
+        if (!window.google?.maps || !mapRef.current) return;
 
         if (!mapInstance) {
             const map = new window.google.maps.Map(mapRef.current, {
@@ -104,11 +104,11 @@ const DrivingView = ({ toggleHelp, toggleSettings, isActive }) => {
 
             // We will manage polylines manually using polylinesRef
         }
-    }, [isActive, mapInstance]);
+    }, [mapInstance]);
 
     // Fetch Directions when Origin or Destination changes
     useEffect(() => {
-        if (!isActive || !mapInstance || !window.google?.maps) return;
+        if (!mapInstance || !window.google?.maps) return;
 
         if (!origin || !destination) {
             polylinesRef.current.forEach(p => p.setMap(null));
@@ -187,7 +187,7 @@ const DrivingView = ({ toggleHelp, toggleSettings, isActive }) => {
         };
 
         fetchRoute();
-    }, [origin, destination, isActive, mapInstance]);
+    }, [origin, destination, mapInstance]);
 
     // Draw polylines and update route info when cachedRoutesData or cachedActiveRouteIndex changes
     useEffect(() => {
@@ -324,8 +324,15 @@ const DrivingView = ({ toggleHelp, toggleSettings, isActive }) => {
         <div className="flex flex-col h-full bg-neutral-900 border border-neutral-700 rounded-2xl overflow-hidden relative shadow-xl">
             {/* Top Bar overlay */}
             <div className="absolute top-0 left-0 right-0 z-10 p-4 bg-gradient-to-b from-neutral-900/90 to-transparent pointer-events-none">
-                <div className="flex justify-between items-start">
-                    <div className="pointer-events-auto bg-neutral-900/80 backdrop-blur-md border border-neutral-700/50 p-2.5 rounded-xl shadow-lg max-w-[80%]">
+                <div className="flex gap-2 items-start pointer-events-auto max-w-[95%]">
+                    <button
+                        onClick={onClose}
+                        className="p-3.5 bg-neutral-900/80 backdrop-blur-md border border-neutral-700/50 rounded-xl shadow-lg text-neutral-400 hover:text-white transition-all hover:bg-neutral-800 shrink-0"
+                        title="Back to Calculator"
+                    >
+                        <ArrowLeft className="w-5 h-5" />
+                    </button>
+                    <div className="bg-neutral-900/80 backdrop-blur-md border border-neutral-700/50 p-2.5 rounded-xl shadow-lg flex-1 overflow-hidden">
                         <div className="flex items-center gap-2 mb-1.5">
                             <div className="w-2 h-2 rounded-full bg-primary-500 shrink-0 shadow-[0_0_8px_rgba(14,165,233,0.8)]" />
                             <span className="text-xs font-bold text-white truncate">{origin?.name || 'Origin'}</span>

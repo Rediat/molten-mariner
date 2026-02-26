@@ -12,7 +12,6 @@ const Layout = ({ children, activeTab, onTabChange, showHelp, onCloseHelp }) => 
         { id: 'loan', label: 'LOAN', icon: DollarSign, settingKey: 'showLoan' },
         { id: 'pension', label: 'PENSION', icon: Wallet, settingKey: 'showPension' },
         { id: 'transport', label: 'RIDE', icon: Car, settingKey: 'showTransport' },
-        { id: 'driving', label: 'DRIVE', icon: MapIcon, settingKey: 'showDriving' },
         { id: 'flow', label: 'FLOW', icon: Activity, settingKey: 'showFlow' },
         { id: 'bond', label: 'BOND', icon: FileText, settingKey: 'showBond' },
         { id: 'rates', label: 'RATES', icon: Percent, settingKey: 'showRates' },
