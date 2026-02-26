@@ -355,12 +355,17 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
 
     const openInGoogleMaps = () => {
         if (!origin || !destination) return;
-        const baseUrl = 'https://www.google.com/maps/dir/?api=1';
-        const originParam = `&origin=${origin.lat},${origin.lng}`;
-        const destParam = `&destination=${destination.lat},${destination.lng}`;
-        const travelMode = '&travelmode=driving';
-        const navigate = '&dir_action=navigate';
-        window.open(`${baseUrl}${originParam}${destParam}${travelMode}${navigate}`, '_blank');
+        const params = `origin=${origin.lat},${origin.lng}&destination=${destination.lat},${destination.lng}&travelmode=driving&dir_action=navigate`;
+        const webUrl = `https://www.google.com/maps/dir/?api=1&${params}`;
+
+        // Android WebView: use intent:// to force opening the external Google Maps app
+        const isAndroid = /android/i.test(navigator.userAgent);
+        if (isAndroid) {
+            const intentUrl = `intent://maps.google.com/maps/dir/?api=1&${params}#Intent;scheme=https;package=com.google.android.apps.maps;S.browser_fallback_url=${encodeURIComponent(webUrl)};end`;
+            window.location.href = intentUrl;
+        } else {
+            window.open(webUrl, '_blank');
+        }
     };
 
     const formatNum = (val) => val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
