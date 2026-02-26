@@ -383,16 +383,16 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
             )}
 
             {/* Mode Toggle */}
-            <div className="flex mb-2 bg-neutral-900/50 rounded-lg p-0.5">
+            <div className="flex mb-2 bg-neutral-900/50 rounded-lg p-0.5 w-full">
                 <button
                     onClick={() => { setMode('forward'); setResults(null); }}
-                    className={`flex-1 py-1 px-2 text-[9px] font-bold uppercase tracking-wider rounded-md transition-all ${mode === 'forward' ? 'bg-primary-600/20 text-primary-400' : 'text-neutral-500 hover:text-neutral-300'}`}
+                    className={`flex-1 w-full flex items-center justify-center py-1.5 px-2 text-[9px] font-bold uppercase tracking-wider rounded-md transition-all ${mode === 'forward' ? 'bg-primary-600/20 text-primary-400' : 'text-neutral-500 hover:bg-neutral-800/50 hover:text-neutral-300'}`}
                 >
                     Inputs → Price
                 </button>
                 <button
                     onClick={() => { setMode('reverse'); setResults(null); }}
-                    className={`flex-1 py-1 px-2 text-[9px] font-bold uppercase tracking-wider rounded-md transition-all ${mode === 'reverse' ? 'bg-primary-600/20 text-primary-400' : 'text-neutral-500 hover:text-neutral-300'}`}
+                    className={`flex-1 w-full flex items-center justify-center py-1.5 px-2 text-[9px] font-bold uppercase tracking-wider rounded-md transition-all ${mode === 'reverse' ? 'bg-emerald-600/20 text-white' : 'text-neutral-500 hover:bg-neutral-800/50 hover:text-neutral-300'}`}
                 >
                     Price → Breakdown
                 </button>
@@ -675,8 +675,8 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
 
             <div
                 className={`absolute inset-0 z-50 bg-neutral-900 rounded-2xl overflow-hidden shadow-2xl transition-all duration-300 ease-in-out ${showMap
-                        ? 'opacity-100 pointer-events-auto scale-100'
-                        : 'opacity-0 pointer-events-none scale-95'
+                    ? 'opacity-100 pointer-events-auto scale-100'
+                    : 'opacity-0 pointer-events-none scale-95'
                     }`}
             >
                 <DrivingView onClose={() => setShowMap(false)} />
