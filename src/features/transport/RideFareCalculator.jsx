@@ -673,13 +673,14 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                 title="Ride Fare"
             />
 
-            {showMap && (
-                <div
-                    className="absolute inset-0 z-50 bg-neutral-900 rounded-2xl overflow-hidden shadow-2xl transition-all duration-300 ease-in-out opacity-100 pointer-events-auto scale-100"
-                >
-                    <DrivingView onClose={() => setShowMap(false)} />
-                </div>
-            )}
+            <div
+                className={`absolute inset-0 bg-neutral-900 rounded-2xl overflow-hidden shadow-2xl transition-all duration-300 ease-in-out ${showMap
+                    ? 'opacity-100 pointer-events-auto scale-100 z-50'
+                    : 'opacity-0 pointer-events-none scale-95 -z-10'
+                    }`}
+            >
+                <DrivingView onClose={() => setShowMap(false)} />
+            </div>
         </div >
     );
 };
