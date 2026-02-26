@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Layout from './components/Layout';
 import { HistoryProvider } from './context/HistoryContext';
 import { SettingsProvider, useSettings } from './context/SettingsContext';
+import { TransportProvider } from './context/TransportContext';
 import SettingsModal from './components/SettingsModal';
 
 // Features
@@ -16,6 +17,7 @@ import TBillCalculator from './features/tbill/TBillCalculator';
 import PensionCalculator from './features/pension/PensionCalculator';
 import InflationCalculator from './features/inflation/InflationCalculator';
 import RideFareCalculator from './features/transport/RideFareCalculator';
+import DrivingView from './features/driving/DrivingView';
 
 const TAB_TO_SETTING = {
     tvm: 'showTVM',
@@ -23,6 +25,7 @@ const TAB_TO_SETTING = {
     loan: 'showLoan',
     pension: 'showPension',
     transport: 'showTransport',
+    driving: 'showDriving',
     flow: 'showFlow',
     bond: 'showBond',
     rates: 'showRates',
@@ -35,7 +38,7 @@ function AppContent() {
     const { settings } = useSettings();
     const [activeTab, setActiveTab] = useState(() => {
         // Initialize to first enabled tab
-        const tabOrder = settings.tabOrder || ['tvm', 'goal', 'loan', 'pension', 'transport', 'flow', 'bond', 'rates', 'tbill', 'inflation', 'history'];
+        const tabOrder = settings.tabOrder || ['tvm', 'goal', 'loan', 'pension', 'transport', 'driving', 'flow', 'bond', 'rates', 'tbill', 'inflation', 'history'];
         const firstEnabled = tabOrder.find(id => settings[TAB_TO_SETTING[id]]);
         return firstEnabled || 'tvm';
     });
@@ -52,7 +55,7 @@ function AppContent() {
     useEffect(() => {
         const settingKey = TAB_TO_SETTING[activeTab];
         if (settingKey && !settings[settingKey]) {
-            const tabOrder = settings.tabOrder || ['tvm', 'goal', 'loan', 'pension', 'transport', 'flow', 'bond', 'rates', 'tbill', 'inflation', 'history'];
+            const tabOrder = settings.tabOrder || ['tvm', 'goal', 'loan', 'pension', 'transport', 'driving', 'flow', 'bond', 'rates', 'tbill', 'inflation', 'history'];
             const firstEnabled = tabOrder.find(id => settings[TAB_TO_SETTING[id]]);
             if (firstEnabled) {
                 setActiveTab(firstEnabled);
@@ -93,7 +96,7 @@ function AppContent() {
                 // Fallback for local dev (npm run dev) where /api/maps doesn't exist
                 const devKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
                 if (devKey && devKey !== 'YOUR_API_KEY_HERE') {
-                    loadScript(`https://maps.googleapis.com/maps/api/js?key=${devKey}&libraries=places&v=weekly&loading=async`);
+                    loadScript(`https://maps.googleapis.com/maps/api/js?key=${devKey}&libraries=places,geometry&v=weekly&loading=async`);
                 }
             });
     }, []);
@@ -138,6 +141,9 @@ function AppContent() {
             <div className={activeTab === 'transport' ? 'block h-full' : 'hidden'}>
                 <RideFareCalculator toggleHelp={toggleHelp} toggleSettings={toggleSettings} mapsReady={mapsReady} isActive={activeTab === 'transport'} />
             </div>
+            <div className={activeTab === 'driving' ? 'block h-full' : 'hidden'}>
+                <DrivingView toggleHelp={toggleHelp} toggleSettings={toggleSettings} isActive={activeTab === 'driving'} />
+            </div>
             <SettingsModal isOpen={showSettings} onClose={closeSettings} />
         </Layout>
     );
@@ -147,7 +153,9 @@ function App() {
     return (
         <SettingsProvider>
             <HistoryProvider>
-                <AppContent />
+                <TransportProvider>
+                    <AppContent />
+                </TransportProvider>
             </HistoryProvider>
         </SettingsProvider>
     );

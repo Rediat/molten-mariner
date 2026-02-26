@@ -4,6 +4,7 @@ import FormattedNumberInput from '../../components/FormattedNumberInput';
 import PlacesAutocomplete from '../../components/PlacesAutocomplete';
 import { CalculateIcon } from '../../components/Icons';
 import { useHistory } from '../../context/HistoryContext';
+import { useTransport } from '../../context/TransportContext';
 import HistoryOverlay from '../../components/HistoryOverlay';
 
 const DEFAULT_VALUES = {
@@ -17,6 +18,15 @@ const hasMapsApi = () => !!window.google?.maps?.DistanceMatrixService;
 
 const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive }) => {
     const { addToHistory } = useHistory();
+    const {
+        origin, setOrigin,
+        destination, setDestination,
+        distanceKm, setDistanceKm,
+        durationText, setDurationText,
+        durationValue, setDurationValue,
+        clearTransportState
+    } = useTransport();
+
     const [values, setValues] = useState(DEFAULT_VALUES);
     const [locationError, setLocationError] = useState(null);
     const [results, setResults] = useState(null);
@@ -27,13 +37,9 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
     const [priceToCharge, setPriceToCharge] = useState(585);
     const [roundTrip, setRoundTrip] = useState(false);
 
-    const [origin, setOrigin] = useState(null);
-    const [destination, setDestination] = useState(null);
     const [fetchingDistance, setFetchingDistance] = useState(false);
     const [distanceSource, setDistanceSource] = useState('manual');
     const [locationLoading, setLocationLoading] = useState(false);
-    const [driveDuration, setDriveDuration] = useState(null);
-    const [driveDurationMinutes, setDriveDurationMinutes] = useState(null);
     const [waitMultiplier, setWaitMultiplier] = useState(2.5);
 
     const fromInputRef = useRef(null);
@@ -50,7 +56,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
 
         if (fromInputRef.current) fromInputRef.current.value = toVal;
         if (toInputRef.current) toInputRef.current.value = fromVal;
-    }, [origin, destination]);
+    }, [origin, destination, setOrigin, setDestination]);
 
 
     const fetchDistance = useCallback((from, to) => {
@@ -71,29 +77,34 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                 setFetchingDistance(false);
                 if (status === 'OK' && response.rows[0]?.elements[0]?.status === 'OK') {
                     const element = response.rows[0].elements[0];
-                    const distanceKm = parseFloat((element.distance.value / 1000).toFixed(2));
-                    setValues(prev => ({ ...prev, distance: distanceKm }));
+                    const distanceVal = parseFloat((element.distance.value / 1000).toFixed(2));
+                    setValues(prev => ({ ...prev, distance: distanceVal }));
+                    setDistanceKm(distanceVal);
                     setDistanceSource('maps');
-                    setDriveDuration((element.duration_in_traffic?.text || element.duration?.text) || null);
+
+                    const text = (element.duration_in_traffic?.text || element.duration?.text) || null;
+                    setDurationText(text);
+
                     const durationSec = element.duration_in_traffic?.value || element.duration?.value || 0;
-                    setDriveDurationMinutes(durationSec > 0 ? durationSec / 60 : null);
+                    setDurationValue(durationSec > 0 ? durationSec / 60 : null);
+
                     setResults(null);
                 }
             }
         );
-    }, []);
+    }, [setDistanceKm, setDurationText, setDurationValue]);
 
     const handleOriginSelected = useCallback((place) => {
         setOrigin(place);
         if (destination) fetchDistance(place, destination);
-    }, [destination, fetchDistance]);
+    }, [destination, fetchDistance, setOrigin]);
 
     const handleDestinationSelected = useCallback((place) => {
         setDestination(place);
         if (origin) fetchDistance(origin, place);
-    }, [origin, fetchDistance]);
+    }, [origin, fetchDistance, setDestination]);
 
-    const useCurrentLocation = useCallback((setInputValue) => {
+    const useCurrentLocation = useCallback((setInputValue, isAutoTrigger = false) => {
         if (!navigator.geolocation) return;
         setLocationLoading(true);
         setLocationError(null);
@@ -103,13 +114,22 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
         const TARGET_ACCURACY = 40; // meters
         const TIMEOUT_MS = 10000;   // 10 seconds
 
+        const shouldAbort = () => isAutoTrigger && fromInputRef.current && fromInputRef.current.value !== '';
+
         const processLocation = (position) => {
+            if (shouldAbort()) {
+                setLocationLoading(false);
+                return;
+            }
+
             const { latitude: lat, longitude: lng } = position.coords;
             const coordsLabel = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
             const place = { lat, lng, name: coordsLabel, address: '' };
 
             const finalize = (name) => {
                 setLocationLoading(false);
+                if (shouldAbort()) return;
+
                 place.name = name;
                 place.address = name;
                 setInputValue('📍 ' + name);
@@ -205,7 +225,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                 processLocation(bestPosition);
             } else {
                 setLocationLoading(false);
-                setLocationError('Location timeout');
+                if (!shouldAbort()) setLocationError('Location timeout');
             }
         }, TIMEOUT_MS);
 
@@ -228,14 +248,17 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                     setLocationLoading(false);
                     clearTimeout(timeoutId);
                     if (watchId) navigator.geolocation.clearWatch(watchId);
-                    if (error.code === 1) setLocationError('Location access denied');
-                    else if (error.code === 2 || error.code === 3) setLocationError('Location unavailable');
+
+                    if (!shouldAbort()) {
+                        if (error.code === 1) setLocationError('Location access denied');
+                        else if (error.code === 2 || error.code === 3) setLocationError('Location unavailable');
+                    }
                 }
             },
             { enableHighAccuracy: true, timeout: TIMEOUT_MS, maximumAge: 0 }
         );
 
-    }, [destination, fetchDistance]);
+    }, [destination, fetchDistance, setOrigin]);
 
     // Auto-trigger current location on mount (only when active)
     const locationTriggered = useRef(false);
@@ -245,7 +268,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
         const setFromValue = (val) => {
             if (fromInputRef.current) fromInputRef.current.value = val;
         };
-        useCurrentLocation(setFromValue);
+        useCurrentLocation(setFromValue, true);
     }, [useCurrentLocation, mapsReady, isActive]);
 
     const handleCalculate = () => {
@@ -256,7 +279,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
         const chargingFuelCost = oneWayFuelCost * chargeMultiplier;
         const totalFuelCost = oneWayFuelCost * actualFuelMultiplier;
 
-        const waitTimeBase = driveDurationMinutes != null ? driveDurationMinutes * 1.1 * waitMultiplier : 0;
+        const waitTimeBase = durationValue != null ? durationValue * 1.1 * waitMultiplier : 0;
         const waitTime = waitTimeBase * 2; // Always double to represent true round-trip even in one-way mode
 
         if (mode === 'forward') {
@@ -296,12 +319,12 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
         setValues(DEFAULT_VALUES);
         setPriceToCharge(585);
         setResults(null);
-        setOrigin(null);
-        setDestination(null);
+        clearTransportState();
         setDistanceSource('manual');
-        setDriveDuration(null);
-        setDriveDurationMinutes(null);
         setWaitMultiplier(2.5);
+
+        if (fromInputRef.current) fromInputRef.current.value = '';
+        if (toInputRef.current) toInputRef.current.value = '';
     };
 
     const formatNum = (val) => val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -518,13 +541,13 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                         </div>
 
                         {/* Route & drive time */}
-                        {driveDuration && origin && destination && (
+                        {durationText && origin && destination && (
                             <div className="flex items-center gap-1.5 text-[10px] text-neutral-400 bg-neutral-900/40 rounded-md px-2 py-1">
                                 <Clock className="w-3 h-3 text-primary-400 shrink-0" />
                                 <span className="truncate">
                                     {origin.name?.replace('📍 ', '')} → {destination.name?.replace('📍 ', '')}
                                 </span>
-                                <span className="text-primary-400 font-bold whitespace-nowrap ml-auto">~{driveDuration}</span>
+                                <span className="text-primary-400 font-bold whitespace-nowrap ml-auto">~{durationText}</span>
                             </div>
                         )}
 
