@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MapPin, Navigation, Info, Loader2, ArrowLeft } from 'lucide-react';
+import { MapPin, Navigation, Info, Loader2, ArrowLeft, ExternalLink } from 'lucide-react';
 import { useTransport } from '../../context/TransportContext';
 
 const DrivingView = ({ onClose }) => {
@@ -387,21 +387,48 @@ const DrivingView = ({ onClose }) => {
                 )}
             </div>
 
-            {/* Turn-by-turn Navigation Bottom Sheet */}
+            {/* Bottom Sheet – Navigate + Turn-by-turn */}
             {routeInfo && (
                 <div className={`absolute bottom-0 left-0 right-0 bg-neutral-900 border-t border-neutral-700 transition-all duration-300 ease-in-out z-30 flex flex-col shadow-[0_-10px_40px_rgba(0,0,0,0.5)] ${showSteps ? 'h-[45%]' : 'h-14'}`}>
-                    <div
-                        className="flex items-center justify-between p-3 cursor-pointer hover:bg-neutral-800/50 transition-colors"
-                        onClick={() => setShowSteps(!showSteps)}
-                    >
-                        <div className="flex items-center gap-3">
-                            <div className="bg-primary-500/20 p-1.5 rounded-lg border border-primary-500/30">
-                                <Navigation className="w-4 h-4 text-primary-400" />
+                    <div className="flex items-center gap-2 p-2.5 shrink-0">
+                        {/* Google Maps Navigate button */}
+                        <button
+                            onClick={() => {
+                                if (!origin || !destination) return;
+                                const params = `origin=${origin.lat},${origin.lng}&destination=${destination.lat},${destination.lng}&travelmode=driving&dir_action=navigate`;
+                                const webUrl = `https://www.google.com/maps/dir/?api=1&${params}`;
+                                const isAndroid = /android/i.test(navigator.userAgent);
+                                if (isAndroid) {
+                                    const intentUrl = `intent://maps.google.com/maps/dir/?api=1&${params}#Intent;scheme=https;package=com.google.android.apps.maps;S.browser_fallback_url=${encodeURIComponent(webUrl)};end`;
+                                    window.location.href = intentUrl;
+                                } else {
+                                    window.open(webUrl, '_blank');
+                                }
+                            }}
+                            className="flex items-center gap-2 bg-gradient-to-r from-primary-600/30 to-primary-500/20 hover:from-primary-600/50 hover:to-primary-500/35 text-primary-400 font-bold text-xs py-2 px-3 rounded-lg transition-all border border-primary-500/40 active:scale-[0.97] shrink-0"
+                            title="Open in Google Maps app"
+                        >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                            <span>Navigate</span>
+                        </button>
+
+                        {/* Divider */}
+                        <div className="w-px h-7 bg-neutral-700/60 shrink-0" />
+
+                        {/* Turn-by-turn toggle */}
+                        <div
+                            className="flex-1 flex items-center justify-between cursor-pointer hover:bg-neutral-800/50 rounded-lg px-2 py-1.5 transition-colors"
+                            onClick={() => setShowSteps(!showSteps)}
+                        >
+                            <div className="flex items-center gap-2">
+                                <div className="bg-primary-500/20 p-1 rounded-md border border-primary-500/30">
+                                    <Navigation className="w-3 h-3 text-primary-400" />
+                                </div>
+                                <span className="text-xs font-bold text-white">Steps</span>
                             </div>
-                            <span className="text-sm font-bold text-white">Turn-by-turn Steps</span>
-                        </div>
-                        <div className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest bg-neutral-800 px-2 py-1 rounded-md">
-                            {showSteps ? 'Hide' : 'Show'}
+                            <div className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest bg-neutral-800 px-1.5 py-0.5 rounded">
+                                {showSteps ? 'Hide' : 'Show'}
+                            </div>
                         </div>
                     </div>
 
