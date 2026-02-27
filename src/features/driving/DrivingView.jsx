@@ -26,7 +26,7 @@ const DrivingView = ({ onClose }) => {
             center: { lat: 9.03, lng: 38.74 }, // Addis Ababa default
             zoom: 12,
             disableDefaultUI: true, // cleaner interface
-            zoomControl: true,
+            zoomControl: false,
             mapTypeControl: false,
             scaleControl: true,
             streetViewControl: false,
