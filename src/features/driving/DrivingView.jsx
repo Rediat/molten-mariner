@@ -424,7 +424,26 @@ const DrivingView = ({ onClose, fareData }) => {
                                 const distance = routeInfo?.distance || 'N/A';
                                 const duration = routeInfo?.duration || 'N/A';
                                 const body = `Hello Our Service User, your trip details are as follows:\nFare: ${fare}\nDistance: ${distance}\nEstimated Time: ${duration}\nYou can pay via TeleBirr, CBE, or Cash.\nThank you for riding with us and have a safe trip! 🚗`;
-                                window.location.href = `sms:?body=${encodeURIComponent(body)}`;
+                                const smsUrl = `sms:?body=${encodeURIComponent(body)}`;
+
+                                // Use a temporary anchor element to trigger the sms: scheme
+                                // This works better than window.location.href in WebViews
+                                const a = document.createElement('a');
+                                a.href = smsUrl;
+                                a.style.display = 'none';
+                                document.body.appendChild(a);
+                                a.click();
+                                document.body.removeChild(a);
+
+                                // Fallback: if running inside a Telegram WebApp or restricted WebView,
+                                // copy message to clipboard so the user can paste it manually
+                                const isTelegram = !!window.Telegram?.WebApp;
+                                const isWebView = /wv|WebView/i.test(navigator.userAgent);
+                                if (isTelegram || isWebView) {
+                                    navigator.clipboard?.writeText(body).then(() => {
+                                        alert('Message copied to clipboard! Open your SMS app and paste it.');
+                                    }).catch(() => { });
+                                }
                             }}
                             className="flex items-center gap-2 bg-gradient-to-r from-emerald-600/30 to-emerald-500/20 hover:from-emerald-600/50 hover:to-emerald-500/35 text-emerald-400 font-bold text-xs py-2 px-3 rounded-lg transition-all border border-emerald-500/40 active:scale-[0.97] shrink-0"
                             title="Send trip details via SMS"
