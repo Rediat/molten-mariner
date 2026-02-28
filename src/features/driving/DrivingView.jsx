@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MapPin, Navigation, Info, Loader2, ArrowLeft, ExternalLink } from 'lucide-react';
+import { MapPin, Navigation, Info, Loader2, ArrowLeft, ExternalLink, MessageSquare } from 'lucide-react';
 import { useTransport } from '../../context/TransportContext';
 
-const DrivingView = ({ onClose }) => {
+const DrivingView = ({ onClose, fareData }) => {
     const {
         origin, destination,
         setDistanceKm, setDurationValue, setDurationText, setRouteVersion,
@@ -410,6 +410,27 @@ const DrivingView = ({ onClose }) => {
                         >
                             <ExternalLink className="w-3.5 h-3.5" />
                             <span>Navigate</span>
+                        </button>
+
+                        {/* Divider */}
+                        <div className="w-px h-7 bg-neutral-700/60 shrink-0" />
+
+                        {/* SMS Trip Details button */}
+                        <button
+                            onClick={() => {
+                                const fare = fareData?.totalToCharge != null
+                                    ? fareData.totalToCharge.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                                    : 'N/A';
+                                const distance = routeInfo?.distance || 'N/A';
+                                const duration = routeInfo?.duration || 'N/A';
+                                const body = `Hello Our Service User, your trip details are as follows:\nFare: ${fare}\nDistance: ${distance}\nEstimated Time: ${duration}\nYou can pay via TeleBirr, CBE, or Cash.\nThank you for riding with us and have a safe trip! 🚗`;
+                                window.location.href = `sms:?body=${encodeURIComponent(body)}`;
+                            }}
+                            className="flex items-center gap-2 bg-gradient-to-r from-emerald-600/30 to-emerald-500/20 hover:from-emerald-600/50 hover:to-emerald-500/35 text-emerald-400 font-bold text-xs py-2 px-3 rounded-lg transition-all border border-emerald-500/40 active:scale-[0.97] shrink-0"
+                            title="Send trip details via SMS"
+                        >
+                            <MessageSquare className="w-3.5 h-3.5" />
+                            <span>SMS</span>
                         </button>
 
                         {/* Divider */}

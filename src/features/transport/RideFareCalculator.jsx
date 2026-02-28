@@ -730,7 +730,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                     : 'opacity-0 pointer-events-none scale-95 -z-10'
                     }`}
             >
-                <DrivingView onClose={() => setShowMap(false)} />
+                <DrivingView onClose={() => setShowMap(false)} fareData={results} />
             </div>
         </div >
     );
