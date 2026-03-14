@@ -39,6 +39,7 @@ const LiveFareTracker = ({ isVisible, onClose, fareData }) => {
     const distanceAccumulatorRef = useRef(0);
     const startTimeRef = useRef(null);
     const elapsedAtPauseRef = useRef(0);
+    const isWaitingRef = useRef(true); // start as waiting until first GPS movement detected
 
     // Fare parameters from parent (with defaults)
     const mileage = fareData?.mileage ?? 0.10; // L/km
@@ -59,19 +60,27 @@ const LiveFareTracker = ({ isVisible, onClose, fareData }) => {
         setCurrentFare(computeFare(totalDistance, totalWaitTime));
     }, [totalDistance, totalWaitTime, computeFare]);
 
-    // ---- Elapsed time ticker ----
+    // ---- Elapsed time ticker (also accumulates wait time continuously) ----
     useEffect(() => {
         if (trackingState === 'tracking') {
             timerIdRef.current = setInterval(() => {
                 const now = Date.now();
                 const elapsed = elapsedAtPauseRef.current + Math.floor((now - startTimeRef.current) / 1000);
                 setElapsedTime(elapsed);
+
+                // Accumulate wait time every second when speed is below threshold
+                if (isWaitingRef.current) {
+                    waitAccumulatorRef.current += 1;
+                    setTotalWaitTime(waitAccumulatorRef.current);
+                    // Recalculate fare so the UI stays live
+                    setCurrentFare(computeFare(distanceAccumulatorRef.current, waitAccumulatorRef.current));
+                }
             }, 1000);
         }
         return () => {
             if (timerIdRef.current) clearInterval(timerIdRef.current);
         };
-    }, [trackingState]);
+    }, [trackingState, computeFare]);
 
     // ---- GPS watchPosition handler ----
     const handlePosition = useCallback((position) => {
@@ -100,16 +109,13 @@ const LiveFareTracker = ({ isVisible, onClose, fareData }) => {
             }
             setCurrentSpeed(Math.round(speedKmh));
 
+            // Update waiting flag so the timer interval can accumulate wait time
+            isWaitingRef.current = speedKmh < WAIT_SPEED_THRESHOLD;
+
             // Only accumulate distance if it exceeds noise threshold
             if (dist >= MIN_DISTANCE) {
                 distanceAccumulatorRef.current += dist;
                 setTotalDistance(distanceAccumulatorRef.current);
-            }
-
-            // Accumulate wait time
-            if (speedKmh < WAIT_SPEED_THRESHOLD && timeDelta > 0 && timeDelta < 30) {
-                waitAccumulatorRef.current += timeDelta;
-                setTotalWaitTime(waitAccumulatorRef.current);
             }
         } else {
             // First fix — compute speed from GPS if available
@@ -129,6 +135,7 @@ const LiveFareTracker = ({ isVisible, onClose, fareData }) => {
         setTrackingState('tracking');
         startTimeRef.current = Date.now();
         elapsedAtPauseRef.current = 0;
+        isWaitingRef.current = true;
 
         // Reset accumulators
         lastPositionRef.current = null;
@@ -179,6 +186,7 @@ const LiveFareTracker = ({ isVisible, onClose, fareData }) => {
         distanceAccumulatorRef.current = 0;
         waitAccumulatorRef.current = 0;
         elapsedAtPauseRef.current = 0;
+        isWaitingRef.current = true;
     }, [stopTracking]);
 
     // ---- Cleanup on unmount ----
