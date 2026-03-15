@@ -233,7 +233,7 @@ const LiveFareTracker = ({ isVisible, onClose, fareData }) => {
                         <Zap className="w-4 h-4 text-amber-400" />
                         Live Fare Tracker
                     </h2>
-                    <p className="text-[9px] text-neutral-500 font-bold uppercase tracking-widest mt-0.5">
+                    <p className="text-[9px] text-neutral-500 font-bold uppercase tracking-widest mt-0.5 text-left">
                         Real-time GPS Tracking
                     </p>
                 </div>

@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { Car, Info, HelpCircle, Trash2, Settings, History, Loader2, ArrowUpDown, Clock, Map as MapIcon, Navigation } from 'lucide-react';
+import { Car, Info, HelpCircle, Trash2, Settings, History, Loader2, ArrowUpDown, Clock, Map as MapIcon, Navigation, Zap } from 'lucide-react';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
 import PlacesAutocomplete from '../../components/PlacesAutocomplete';
 import { CalculateIcon } from '../../components/Icons';
@@ -7,6 +7,7 @@ import { useHistory } from '../../context/HistoryContext';
 import { useTransport } from '../../context/TransportContext';
 import HistoryOverlay from '../../components/HistoryOverlay';
 import DrivingView from '../driving/DrivingView';
+import LiveFareTracker from '../driving/LiveFareTracker';
 
 const DEFAULT_VALUES = {
     distance: 15,
@@ -35,6 +36,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
     const [showExplanation, setShowExplanation] = useState(false);
     const [showHistory, setShowHistory] = useState(false);
     const [showMap, setShowMap] = useState(false);
+    const [showLiveTracker, setShowLiveTracker] = useState(false);
 
     const [mode, setMode] = useState('forward');
     const [priceToCharge, setPriceToCharge] = useState(585);
@@ -486,11 +488,19 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                                 </button>
                                 <button
                                     onClick={openInGoogleMaps}
-                                    className="bg-neutral-800/80 hover:bg-neutral-700 text-neutral-300 hover:text-white font-bold text-xs py-2 px-3 rounded-lg transition-all flex items-center justify-center gap-1.5 border border-neutral-700/50 active:scale-[0.98]"
+                                    className="bg-neutral-800/80 hover:bg-neutral-700 text-neutral-300 hover:text-white font-bold text-xs py-2 px-3 rounded-lg transition-all flex items-center justify-center gap-1.5 border border-neutral-700/50 active:scale-[0.98] shrink-0"
                                     title="Open in Google Maps app to compare ride prices"
                                 >
                                     <Navigation className="w-3.5 h-3.5 text-primary-400" />
                                     Google Maps
+                                </button>
+                                <button
+                                    onClick={() => setShowLiveTracker(true)}
+                                    className="flex items-center gap-1.5 bg-gradient-to-r from-amber-600/30 to-amber-500/20 hover:from-amber-600/50 hover:to-amber-500/35 text-amber-400 font-bold text-xs py-2 px-3 rounded-lg transition-all border border-amber-500/40 active:scale-[0.97] shrink-0"
+                                    title="Live fare tracking with GPS"
+                                >
+                                    <Zap className="w-3.5 h-3.5" />
+                                    <span>Live</span>
                                 </button>
                             </div>
                         )}
@@ -730,8 +740,14 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                     : 'opacity-0 pointer-events-none scale-95 -z-10'
                     }`}
             >
-                <DrivingView onClose={() => setShowMap(false)} fareData={results} />
+                <DrivingView onClose={() => setShowMap(false)} fareData={{ ...results, ...values, waitMultiplier }} />
             </div>
+
+            <LiveFareTracker
+                isVisible={showLiveTracker}
+                onClose={() => setShowLiveTracker(false)}
+                fareData={{ ...results, ...values, waitMultiplier }}
+            />
         </div >
     );
 };
