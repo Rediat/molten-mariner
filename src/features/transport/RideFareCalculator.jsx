@@ -432,7 +432,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                     {mapsAvailable && (
                         <>
                             <p className="font-bold text-primary-400 text-xs pt-1">Map & Routes</p>
-                            <p>🗺️ <strong className="text-white">View Map:</strong> When both From and To are set, tap "View Map & Alternate Routes" for a full-screen interactive map with traffic-colored polylines (blue = normal, yellow = slow, red = jam).</p>
+                            <p>🗺️ <strong className="text-white">View Map:</strong> When both From and To are set, tap "Map & Routes" for a full-screen interactive map with traffic-colored polylines (blue = normal, yellow = slow, red = jam).</p>
                             <p>🔀 <strong className="text-white">Alternate Routes:</strong> Grey lines on the map show alternative routes — tap one to switch. The selected route's distance and time sync back to the calculator automatically.</p>
                             <p>🧭 <strong className="text-white">Turn-by-Turn:</strong> Expand the bottom sheet on the map view for step-by-step navigation directions.</p>
                             <p>⇅ <strong className="text-white">Swap:</strong> Use the swap button between From/To to instantly reverse your route.</p>
@@ -484,7 +484,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                                     className="flex-1 bg-primary-500/10 hover:bg-primary-500/20 text-primary-400 font-bold text-xs py-2 rounded-lg transition-colors flex items-center justify-center gap-2 border border-primary-500/30 active:scale-[0.98]"
                                 >
                                     <MapIcon className="w-4 h-4 text-primary-400" />
-                                    View Map & Routes
+                                    Map & Routes
                                 </button>
                                 <button
                                     onClick={openInGoogleMaps}
@@ -492,7 +492,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                                     title="Open in Google Maps app to compare ride prices"
                                 >
                                     <Navigation className="w-3.5 h-3.5 text-primary-400" />
-                                    Google Maps
+                                    Navigate
                                 </button>
                                 <button
                                     onClick={() => setShowLiveTracker(true)}
