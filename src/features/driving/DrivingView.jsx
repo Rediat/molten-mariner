@@ -36,6 +36,7 @@ const DrivingView = ({ onClose, fareData }) => {
             streetViewControl: false,
             rotateControl: false, // User can enable tilt/rotation via Cloud Console on their MapId if desired
             fullscreenControl: false,
+            clickableIcons: false, // Disables the default InfoWindow popups on Points of Interest (POIs)
             styles: [
                 {
                     featureType: "all",
