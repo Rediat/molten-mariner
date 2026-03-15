@@ -28,12 +28,13 @@ const DrivingView = ({ onClose, fareData }) => {
         const map = new window.google.maps.Map(mapRef.current, {
             center: { lat: 9.03, lng: 38.74 }, // Addis Ababa default
             zoom: 12,
+            mapId: import.meta.env.VITE_GOOGLE_MAPS_MAP_ID || 'DEMO_MAP_ID', // Required for AdvancedMarkerElement
             disableDefaultUI: true, // cleaner interface
             zoomControl: false,
             mapTypeControl: false,
             scaleControl: true,
             streetViewControl: false,
-            rotateControl: false,
+            rotateControl: false, // User can enable tilt/rotation via Cloud Console on their MapId if desired
             fullscreenControl: false,
             styles: [
                 {
@@ -220,25 +221,22 @@ const DrivingView = ({ onClose, fareData }) => {
 
         const bounds = new window.google.maps.LatLngBounds();
 
-        // Add Origin Marker (Green circle)
-        const originMarker = new window.google.maps.Marker({
+        // --- Add Origin Marker (Custom DOM Element: Green Circle) ---
+        const originPin = document.createElement('div');
+        originPin.innerHTML = `
+            <div style="width: 14px; height: 14px; background-color: #10b981; border-radius: 50%; border: 2px solid #047857; box-shadow: 0 0 10px rgba(16,185,129,0.5);"></div>
+        `;
+        const originMarker = new window.google.maps.marker.AdvancedMarkerElement({
             position: { lat: origin.lat, lng: origin.lng },
             map: mapInstance,
-            icon: {
-                path: window.google.maps.SymbolPath.CIRCLE,
-                fillColor: '#10b981', // emerald-500
-                fillOpacity: 1,
-                strokeWeight: 2,
-                strokeColor: '#047857', // emerald-700
-                scale: 7
-            },
+            content: originPin,
             title: origin.name || 'Origin',
             zIndex: 20
         });
         markersRef.current.push(originMarker);
 
-        // Add Destination Marker (Default Red Pin)
-        const destMarker = new window.google.maps.Marker({
+        // --- Add Destination Marker (Default Google Red Pin via AdvancedMarkerElement) ---
+        const destMarker = new window.google.maps.marker.AdvancedMarkerElement({
             position: { lat: destination.lat, lng: destination.lng },
             map: mapInstance,
             title: destination.name || 'Destination',

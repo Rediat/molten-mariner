@@ -26,7 +26,7 @@ export default async function handler(req, res) {
 
     // Option 1: Return Maps JS script URL for client-side autocomplete
     if (!input) {
-        const scriptUrl = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places,geometry&v=weekly&loading=async`;
+        const scriptUrl = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places,geometry,marker&v=weekly&loading=async`;
         return res.json({
             scriptUrl,
             libraries: ['places', 'geometry'],
