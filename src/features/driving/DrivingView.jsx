@@ -14,6 +14,7 @@ const DrivingView = ({ onClose, fareData }) => {
     const mapRef = useRef(null);
     const [mapInstance, setMapInstance] = useState(null);
     const polylinesRef = useRef([]);
+    const markersRef = useRef([]);
     const [routeInfo, setRouteInfo] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -112,6 +113,8 @@ const DrivingView = ({ onClose, fareData }) => {
         if (!origin || !destination) {
             polylinesRef.current.forEach(p => p.setMap(null));
             polylinesRef.current = [];
+            markersRef.current.forEach(m => m.setMap(null));
+            markersRef.current = [];
             setCachedRoutesData([]);
             setCachedActiveRouteIndex(0);
             setRouteInfo(null);
@@ -192,6 +195,8 @@ const DrivingView = ({ onClose, fareData }) => {
                 setError(err.message || 'Failed to calculate route');
                 polylinesRef.current.forEach(p => p.setMap(null));
                 polylinesRef.current = [];
+                markersRef.current.forEach(m => m.setMap(null));
+                markersRef.current = [];
                 setCachedRoutesData([]);
                 setCachedActiveRouteIndex(0);
                 setRouteInfo(null);
@@ -207,11 +212,39 @@ const DrivingView = ({ onClose, fareData }) => {
     useEffect(() => {
         if (!mapInstance || !window.google?.maps || cachedRoutesData.length === 0 || !origin || !destination) return;
 
-        // Clear existing polylines
+        // Clear existing polylines and markers
         polylinesRef.current.forEach(p => p.setMap(null));
         polylinesRef.current = [];
+        markersRef.current.forEach(m => m.setMap(null));
+        markersRef.current = [];
 
         const bounds = new window.google.maps.LatLngBounds();
+
+        // Add Origin Marker (Green circle)
+        const originMarker = new window.google.maps.Marker({
+            position: { lat: origin.lat, lng: origin.lng },
+            map: mapInstance,
+            icon: {
+                path: window.google.maps.SymbolPath.CIRCLE,
+                fillColor: '#10b981', // emerald-500
+                fillOpacity: 1,
+                strokeWeight: 2,
+                strokeColor: '#047857', // emerald-700
+                scale: 7
+            },
+            title: origin.name || 'Origin',
+            zIndex: 20
+        });
+        markersRef.current.push(originMarker);
+
+        // Add Destination Marker (Default Red Pin)
+        const destMarker = new window.google.maps.Marker({
+            position: { lat: destination.lat, lng: destination.lng },
+            map: mapInstance,
+            title: destination.name || 'Destination',
+            zIndex: 20
+        });
+        markersRef.current.push(destMarker);
 
         // Helper to get traffic color
         const getTrafficColor = (speed) => {
