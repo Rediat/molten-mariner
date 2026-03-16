@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MapPin, Navigation, Info, Loader2, ArrowLeft, ExternalLink, MessageSquare, Zap } from 'lucide-react';
 import { useTransport } from '../../context/TransportContext';
-import LiveFareTracker from './LiveFareTracker';
 
-const DrivingView = ({ onClose, fareData }) => {
+const DrivingView = ({ onClose, fareData, onOpenLiveTracker }) => {
     const {
         origin, destination,
         setDistanceKm, setDurationValue, setDurationText, setRouteVersion,
@@ -19,7 +18,6 @@ const DrivingView = ({ onClose, fareData }) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [showSteps, setShowSteps] = useState(false);
-    const [showLiveTracker, setShowLiveTracker] = useState(false);
 
     // Initialize Map and DirectionsRenderer
     useEffect(() => {
@@ -496,7 +494,7 @@ const DrivingView = ({ onClose, fareData }) => {
 
                         {/* Live Track button */}
                         <button
-                            onClick={() => setShowLiveTracker(true)}
+                            onClick={onOpenLiveTracker}
                             className="flex items-center gap-2 bg-gradient-to-r from-amber-600/30 to-amber-500/20 hover:from-amber-600/50 hover:to-amber-500/35 text-amber-400 font-bold text-xs py-2 px-3 rounded-lg transition-all border border-amber-500/40 active:scale-[0.97] shrink-0"
                             title="Live fare tracking with GPS"
                         >
@@ -558,12 +556,6 @@ const DrivingView = ({ onClose, fareData }) => {
                 </div>
             )}
 
-            {/* Live Fare Tracker — always mounted for state persistence */}
-            <LiveFareTracker
-                isVisible={showLiveTracker}
-                onClose={() => setShowLiveTracker(false)}
-                fareData={fareData}
-            />
         </div>
     );
 };
