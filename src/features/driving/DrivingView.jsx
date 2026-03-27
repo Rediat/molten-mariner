@@ -370,20 +370,22 @@ const DrivingView = ({ onClose, fareData, onOpenLiveTracker }) => {
             {/* Top Bar overlay */}
             {hasRoute && (
                 <div className="absolute top-0 left-0 right-0 z-10 p-4 bg-gradient-to-b from-neutral-900/90 to-transparent pointer-events-none">
-                    <div className="flex gap-2 items-start pointer-events-auto max-w-[95%]">
+                    <div className="flex gap-2 items-center pointer-events-auto max-w-[95%]">
                         <button
                             onClick={onClose}
-                            className="p-3.5 bg-neutral-900/80 backdrop-blur-md border border-neutral-700/50 rounded-xl shadow-lg text-neutral-400 hover:text-white transition-all hover:bg-neutral-800 shrink-0"
+                            className="h-12 w-12 flex items-center justify-center bg-neutral-900/80 backdrop-blur-md border border-neutral-700/50 rounded-xl shadow-lg text-neutral-400 hover:text-white transition-all hover:bg-neutral-800 shrink-0"
                             title="Back to Calculator"
                         >
                             <ArrowLeft className="w-5 h-5" />
                         </button>
-                        <div className="bg-neutral-900/80 backdrop-blur-md border border-neutral-700/50 p-2.5 rounded-xl shadow-lg flex-1 overflow-hidden flex items-center gap-2">
-                             <Navigation className="w-3.5 h-3.5 text-neutral-400" />
-                             <div className="flex items-center gap-2 text-xs font-bold text-white truncate">
-                                 <span className="truncate max-w-[120px]">{origin?.name || 'Origin'}</span>
-                                 <span className="text-neutral-500">→</span>
-                                 <span className="truncate max-w-[120px]">{destination?.name || 'Destination'}</span>
+                        <div className="bg-neutral-900/80 backdrop-blur-md border border-neutral-700/50 px-3 rounded-xl shadow-lg flex-1 overflow-hidden flex flex-col justify-center h-12 gap-0">
+                             <div className="flex items-center gap-2 group">
+                                 <div className="w-1.5 h-1.5 rounded-full bg-primary-500 shrink-0 shadow-[0_0_8px_rgba(14,165,233,0.5)]" />
+                                 <span className="text-[10px] font-bold text-white truncate">{origin?.name || 'Origin'}</span>
+                             </div>
+                             <div className="flex items-center gap-2 group">
+                                 <div className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0 shadow-[0_0_8px_rgba(244,63,94,0.5)]" />
+                                 <span className="text-[10px] font-bold text-neutral-400 truncate group-hover:text-white transition-colors">{destination?.name || 'Destination'}</span>
                              </div>
                         </div>
                     </div>
