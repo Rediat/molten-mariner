@@ -21,7 +21,7 @@ const Layout = ({ children, activeTab, onTabChange, showHelp, onCloseHelp }) => 
     ];
 
     // Get tab order from settings
-    const tabOrder = settings.tabOrder || ['tvm', 'goal', 'loan', 'flow', 'bond', 'rates', 'tbill', 'history'];
+    const tabOrder = settings.tabOrder || ['tvm', 'goal', 'loan', 'pension', 'inflation', 'tbill', 'transport', 'flow', 'bond', 'rates', 'history'];
 
     // Filter nav items based on settings and sort by tabOrder
     // History tab is always placed at the far right (last position)
