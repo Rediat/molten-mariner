@@ -378,23 +378,13 @@ const DrivingView = ({ onClose, fareData, onOpenLiveTracker }) => {
                         >
                             <ArrowLeft className="w-5 h-5" />
                         </button>
-                        <div className="bg-neutral-900/80 backdrop-blur-md border border-neutral-700/50 p-2.5 rounded-xl shadow-lg flex-1 overflow-hidden">
-                            <div className="flex items-center gap-2 mb-1.5">
-                                <div className="w-2 h-2 rounded-full bg-primary-500 shrink-0 shadow-[0_0_8px_rgba(14,165,233,0.8)]" />
-                                <span className="text-xs font-bold text-white truncate">{origin?.name || 'Origin'}</span>
-                            </div>
-                            <div className="flex items-center gap-2 ml-1 border-l-2 border-dashed border-neutral-700 pl-3 py-1 my-0.5">
-                                <span className="text-[10px] text-neutral-400 font-medium tracking-wider flex flex-col">
-                                    <span>{error ? 'Route Unavailable' : (routeInfo ? `${routeInfo.distance} • ${routeInfo.duration}` : 'Calculating...')}</span>
-                                    {routeInfo && cachedRoutesData.length > 1 && (
-                                        <span className="text-[9px] text-neutral-500 mt-0.5 italic">Tap grey lines for alternative routes</span>
-                                    )}
-                                </span>
-                            </div>
-                            <div className="flex items-center gap-2 mt-1.5">
-                                <div className="w-2 h-2 rounded-full bg-rose-500 shrink-0 shadow-[0_0_8px_rgba(244,63,94,0.8)]" />
-                                <span className="text-xs font-bold text-white truncate">{destination?.name || 'Destination'}</span>
-                            </div>
+                        <div className="bg-neutral-900/80 backdrop-blur-md border border-neutral-700/50 p-2.5 rounded-xl shadow-lg flex-1 overflow-hidden flex items-center gap-2">
+                             <Navigation className="w-3.5 h-3.5 text-neutral-400" />
+                             <div className="flex items-center gap-2 text-xs font-bold text-white truncate">
+                                 <span className="truncate max-w-[120px]">{origin?.name || 'Origin'}</span>
+                                 <span className="text-neutral-500">→</span>
+                                 <span className="truncate max-w-[120px]">{destination?.name || 'Destination'}</span>
+                             </div>
                         </div>
                     </div>
                 </div>
@@ -421,12 +411,73 @@ const DrivingView = ({ onClose, fareData, onOpenLiveTracker }) => {
 
             {/* Bottom Sheet – Navigate + Turn-by-turn */}
             {routeInfo && (
-                <div className={`absolute bottom-0 left-0 right-0 bg-neutral-900 border-t border-neutral-700 transition-all duration-300 ease-in-out z-30 flex flex-col shadow-[0_-10px_40px_rgba(0,0,0,0.5)] ${showSteps ? 'h-[45%]' : 'h-14'}`}>
-                    <div className="flex items-center gap-2 p-2.5 shrink-0">
+                <div className={`absolute bottom-0 left-0 right-0 bg-neutral-900 border-t border-neutral-700 transition-all duration-300 ease-in-out z-30 flex flex-col shadow-[0_-10px_40px_rgba(0,0,0,0.5)] ${showSteps ? 'h-[45%]' : 'pb-4'}`}>
+                    
+                    {/* Route Cards */}
+                    {!showSteps && cachedRoutesData.length > 0 && (
+                        <div className="flex gap-2 pt-4 px-3 pb-2">
+                            {cachedRoutesData.map((route, index) => {
+                                const isActive = index === cachedActiveRouteIndex;
+                                const durationSecs = parseInt(route.duration) || 0;
+                                const durationMins = Math.ceil(durationSecs / 60);
+                                const distanceMeters = route.distanceMeters || 0;
+                                const distanceKms = parseFloat((distanceMeters / 1000).toFixed(1));
+                                const labels = route.routeLabels || [];
+                                
+                                // Determine label based on route properties
+                                let labelText = 'Alternative';
+                                
+                                // Identify shortest/longest distance
+                                const allDistances = cachedRoutesData.map(r => r.distanceMeters || 0);
+                                const minDistance = Math.min(...allDistances);
+                                const maxDistance = Math.max(...allDistances);
+                                
+                                // Identify fastest/slowest duration
+                                const allDurations = cachedRoutesData.map(r => parseInt(r.duration) || 0);
+                                const minDuration = Math.min(...allDurations);
+                                const maxDuration = Math.max(...allDurations);
+
+                                if (labels.includes('DEFAULT_ROUTE')) labelText = 'Suggested';
+                                else if (distanceMeters === minDistance) labelText = 'Shortest';
+                                else if (durationSecs === minDuration) labelText = 'Fastest';
+                                else if (labels.includes('FUEL_EFFICIENT')) labelText = 'Economical';
+                                else if (distanceMeters === maxDistance) labelText = 'Longest';
+                                else if (durationSecs === maxDuration) labelText = 'Avoid Traffic';
+                                else if (labels.includes('SHORTER_DISTANCE')) labelText = 'Shortest';
+                                else labelText = 'Alternative';
+
+                                return (
+                                    <div 
+                                        key={index}
+                                        onClick={() => setCachedActiveRouteIndex(index)}
+                                        className={`flex-1 min-w-0 p-2 rounded-xl flex flex-col items-center justify-center border-2 cursor-pointer transition-all ${
+                                            isActive 
+                                            ? 'border-primary-500 bg-primary-500/10 scale-100 shadow-[0_0_15px_rgba(14,165,233,0.15)] z-10' 
+                                            : 'border-transparent bg-neutral-800/80 hover:bg-neutral-800 scale-95 opacity-80'
+                                        }`}
+                                    >
+                                        <div className={`text-lg font-black flex items-end tracking-tight ${isActive ? 'text-primary-500' : 'text-white'}`}>
+                                            {durationMins}<span className="text-[10px] font-bold ml-0.5 mb-1">min</span>
+                                        </div>
+                                        <div className="text-[10px] text-neutral-400 font-bold mt-0.5">
+                                            {distanceKms} km
+                                        </div>
+                                        <div className="text-[9px] font-bold text-neutral-500 mt-1 uppercase tracking-wider whitespace-nowrap overflow-hidden text-ellipsis w-full text-center">
+                                            {labelText}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+
+                    <div className={`flex items-center gap-2 p-2.5 shrink-0 ${!showSteps ? 'border-t border-neutral-800/50' : ''}`}>
                         {/* Google Maps Navigate button */}
                         <button
                             onClick={() => {
                                 if (!origin || !destination) return;
+                                const activeRoute = cachedRoutesData[cachedActiveRouteIndex];
+                                // Use basic origin/destination, let Google handle traffic-aware active route
                                 const params = `origin=${origin.lat},${origin.lng}&destination=${destination.lat},${destination.lng}&travelmode=driving&dir_action=navigate`;
                                 const webUrl = `https://www.google.com/maps/dir/?api=1&${params}`;
                                 const isAndroid = /android/i.test(navigator.userAgent);
@@ -515,9 +566,6 @@ const DrivingView = ({ onClose, fareData, onOpenLiveTracker }) => {
                                     <Navigation className="w-3 h-3 text-primary-400" />
                                 </div>
                                 <span className="text-xs font-bold text-white">Steps</span>
-                            </div>
-                            <div className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest bg-neutral-800 px-1.5 py-0.5 rounded">
-                                {showSteps ? 'Hide' : 'Show'}
                             </div>
                         </div>
                     </div>
