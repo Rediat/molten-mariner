@@ -316,9 +316,11 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
             const revenuePerKm = values.distance > 0 ? totalToCharge / values.distance : 0;
             const netGain = totalToCharge - totalFuelCost;
             const netGainPerKm = values.distance > 0 ? netGain / values.distance : 0;
-            const fuelPerKm = values.distance > 0 ? (totalFuelCost / values.distance) / actualFuelMultiplier : 0;
+            const fuelPerKm = values.distance > 0 ? (totalFuelCost / values.distance) / 2 : 0;
             const perHead = totalToCharge / 4;
-            const newResults = { totalFuelCost, reasonablePrice: basePrice, totalToCharge, waitTime, revenuePerKm, netGain, netGainPerKm, fuelPerKm, perHead };
+            const netGainSingle = totalToCharge - oneWayFuelCost;
+            const netGainRound = totalToCharge - totalFuelCost;
+            const newResults = { totalFuelCost, reasonablePrice: basePrice, totalToCharge, waitTime, revenuePerKm, netGain, netGainPerKm, fuelPerKm, perHead, netGainSingle, netGainRound };
             setResults(newResults);
             addToHistory('Ride', { ...values, mode: 'forward', roundTrip }, newResults);
         } else {
@@ -327,10 +329,12 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
             const netGain = totalToCharge - totalFuelCost;
             const perHead = totalToCharge / 4;
             const revenuePerKm = values.distance > 0 ? totalToCharge / values.distance : 0;
-            const fuelPerKm = values.distance > 0 ? (totalFuelCost / values.distance) / actualFuelMultiplier : 0;
+            const fuelPerKm = values.distance > 0 ? (totalFuelCost / values.distance) / 2 : 0;
             const netGainPerKm = values.distance > 0 ? netGain / values.distance : 0;
-            const serviceMultiplier = chargingFuelCost > 0 ? basePrice / chargingFuelCost : 0;
-            const newResults = { totalFuelCost, reasonablePrice: basePrice, totalToCharge, waitTime, revenuePerKm, netGain, netGainPerKm, fuelPerKm, perHead, serviceMultiplier };
+            const serviceMultiplier = chargingFuelCost > 0 ? (totalToCharge - waitTime) / chargingFuelCost : 0;
+            const netGainSingle = totalToCharge - oneWayFuelCost;
+            const netGainRound = totalToCharge - totalFuelCost;
+            const newResults = { totalFuelCost, reasonablePrice: basePrice, totalToCharge, waitTime, revenuePerKm, netGain, netGainPerKm, fuelPerKm, perHead, serviceMultiplier, netGainSingle, netGainRound };
             setResults(newResults);
             addToHistory('Ride', { ...values, priceToCharge, mode: 'reverse', roundTrip }, newResults);
         }
@@ -658,25 +662,25 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                         </div>
 
                         {/* Secondary metrics */}
-                        <div className={`grid ${mode === 'reverse' && results.serviceMultiplier !== undefined ? 'grid-cols-3' : 'grid-cols-2'} gap-1.5`}>
+                        <div className="grid grid-cols-2 gap-1.5">
                             <div className="bg-neutral-900/50 rounded-lg p-2">
                                 <p className="text-[8px] font-bold text-neutral-500 uppercase tracking-wider">Total Fuel Cost</p>
                                 <p className="text-base font-black text-amber-400">{formatNum(results.totalFuelCost)}</p>
                             </div>
                             <div className="bg-neutral-900/50 rounded-lg p-2">
                                 <p className="text-[8px] font-bold text-neutral-500 uppercase tracking-wider">Net Gain</p>
-                                <p className="text-base font-black text-emerald-400">{formatNum(results.netGain)}</p>
+                                <p className="text-base font-black text-emerald-400">
+                                    {!roundTrip ? (
+                                        <>{formatNum(results.netGainSingle)} <span className="text-neutral-500 font-medium">/</span> {formatNum(results.netGainRound)}</>
+                                    ) : (
+                                        formatNum(results.netGain)
+                                    )}
+                                </p>
                             </div>
-                            {mode === 'reverse' && results.serviceMultiplier !== undefined && (
-                                <div className="bg-neutral-900/50 rounded-lg p-2">
-                                    <p className="text-[8px] font-bold text-neutral-500 uppercase tracking-wider">Implied Mult</p>
-                                    <p className="text-base font-black text-white">{results.serviceMultiplier.toFixed(2)}x</p>
-                                </div>
-                            )}
                         </div>
 
                         {/* Per-km breakdown */}
-                        <div className="grid grid-cols-3 gap-1.5 pt-1.5 border-t border-neutral-700/50">
+                        <div className={`grid ${mode === 'reverse' && results.serviceMultiplier !== undefined ? 'grid-cols-4' : 'grid-cols-3'} gap-1.5 pt-1.5 border-t border-neutral-700/50`}>
                             <div>
                                 <p className="text-[8px] font-bold text-neutral-500 uppercase">Fuel / Km</p>
                                 <p className="text-[10px] font-bold text-white">{formatNum(results.fuelPerKm)}</p>
@@ -689,6 +693,12 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                                 <p className="text-[8px] font-bold text-neutral-500 uppercase">Gain / Km</p>
                                 <p className="text-[10px] font-bold text-white">{formatNum(results.netGainPerKm)}</p>
                             </div>
+                            {mode === 'reverse' && results.serviceMultiplier !== undefined && (
+                                <div>
+                                    <p className="text-[8px] font-bold text-neutral-500 uppercase">Implied Mult</p>
+                                    <p className="text-[10px] font-bold text-white">{results.serviceMultiplier.toFixed(2)}x</p>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )
