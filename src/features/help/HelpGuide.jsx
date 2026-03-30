@@ -212,6 +212,12 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                     <strong>Advanced Mode:</strong> Click the gear icon to set different payment frequency (P/Y)
                     and compounding frequency (C/Y) when they differ.
                 </InfoBox>
+
+                <InfoBox type="tip">
+                    <strong>Quick Clear:</strong> Click on any field's <strong>label</strong> 
+                    (e.g., "PV") or its <strong>X icon</strong> to instantly clear it and focus the input. 
+                    Empty fields default to 0 only when you click away (blur).
+                </InfoBox>
             </HelpSection>
 
             {/* Goal Planner */}
@@ -686,6 +692,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                     <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Google Maps Integration:</p>
                     <FieldList fields={[
                         { name: 'From / To', description: 'Type an address and select from autocomplete suggestions. Locations are restricted to Ethiopia.' },
+                        { name: 'Quick Clear', description: 'Click the Map Pin icon in the From/To fields to instantly clear the location and focus the input' },
                         { name: 'Auto-Distance', description: 'When both From and To are selected, the driving distance and estimated travel time are fetched automatically via the Distance Matrix API' },
                         { name: '✓ Google Maps', description: 'A green indicator confirms the distance was auto-populated from Google Maps. You can still override it manually.' },
                         { name: '⇅ Swap Button', description: 'Click the swap icon between From and To fields to instantly reverse your origin and destination.' },
@@ -697,11 +704,25 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                     <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Map & Driving View:</p>
                     <FieldList fields={[
                         { name: 'View Map & Alternate Routes', description: 'Appears when both From and To are populated. Opens a full-screen interactive map overlay directly within the Ride tab.' },
-                        { name: 'Traffic-Aware Routing', description: 'Routes are fetched using the Google Routes API v2 with TRAFFIC_AWARE preference. Polylines are color-coded: blue (normal), yellow (slow), red (traffic jam).' },
-                        { name: 'Alternative Routes', description: 'When available, alternative routes are displayed as grey lines on the map. Tap any grey line to switch to that route.' },
-                        { name: 'Route Sync', description: 'Selecting a route on the map automatically updates the distance and travel time in the fare calculator — no need to re-enter values.' },
-                        { name: 'Turn-by-Turn Steps', description: 'An expandable bottom sheet on the map view shows step-by-step navigation directions with distance and time for each step.' },
-                        { name: '← Back Button', description: 'Press the back arrow on the map overlay to return to the fare calculator with your selected route data preserved.' }
+                        { name: 'Traffic-Aware Routing', description: 'Routes are color-coded: blue (normal), yellow (slow), red (traffic jam).' },
+                        { name: 'Alternative Routes', description: 'Up to 3 routes are shown with labels like Suggested, Shortest, Fastest, or Economical. Grey lines on the map indicate alternate paths — tap any to switch routes.' },
+                        { name: 'Navigate Button', description: 'Opens your selected route directly in the Google Maps app (Android) or browser for turn-by-turn navigation.' },
+                        { name: 'SMS Button', description: 'Generates a professional trip summary message (for the passenger) with fare, distance, and payment options (TeleBirr, CBE, or Cash).' },
+                        { name: 'Live Button', description: 'Opens the Live Fare Tracker for real-time GPS tracking (see below).' },
+                        { name: 'Turn-by-Turn Steps', description: 'An expandable bottom sheet shows step-by-step navigation directions.' },
+                        { name: '← Back Button', description: 'Return to the calculator with your selected route data preserved.' }
+                    ]} />
+                </div>
+
+                <div className="pt-2">
+                    <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Live Fare Tracker (GPS):</p>
+                    <p className="text-xs mb-2">Track your trip in real-time using your device's GPS. Perfect for verifying distances and calculating fares on the go.</p>
+                    <FieldList fields={[
+                        { name: 'Start Tracking', description: 'Begins recording distance and wait time. Your location must be enabled.' },
+                        { name: 'Wait Time Detection', description: 'Automatically detects when the vehicle is moving below 5 km/h to accumulate wait time charges.' },
+                        { name: 'Running Fare', description: 'A large, live display of the fare, updated every second based on distance and wait time.' },
+                        { name: 'GPS Accuracy', description: 'A real-time indicator (± meters) shows the reliability of your GPS fix.' },
+                        { name: 'Trip Summary', description: 'When stopped, view a complete breakdown of distance, duration, avg speed, and net gain.' }
                     ]} />
                 </div>
 
@@ -728,12 +749,11 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                         { name: 'Wait Time Charge', description: 'Total charge for wait time — estimated travel time + 10% buffer, multiplied by the Wait Multiplier. Added to the fare. Only shown when using Google Maps route.' },
                         { name: 'Total to Charge', description: 'The recommended fare (forward mode) or the entered fare (reverse mode), including wait time charge' },
                         { name: 'Per Head', description: 'Price divided by 4 passengers for cost-sharing' },
-                        { name: 'Total Fuel Cost', description: 'Distance × Mileage × Fuel Cost per Liter (always calculated as round-trip for true out-of-pocket cost)' },
-                        { name: 'Net Gain', description: 'Total to Charge minus Total Fuel Cost' },
-                        { name: 'Fuel / Km', description: 'Fuel cost per kilometer (one-way)' },
+                        { name: 'Fuel Cost', description: 'Distance × Mileage × Fuel Cost per Liter (always shown as round-trip for true out-of-pocket cost)' },
+                        { name: 'Net Gain', description: 'Total to Charge minus Total Fuel Cost. Displayed as (One-way / Round-trip) for better comparison.' },
                         { name: 'Revenue / Km', description: 'Total to Charge per kilometer' },
                         { name: 'Gain / Km', description: 'Net Gain per kilometer' },
-                        { name: 'Implied Service Multiplier', description: 'In reverse mode, shows what multiplier the entered fare represents' }
+                        { name: 'Service ×', description: 'In reverse mode, shows what service multiplier the entered fare represents.' }
                     ]} />
                 </div>
 
