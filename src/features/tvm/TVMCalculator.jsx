@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { calculateTVM } from '../../utils/financial-utils';
 import { useHistory } from '../../context/HistoryContext';
-import { Settings2, Info, HelpCircle, Trash2, Settings, History } from 'lucide-react';
+import { Settings2, Info, HelpCircle, Trash2, Settings, History, X } from 'lucide-react';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
 import { CalculateIcon } from '../../components/Icons';
 import HistoryOverlay from '../../components/HistoryOverlay';
+import { useRef } from 'react';
 
 // Constants
 const FREQUENCIES = [
@@ -64,34 +65,68 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
     const [totalInterest, setTotalInterest] = useState(0);
     const [showHistory, setShowHistory] = useState(false);
 
+    // Refs for each input field to support focusing after "Clear on Label"
+    const inputRefs = {
+        n: useRef(null),
+        i: useRef(null),
+        pv: useRef(null),
+        pmt: useRef(null),
+        fv: useRef(null),
+        totalInterest: useRef(null),
+    };
+
+    const clearField = (fieldId) => {
+        if (fieldId === 'totalInterest') {
+            setTotalInterest(null);
+        } else if (fieldId === 'totalPMT') {
+            return; // Read-only
+        } else {
+            setValues(prev => ({ ...prev, [fieldId]: null }));
+        }
+        setCalculatedValue(null);
+        
+        // Focus the input
+        setTimeout(() => {
+            inputRefs[fieldId]?.current?.focus();
+        }, 0);
+    };
+
     // Determine effective sign for TI based on context
     const getEffectiveTI = (ti, calcValues, targetField) => {
-        let effectiveTI = ti;
+        let effectiveTI = ti || 0;
+        const pv = calcValues.pv || 0;
+        const pmt = calcValues.pmt || 0;
+
         if (targetField !== 'pv' && targetField !== 'pmt') {
-            if (calcValues.pv > 0 && ti > 0) effectiveTI = -ti;
-        } else if (calcValues.pmt < 0 && ti > 0) {
-            effectiveTI = -ti;
+            if (pv > 0 && effectiveTI > 0) effectiveTI = -effectiveTI;
+        } else if (pmt < 0 && effectiveTI > 0) {
+            effectiveTI = -effectiveTI;
         }
         return effectiveTI;
     };
 
     // Solve for PV or PMT using TI constraint
     const solveWithTIConstraint = (targetField, calcValues, effectiveTI, effectiveCY) => {
-        const rPeriodic = (calcValues.i / 100) / effectiveCY;
-        const { termPV, termPMT } = calcTVMFactors(rPeriodic, calcValues.n, mode === 'BEGIN');
+        const rate = calcValues.i || 0;
+        const n = calcValues.n || 0;
+        const pmt = calcValues.pmt || 0;
+        const pv = calcValues.pv || 0;
+
+        const rPeriodic = (rate / 100) / effectiveCY;
+        const { termPV, termPMT } = calcTVMFactors(rPeriodic, n, mode === 'BEGIN');
 
         if (targetField === 'pv') {
             if (Math.abs(termPV) > 1e-9) {
-                return (effectiveTI - calcValues.pmt * termPMT) / termPV;
+                return (effectiveTI - pmt * termPMT) / termPV;
             }
             return 0;
         }
 
         if (targetField === 'pmt') {
             let ti = effectiveTI;
-            if (calcValues.pv > 0 && ti > 0) ti = -ti;
+            if (pv > 0 && ti > 0) ti = -ti;
             if (Math.abs(termPMT) > 1e-9) {
-                return (ti - calcValues.pv * termPV) / termPMT;
+                return (ti - pv * termPV) / termPMT;
             }
             return 0;
         }
@@ -112,29 +147,51 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
                 if (target === 'pv' || target === 'pmt') {
                     result = solveWithTIConstraint(target, calcValues, effectiveTI, effectiveCY);
                     calcValues[target] = result;
-                    calcValues.fv = effectiveTI - calcValues.pv - calcValues.pmt * calcValues.n;
+                    calcValues.fv = effectiveTI - (calcValues.pv || 0) - (calcValues.pmt || 0) * (calcValues.n || 0);
                 } else {
                     // Target is I, N, or FV - derive PMT or FV to satisfy TI
-                    const adjustedTI = calcValues.pv > 0 && effectiveTI > 0 ? -effectiveTI : effectiveTI;
+                    const adjustedTI = (calcValues.pv || 0) > 0 && effectiveTI > 0 ? -effectiveTI : effectiveTI;
 
-                    if (Math.abs(calcValues.fv) < 0.01 && calcValues.n !== 0) {
-                        calcValues.pmt = (adjustedTI - calcValues.pv - calcValues.fv) / calcValues.n;
+                    if (Math.abs(calcValues.fv || 0) < 0.01 && (calcValues.n || 0) !== 0) {
+                        calcValues.pmt = (adjustedTI - (calcValues.pv || 0) - (calcValues.fv || 0)) / calcValues.n;
                         setValues(prev => ({ ...prev, pmt: parseFloat(calcValues.pmt.toFixed(2)) }));
                     } else {
-                        calcValues.fv = adjustedTI - calcValues.pv - calcValues.pmt * calcValues.n;
+                        calcValues.fv = adjustedTI - (calcValues.pv || 0) - (calcValues.pmt || 0) * (calcValues.n || 0);
                         setValues(prev => ({ ...prev, fv: parseFloat(calcValues.fv.toFixed(2)) }));
                     }
-                    result = calculateTVM(target, calcValues, mode, frequency, interestType, effectiveCY);
+                    // Sanitize for calculateTVM
+                    const sanitized = {
+                        n: calcValues.n || 0,
+                        i: calcValues.i || 0,
+                        pv: calcValues.pv || 0,
+                        pmt: calcValues.pmt || 0,
+                        fv: calcValues.fv || 0
+                    };
+                    result = calculateTVM(target, sanitized, mode, frequency, interestType, effectiveCY);
                 }
             } else if (target === 'totalInterest') {
                 // Calculate PMT first if needed
-                if (Math.abs(calcValues.pmt) < 0.01) {
-                    calcValues.pmt = calculateTVM('pmt', calcValues, mode, frequency, interestType, effectiveCY);
+                if (Math.abs(calcValues.pmt || 0) < 0.01) {
+                    const sanitized = {
+                        n: calcValues.n || 0,
+                        i: calcValues.i || 0,
+                        pv: calcValues.pv || 0,
+                        pmt: calcValues.pmt || 0,
+                        fv: calcValues.fv || 0
+                    };
+                    calcValues.pmt = calculateTVM('pmt', sanitized, mode, frequency, interestType, effectiveCY);
                     setValues(prev => ({ ...prev, pmt: parseFloat(calcValues.pmt.toFixed(2)) }));
                 }
-                result = calcValues.pv + calcValues.pmt * calcValues.n + calcValues.fv;
+                result = (calcValues.pv || 0) + (calcValues.pmt || 0) * (calcValues.n || 0) + (calcValues.fv || 0);
             } else {
-                result = calculateTVM(target, calcValues, mode, frequency, interestType, effectiveCY);
+                const sanitized = {
+                    n: calcValues.n || 0,
+                    i: calcValues.i || 0,
+                    pv: calcValues.pv || 0,
+                    pmt: calcValues.pmt || 0,
+                    fv: calcValues.fv || 0
+                };
+                result = calculateTVM(target, sanitized, mode, frequency, interestType, effectiveCY);
             }
 
             // Update state
@@ -151,7 +208,7 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
                     { pmt: calcValues.pmt, totalInterest: result });
             } else {
                 const finalValues = { ...calcValues, [target]: result };
-                const currentInterest = finalValues.pv + finalValues.pmt * finalValues.n + finalValues.fv;
+                const currentInterest = (finalValues.pv || 0) + (finalValues.pmt || 0) * (finalValues.n || 0) + (finalValues.fv || 0);
                 setTotalInterest(currentInterest);
                 setValues(prev => ({ ...prev, [target]: parseFloat(result.toFixed(6)) }));
                 addToHistory('TVM', { ...calcValues, mode, target, frequency, compoundingFrequency: effectiveCY, interestType },
@@ -164,9 +221,11 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
 
     const handleChange = (field, val) => {
         const cleanVal = typeof val === 'string' ? val.replace(/,/g, '') : val;
-        let numericVal = parseFloat(cleanVal) || 0;
+        // Allow null for empty strings during editing
+        let numericVal = cleanVal === '' ? null : parseFloat(cleanVal);
+        if (numericVal !== null && isNaN(numericVal)) numericVal = 0;
 
-        if (field === 'n' && nMode === 'YEARS') {
+        if (numericVal !== null && field === 'n' && nMode === 'YEARS') {
             numericVal *= frequency;
         }
 
@@ -176,8 +235,9 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
 
     const handleInterestInput = (val) => {
         const cleanVal = typeof val === 'string' ? val.replace(/,/g, '') : val;
-        const newInterest = parseFloat(cleanVal);
-        setTotalInterest(isNaN(newInterest) ? 0 : newInterest);
+        // Allow null for empty strings during editing
+        const newInterest = (cleanVal === '' || cleanVal === '-') ? null : parseFloat(cleanVal);
+        setTotalInterest(newInterest);
         setCalculatedValue(null);
     };
 
@@ -193,15 +253,20 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
     };
 
     const getDisplayValue = (field) => {
-        if (field === 'n' && nMode === 'YEARS') return values.n / frequency;
+        if (field === 'n' && nMode === 'YEARS') {
+            return values.n === null ? null : values.n / frequency;
+        }
         if (field === 'totalInterest') return totalInterest;
         if (field === 'totalPMT') return totalPMT;
         return values[field];
     };
 
     // Calculate Total PMT - when PV and PMT have different signs, use only PMT × N
-    const pvPmtDifferentSigns = (values.pv > 0 && values.pmt < 0) || (values.pv < 0 && values.pmt > 0);
-    const totalPMT = pvPmtDifferentSigns ? (values.pmt * values.n) : (values.pv + (values.pmt * values.n));
+    const pv = values.pv || 0;
+    const pmt = values.pmt || 0;
+    const n = values.n || 0;
+    const pvPmtDifferentSigns = (pv > 0 && pmt < 0) || (pv < 0 && pmt > 0);
+    const totalPMT = pvPmtDifferentSigns ? (pmt * n) : (pv + (pmt * n));
 
     // Field definitions
     const fields = [
@@ -318,11 +383,15 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
                         <div className="flex justify-between items-center gap-4">
                             <div className="flex flex-col items-start text-left">
                                 <div className="flex items-center gap-2">
-                                    <label className={`text-sm font-bold transition-colors ${field.isReadOnly ? 'text-neutral-500' : target === field.id ? 'text-primary-400' : 'text-neutral-300'}`}>
+                                    <label 
+                                        onClick={() => !field.isReadOnly && clearField(field.id)}
+                                        className={`text-sm font-bold transition-colors ${field.isReadOnly ? 'text-neutral-500' : 'cursor-pointer hover:text-white'} ${!field.isReadOnly && target === field.id ? 'text-primary-400' : 'text-neutral-300'}`}
+                                        title={!field.isReadOnly ? "Click to Clear" : ""}
+                                    >
                                         {field.label}
-                                        {field.id === 'totalInterest' && totalInterest !== 0 && (values.fv || values.pv) !== 0 && (
+                                        {field.id === 'totalInterest' && totalInterest !== 0 && totalInterest !== null && ((values.fv || 0) || (values.pv || 0)) !== 0 && (
                                             <span className="text-[#00ff00] ml-1 text-xs">
-                                                ({Math.abs((totalInterest / (values.fv || values.pv)) * 100).toFixed(2)}% of {values.fv ? 'FV' : 'PV'})
+                                                ({Math.abs((totalInterest / ((values.fv || 0) || (values.pv || 0))) * 100).toFixed(2)}% of {values.fv ? 'FV' : 'PV'})
                                             </span>
                                         )}
                                     </label>
@@ -337,26 +406,38 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
                                 </div>
                                 <span className="text-[9px] uppercase tracking-tighter text-neutral-500 font-bold">{field.sub}</span>
                             </div>
-                            <div className="relative flex-1">
-                                {field.isReadOnly ? (
-                                    <span className="block text-right text-lg font-mono text-neutral-400 w-full">
-                                        {getDisplayValue(field.id)?.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                    </span>
-                                ) : target === field.id && calculatedValue === null ? (
-                                    <span className="text-neutral-600 italic text-xs font-bold px-2">CALC...</span>
-                                ) : target === field.id && calculatedValue === 'INVALID_SIGN' ? (
-                                    <span className="text-red-400 text-[10px] leading-tight font-bold text-right w-full block">PV/PMT and FV can't have the same sign.</span>
-                                ) : target === field.id && (calculatedValue === "Error" || (typeof calculatedValue === 'number' && isNaN(calculatedValue))) ? (
-                                    <span className="text-red-400 italic text-xs font-bold px-2">Error</span>
-                                ) : (
-                                    <FormattedNumberInput
-                                        value={getDisplayValue(field.id)}
-                                        onChange={(e) => field.id === 'totalInterest' ? handleInterestInput(e.target.value) : handleChange(field.id, e.target.value)}
-                                        decimals={field.id === 'n' ? 0 : 2}
-                                        forceFixedOnFocus={field.id === 'totalInterest'}
-                                        className={`bg-transparent text-right text-lg font-mono focus:outline-none w-full placeholder-neutral-700 transition-colors ${target === field.id ? 'text-primary-400 font-black' : 'text-white'}`}
-                                        placeholder="0"
-                                    />
+                            <div className="relative flex-1 flex items-center justify-end gap-2">
+                                <div className="flex-1">
+                                    {field.isReadOnly ? (
+                                        <span className="block text-right text-lg font-mono text-neutral-400 w-full">
+                                            {getDisplayValue(field.id)?.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                        </span>
+                                    ) : target === field.id && calculatedValue === null ? (
+                                        <span className="text-neutral-600 italic text-xs font-bold px-2">CALC...</span>
+                                    ) : target === field.id && calculatedValue === 'INVALID_SIGN' ? (
+                                        <span className="text-red-400 text-[10px] leading-tight font-bold text-right w-full block">PV/PMT and FV can't have the same sign.</span>
+                                    ) : target === field.id && (calculatedValue === "Error" || (typeof calculatedValue === 'number' && isNaN(calculatedValue))) ? (
+                                        <span className="text-red-400 italic text-xs font-bold px-2">Error</span>
+                                    ) : (
+                                        <FormattedNumberInput
+                                            ref={inputRefs[field.id]}
+                                            value={getDisplayValue(field.id)}
+                                            onChange={(e) => field.id === 'totalInterest' ? handleInterestInput(e.target.value) : handleChange(field.id, e.target.value)}
+                                            decimals={field.id === 'n' ? 0 : 2}
+                                            forceFixedOnFocus={field.id === 'totalInterest'}
+                                            className={`bg-transparent text-right text-lg font-mono focus:outline-none w-full placeholder-neutral-700 transition-colors ${target === field.id ? 'text-primary-400 font-black' : 'text-white'}`}
+                                            placeholder="0"
+                                        />
+                                    )}
+                                </div>
+                                {!field.isReadOnly && (
+                                    <button
+                                        onClick={() => clearField(field.id)}
+                                        className="p-1 rounded-full text-neutral-600 hover:text-red-400 hover:bg-red-400/10 transition-all opacity-0 group-hover:opacity-100"
+                                        title="Clear Field"
+                                    >
+                                        <X size={14} />
+                                    </button>
                                 )}
                             </div>
                         </div>
