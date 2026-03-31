@@ -89,8 +89,8 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
                 <div className="bg-gradient-to-r from-primary-900/30 to-neutral-800/50 border border-primary-500/30 rounded-xl p-3 mb-4 text-xs text-neutral-300 text-left">
                     <p className="font-bold text-primary-400 mb-1">Treasury Bill Calculator</p>
                     <p className="text-[11px] leading-relaxed">
-                        Calculate T-Bill purchase price using discount pricing. Enter face value, tenure,
-                        and discount rate to determine your total investment including brokerage fees.
+                        Calculate T-Bill purchase price and effective yield (including brokerage) using discount 
+                        pricing. Enter face value, tenure, and discount rate to determine your total investment.
                     </p>
                 </div>
             )}

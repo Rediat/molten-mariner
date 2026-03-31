@@ -651,7 +651,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                         { name: 'Maturity Date', description: 'Date when the T-Bill matures' },
                         { name: 'Discount', description: 'Difference between face value and purchase price' },
                         { name: 'Net Return', description: 'Your actual profit after brokerage (face value - total consideration)' },
-                        { name: 'Effective Yield', description: 'Annualized return on your investment' }
+                        { name: 'Effective Yield', description: 'Annualized return on your total investment (including brokerage)' }
                     ]} />
                 </div>
 
@@ -661,8 +661,9 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                 </InfoBox>
 
                 <InfoBox type="tip">
-                    <strong>Compare Effective Yield:</strong> The effective yield shows your actual annualized return,
-                    which is typically higher than the discount rate due to the discount pricing method.
+                    <strong>Compare Effective Yield:</strong> The effective yield shows your actual annualized return
+                    considering the total amount paid (purchase price + brokerage). It's typically higher than
+                    the discount rate due to the discount pricing method.
                 </InfoBox>
             </HelpSection>
 
