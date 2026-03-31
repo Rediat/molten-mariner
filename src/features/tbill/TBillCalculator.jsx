@@ -39,9 +39,10 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
         const totalConsideration = purchasePrice + brokerage;
         const maturityDate = calculateMaturityDate(issueDate, tenure);
 
-        // Calculate effective yield
+        // Calculate effective yield considering brokerage (Total Consideration)
         const discountAmount = faceValue - purchasePrice;
-        const effectiveYield = (discountAmount / purchasePrice) * (365 / tenure) * 100;
+        const netReturn = faceValue - totalConsideration;
+        const effectiveYield = (netReturn / totalConsideration) * (365 / tenure) * 100;
 
         const res = {
             maturityDate,
@@ -50,7 +51,7 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
             totalConsideration,
             discountAmount,
             effectiveYield,
-            netReturn: faceValue - totalConsideration
+            netReturn
         };
 
         setResult(res);
