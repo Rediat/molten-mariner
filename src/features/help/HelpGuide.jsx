@@ -731,7 +731,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                     <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Inputs:</p>
                     <FieldList fields={[
                         { name: 'Distance (Km)', description: 'Trip distance — auto-filled from Maps or the Driving view, or entered manually' },
-                        { name: 'Fuel Cost / L', description: 'Current price of fuel per liter (default 135 ETB)' },
+                        { name: 'Fuel Cost / L', description: 'Current price of fuel per liter (default 145 ETB)' },
                         { name: '1× / 2× Toggle', description: 'Switch between one-way and round-trip fare calculation. Round-trip doubles the fuel cost component of the fare.' },
                         { name: 'Wait Multiplier', description: 'Factor applied to estimated travel time (+10% buffer) to calculate total charge for wait time (default 2.5)' },
                         { name: 'Service Multiplier', description: 'Multiplier for maintenance, time, and profit (range: 2.55 – 4.5×, default 3×). Only in Inputs → Price mode.' },

@@ -12,7 +12,7 @@ import LiveFareTracker from '../driving/LiveFareTracker';
 const DEFAULT_VALUES = {
     distance: 15,
     mileage: 0.1,
-    costPerLiter: 135,
+    costPerLiter: 145,
     serviceMultiplier: 3
 };
 
@@ -562,7 +562,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                         onChange={(e) => handleChange('costPerLiter', e.target.value)}
                         decimals={2}
                         className="bg-transparent text-right text-lg font-mono focus:outline-none text-white w-full"
-                        placeholder="135.00"
+                        placeholder="145.00"
                     />
                     <span className="text-[8px] uppercase tracking-wider text-neutral-600 font-bold block">Current Price</span>
                 </div>

@@ -43,7 +43,7 @@ const LiveFareTracker = ({ isVisible, onClose, fareData }) => {
 
     // Fare parameters from parent (with defaults)
     const mileage = fareData?.mileage ?? 0.10; // L/km
-    const costPerLiter = fareData?.costPerLiter ?? 135;
+    const costPerLiter = fareData?.costPerLiter ?? 145;
     const serviceMultiplier = fareData?.serviceMultiplier ?? 3;
     const waitMultiplier = fareData?.waitMultiplier ?? 2.5;
 
