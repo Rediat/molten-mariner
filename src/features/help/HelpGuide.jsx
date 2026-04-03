@@ -645,7 +645,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                     <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Inputs:</p>
                     <FieldList fields={[
                         { name: 'Face Value / Budget', description: 'Face value (forward mode) or total budget (reverse mode) — the primary input swaps based on selected mode' },
-                        { name: 'Tenure', description: 'Duration of the T-Bill (28, 91, 182, or 364 days)' },
+                        { name: 'Tenure', description: 'T-Bill duration (28, 91, 182, or 364 days), labeled with approximate periods: 1, 3, 6 months and 1 year' },
                         { name: 'Discount Rate', description: 'Annual discount rate used to calculate purchase price' },
                         { name: 'Brokerage %', description: 'Commission percentage charged by your broker' },
                         { name: 'Issue Date', description: 'The date when the T-Bill is issued' }

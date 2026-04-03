@@ -6,10 +6,10 @@ import { CalculateIcon } from '../../components/Icons';
 import HistoryOverlay from '../../components/HistoryOverlay';
 
 const TENURES = [
-    { days: 28, label: '28 Days' },
-    { days: 91, label: '91 Days' },
-    { days: 182, label: '182 Days' },
-    { days: 364, label: '364 Days' },
+    { days: 28, label: '28 Days', sub: '1 Month' },
+    { days: 91, label: '91 Days', sub: '3 Months' },
+    { days: 182, label: '182 Days', sub: '6 Months' },
+    { days: 364, label: '364 Days', sub: '1 Year' },
 ];
 
 const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
@@ -217,12 +217,15 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
                             <button
                                 key={t.days}
                                 onClick={() => setTenure(t.days)}
-                                className={`py-2 px-2 rounded-lg text-xs font-bold transition-all ${tenure === t.days
+                                className={`py-1.5 px-1 rounded-lg transition-all flex flex-col items-center justify-center gap-0.5 ${tenure === t.days
                                     ? 'bg-primary-600/20 text-primary-400 ring-1 ring-primary-500/50'
                                     : 'bg-neutral-900/50 text-neutral-500 hover:bg-neutral-900'
                                     }`}
                             >
-                                {t.days}
+                                <span className="text-sm font-black leading-none">{t.days}</span>
+                                <span className={`text-[8px] font-bold uppercase tracking-tight ${tenure === t.days ? 'text-primary-400/80' : 'text-neutral-500'}`}>
+                                    {t.sub}
+                                </span>
                             </button>
                         ))}
                     </div>
