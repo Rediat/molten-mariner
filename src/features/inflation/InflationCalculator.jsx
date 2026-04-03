@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { TrendingUp, Info, HelpCircle, Trash2, Settings, History, ChevronDown, ChevronUp } from 'lucide-react';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
 import { CalculateIcon } from '../../components/Icons';
@@ -22,6 +22,15 @@ const InflationCalculator = ({ toggleHelp, toggleSettings }) => {
     const [showHistory, setShowHistory] = useState(false);
     const [showPrediction, setShowPrediction] = useState(false);
     const [showInterpretation, setShowInterpretation] = useState(false);
+
+    // Refs for input focus
+    const amountRef = useRef(null);
+
+    const clearAmount = () => {
+        setAmount(null);
+        setResult(null);
+        setTimeout(() => amountRef.current?.focus(), 0);
+    };
 
     // Auto ARIMA: selects best (p,d,q) via AIC
     const { predictions, modelInfo } = useMemo(() => {
@@ -91,21 +100,22 @@ const InflationCalculator = ({ toggleHelp, toggleSettings }) => {
             }
         }
 
-        const adjustedValue = amount * cumulativeMultiplier;
+        const amt = amount || 0;
+        const adjustedValue = amt * cumulativeMultiplier;
         const cumulativeRate = (cumulativeMultiplier - 1) * 100;
         const avgAnnualRate = yearlyBreakdown.length > 0
             ? (Math.pow(cumulativeMultiplier, 1 / yearlyBreakdown.length) - 1) * 100
             : 0;
 
         // Purchasing power: how much would you need today to match the amount from startYear
-        const purchasingPower = amount / cumulativeMultiplier;
+        const purchasingPower = amt / cumulativeMultiplier;
 
         const isPredicted = yearlyBreakdown.some(yb => yb.predicted);
 
         const res = {
             startYear: sYear,
             endYear: eYear,
-            amount,
+            amount: amt,
             adjustedValue,
             cumulativeRate,
             avgAnnualRate,
@@ -115,7 +125,7 @@ const InflationCalculator = ({ toggleHelp, toggleSettings }) => {
         };
 
         setResult(res);
-        addToHistory('INFLATION', { startYear: sYear, endYear: eYear, amount }, res);
+        addToHistory('INFLATION', { startYear: sYear, endYear: eYear, amount: amt }, res);
     };
 
     const handleClear = () => {
@@ -299,12 +309,23 @@ const InflationCalculator = ({ toggleHelp, toggleSettings }) => {
                     <div className="bg-neutral-800/40 rounded-xl p-2.5 border border-primary-500/50 ring-1 ring-primary-500/10">
                         <div className="flex justify-between items-center gap-2 min-w-0">
                             <div className="shrink-0">
-                                <label className="text-sm font-bold text-primary-400 block leading-tight text-left">Amount (Birr)</label>
+                                <label 
+                                    onClick={clearAmount}
+                                    className="text-sm font-bold text-primary-400 block leading-tight text-left cursor-pointer hover:text-white transition-colors"
+                                    title="Click to Clear"
+                                >
+                                    Amount (Birr)
+                                </label>
                                 <span className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold text-left block">Value in Start Year</span>
                             </div>
                             <FormattedNumberInput
+                                ref={amountRef}
                                 value={amount}
-                                onChange={(e) => setAmount(parseFloat(e.target.value.replace(/,/g, '')) || 0)}
+                                onChange={(e) => {
+                                    const val = e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0);
+                                    setAmount(val);
+                                    setResult(null);
+                                }}
                                 decimals={2}
                                 className="bg-transparent text-right text-lg font-mono focus:outline-none text-primary-400 font-black min-w-0 flex-1"
                                 placeholder="1,000"

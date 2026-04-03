@@ -215,8 +215,9 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
 
                 <InfoBox type="tip">
                     <strong>Quick Clear:</strong> Click on any field's <strong>label</strong> 
-                    (e.g., "PV") or its <strong>X icon</strong> to instantly clear it and focus the input. 
-                    Empty fields default to 0 only when you click away (blur).
+                    (e.g., "PV") to instantly clear it and focus the input. 
+                    The field remains blank while you are typing and only defaults to 0 
+                    when you leave the field (blur) without entering a value.
                 </InfoBox>
             </HelpSection>
 
@@ -978,7 +979,15 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
             >
                 <div className="space-y-3">
                     <InfoBox type="tip">
-                        <strong>Clear Button:</strong> Use the CLR button to reset all fields to zero before starting a new calculation.
+                        <strong>Click Label to Clear:</strong> Standardized interaction across all calculators!
+                        Click any input field's <strong>label</strong> to instantly clear it and focus the 
+                        input. The field stays blank while focused and only defaults to 0 when you 
+                        leave the field (blur) without entering data. (Note: Date and Location fields are excluded).
+                    </InfoBox>
+
+                    <InfoBox type="tip">
+                        <strong>Clear Button:</strong> Use the CLR button at the bottom to reset <strong>all</strong> fields 
+                        to their default values at once.
                     </InfoBox>
 
                     <InfoBox type="tip">

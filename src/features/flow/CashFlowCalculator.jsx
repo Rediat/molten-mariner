@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { calculateNPV, calculateIRR, calculateMIRR, calculatePaybackPeriod, calculateDiscountedPaybackPeriod, calculateProfitabilityIndex } from '../../utils/financial-utils';
 import { useHistory } from '../../context/HistoryContext';
 import { Plus, Trash2, Info, HelpCircle, Settings, History } from 'lucide-react';
@@ -15,23 +15,47 @@ const CashFlowCalculator = ({ toggleHelp, toggleSettings }) => {
     const [showExplanation, setShowExplanation] = useState(false);
     const [showHistory, setShowHistory] = useState(false);
 
+    // Refs for input focus
+    const rateRef = useRef(null);
+    const reinvestRateRef = useRef(null);
+    const flowRefs = useRef([]);
+
+    const clearRate = (setter, ref) => {
+        setter(null);
+        setResult(null);
+        setTimeout(() => ref.current?.focus(), 0);
+    };
+
+    const clearFlow = (index) => {
+        const newFlows = [...flows];
+        newFlows[index] = null;
+        setFlows(newFlows);
+        setResult(null);
+        setTimeout(() => flowRefs.current[index]?.focus(), 0);
+    };
+
     const handleCalculate = () => {
+        const r = rate || 0;
+        const rr = reinvestRate || 0;
+        const cleanFlows = flows.map(f => f || 0);
+
         const res = {
-            npv: calculateNPV(rate, flows),
-            irr: calculateIRR(flows),
-            mirr: calculateMIRR(flows, rate, reinvestRate),
-            payback: calculatePaybackPeriod(flows),
-            discountedPayback: calculateDiscountedPaybackPeriod(flows, rate),
-            pi: calculateProfitabilityIndex(flows, rate)
+            npv: calculateNPV(r, cleanFlows),
+            irr: calculateIRR(cleanFlows),
+            mirr: calculateMIRR(cleanFlows, r, rr),
+            payback: calculatePaybackPeriod(cleanFlows),
+            discountedPayback: calculateDiscountedPaybackPeriod(cleanFlows, r),
+            pi: calculateProfitabilityIndex(cleanFlows, r)
         };
         setResult(res);
-        addToHistory('FLOW', { rate, reinvestRate, flows: flows.join(', ') }, res);
+        addToHistory('FLOW', { rate: r, reinvestRate: rr, flows: cleanFlows.join(', ') }, res);
     };
 
     const updateFlow = (index, val) => {
         const newFlows = [...flows];
-        newFlows[index] = parseFloat(val) || 0;
+        newFlows[index] = val === '' ? null : (parseFloat(val.replace(/,/g, '')) || 0);
         setFlows(newFlows);
+        setResult(null);
     };
 
     const formatYear = (val) => val === null ? 'Never' : `${val.toFixed(2)} Years`;
@@ -62,25 +86,64 @@ const CashFlowCalculator = ({ toggleHelp, toggleSettings }) => {
             )}
 
             <div className="bg-neutral-800/50 p-4 rounded-xl mb-4 grid grid-cols-2 gap-4">
-                {[{ label: 'Finance Rate (%)', value: rate, setter: setRate, color: 'primary' },
-                { label: 'Reinvest Rate (%)', value: reinvestRate, setter: setReinvestRate, color: 'secondary' }].map(item => (
-                    <div key={item.label} className="flex flex-col gap-1 items-start text-left">
-                        <label className="font-bold text-neutral-300 text-xs uppercase tracking-wide">{item.label}</label>
-                        <FormattedNumberInput
-                            value={item.value}
-                            onChange={(e) => item.setter(parseFloat(e.target.value) || 0)}
-                            className={`bg-transparent text-left text-lg font-mono text-${item.color}-400 focus:outline-none w-full border-b border-${item.color}-500/50`}
-                            placeholder="0.00"
-                        />
-                    </div>
-                ))}
+                <div className="flex flex-col gap-1 items-start text-left">
+                    <label 
+                        onClick={() => clearRate(setRate, rateRef)}
+                        className="font-bold text-neutral-300 text-[10px] uppercase tracking-wide cursor-pointer hover:text-primary-400 transition-colors"
+                        title="Click to Clear"
+                    >
+                        Finance Rate (%)
+                    </label>
+                    <FormattedNumberInput
+                        ref={rateRef}
+                        value={rate}
+                        onChange={(e) => {
+                            const val = e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0);
+                            setRate(val);
+                            setResult(null);
+                        }}
+                        className="bg-transparent text-left text-lg font-mono text-primary-400 focus:outline-none w-full border-b border-primary-500/50"
+                        placeholder="0.00"
+                    />
+                </div>
+                <div className="flex flex-col gap-1 items-start text-left">
+                    <label 
+                        onClick={() => clearRate(setReinvestRate, reinvestRateRef)}
+                        className="font-bold text-neutral-300 text-[10px] uppercase tracking-wide cursor-pointer hover:text-secondary-400 transition-colors"
+                        title="Click to Clear"
+                    >
+                        Reinvest Rate (%)
+                    </label>
+                    <FormattedNumberInput
+                        ref={reinvestRateRef}
+                        value={reinvestRate}
+                        onChange={(e) => {
+                            const val = e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0);
+                            setReinvestRate(val);
+                            setResult(null);
+                        }}
+                        className="bg-transparent text-left text-lg font-mono text-secondary-400 focus:outline-none w-full border-b border-secondary-500/50"
+                        placeholder="0.00"
+                    />
+                </div>
             </div>
 
             <div className="flex-1 overflow-y-auto space-y-2 pr-2 mb-4 scrollbar-hide">
                 {flows.map((flow, i) => (
                     <div key={i} className="flex items-center gap-3 bg-neutral-800/30 p-3 rounded-lg border border-transparent focus-within:border-neutral-700">
-                        <span className="text-xs font-bold text-neutral-500 w-8">CF {i}</span>
-                        <FormattedNumberInput value={flow} onChange={(e) => updateFlow(i, e.target.value)} className="flex-1 bg-transparent text-right font-mono text-white focus:outline-none" />
+                        <span 
+                            onClick={() => clearFlow(i)}
+                            className="text-[10px] font-bold text-neutral-500 w-8 cursor-pointer hover:text-primary-400 transition-colors"
+                            title="Click to Clear"
+                        >
+                            CF {i}
+                        </span>
+                        <FormattedNumberInput 
+                            ref={el => flowRefs.current[i] = el}
+                            value={flow} 
+                            onChange={(e) => updateFlow(i, e.target.value)} 
+                            className="flex-1 bg-transparent text-right font-mono text-white focus:outline-none" 
+                        />
                         {i > 0 && <button onClick={() => setFlows(flows.filter((_, idx) => idx !== i))} className="text-neutral-600 hover:text-red-400"><Trash2 size={16} /></button>}
                     </div>
                 ))}

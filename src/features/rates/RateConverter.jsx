@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { calculateEAR } from '../../utils/financial-utils';
 import { useHistory } from '../../context/HistoryContext';
 import { Info, HelpCircle, Trash2, Settings, History } from 'lucide-react';
@@ -31,11 +31,22 @@ const RateConverter = ({ toggleHelp, toggleSettings }) => {
     const [periodicRate, setPeriodicRate] = useState(2);
     const [selectedFrequency, setSelectedFrequency] = useState(365); // Default to Daily
 
+    // Refs for input focus
+    const nominalRef = useRef(null);
+    const periodicRateRef = useRef(null);
+
+    const clearField = (setter, ref) => {
+        setter(null);
+        setResult(null);
+        setTimeout(() => ref.current?.focus(), 0);
+    };
+
     const handleCalculate = () => {
-        const res = calculateEAR(nominal, compounding);
+        const nom = nominal || 0;
+        const res = calculateEAR(nom, compounding);
         setResult(res);
 
-        const r = nominal / 100;
+        const r = nom / 100;
         let t = r > 0 ? Math.log(2) / (compounding * Math.log(1 + r / compounding)) : 0;
 
         const years = Math.floor(t);
@@ -44,7 +55,7 @@ const RateConverter = ({ toggleHelp, toggleSettings }) => {
         const days = Math.round((remainderMonths - months) * 30.44);
 
         setDoublingTime({ years, months, days });
-        addToHistory('RATES', { nominal, compounding, doublingTime: { years, months, days } }, res);
+        addToHistory('RATES', { nominal: nom, compounding, doublingTime: { years, months, days } }, res);
     };
 
     return (
@@ -74,8 +85,23 @@ const RateConverter = ({ toggleHelp, toggleSettings }) => {
             <div className="flex-1 flex flex-col min-h-0 space-y-2 overflow-y-auto custom-scrollbar pb-1">
                 <div className="bg-neutral-800/50 rounded-xl p-2 shrink-0">
                     <div className="flex items-center gap-4 mb-2">
-                        <label className="text-xs font-bold text-neutral-400 shrink-0">Nominal (%)</label>
-                        <FormattedNumberInput value={nominal} onChange={(e) => setNominal(parseFloat(e.target.value) || 0)} className="flex-1 w-full bg-transparent text-xl font-mono text-white focus:outline-none border-b border-neutral-700 focus:border-primary-500 transition-colors pb-1 text-right" />
+                        <label 
+                            onClick={() => clearField(setNominal, nominalRef)}
+                            className="text-xs font-bold text-neutral-400 shrink-0 cursor-pointer hover:text-primary-400 transition-colors"
+                            title="Click to Clear"
+                        >
+                            Nominal (%)
+                        </label>
+                        <FormattedNumberInput 
+                            ref={nominalRef}
+                            value={nominal} 
+                            onChange={(e) => {
+                                const val = e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0);
+                                setNominal(val);
+                                setResult(null);
+                            }} 
+                            className="flex-1 w-full bg-transparent text-xl font-mono text-white focus:outline-none border-b border-neutral-700 focus:border-primary-500 transition-colors pb-1 text-right" 
+                        />
                     </div>
                     <div className="space-y-1">
                         <label className="block text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Compounding</label>
@@ -128,7 +154,7 @@ const RateConverter = ({ toggleHelp, toggleSettings }) => {
                                         {FREQUENCIES.map(freq => (
                                             <div key={freq.n} className="flex justify-between items-center py-1 border-b border-neutral-800/50 last:border-0 text-xs">
                                                 <span className="text-neutral-500 truncate mr-2">{freq.label}</span>
-                                                <span className="font-mono text-primary-400">{(nominal / freq.n).toFixed(4)}%</span>
+                                                <span className="font-mono text-primary-400">{((nominal || 0) / freq.n).toFixed(4)}%</span>
                                             </div>
                                         ))}
                                     </div>
@@ -137,10 +163,20 @@ const RateConverter = ({ toggleHelp, toggleSettings }) => {
                                     <div className="space-y-3">
                                         {/* Periodic Rate Input */}
                                         <div className="flex items-center gap-2">
-                                            <label className="text-[10px] font-bold text-neutral-500 shrink-0">Rate (%)</label>
+                                            <label 
+                                                onClick={() => clearField(setPeriodicRate, periodicRateRef)}
+                                                className="text-[10px] font-bold text-neutral-500 shrink-0 cursor-pointer hover:text-primary-400 transition-colors"
+                                                title="Click to Clear"
+                                            >
+                                                Rate (%)
+                                            </label>
                                             <FormattedNumberInput
+                                                ref={periodicRateRef}
                                                 value={periodicRate}
-                                                onChange={(e) => setPeriodicRate(parseFloat(e.target.value) || 0)}
+                                                onChange={(e) => {
+                                                    const val = e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0);
+                                                    setPeriodicRate(val);
+                                                }}
                                                 className="flex-1 bg-transparent text-sm font-mono text-white focus:outline-none border-b border-neutral-700 focus:border-primary-500 transition-colors pb-0.5 text-right"
                                             />
                                         </div>
@@ -163,13 +199,13 @@ const RateConverter = ({ toggleHelp, toggleSettings }) => {
                                             <div className="bg-neutral-900/50 rounded-lg p-2 border border-white/5">
                                                 <div className="text-[8px] text-neutral-500 uppercase font-bold mb-0.5">Simple APR</div>
                                                 <div className="text-sm font-bold text-white font-mono">
-                                                    {(periodicRate * selectedFrequency).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%
+                                                    {((periodicRate || 0) * selectedFrequency).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%
                                                 </div>
                                             </div>
                                             <div className="bg-neutral-900/50 rounded-lg p-2 border border-white/5">
                                                 <div className="text-[8px] text-neutral-500 uppercase font-bold mb-0.5">Compound APY</div>
                                                 <div className="text-sm font-bold text-primary-400 font-mono">
-                                                    {((Math.pow(1 + periodicRate / 100, selectedFrequency) - 1) * 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%
+                                                    {((Math.pow(1 + (periodicRate || 0) / 100, selectedFrequency) - 1) * 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%
                                                 </div>
                                             </div>
                                         </div>

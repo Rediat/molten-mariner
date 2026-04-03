@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useHistory } from '../../context/HistoryContext';
 import { Wallet, Info, HelpCircle, Trash2, Settings, History } from 'lucide-react';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
@@ -22,6 +22,17 @@ const PensionCalculator = ({ toggleHelp, toggleSettings }) => {
     const [showExplanation, setShowExplanation] = useState(false);
     const [showHistory, setShowHistory] = useState(false);
 
+    // Refs for input focus
+    const salaryRef = useRef(null);
+    const serviceRef = useRef(null);
+    const ageRef = useRef(null);
+
+    const clearField = (setter, ref) => {
+        setter(null);
+        setResult(null);
+        setTimeout(() => ref.current?.focus(), 0);
+    };
+
     const handleCalculate = () => {
         // Ethiopian Defined Benefit Pension Formula:
         // Civil Servant: Replacement Rate = 30% + (1.25% × years beyond 10)
@@ -29,21 +40,25 @@ const PensionCalculator = ({ toggleHelp, toggleSettings }) => {
         // Minimum service: 10 years
         // Maximum replacement rate: 70%
 
+        const avgSalary = averageSalary || 0;
+        const yrsService = yearsOfService || 0;
+        const retAge = retirementAge || 0;
+
         let replacementRate = 0;
         let monthlyPension = 0;
         let annualPension = 0;
-        let isEligible = yearsOfService >= 10;
+        let isEligible = yrsService >= 10;
 
         if (isEligible) {
             // Base 30% for first 10 years, then accrual rate per additional year
-            const additionalYears = Math.max(0, yearsOfService - 10);
+            const additionalYears = Math.max(0, yrsService - 10);
             const accrualRate = pensionType === 'military' ? 1.65 : 1.25;
             replacementRate = 30 + (accrualRate * additionalYears);
 
             // Cap at 70%
             replacementRate = Math.min(replacementRate, 70);
 
-            monthlyPension = averageSalary * (replacementRate / 100);
+            monthlyPension = avgSalary * (replacementRate / 100);
             annualPension = monthlyPension * 12;
         }
 
@@ -52,14 +67,14 @@ const PensionCalculator = ({ toggleHelp, toggleSettings }) => {
             replacementRate,
             monthlyPension,
             annualPension,
-            yearsOfService,
-            retirementAge,
-            averageSalary,
+            yearsOfService: yrsService,
+            retirementAge: retAge,
+            averageSalary: avgSalary,
             pensionType: pensionType === 'civil' ? 'Civil Servant' : 'Military/Police',
         };
 
         setResult(res);
-        addToHistory('PENSION', { averageSalary, yearsOfService, retirementAge, pensionType }, res);
+        addToHistory('PENSION', { averageSalary: avgSalary, yearsOfService: yrsService, retirementAge: retAge, pensionType }, res);
     };
 
     const formatCurrency = (val) => val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -130,12 +145,23 @@ const PensionCalculator = ({ toggleHelp, toggleSettings }) => {
                 <div className="bg-neutral-800/40 rounded-xl p-2.5 border border-primary-500/50 ring-1 ring-primary-500/10">
                     <div className="flex justify-between items-center gap-2 min-w-0">
                         <div className="shrink-0">
-                            <label className="text-sm font-bold text-primary-400 block leading-tight text-left">Average Salary</label>
+                            <label 
+                                onClick={() => clearField(setAverageSalary, salaryRef)}
+                                className="text-sm font-bold text-primary-400 block leading-tight text-left cursor-pointer hover:text-white transition-colors"
+                                title="Click to Clear"
+                            >
+                                Average Salary
+                            </label>
                             <span className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold text-left block">Last 3 Years (36 Months)</span>
                         </div>
                         <FormattedNumberInput
+                            ref={salaryRef}
                             value={averageSalary}
-                            onChange={(e) => setAverageSalary(parseFloat(e.target.value.replace(/,/g, '')) || 0)}
+                            onChange={(e) => {
+                                const val = e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0);
+                                setAverageSalary(val);
+                                setResult(null);
+                            }}
                             decimals={2}
                             className="bg-transparent text-right text-lg font-mono focus:outline-none text-primary-400 font-black min-w-0 flex-1"
                             placeholder="25,000"
@@ -147,12 +173,23 @@ const PensionCalculator = ({ toggleHelp, toggleSettings }) => {
                 <div className="bg-neutral-800/40 rounded-xl p-2.5 border border-transparent hover:border-neutral-700">
                     <div className="flex justify-between items-center gap-2 min-w-0">
                         <div className="shrink-0">
-                            <label className="text-sm font-bold text-white block leading-tight text-left">Years of Service</label>
+                            <label 
+                                onClick={() => clearField(setYearsOfService, serviceRef)}
+                                className="text-sm font-bold text-white block leading-tight text-left cursor-pointer hover:text-primary-400 transition-colors"
+                                title="Click to Clear"
+                            >
+                                Years of Service
+                            </label>
                             <span className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold text-left block">Total Working Years</span>
                         </div>
                         <FormattedNumberInput
+                            ref={serviceRef}
                             value={yearsOfService}
-                            onChange={(e) => setYearsOfService(parseFloat(e.target.value.replace(/,/g, '')) || 0)}
+                            onChange={(e) => {
+                                const val = e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0);
+                                setYearsOfService(val);
+                                setResult(null);
+                            }}
                             decimals={0}
                             className="bg-transparent text-right text-lg font-mono focus:outline-none text-white min-w-0 flex-1"
                             placeholder="30"
@@ -164,12 +201,23 @@ const PensionCalculator = ({ toggleHelp, toggleSettings }) => {
                 <div className="bg-neutral-800/40 rounded-xl p-2.5 border border-transparent hover:border-neutral-700">
                     <div className="flex justify-between items-center gap-2 min-w-0">
                         <div className="shrink-0">
-                            <label className="text-sm font-bold text-white block leading-tight text-left">Retirement Age</label>
+                            <label 
+                                onClick={() => clearField(setRetirementAge, ageRef)}
+                                className="text-sm font-bold text-white block leading-tight text-left cursor-pointer hover:text-primary-400 transition-colors"
+                                title="Click to Clear"
+                            >
+                                Retirement Age
+                            </label>
                             <span className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold text-left block">Expected Age</span>
                         </div>
                         <FormattedNumberInput
+                            ref={ageRef}
                             value={retirementAge}
-                            onChange={(e) => setRetirementAge(parseFloat(e.target.value.replace(/,/g, '')) || 0)}
+                            onChange={(e) => {
+                                const val = e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0);
+                                setRetirementAge(val);
+                                setResult(null);
+                            }}
                             decimals={0}
                             className="bg-transparent text-right text-lg font-mono focus:outline-none text-white min-w-0 flex-1"
                             placeholder="60"

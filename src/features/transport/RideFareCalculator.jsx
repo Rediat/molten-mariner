@@ -50,6 +50,31 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
     const fromInputRef = useRef(null);
     const toInputRef = useRef(null);
 
+    // Refs for numeric input focus
+    const distanceRef = useRef(null);
+    const costPerLiterRef = useRef(null);
+    const waitMultiplierRef = useRef(null);
+    const serviceMultiplierRef = useRef(null);
+    const priceToChargeRef = useRef(null);
+
+    const clearValuesField = (field, ref) => {
+        setValues(prev => ({ ...prev, [field]: null }));
+        setResults(null);
+        setTimeout(() => ref.current?.focus(), 0);
+    };
+
+    const clearWaitMultiplier = () => {
+        setWaitMultiplier(null);
+        setResults(null);
+        setTimeout(() => waitMultiplierRef.current?.focus(), 0);
+    };
+
+    const clearPriceToCharge = () => {
+        setPriceToCharge(null);
+        setResults(null);
+        setTimeout(() => priceToChargeRef.current?.focus(), 0);
+    };
+
     const handleSwapLocations = useCallback(() => {
         const prevOrigin = origin;
         const prevDest = destination;
@@ -303,20 +328,27 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
         const chargeMultiplier = roundTrip ? 2 : 1;
         const actualFuelMultiplier = 2; // Always estimate fuel for round-trip for true cost out of pocket
 
-        const oneWayFuelCost = values.distance * values.mileage * values.costPerLiter;
+        const dist = values.distance || 0;
+        const mileage = values.mileage || 0;
+        const cost = values.costPerLiter || 0;
+        const waitMult = waitMultiplier || 0;
+        const serviceMult = values.serviceMultiplier || 0;
+        const chargingPrice = priceToCharge || 0;
+
+        const oneWayFuelCost = dist * mileage * cost;
         const chargingFuelCost = oneWayFuelCost * chargeMultiplier;
         const totalFuelCost = oneWayFuelCost * actualFuelMultiplier;
 
-        const waitTimeBase = durationValue != null ? durationValue * 1.1 * waitMultiplier : 0;
+        const waitTimeBase = durationValue != null ? durationValue * 1.1 * waitMult : 0;
         const waitTime = waitTimeBase * 2; // Always double to represent true round-trip even in one-way mode
 
         if (mode === 'forward') {
-            const basePrice = chargingFuelCost * values.serviceMultiplier;
+            const basePrice = chargingFuelCost * serviceMult;
             const totalToCharge = basePrice + waitTime;
-            const revenuePerKm = values.distance > 0 ? totalToCharge / values.distance : 0;
+            const revenuePerKm = dist > 0 ? totalToCharge / dist : 0;
             const netGain = totalToCharge - totalFuelCost;
-            const netGainPerKm = values.distance > 0 ? netGain / values.distance : 0;
-            const fuelPerKm = values.distance > 0 ? (totalFuelCost / values.distance) / 2 : 0;
+            const netGainPerKm = dist > 0 ? netGain / dist : 0;
+            const fuelPerKm = dist > 0 ? (totalFuelCost / dist) / 2 : 0;
             const perHead = totalToCharge / 4;
             const netGainSingle = totalToCharge - oneWayFuelCost;
             const netGainRound = totalToCharge - totalFuelCost;
@@ -324,24 +356,24 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
             setResults(newResults);
             addToHistory('Ride', { ...values, mode: 'forward', roundTrip }, newResults);
         } else {
-            const totalToCharge = priceToCharge;
+            const totalToCharge = chargingPrice;
             const basePrice = Math.max(0, totalToCharge - waitTime);
             const netGain = totalToCharge - totalFuelCost;
             const perHead = totalToCharge / 4;
-            const revenuePerKm = values.distance > 0 ? totalToCharge / values.distance : 0;
-            const fuelPerKm = values.distance > 0 ? (totalFuelCost / values.distance) / 2 : 0;
-            const netGainPerKm = values.distance > 0 ? netGain / values.distance : 0;
-            const serviceMultiplier = chargingFuelCost > 0 ? (totalToCharge - waitTime) / chargingFuelCost : 0;
+            const revenuePerKm = dist > 0 ? totalToCharge / dist : 0;
+            const fuelPerKm = dist > 0 ? (totalFuelCost / dist) / 2 : 0;
+            const netGainPerKm = dist > 0 ? netGain / dist : 0;
+            const serviceMultiplierValue = chargingFuelCost > 0 ? (totalToCharge - waitTime) / chargingFuelCost : 0;
             const netGainSingle = totalToCharge - oneWayFuelCost;
             const netGainRound = totalToCharge - totalFuelCost;
-            const newResults = { totalFuelCost, reasonablePrice: basePrice, totalToCharge, waitTime, revenuePerKm, netGain, netGainPerKm, fuelPerKm, perHead, serviceMultiplier, netGainSingle, netGainRound };
+            const newResults = { totalFuelCost, reasonablePrice: basePrice, totalToCharge, waitTime, revenuePerKm, netGain, netGainPerKm, fuelPerKm, perHead, serviceMultiplier: serviceMultiplierValue, netGainSingle, netGainRound };
             setResults(newResults);
-            addToHistory('Ride', { ...values, priceToCharge, mode: 'reverse', roundTrip }, newResults);
+            addToHistory('Ride', { ...values, priceToCharge: chargingPrice, mode: 'reverse', roundTrip }, newResults);
         }
     };
 
     const handleChange = (field, val) => {
-        const numericVal = parseFloat(val) || 0;
+        const numericVal = val === '' ? null : (parseFloat(val) || 0);
         setValues(prev => ({ ...prev, [field]: numericVal }));
         if (field === 'distance') setDistanceSource('manual');
         setResults(null);
@@ -517,7 +549,11 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                 {/* Distance */}
                 <div className={`rounded-xl p-2 border ${distanceSource === 'maps' ? 'bg-emerald-900/10 border-emerald-500/40' : 'bg-neutral-800/40 border-primary-500/40'}`}>
                     <div className="flex justify-between items-center mb-0.5">
-                        <label className={`text-[10px] uppercase tracking-wider font-bold block ${distanceSource === 'maps' ? 'text-emerald-400' : 'text-primary-400'}`}>
+                        <label 
+                            onClick={() => clearValuesField('distance', distanceRef)}
+                            className={`text-[10px] uppercase tracking-wider font-bold block cursor-pointer hover:text-white transition-colors ${distanceSource === 'maps' ? 'text-emerald-400' : 'text-primary-400'}`}
+                            title="Click to Clear"
+                        >
                             Distance (Km)
                         </label>
                         <div className="flex bg-neutral-900/60 rounded-md p-0.5 ring-1 ring-neutral-700/50">
@@ -541,6 +577,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                         </div>
                     ) : (
                         <FormattedNumberInput
+                            ref={distanceRef}
                             value={values.distance}
                             onChange={(e) => handleChange('distance', e.target.value)}
                             decimals={2}
@@ -554,10 +591,15 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
 
                 {/* Fuel Cost */}
                 <div className="bg-neutral-800/40 rounded-xl p-2 border border-transparent">
-                    <label className="text-[10px] uppercase tracking-wider font-bold text-white block mb-0.5">
+                    <label 
+                        onClick={() => clearValuesField('costPerLiter', costPerLiterRef)}
+                        className="text-[10px] uppercase tracking-wider font-bold text-white block mb-0.5 cursor-pointer hover:text-primary-400 transition-colors"
+                        title="Click to Clear"
+                    >
                         Fuel Cost / Liter
                     </label>
                     <FormattedNumberInput
+                        ref={costPerLiterRef}
                         value={values.costPerLiter}
                         onChange={(e) => handleChange('costPerLiter', e.target.value)}
                         decimals={2}
@@ -569,12 +611,21 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
 
                 {/* Wait Multiplier */}
                 <div className="bg-neutral-800/40 rounded-xl p-2 border border-amber-500/30">
-                    <label className="text-[10px] uppercase tracking-wider font-bold text-amber-400 block mb-0.5">
+                    <label 
+                        onClick={clearWaitMultiplier}
+                        className="text-[10px] uppercase tracking-wider font-bold text-amber-400 block mb-0.5 cursor-pointer hover:text-white transition-colors"
+                        title="Click to Clear"
+                    >
                         Wait Multiplier
                     </label>
                     <FormattedNumberInput
+                        ref={waitMultiplierRef}
                         value={waitMultiplier}
-                        onChange={(e) => { setWaitMultiplier(parseFloat(e.target.value.replace(/,/g, '')) || 0); setResults(null); }}
+                        onChange={(e) => {
+                            const val = e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0);
+                            setWaitMultiplier(val);
+                            setResults(null);
+                        }}
                         decimals={1}
                         className="bg-transparent text-right text-lg font-mono focus:outline-none text-amber-400 font-black w-full"
                     />
@@ -584,10 +635,15 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                 {/* Service Factor or Price to Charge */}
                 {mode === 'forward' ? (
                     <div className="bg-neutral-800/40 rounded-xl p-2 border border-transparent">
-                        <label className="text-[10px] uppercase tracking-wider font-bold text-white block mb-0.5">
+                        <label 
+                            onClick={() => clearValuesField('serviceMultiplier', serviceMultiplierRef)}
+                            className="text-[10px] uppercase tracking-wider font-bold text-white block mb-0.5 cursor-pointer hover:text-primary-400 transition-colors"
+                            title="Click to Clear"
+                        >
                             Service Multiplier
                         </label>
                         <FormattedNumberInput
+                            ref={serviceMultiplierRef}
                             value={values.serviceMultiplier}
                             onChange={(e) => handleChange('serviceMultiplier', e.target.value)}
                             decimals={1}
@@ -597,12 +653,21 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                     </div>
                 ) : (
                     <div className="bg-neutral-800/40 rounded-xl p-2 border border-emerald-500/40">
-                        <label className="text-[10px] uppercase tracking-wider font-bold text-emerald-400 block mb-0.5">
+                        <label 
+                            onClick={clearPriceToCharge}
+                            className="text-[10px] uppercase tracking-wider font-bold text-emerald-400 block mb-0.5 cursor-pointer hover:text-white transition-colors"
+                            title="Click to Clear"
+                        >
                             Price to Charge
                         </label>
                         <FormattedNumberInput
+                            ref={priceToChargeRef}
                             value={priceToCharge}
-                            onChange={(e) => { setPriceToCharge(parseFloat(e.target.value.replace(/,/g, '')) || 0); setResults(null); }}
+                            onChange={(e) => {
+                                const val = e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0);
+                                setPriceToCharge(val);
+                                setResults(null);
+                            }}
                             decimals={2}
                             className="bg-transparent text-right text-lg font-mono focus:outline-none text-emerald-400 font-black w-full"
                         />

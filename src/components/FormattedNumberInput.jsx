@@ -44,7 +44,10 @@ const FormattedNumberInput = forwardRef(({
 
     const handleBlur = (e) => {
         setIsFocused(false);
-        // On blur, if the value is null, formatNumber will show "0.00" (or 0)
+        // On blur, if the value is null/empty, notify parent to set it to 0
+        if (value === null || value === undefined || value === '' || isNaN(value)) {
+            onChange({ target: { value: '0' } });
+        }
         setDisplayValue(formatNumber(value));
         props.onBlur?.(e);
     };

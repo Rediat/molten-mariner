@@ -46,6 +46,20 @@ const GoalPlanner = ({ toggleHelp, toggleSettings }) => {
 
     const bottomRef = useRef(null);
 
+    // Refs for input focus
+    const targetFVRef = useRef(null);
+    const yearsRef = useRef(null);
+    const rateRef = useRef(null);
+    const knownPVRef = useRef(null);
+    const knownPMTRef = useRef(null);
+    const pvRatioRef = useRef(null);
+
+    const clearField = (setter, ref) => {
+        setter(null);
+        setResults(null);
+        setTimeout(() => ref.current?.focus(), 0);
+    };
+
     // Auto-scroll to bottom when results are calculated
     useEffect(() => {
         if (results && bottomRef.current) {
@@ -77,8 +91,10 @@ const GoalPlanner = ({ toggleHelp, toggleSettings }) => {
     const handleCalculate = () => {
         try {
             const r = getPeriodicRate();
-            const n = years * frequency;
+            const yrs = years || 0;
+            const n = yrs * frequency;
             const isBegin = mode === 'BEGIN';
+            const fv = targetFV || 0;
 
             const fvFactorPV = getFVFactorPV(r, n);
             const fvFactorPMT = getFVFactorPMT(r, n, isBegin);
@@ -92,69 +108,74 @@ const GoalPlanner = ({ toggleHelp, toggleSettings }) => {
             if (solveMode === 'pmt') {
                 // Solve for PMT only (PV = 0)
                 calculatedPV = 0;
-                calculatedPMT = targetFV / fvFactorPMT;
+                calculatedPMT = (targetFV || 0) / fvFactorPMT;
                 totalContributions = calculatedPMT * n;
             } else if (solveMode === 'pv') {
                 // Solve for PV only (PMT = 0)
                 calculatedPMT = 0;
-                calculatedPV = targetFV / fvFactorPV;
+                calculatedPV = (targetFV || 0) / fvFactorPV;
                 totalContributions = calculatedPV;
             } else if (solveMode === 'combo') {
+                const fv = targetFV || 0;
+                const kpv = knownPV || 0;
+                const kpmt = knownPMT || 0;
+                const ratio = pvRatio || 0;
+
                 // Combo mode: Calculate based on ratio or known values
-                if (knownPV > 0 && knownPMT === 0) {
+                if (kpv > 0 && kpmt === 0) {
                     // User specified PV, solve for PMT
-                    calculatedPV = knownPV;
+                    calculatedPV = kpv;
                     const pvContributionToFV = calculatedPV * fvFactorPV;
-                    if (pvContributionToFV >= targetFV) {
+                    if (pvContributionToFV >= fv) {
                         // PV alone exceeds target - no PMT needed
                         calculatedPMT = 0;
                         totalContributions = calculatedPV;
                     } else {
-                        const remainingFV = targetFV - pvContributionToFV;
+                        const remainingFV = fv - pvContributionToFV;
                         calculatedPMT = remainingFV / fvFactorPMT;
                         totalContributions = calculatedPV + (calculatedPMT * n);
                     }
-                } else if (knownPMT > 0 && knownPV === 0) {
+                } else if (kpmt > 0 && kpv === 0) {
                     // User specified PMT, solve for PV
-                    calculatedPMT = knownPMT;
+                    calculatedPMT = kpmt;
                     const pmtContributionToFV = calculatedPMT * fvFactorPMT;
-                    if (pmtContributionToFV >= targetFV) {
+                    if (pmtContributionToFV >= fv) {
                         // PMT alone exceeds or meets target - no PV needed
                         calculatedPV = 0;
                         totalContributions = calculatedPMT * n;
                         // Calculate what they'll actually get and what PMT they'd need
                         const actualFV = pmtContributionToFV;
-                        const optimalPMT = targetFV / fvFactorPMT;
+                        const optimalPMT = fv / fvFactorPMT;
                         exceedsSuggestion = {
                             type: 'pmt_exceeds',
                             actualFV,
                             optimalPMT,
-                            currentPMT: knownPMT,
+                            currentPMT: kpmt,
                             actualInterest: actualFV - totalContributions,
                             interestPercent: ((actualFV - totalContributions) / actualFV * 100).toFixed(0)
                         };
                     } else {
-                        calculatedPV = (targetFV - pmtContributionToFV) / fvFactorPV;
+                        calculatedPV = (fv - pmtContributionToFV) / fvFactorPV;
                         totalContributions = calculatedPV + (calculatedPMT * n);
                     }
-                } else if (pvRatio >= 0 && pvRatio <= 100) {
+                } else if (ratio >= 0 && ratio <= 100) {
                     // Use ratio: pvRatio% comes from PV, (100-pvRatio)% from PMT contributions
-                    const pvPortion = pvRatio / 100;
+                    const pvPortion = ratio / 100;
                     const pmtPortion = 1 - pvPortion;
                     const combinedFactor = (pvPortion * fvFactorPV) + ((pmtPortion / n) * fvFactorPMT);
-                    totalContributions = targetFV / combinedFactor;
+                    totalContributions = fv / combinedFactor;
                     calculatedPV = totalContributions * pvPortion;
                     calculatedPMT = (totalContributions * pmtPortion) / n;
                 } else {
                     // Default: Equal weight to PV and total PMT contributions
                     const combinedFactor = (n * fvFactorPV) + fvFactorPMT;
-                    calculatedPMT = targetFV / combinedFactor;
+                    calculatedPMT = fv / combinedFactor;
                     calculatedPV = calculatedPMT * n;
                     totalContributions = calculatedPV + (calculatedPMT * n);
                 }
             }
 
-            totalInterestEarned = targetFV - totalContributions;
+            totalInterestEarned = (targetFV || 0) - totalContributions;
 
             // Calculate actionable insights
             const insights = calculateInsights(calculatedPMT, calculatedPV, totalContributions, totalInterestEarned, years, frequency, rate);
@@ -298,12 +319,23 @@ const GoalPlanner = ({ toggleHelp, toggleSettings }) => {
                 <div className="group relative bg-neutral-800/40 rounded-lg p-2 transition-all duration-300 border border-primary-500/50 ring-1 ring-primary-500/10 bg-neutral-800/60">
                     <div className="flex justify-between items-center gap-4">
                         <div className="flex flex-col items-start text-left shrink-0">
-                            <label className="text-xs font-bold text-primary-400 whitespace-nowrap">Target FV</label>
+                            <label 
+                                onClick={() => clearField(setTargetFV, targetFVRef)}
+                                className="text-xs font-bold text-primary-400 whitespace-nowrap cursor-pointer hover:text-white transition-colors"
+                                title="Click to Clear"
+                            >
+                                Target FV
+                            </label>
                             <span className="text-[8px] uppercase tracking-tighter text-neutral-500 font-bold whitespace-nowrap">Goal Amount</span>
                         </div>
                         <FormattedNumberInput
+                            ref={targetFVRef}
                             value={targetFV}
-                            onChange={(e) => setTargetFV(parseFloat(e.target.value.replace(/,/g, '')) || 0)}
+                            onChange={(e) => {
+                                const val = e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0);
+                                setTargetFV(val);
+                                setResults(null);
+                            }}
                             decimals={0}
                             className="bg-transparent text-right text-base font-mono focus:outline-none w-full placeholder-neutral-700 text-primary-400 font-black"
                             placeholder="1,000,000"
@@ -315,12 +347,23 @@ const GoalPlanner = ({ toggleHelp, toggleSettings }) => {
                 <div className="group relative bg-neutral-800/40 rounded-lg p-2 transition-all duration-300 border border-transparent hover:border-neutral-700">
                     <div className="flex justify-between items-center gap-4">
                         <div className="flex flex-col items-start text-left shrink-0">
-                            <label className="text-xs font-bold text-neutral-300 whitespace-nowrap">Years</label>
+                            <label 
+                                onClick={() => clearField(setYears, yearsRef)}
+                                className="text-xs font-bold text-neutral-300 whitespace-nowrap cursor-pointer hover:text-primary-400 transition-colors"
+                                title="Click to Clear"
+                            >
+                                Years
+                            </label>
                             <span className="text-[8px] uppercase tracking-tighter text-neutral-500 font-bold whitespace-nowrap">Time to Goal</span>
                         </div>
                         <FormattedNumberInput
+                            ref={yearsRef}
                             value={years}
-                            onChange={(e) => setYears(parseFloat(e.target.value.replace(/,/g, '')) || 0)}
+                            onChange={(e) => {
+                                const val = e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0);
+                                setYears(val);
+                                setResults(null);
+                            }}
                             decimals={0}
                             className="bg-transparent text-right text-base font-mono focus:outline-none w-full placeholder-neutral-700 text-white"
                             placeholder="30"
@@ -332,12 +375,23 @@ const GoalPlanner = ({ toggleHelp, toggleSettings }) => {
                 <div className="group relative bg-neutral-800/40 rounded-lg p-2 transition-all duration-300 border border-transparent hover:border-neutral-700">
                     <div className="flex justify-between items-center gap-4">
                         <div className="flex flex-col items-start text-left shrink-0">
-                            <label className="text-xs font-bold text-neutral-300 whitespace-nowrap">I/Y %</label>
+                            <label 
+                                onClick={() => clearField(setRate, rateRef)}
+                                className="text-xs font-bold text-neutral-300 whitespace-nowrap cursor-pointer hover:text-primary-400 transition-colors"
+                                title="Click to Clear"
+                            >
+                                I/Y %
+                            </label>
                             <span className="text-[8px] uppercase tracking-tighter text-neutral-500 font-bold whitespace-nowrap">Annual Rate</span>
                         </div>
                         <FormattedNumberInput
+                            ref={rateRef}
                             value={rate}
-                            onChange={(e) => setRate(parseFloat(e.target.value.replace(/,/g, '')) || 0)}
+                            onChange={(e) => {
+                                const val = e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0);
+                                setRate(val);
+                                setResults(null);
+                            }}
                             decimals={2}
                             className="bg-transparent text-right text-base font-mono focus:outline-none w-full placeholder-neutral-700 text-white"
                             placeholder="10"
@@ -355,15 +409,24 @@ const GoalPlanner = ({ toggleHelp, toggleSettings }) => {
                         {/* Known PV */}
                         <div className="flex justify-between items-center gap-4">
                             <div className="flex flex-col items-start text-left">
-                                <label className="text-xs font-bold text-neutral-400">Initial PV</label>
+                                <label 
+                                    onClick={() => clearField(setKnownPV, knownPVRef)}
+                                    className="text-xs font-bold text-neutral-400 cursor-pointer hover:text-white transition-colors"
+                                    title="Click to Clear"
+                                >
+                                    Initial PV
+                                </label>
                                 <span className="text-[8px] uppercase tracking-tighter text-neutral-600 font-bold">Lump Sum</span>
                             </div>
                             <FormattedNumberInput
+                                ref={knownPVRef}
                                 value={knownPV}
                                 onChange={(e) => {
-                                    setKnownPV(parseFloat(e.target.value.replace(/,/g, '')) || 0);
+                                    const val = e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0);
+                                    setKnownPV(val);
                                     setKnownPMT(0);
                                     setPvRatio(0);
+                                    setResults(null);
                                 }}
                                 decimals={0}
                                 className="bg-neutral-800 rounded-lg px-2 py-1 text-right text-sm font-mono focus:outline-none w-24 placeholder-neutral-700 text-white"
@@ -374,15 +437,24 @@ const GoalPlanner = ({ toggleHelp, toggleSettings }) => {
                         {/* Known PMT */}
                         <div className="flex justify-between items-center gap-4">
                             <div className="flex flex-col items-start text-left">
-                                <label className="text-xs font-bold text-neutral-400">Fixed PMT</label>
+                                <label 
+                                    onClick={() => clearField(setKnownPMT, knownPMTRef)}
+                                    className="text-xs font-bold text-neutral-400 cursor-pointer hover:text-white transition-colors"
+                                    title="Click to Clear"
+                                >
+                                    Fixed PMT
+                                </label>
                                 <span className="text-[8px] uppercase tracking-tighter text-neutral-600 font-bold">Per Period</span>
                             </div>
                             <FormattedNumberInput
+                                ref={knownPMTRef}
                                 value={knownPMT}
                                 onChange={(e) => {
-                                    setKnownPMT(parseFloat(e.target.value.replace(/,/g, '')) || 0);
+                                    const val = e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0);
+                                    setKnownPMT(val);
                                     setKnownPV(0);
                                     setPvRatio(0);
+                                    setResults(null);
                                 }}
                                 decimals={0}
                                 className="bg-neutral-800 rounded-lg px-2 py-1 text-right text-sm font-mono focus:outline-none w-24 placeholder-neutral-700 text-white"
@@ -396,7 +468,13 @@ const GoalPlanner = ({ toggleHelp, toggleSettings }) => {
                                 <div className="flex items-center gap-2 text-left">
                                     <div className="flex flex-col">
                                         <div className="flex items-center gap-1.5">
-                                            <label className="text-xs font-bold text-neutral-400">PV Ratio %</label>
+                                            <label 
+                                                onClick={() => clearField(setPvRatio, pvRatioRef)}
+                                                className="text-xs font-bold text-neutral-400 cursor-pointer hover:text-white transition-colors"
+                                                title="Click to Clear"
+                                            >
+                                                PV Ratio %
+                                            </label>
                                             <button
                                                 onClick={() => setShowPvRatioHelp(!showPvRatioHelp)}
                                                 className={`p-0.5 rounded-full transition-all ${showPvRatioHelp ? 'text-primary-400 bg-primary-400/10' : 'text-neutral-600 hover:text-neutral-400'}`}
@@ -408,11 +486,14 @@ const GoalPlanner = ({ toggleHelp, toggleSettings }) => {
                                     </div>
                                 </div>
                                 <FormattedNumberInput
+                                    ref={pvRatioRef}
                                     value={pvRatio}
                                     onChange={(e) => {
-                                        setPvRatio(parseFloat(e.target.value.replace(/,/g, '')) || 0);
+                                        const val = e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0);
+                                        setPvRatio(val);
                                         setKnownPV(0);
                                         setKnownPMT(0);
+                                        setResults(null);
                                     }}
                                     decimals={0}
                                     className="bg-neutral-800 rounded-lg px-2 py-1 text-right text-sm font-mono focus:outline-none w-24 placeholder-neutral-700 text-white"

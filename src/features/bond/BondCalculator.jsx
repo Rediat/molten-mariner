@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { calculateBond, calculateBondYTM, calculateBondYTC, calculateBondDuration, calculateBondConvexity } from '../../utils/financial-utils';
 import { useHistory } from '../../context/HistoryContext';
 import { Info, HelpCircle, Trash2, Settings, History } from 'lucide-react';
@@ -17,27 +17,58 @@ const BondCalculator = ({ toggleHelp, toggleSettings }) => {
     const [showExplanation, setShowExplanation] = useState(false);
     const [showHistory, setShowHistory] = useState(false);
 
+    // Refs for input focus
+    const inputRefs = {
+        faceValue: useRef(null),
+        couponRate: useRef(null),
+        ytm: useRef(null),
+        price: useRef(null),
+        years: useRef(null),
+        callPrice: useRef(null),
+        yearsToCall: useRef(null)
+    };
+
+    const clearField = (field, ref) => {
+        setValues(prev => ({ ...prev, [field]: null }));
+        setResult(null);
+        setMetrics(null);
+        setTimeout(() => ref.current?.focus(), 0);
+    };
+
     const handleCalculate = () => {
-        const { faceValue, couponRate, ytm, price, years, frequency, callPrice, yearsToCall } = values;
-        let res, ytmUsed = ytm;
+        const fv = values.faceValue || 0;
+        const cr = values.couponRate || 0;
+        const ytmVal = values.ytm || 0;
+        const prc = values.price || 0;
+        const yrs = values.years || 0;
+        const freq = values.frequency || 1;
+        const cp = values.callPrice || 0;
+        const ytcVal = values.yearsToCall || 0;
+
+        let res, ytmUsed = ytmVal;
 
         if (target === 'price') {
-            res = calculateBond(faceValue, couponRate, ytm, years, frequency);
+            res = calculateBond(fv, cr, ytmVal, yrs, freq);
         } else {
-            res = calculateBondYTM(faceValue, couponRate, price, years, frequency);
+            res = calculateBondYTM(fv, cr, prc, yrs, freq);
             ytmUsed = res;
         }
 
-        const duration = calculateBondDuration(faceValue, couponRate, ytmUsed, years, frequency);
-        const convexity = calculateBondConvexity(faceValue, couponRate, ytmUsed, years, frequency);
-        const ytc = yearsToCall > 0 ? calculateBondYTC(faceValue, couponRate, target === 'price' ? res : price, yearsToCall, callPrice, frequency) : null;
+        const duration = calculateBondDuration(fv, cr, ytmUsed, yrs, freq);
+        const convexity = calculateBondConvexity(fv, cr, ytmUsed, yrs, freq);
+        const ytc = ytcVal > 0 ? calculateBondYTC(fv, cr, target === 'price' ? res : prc, ytcVal, cp, freq) : null;
 
         setResult(res);
         setMetrics({ duration, convexity, ytc });
         addToHistory('BOND', { ...values, target: target.toUpperCase() }, { result: res, ...duration, convexity, ytc });
     };
 
-    const handleChange = (field, val) => setValues(prev => ({ ...prev, [field]: parseFloat(val) || 0 }));
+    const handleChange = (field, val) => {
+        const numericVal = val === '' ? null : (parseFloat(val.toString().replace(/,/g, '')) || 0);
+        setValues(prev => ({ ...prev, [field]: numericVal }));
+        setResult(null);
+        setMetrics(null);
+    };
 
     const inputFields = [
         { id: 'faceValue', label: 'Face Value', sub: 'Par' },
@@ -99,10 +130,22 @@ const BondCalculator = ({ toggleHelp, toggleSettings }) => {
                 {inputFields.map(field => (
                     <div key={field.id} className="bg-neutral-800/40 rounded-lg p-1.5 flex justify-between items-center gap-4 border border-transparent hover:border-neutral-700 transition-all">
                         <div className="flex flex-col shrink-0 items-start text-left">
-                            <label className="text-sm font-bold text-neutral-300">{field.label}</label>
+                            <label 
+                                onClick={() => clearField(field.id, inputRefs[field.id])}
+                                className="text-sm font-bold text-neutral-300 cursor-pointer hover:text-primary-400 transition-colors"
+                                title="Click to Clear"
+                            >
+                                {field.label}
+                            </label>
                             <span className="text-[9px] uppercase tracking-tighter text-neutral-500 font-bold">{field.sub}</span>
                         </div>
-                        <FormattedNumberInput value={values[field.id]} onChange={(e) => handleChange(field.id, e.target.value)} decimals={field.id.includes('years') ? 0 : 2} className="bg-transparent text-right text-lg font-mono text-white focus:outline-none w-full flex-1" />
+                        <FormattedNumberInput 
+                            ref={inputRefs[field.id]}
+                            value={values[field.id]} 
+                            onChange={(e) => handleChange(field.id, e.target.value)} 
+                            decimals={field.id.includes('years') ? 0 : 2} 
+                            className="bg-transparent text-right text-lg font-mono text-white focus:outline-none w-full flex-1" 
+                        />
                     </div>
                 ))}
             </div>

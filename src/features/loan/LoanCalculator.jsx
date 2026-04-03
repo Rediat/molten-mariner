@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { calculateLoan, getAmortizationSchedule } from '../../utils/financial-utils';
 import { useHistory } from '../../context/HistoryContext';
 import { List, X, FileText, FileSpreadsheet, Info, HelpCircle, Trash2, Settings, History } from 'lucide-react';
@@ -42,6 +42,25 @@ const LoanCalculator = ({ toggleHelp, toggleSettings }) => {
     const [showExplanation, setShowExplanation] = useState(false);
     const [showHistory, setShowHistory] = useState(false);
 
+    // Refs for input focus
+    const amountRef = useRef(null);
+    const rateRef = useRef(null);
+    const yearsRef = useRef(null);
+    const paymentsMadeRef = useRef(null);
+
+    const inputRefs = {
+        amount: amountRef,
+        rate: rateRef,
+        years: yearsRef,
+        paymentsMade: paymentsMadeRef
+    };
+
+    const clearField = (field, ref) => {
+        setValues(prev => ({ ...prev, [field]: null }));
+        setResult(null);
+        setTimeout(() => ref.current?.focus(), 0);
+    };
+
     const calculatePeriodsBetween = (d1, d2, freq) => {
         const start = new Date(d1), end = new Date(d2);
         if (isNaN(start) || isNaN(end)) return 0;
@@ -58,18 +77,28 @@ const LoanCalculator = ({ toggleHelp, toggleSettings }) => {
     };
 
     const handleCalculate = () => {
-        const termPeriods = values.years * values.frequency;
-        let pmtMade = useDates
-            ? Math.max(0, Math.min(calculatePeriodsBetween(values.startDate, values.futureDate, values.frequency), termPeriods))
-            : values.paymentsMade;
+        const amt = values.amount || 0;
+        const rate = values.rate || 0;
+        const yrs = values.years || 0;
+        const freq = values.frequency || 12;
+        const pmtMadeState = values.paymentsMade || 0;
 
-        const res = calculateLoan(values.amount, values.rate, values.years, pmtMade, values.frequency);
+        const termPeriods = yrs * freq;
+        let pmtMade = useDates
+            ? Math.max(0, Math.min(calculatePeriodsBetween(values.startDate, values.futureDate, freq), termPeriods))
+            : pmtMadeState;
+
+        const res = calculateLoan(amt, rate, yrs, pmtMade, freq);
         setResult({ ...res, calculatedPayments: pmtMade });
         addToHistory('LOAN', { ...values, useDates, calculatedPayments: pmtMade }, res);
     };
 
     const handleChange = (field, val) => {
-        setValues(prev => ({ ...prev, [field]: field.includes('Date') ? val : (parseFloat(val) || 0) }));
+        const isDate = field.toLowerCase().includes('date');
+        const cleanVal = typeof val === 'string' ? val.replace(/,/g, '') : val;
+        const numericVal = cleanVal === '' ? null : (parseFloat(cleanVal) || 0);
+        setValues(prev => ({ ...prev, [field]: isDate ? val : numericVal }));
+        setResult(null);
     };
 
     const schedule = result ? getAmortizationSchedule(values.amount, values.rate, values.years, values.frequency, values.startDate) : [];
@@ -227,10 +256,22 @@ const LoanCalculator = ({ toggleHelp, toggleSettings }) => {
                                 <div key={field.id} className="bg-neutral-800/50 rounded-xl p-3 border border-transparent hover:border-neutral-700 transition-all">
                                     <div className="flex justify-between items-center gap-4">
                                         <div className="flex flex-col shrink-0 items-start text-left">
-                                            <label className="text-base font-bold text-neutral-300">{field.label}</label>
+                                            <label 
+                                                onClick={() => clearField(field.id, inputRefs[field.id])}
+                                                className="text-base font-bold text-neutral-300 cursor-pointer hover:text-primary-400 transition-colors"
+                                                title="Click to Clear"
+                                            >
+                                                {field.label}
+                                            </label>
                                             <span className="text-[10px] uppercase tracking-wider text-neutral-500 font-semibold">{field.sub}</span>
                                         </div>
-                                        <FormattedNumberInput value={values[field.id]} onChange={(e) => handleChange(field.id, e.target.value)} decimals={field.decimals} className="bg-transparent text-right text-xl font-mono text-white focus:outline-none w-full flex-1" />
+                                        <FormattedNumberInput 
+                                            ref={inputRefs[field.id]}
+                                            value={values[field.id]} 
+                                            onChange={(e) => handleChange(field.id, e.target.value)} 
+                                            decimals={field.decimals} 
+                                            className="bg-transparent text-right text-xl font-mono text-white focus:outline-none w-full flex-1" 
+                                        />
                                     </div>
                                 </div>
                             ))}
@@ -248,10 +289,22 @@ const LoanCalculator = ({ toggleHelp, toggleSettings }) => {
                                 <div className="bg-neutral-800/50 rounded-xl p-3 border border-transparent hover:border-neutral-700 transition-all">
                                     <div className="flex justify-between items-center gap-4">
                                         <div className="flex flex-col shrink-0 items-start text-left">
-                                            <label className="text-base font-bold text-neutral-300">Payments Made</label>
+                                            <label 
+                                                onClick={() => clearField('paymentsMade', paymentsMadeRef)}
+                                                className="text-base font-bold text-neutral-300 cursor-pointer hover:text-primary-400 transition-colors"
+                                                title="Click to Clear"
+                                            >
+                                                Payments Made
+                                            </label>
                                             <span className="text-[10px] uppercase tracking-wider text-neutral-500 font-semibold">Count</span>
                                         </div>
-                                        <FormattedNumberInput value={values.paymentsMade} onChange={(e) => handleChange('paymentsMade', e.target.value)} decimals={0} className="bg-transparent text-right text-xl font-mono text-white focus:outline-none w-full flex-1" />
+                                        <FormattedNumberInput 
+                                            ref={paymentsMadeRef}
+                                            value={values.paymentsMade} 
+                                            onChange={(e) => handleChange('paymentsMade', e.target.value)} 
+                                            decimals={0} 
+                                            className="bg-transparent text-right text-xl font-mono text-white focus:outline-none w-full flex-1" 
+                                        />
                                     </div>
                                 </div>
                             )}

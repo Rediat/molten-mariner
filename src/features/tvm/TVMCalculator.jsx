@@ -430,15 +430,6 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
                                         />
                                     )}
                                 </div>
-                                {!field.isReadOnly && (
-                                    <button
-                                        onClick={() => clearField(field.id)}
-                                        className="p-1 rounded-full text-neutral-600 hover:text-red-400 hover:bg-red-400/10 transition-all opacity-0 group-hover:opacity-100"
-                                        title="Clear Field"
-                                    >
-                                        <X size={14} />
-                                    </button>
-                                )}
                             </div>
                         </div>
                     </div>
