@@ -132,8 +132,12 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
             <div className="bg-gradient-to-r from-primary-900/30 to-neutral-800/50 border border-primary-500/30 rounded-xl p-3 mb-4 text-xs text-neutral-300 text-left">
                 <p className="font-bold text-primary-400 mb-1">Treasury Bill Calculator</p>
                 <p className="text-[11px] leading-relaxed">
-                    Calculate T-Bill purchase price using discount pricing. Enter face value, tenure,
-                    and discount rate to determine your total investment including brokerage fees.
+                    {mode === 'forward'
+                        ? 'Face→Cost: Enter the face value (amount at maturity), tenure, and discount rate to calculate your purchase price, brokerage, and total consideration.'
+                        : 'Budget→Face: Enter your total budget (total consideration), tenure, and discount rate to find out what face value T-Bill you can purchase.'}
+                </p>
+                <p className="text-[11px] leading-relaxed mt-1 text-neutral-500">
+                    Effective Yield = (Net Return / Total Consideration) × (365 / Days) × 100
                 </p>
             </div>
         )}

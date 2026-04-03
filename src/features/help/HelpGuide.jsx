@@ -628,17 +628,26 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
             >
                 <p>
                     Calculate Treasury Bill purchase prices and returns using discount pricing.
-                    Perfect for bidding on government T-Bills and understanding your actual yield.
+                    Supports two modes: calculate what you pay for a given face value, or find
+                    what face value you can get for a given budget.
                 </p>
+
+                <div className="pt-2">
+                    <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Calculation Modes:</p>
+                    <FieldList fields={[
+                        { name: 'Face→Cost', description: 'Enter the face value (amount at maturity) to calculate purchase price, brokerage, and total consideration' },
+                        { name: 'Budget→Face', description: 'Enter your total budget (total consideration) to find what face value T-Bill you can purchase' }
+                    ]} />
+                </div>
 
                 <div className="pt-2">
                     <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Inputs:</p>
                     <FieldList fields={[
-                        { name: 'Face Value', description: 'The amount you receive at maturity (par value)' },
+                        { name: 'Face Value / Budget', description: 'Face value (forward mode) or total budget (reverse mode) — the primary input swaps based on selected mode' },
                         { name: 'Tenure', description: 'Duration of the T-Bill (28, 91, 182, or 364 days)' },
                         { name: 'Discount Rate', description: 'Annual discount rate used to calculate purchase price' },
-                        { name: 'Issue Date', description: 'The date when the T-Bill is issued' },
-                        { name: 'Brokerage %', description: 'Commission percentage charged by your broker' }
+                        { name: 'Brokerage %', description: 'Commission percentage charged by your broker' },
+                        { name: 'Issue Date', description: 'The date when the T-Bill is issued' }
                     ]} />
                 </div>
 
@@ -647,23 +656,31 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                     <FieldList fields={[
                         { name: 'Purchase Price', description: 'Amount to pay for the T-Bill (before brokerage)' },
                         { name: 'Brokerage', description: 'Commission amount based on purchase price' },
-                        { name: 'Total Consideration', description: 'Total amount you pay (purchase price + brokerage)' },
+                        { name: 'Total Consideration / Face Value', description: 'In forward mode: total you pay. In reverse mode: the face value you can purchase with your budget' },
                         { name: 'Maturity Date', description: 'Date when the T-Bill matures' },
                         { name: 'Discount', description: 'Difference between face value and purchase price' },
-                        { name: 'Net Return', description: 'Your actual profit after brokerage (face value - total consideration)' },
-                        { name: 'Effective Yield', description: 'Annualized return on your total investment (including brokerage)' }
+                        { name: 'Net Return', description: 'Your actual profit after brokerage (face value − total consideration)' },
+                        { name: 'Effective Yield', description: 'Annualized return based on net return relative to total consideration' }
                     ]} />
                 </div>
 
                 <InfoBox type="formula">
                     <strong>Purchase Price = Face Value / (1 + (Rate × Days / 365))</strong>
                     <br />This is the standard discount pricing formula for T-Bills.
+                    <br /><br />
+                    <strong>Effective Yield = (Net Return / Total Consideration) × (365 / Days) × 100</strong>
+                    <br />Accounts for brokerage fees in the yield calculation.
                 </InfoBox>
 
                 <InfoBox type="tip">
-                    <strong>Compare Effective Yield:</strong> The effective yield shows your actual annualized return
-                    considering the total amount paid (purchase price + brokerage). It's typically higher than
-                    the discount rate due to the discount pricing method.
+                    <strong>Mode Toggle:</strong> Use the <strong>Face→Cost</strong> / <strong>Budget→Face</strong> toggle
+                    in the header to switch between modes. This is useful when you have a specific budget and want to
+                    know the maximum face value T-Bill you can bid on.
+                </InfoBox>
+
+                <InfoBox type="tip">
+                    <strong>Reverse Mode:</strong> In Budget→Face mode, the calculator derives the purchase price
+                    from your budget after removing brokerage, then calculates the face value using the discount formula in reverse.
                 </InfoBox>
             </HelpSection>
 
