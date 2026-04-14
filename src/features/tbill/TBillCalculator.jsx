@@ -86,8 +86,9 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
             addToHistory('T-BILL', { faceValue: actualFaceValue, issueDate, tenure, discountRate: disc, brokerageRate: brok, mode: 'forward' }, res);
         } else {
             // Reverse: Total Consideration → Face Value
-            // Quantity = Investment amount ÷ price (rounded down)
-            const quantity = budget > 0 ? Math.floor(budget / unitPrice) : 0;
+            // Quantity = Investment amount ÷ (price + brokerage) (rounded down)
+            const unitPriceInclBrok = unitPrice * (1 + (brok / 100));
+            const quantity = budget > 0 ? Math.floor(budget / unitPriceInclBrok) : 0;
             
             const purchasePrice = quantity * unitPrice;
             const brokerage = purchasePrice * (brok / 100);
