@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "chmod +x node_modules/.bin/vite && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "sync-tbill": "node scripts/sync-tbill.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.27.1",
@@ -25,6 +26,8 @@
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",
     "autoprefixer": "^10.4.19",
+    "axios": "^1.15.0",
+    "cheerio": "^1.2.0",
     "eslint": "^8.57.0",
     "eslint-plugin-react": "^7.34.2",
     "eslint-plugin-react-hooks": "^4.6.2",
