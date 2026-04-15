@@ -268,32 +268,34 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
                 <div className="grid grid-cols-2 gap-2">
                     <div className="bg-neutral-800/40 rounded-xl p-2 border border-transparent hover:border-neutral-700">
                         <div className="flex flex-col">
-                            <div className="flex justify-between items-center mb-1">
-                                <label 
-                                    onClick={() => clearField(setDiscountRate, discountRateRef)}
-                                    className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold text-left cursor-pointer hover:text-white transition-colors"
-                                    title="Click to Clear"
-                                >
-                                    Discount %
-                                </label>
-                                {currentPrediction && (
-                                    <button
-                                        onClick={() => setDiscountRate(currentPrediction)}
-                                        title="Apply AI Prediction"
-                                        className="text-[8px] bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ring-1 ring-indigo-500/50 transition-all active:scale-95 whitespace-nowrap"
-                                    >
-                                        AI: {currentPrediction}%
-                                    </button>
-                                )}
+                            <label 
+                                onClick={() => clearField(setDiscountRate, discountRateRef)}
+                                className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold mb-1 text-left cursor-pointer hover:text-white transition-colors"
+                                title="Click to Clear"
+                            >
+                                Discount Rate %
+                            </label>
+                            <div className="flex items-center justify-between gap-2">
+                                <div className="shrink-0 flex items-center">
+                                    {currentPrediction && (
+                                        <button
+                                            onClick={() => setDiscountRate(currentPrediction)}
+                                            title="Apply AI Prediction"
+                                            className="text-[10px] bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 font-bold uppercase tracking-wider px-2 py-1 rounded-md ring-1 ring-indigo-500/50 transition-all active:scale-95 whitespace-nowrap"
+                                        >
+                                            AI: {currentPrediction}%
+                                        </button>
+                                    )}
+                                </div>
+                                <FormattedNumberInput
+                                    ref={discountRateRef}
+                                    value={discountRate}
+                                    onChange={(e) => setDiscountRate(e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0))}
+                                    decimals={2}
+                                    className="bg-transparent text-right text-lg font-mono focus:outline-none w-full text-white min-w-0"
+                                    placeholder="12"
+                                />
                             </div>
-                            <FormattedNumberInput
-                                ref={discountRateRef}
-                                value={discountRate}
-                                onChange={(e) => setDiscountRate(e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0))}
-                                decimals={2}
-                                className="bg-transparent text-right text-lg font-mono focus:outline-none w-full text-white"
-                                placeholder="12"
-                            />
                         </div>
                     </div>
                     <div className="bg-neutral-800/40 rounded-xl p-2 border border-transparent hover:border-neutral-700">
