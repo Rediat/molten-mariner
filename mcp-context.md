@@ -4237,7 +4237,8 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                         { name: 'Quantity', description: 'The number of 5,000 ETB units being purchased' },
                         { name: 'Purchase Price', description: 'The discounted amount to pay for the T-Bill (before brokerage)' },
                         { name: 'Brokerage', description: 'The commission amount based on the purchase price' },
-                        { name: 'Total Consideration / Face Value', description: 'In forward mode: total out-of-pocket cost. In reverse mode: the final maturity value you receive' },
+                        { name: 'Total Consideration / Face Value', description: 'The primary result: total out-of-pocket cost (Forward) or the maturity value received (Reverse)' },
+                        { name: 'Actual Face Value / Actual Cost', description: 'The secondary result: the exact maturity amount (Forward) or the actual amount spent (Reverse) after rounding to the nearest 5,000 unit' },
                         { name: 'Maturity Date', description: 'The date when the T-Bill matures and you receive the face value' },
                         { name: 'Discount', description: 'The difference between face value and purchase price (gross profit)' },
                         { name: 'Net Return', description: 'Your actual profit after accounting for brokerage (Face Value − Total Consideration)' },
@@ -6759,10 +6760,15 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
                                         {formatCurrency(isReverse ? result.faceValue : result.totalConsideration)}
                                     </p>
                                 </div>
-                                {isReverse && (
+                                {isReverse ? (
                                     <div className="text-right">
                                         <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Actual Cost</p>
                                         <p className="text-sm font-black text-white">{formatCurrency(result.totalConsideration)}</p>
+                                    </div>
+                                ) : (
+                                    <div className="text-right">
+                                        <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Actual Face Value</p>
+                                        <p className="text-sm font-black text-white">{formatCurrency(result.faceValue)}</p>
                                     </div>
                                 )}
                             </div>

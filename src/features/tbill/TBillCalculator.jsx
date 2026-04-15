@@ -354,10 +354,15 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
                                         {formatCurrency(isReverse ? result.faceValue : result.totalConsideration)}
                                     </p>
                                 </div>
-                                {isReverse && (
+                                {isReverse ? (
                                     <div className="text-right">
                                         <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Actual Cost</p>
                                         <p className="text-sm font-black text-white">{formatCurrency(result.totalConsideration)}</p>
+                                    </div>
+                                ) : (
+                                    <div className="text-right">
+                                        <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Actual Face Value</p>
+                                        <p className="text-sm font-black text-white">{formatCurrency(result.faceValue)}</p>
                                     </div>
                                 )}
                             </div>
