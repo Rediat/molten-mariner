@@ -30,7 +30,13 @@ Fixed-income analysis made simple.
 Never be confused by interest rates again.
 *   **Nominal <-> Effective:** Convert between Nominal rates (APR) and Effective Annual Rates (EAR) with a single click.
 
-### 6. 🕒 Intelligent History
+### 6. 🎟️ Treasury Bill Calculator
+Professional bidding tools for T-Bill investors.
+*   **Unit-Based Logic:** Calculated based on standard 5,000 ETB units used in Ethiopian auctions.
+*   **Forward & Reverse Modes:** Solve for total cost from face value, or find the maximum face value possible within a set budget.
+*   **Effective Yield:** Accurately determine annualized returns accounting for brokerage fees.
+
+### 7. 🕒 Intelligent History
 *   **Auto-Save:** Your calculations are automatically saved so you never lose your work.
 *   **Recall:** One-tap recall to bring past calculations back to the active screen.
 

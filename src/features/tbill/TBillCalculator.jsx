@@ -161,15 +161,21 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
 
             {/* Explanation Panel */}
             {showExplanation && (
-                <div className="bg-gradient-to-r from-primary-900/30 to-neutral-800/50 border border-primary-500/30 rounded-xl p-2 mb-2 text-xs text-neutral-300 text-left">
-                    <p className="font-bold text-primary-400 mb-1">Treasury Bill Calculator</p>
+                <div className="bg-gradient-to-r from-primary-900/30 to-neutral-800/50 border border-primary-500/30 rounded-xl p-2 mb-2 text-xs text-neutral-300 text-left scale-100 animate-in fade-in slide-in-from-top-1 duration-200">
+                    <p className="font-bold text-primary-400 mb-1 flex items-center gap-1.5">
+                        <Info className="w-3 h-3" />
+                        Treasury Bill Unit-Based Bidding
+                    </p>
                     <p className="text-[11px] leading-relaxed">
                         {mode === 'forward'
-                            ? 'Face→Cost: Enter the face value (amount at maturity), tenure, and discount rate to calculate your purchase price, brokerage, and total consideration.'
-                            : 'Budget→Face: Enter your total budget (total consideration), tenure, and discount rate to find out what face value T-Bill you can purchase.'}
+                            ? 'Face→Cost: Enter your target face value. The calculator floors this to the nearest 5,000 ETB unit and calculates your purchase price and brokerage.'
+                            : 'Budget→Face: Enter your investment budget. The calculator determines the maximum number of 5,000 ETB units you can afford.'}
                     </p>
-                    <p className="text-[11px] leading-relaxed mt-1 text-neutral-500">
-                        Effective Yield = (Net Return / Total Consideration) × (365 / Days) × 100
+                    <p className="text-[11px] leading-relaxed mt-1 text-neutral-400">
+                        <span className="font-bold text-primary-400">Unit Logic:</span> T-Bills are sold in denominations of <span className="text-white">5,000 ETB</span>.
+                    </p>
+                    <p className="text-[11px] leading-relaxed mt-1 text-neutral-500 italic">
+                        Yield = (Net Return / Total Cost) × (365 / Days) × 100
                     </p>
                 </div>
             )}

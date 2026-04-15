@@ -37,7 +37,13 @@ Fixed-income analysis made simple.
 Never be confused by interest rates again.
 *   **Nominal <-> Effective:** Convert between Nominal rates (APR) and Effective Annual Rates (EAR) with a single click.
 
-### 6. 🕒 Intelligent History
+### 6. 🎟️ Treasury Bill Calculator
+Professional bidding tools for T-Bill investors.
+*   **Unit-Based Logic:** Calculated based on standard 5,000 ETB units used in Ethiopian auctions.
+*   **Forward & Reverse Modes:** Solve for total cost from face value, or find the maximum face value possible within a set budget.
+*   **Effective Yield:** Accurately determine annualized returns accounting for brokerage fees.
+
+### 7. 🕒 Intelligent History
 *   **Auto-Save:** Your calculations are automatically saved so you never lose your work.
 *   **Recall:** One-tap recall to bring past calculations back to the active screen.
 
@@ -152,8 +158,10 @@ This is a React + Tailwind CSS rebuild of the FinCalc Android Pro TVM Calculator
 ## Features implemented
 
 - **TVM Calculator**: Full Time Value of Money calculator (PV, FV, PMT, N, I/Y).
-- **Responsive Layout**: Mobile-friendly design resembling the original app.
-- **Dark Mode**: sleek dark interface with green accents.
+- **T-Bill Bidding**: Unit-based (5,000 ETB) Treasury Bill calculator with forward/reverse modes and effective yield.
+- **Advanced Tools**: Loan amortization, Bond valuation, Cash Flow (NPV/IRR), and Pension modeling.
+- **Drive & Ride**: Traffic-aware fare calculator with route comparison and GPS live tracking.
+- **Dark Mode**: Sleek dark interface with glassmorphism and premium aesthetics.
 
 ## Troubleshooting
 
@@ -215,7 +223,7 @@ function AppContent() {
     const { settings } = useSettings();
     const [activeTab, setActiveTab] = useState(() => {
         // Initialize to first enabled tab
-        const tabOrder = settings.tabOrder || ['tvm', 'goal', 'loan', 'pension', 'transport', 'flow', 'bond', 'rates', 'tbill', 'inflation', 'history'];
+        const tabOrder = settings.tabOrder || ['tvm', 'goal', 'loan', 'pension', 'inflation', 'tbill', 'transport', 'flow', 'bond', 'rates', 'history'];
         const firstEnabled = tabOrder.find(id => settings[TAB_TO_SETTING[id]]);
         return firstEnabled || 'tvm';
     });
@@ -232,7 +240,7 @@ function AppContent() {
     useEffect(() => {
         const settingKey = TAB_TO_SETTING[activeTab];
         if (settingKey && !settings[settingKey]) {
-            const tabOrder = settings.tabOrder || ['tvm', 'goal', 'loan', 'pension', 'transport', 'flow', 'bond', 'rates', 'tbill', 'inflation', 'history'];
+            const tabOrder = settings.tabOrder || ['tvm', 'goal', 'loan', 'pension', 'inflation', 'tbill', 'transport', 'flow', 'bond', 'rates', 'history'];
             const firstEnabled = tabOrder.find(id => settings[TAB_TO_SETTING[id]]);
             if (firstEnabled) {
                 setActiveTab(firstEnabled);
@@ -360,9 +368,9 @@ export default App;
 ## src/components/FormattedNumberInput.jsx
 
 ```javascript
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 
-const FormattedNumberInput = ({
+const FormattedNumberInput = forwardRef(({
     value,
     onChange,
     className,
@@ -371,18 +379,22 @@ const FormattedNumberInput = ({
     useGrouping = true,
     forceFixedOnFocus = false,
     ...props
-}) => {
+}, ref) => {
     const [displayValue, setDisplayValue] = useState('');
     const [isFocused, setIsFocused] = useState(false);
     const inputRef = useRef(null);
 
+    // Expose the input element through the ref
+    useImperativeHandle(ref, () => inputRef.current);
+
     const formatNumber = (num) => {
-        if (num === null || num === undefined || num === '' || isNaN(num)) return '';
+        // If the number is null/empty, we format it as 0 for display when blurred
+        const effectiveNum = (num === null || num === undefined || num === '' || isNaN(num)) ? 0 : num;
         return new Intl.NumberFormat('en-US', {
             minimumFractionDigits: decimals,
             maximumFractionDigits: decimals,
             useGrouping
-        }).format(num);
+        }).format(effectiveNum);
     };
 
     useEffect(() => {
@@ -391,9 +403,10 @@ const FormattedNumberInput = ({
 
     const handleFocus = (e) => {
         setIsFocused(true);
-        if (value !== null && value !== undefined && !isNaN(value)) {
+        if (value !== null && value !== undefined && !isNaN(value) && value !== '') {
             setDisplayValue(forceFixedOnFocus ? parseFloat(value).toFixed(decimals) : value.toString());
         } else {
+            // Show empty string when focused if value is null
             setDisplayValue('');
         }
         props.onFocus?.(e);
@@ -401,6 +414,10 @@ const FormattedNumberInput = ({
 
     const handleBlur = (e) => {
         setIsFocused(false);
+        // On blur, if the value is null/empty, notify parent to set it to 0
+        if (value === null || value === undefined || value === '' || isNaN(value)) {
+            onChange({ target: { value: '0' } });
+        }
         setDisplayValue(formatNumber(value));
         props.onBlur?.(e);
     };
@@ -418,7 +435,9 @@ const FormattedNumberInput = ({
             placeholder={placeholder}
         />
     );
-};
+});
+
+FormattedNumberInput.displayName = 'FormattedNumberInput';
 
 export default FormattedNumberInput;
 
@@ -588,7 +607,7 @@ const Layout = ({ children, activeTab, onTabChange, showHelp, onCloseHelp }) => 
     ];
 
     // Get tab order from settings
-    const tabOrder = settings.tabOrder || ['tvm', 'goal', 'loan', 'flow', 'bond', 'rates', 'tbill', 'history'];
+    const tabOrder = settings.tabOrder || ['tvm', 'goal', 'loan', 'pension', 'inflation', 'tbill', 'transport', 'flow', 'bond', 'rates', 'history'];
 
     // Filter nav items based on settings and sort by tabOrder
     // History tab is always placed at the far right (last position)
@@ -663,60 +682,152 @@ export default Layout;
 ## src/components/PlacesAutocomplete.jsx
 
 ```javascript
-import React, { useRef, useEffect, useCallback } from 'react';
-import { MapPin, Crosshair } from 'lucide-react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
+import { MapPin, Crosshair, Search, Loader2 } from 'lucide-react';
 
 const PlacesAutocomplete = ({ placeholder, onPlaceSelected, label, accentColor = 'white', compact = false, onUseCurrentLocation, locationLoading, externalInputRef, mapsReady }) => {
     const internalRef = useRef(null);
     const inputRef = externalInputRef || internalRef;
-    const autocompleteRef = useRef(null);
-    const onPlaceSelectedRef = useRef(onPlaceSelected);
+    const [predictions, setPredictions] = useState([]);
+    const [showDropdown, setShowDropdown] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [sessionToken, setSessionToken] = useState(null);
+    
+    // Services refs
+    const autocompleteService = useRef(null);
+    const placesService = useRef(null);
+    const dropdownRef = useRef(null);
 
+    // Initialize Services
     useEffect(() => {
-        onPlaceSelectedRef.current = onPlaceSelected;
-    }, [onPlaceSelected]);
+        if (!window.google?.maps?.places || !mapsReady) return;
+        
+        autocompleteService.current = new window.google.maps.places.AutocompleteService();
+        // PlacesService requires an HTML element, even if we just use it for getDetails
+        const dummyDiv = document.createElement('div');
+        placesService.current = new window.google.maps.places.PlacesService(dummyDiv);
+        setSessionToken(new window.google.maps.places.AutocompleteSessionToken());
+    }, [mapsReady]);
 
+    // Handle clicks outside dropdown to close it
     useEffect(() => {
-        if (!window.google?.maps?.places || !inputRef.current || autocompleteRef.current) return;
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target) && !inputRef.current?.contains(event.target)) {
+                setShowDropdown(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [inputRef]);
 
-        const ac = new window.google.maps.places.Autocomplete(inputRef.current, {
+    const fetchPredictions = useCallback((input) => {
+        if (!input || input.length < 2 || !autocompleteService.current) {
+            setPredictions([]);
+            setShowDropdown(false);
+            return;
+        }
+
+        setLoading(true);
+        // Addis Ababa center for biasing
+        const addisAbaba = new window.google.maps.LatLng(9.0333, 38.7500);
+        
+        autocompleteService.current.getPlacePredictions({
+            input,
+            sessionToken,
             componentRestrictions: { country: 'et' },
-            fields: ['geometry', 'formatted_address', 'name'],
+            locationBias: { radius: 10000, center: addisAbaba }, // 10km radius from city center
+        }, (results, status) => {
+            if (status === window.google.maps.places.PlacesServiceStatus.OK && results && results.length > 0) {
+                setLoading(false);
+                setPredictions(results);
+                setShowDropdown(true);
+            } else if (placesService.current) {
+                // Fallback to textSearch for unordered or complex queries if Autocomplete fails
+                placesService.current.textSearch({
+                    query: input + ' Addis Ababa Ethiopia',
+                    location: addisAbaba,
+                    radius: 20000,
+                }, (textResults, textStatus) => {
+                    setLoading(false);
+                    if (textStatus === window.google.maps.places.PlacesServiceStatus.OK && textResults) {
+                        // Map textSearch results to match the prediction object format
+                        const mappedResults = textResults.slice(0, 5).map(res => ({
+                            place_id: res.place_id,
+                            description: res.name + ', ' + (res.formatted_address || ''),
+                            structured_formatting: {
+                                main_text: res.name,
+                                secondary_text: res.formatted_address || 'Addis Ababa',
+                            },
+                        }));
+                        setPredictions(mappedResults);
+                        setShowDropdown(mappedResults.length > 0);
+                    } else {
+                        setPredictions([]);
+                        setShowDropdown(false);
+                    }
+                });
+            } else {
+                setLoading(false);
+                setPredictions([]);
+                setShowDropdown(false);
+            }
         });
+    }, [sessionToken]);
 
-        ac.addListener('place_changed', () => {
-            const place = ac.getPlace();
-            if (place?.geometry?.location) {
-                onPlaceSelectedRef.current({
+    const debounceTimerRef = useRef(null);
+
+    const handleInputChange = (e) => {
+        const value = e.target.value;
+        if (debounceTimerRef.current) {
+            clearTimeout(debounceTimerRef.current);
+        }
+        
+        if (!value) {
+            setPredictions([]);
+            setShowDropdown(false);
+            return;
+        }
+
+        debounceTimerRef.current = setTimeout(() => {
+            fetchPredictions(value);
+        }, 300);
+    };
+
+    const handleSelectPrediction = (prediction) => {
+        if (!placesService.current || !prediction.place_id) return;
+
+        setLoading(true);
+        setShowDropdown(false);
+        if (inputRef.current) inputRef.current.value = prediction.description;
+
+        placesService.current.getDetails({
+            placeId: prediction.place_id,
+            fields: ['geometry', 'formatted_address', 'name'],
+            sessionToken
+        }, (place, status) => {
+            setLoading(false);
+            if (status === window.google.maps.places.PlacesServiceStatus.OK && place?.geometry?.location) {
+                onPlaceSelected({
                     lat: place.geometry.location.lat(),
                     lng: place.geometry.location.lng(),
                     name: place.name,
                     address: place.formatted_address,
                 });
+                // Refresh session token for the next trip
+                setSessionToken(new window.google.maps.places.AutocompleteSessionToken());
             }
         });
+    };
 
-        autocompleteRef.current = ac;
-
-        return () => {
-            if (autocompleteRef.current) {
-                window.google.maps.event.clearInstanceListeners(autocompleteRef.current);
-                autocompleteRef.current = null;
-            }
-        };
-    }, [mapsReady]);
-
-    // Allow parent to set input value (for current location)
     const setInputValue = useCallback((val) => {
         if (inputRef.current) inputRef.current.value = val;
-    }, []);
+    }, [inputRef]);
 
-    // Expose setInputValue via a ref callback pattern
     useEffect(() => {
-        if (onPlaceSelectedRef.current && inputRef.current) {
+        if (onPlaceSelected && inputRef.current) {
             inputRef.current._setInputValue = setInputValue;
         }
-    }, [setInputValue]);
+    }, [onPlaceSelected, setInputValue, inputRef]);
 
     const colorMap = {
         primary: 'text-primary-400',
@@ -724,39 +835,46 @@ const PlacesAutocomplete = ({ placeholder, onPlaceSelected, label, accentColor =
         white: 'text-white',
     };
 
-    if (compact) {
-        return (
-            <div className="flex items-center gap-2 min-w-0 py-1">
+    const renderInput = () => (
+        <div className="flex-1 min-w-0 flex items-center gap-2 cursor-text" onClick={() => inputRef.current?.focus()}>
+            <label className={`uppercase tracking-wider font-bold shrink-0 text-left ${compact ? 'text-[8px] w-8' : 'text-[10px] w-10'} ${accentColor === 'primary' ? 'text-primary-400' : 'text-neutral-500'}`}>
+                {label}
+            </label>
+            <div className="flex-1 relative">
+                <input
+                    ref={inputRef}
+                    type="text"
+                    placeholder={placeholder}
+                    className={`w-full bg-transparent font-medium focus:outline-none text-white placeholder-neutral-600 min-w-0 py-1 ${compact ? 'text-xs' : 'text-sm'}`}
+                    autoComplete="off"
+                    onChange={handleInputChange}
+                    onFocus={() => predictions.length > 0 && setShowDropdown(true)}
+                />
+            </div>
+            {loading && <Loader2 className="w-3 h-3 text-primary-500 animate-spin shrink-0" />}
+        </div>
+    );
+
+    return (
+        <div className="relative">
+            <div className={`${compact ? 'flex items-center gap-2 min-w-0 py-1' : 'bg-neutral-800/40 rounded-xl p-2.5 border border-transparent hover:border-neutral-700 flex items-center gap-2 min-w-0'}`}>
                 <button
                     onClick={() => {
                         if (inputRef.current) {
                             inputRef.current.value = '';
                             inputRef.current.focus();
                         }
-                        if (onPlaceSelectedRef.current) {
-                            onPlaceSelectedRef.current(null);
-                        }
+                        onPlaceSelected(null);
+                        setPredictions([]);
+                        setShowDropdown(false);
                     }}
-                    className="shrink-0 p-1 -m-1 rounded-full hover:bg-neutral-800/50 transition-colors focus:outline-none focus:ring-1 focus:ring-primary-500/50"
-                    title="Clear and focus input"
+                    className={`shrink-0 rounded-full hover:bg-neutral-700/50 transition-colors focus:outline-none focus:ring-1 focus:ring-primary-500/50 ${compact ? 'p-1 -m-1' : 'p-1.5 -m-1.5'}`}
                 >
-                    <MapPin className={`w-3.5 h-3.5 ${colorMap[accentColor] || 'text-white'}`} />
+                    <MapPin className={`${compact ? 'w-3.5 h-3.5' : 'w-4 h-4'} ${colorMap[accentColor] || 'text-white'}`} />
                 </button>
-                <div
-                    className="flex-1 min-w-0 flex items-center gap-2 cursor-text"
-                    onClick={() => inputRef.current?.focus()}
-                >
-                    <label className={`text-[8px] uppercase tracking-wider font-bold shrink-0 w-8 text-left ${accentColor === 'primary' ? 'text-primary-400' : 'text-neutral-500'}`}>
-                        {label}
-                    </label>
-                    <input
-                        ref={inputRef}
-                        type="text"
-                        placeholder={placeholder}
-                        className="w-full bg-transparent text-xs font-medium focus:outline-none text-white placeholder-neutral-600 min-w-0 py-1"
-                        autoComplete="off"
-                    />
-                </div>
+                
+                {renderInput()}
+
                 {onUseCurrentLocation && (
                     <button
                         onClick={() => onUseCurrentLocation(setInputValue)}
@@ -768,43 +886,35 @@ const PlacesAutocomplete = ({ placeholder, onPlaceSelected, label, accentColor =
                     </button>
                 )}
             </div>
-        );
-    }
 
-    return (
-        <div className="bg-neutral-800/40 rounded-xl p-2.5 border border-transparent hover:border-neutral-700">
-            <div className="flex items-center gap-2 min-w-0">
-                <button
-                    onClick={() => {
-                        if (inputRef.current) {
-                            inputRef.current.value = '';
-                            inputRef.current.focus();
-                        }
-                        if (onPlaceSelectedRef.current) {
-                            onPlaceSelectedRef.current(null);
-                        }
-                    }}
-                    className="shrink-0 p-1.5 -m-1.5 rounded-full hover:bg-neutral-700/50 transition-colors focus:outline-none focus:ring-1 focus:ring-primary-500/50"
-                    title="Clear and focus input"
+            {/* Dropdown Suggestions */}
+            {showDropdown && (
+                <div 
+                    ref={dropdownRef}
+                    className="absolute left-0 right-0 top-full mt-2 bg-neutral-900 border border-neutral-700 rounded-xl shadow-2xl z-[100] overflow-hidden max-h-[250px] overflow-y-auto backdrop-blur-xl bg-neutral-900/95"
                 >
-                    <MapPin className={`w-4 h-4 ${colorMap[accentColor] || 'text-white'}`} />
-                </button>
-                <div
-                    className="flex-1 min-w-0 flex items-center gap-2 cursor-text"
-                    onClick={() => inputRef.current?.focus()}
-                >
-                    <label className={`text-[10px] uppercase tracking-wider font-bold shrink-0 w-10 text-left ${accentColor === 'primary' ? 'text-primary-400' : 'text-neutral-500'}`}>
-                        {label}
-                    </label>
-                    <input
-                        ref={inputRef}
-                        type="text"
-                        placeholder={placeholder}
-                        className="w-full bg-transparent text-sm font-medium focus:outline-none text-white placeholder-neutral-600 min-w-0 py-1"
-                        autoComplete="off"
-                    />
+                    {predictions.map((p) => (
+                        <button
+                            key={p.place_id}
+                            onClick={() => handleSelectPrediction(p)}
+                            className="w-full text-left p-3 hover:bg-neutral-800 flex items-start gap-3 transition-colors border-b border-neutral-800 last:border-0 group"
+                        >
+                            <MapPin className="w-4 h-4 text-neutral-500 group-hover:text-primary-400 mt-0.5 shrink-0" />
+                            <div className="flex-1 min-w-0">
+                                <div className="text-sm font-bold text-white truncate group-hover:text-primary-400 transition-colors">
+                                    {p.structured_formatting.main_text}
+                                </div>
+                                <div className="text-[10px] text-neutral-500 truncate font-medium">
+                                    {p.structured_formatting.secondary_text}
+                                </div>
+                            </div>
+                        </button>
+                    ))}
+                    <div className="p-2 bg-neutral-950/50 flex justify-end">
+                        <img src="https://maps.gstatic.com/mapfiles/api-3/images/powered-by-google-on-non-white3_hdpi.png" alt="Google" className="h-2 opacity-50" />
+                    </div>
                 </div>
-            </div>
+            )}
         </div>
     );
 };
@@ -843,7 +953,7 @@ const SettingsModal = ({ isOpen, onClose }) => {
     if (!isOpen) return null;
 
     // Get ordered items based on tabOrder, with history always at the bottom
-    const tabOrder = settings.tabOrder || ['tvm', 'goal', 'loan', 'pension', 'flow', 'bond', 'rates', 'tbill', 'history'];
+    const tabOrder = settings.tabOrder || ['tvm', 'goal', 'loan', 'pension', 'inflation', 'tbill', 'transport', 'flow', 'bond', 'rates', 'history'];
     const orderedItems = tabOrder
         .filter(id => id !== 'history' && TAB_CONFIG[id]) // Exclude history and unknown tabs from normal order
         .map(id => ({ id, ...TAB_CONFIG[id] }));
@@ -1054,13 +1164,13 @@ const DEFAULT_SETTINGS = {
     showFlow: false,
     showBond: false,
     showRates: true,
-    showTBill: false,
+    showTBill: true,
     showPension: true,
     showInflation: false,
     showGoal: true,
-    showTransport: true,
+    showTransport: false,
     showHistory: false,
-    tabOrder: ['tvm', 'goal', 'loan', 'pension', 'inflation', 'transport', 'tbill', 'rates', 'history', 'flow', 'bond'],
+    tabOrder: ['tvm', 'goal', 'loan', 'pension', 'inflation', 'tbill', 'transport', 'rates', 'history', 'flow', 'bond'],
 };
 
 export const SettingsProvider = ({ children }) => {
@@ -1163,7 +1273,7 @@ export const useTransport = () => {
 ## src/features/bond/BondCalculator.jsx
 
 ```javascript
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { calculateBond, calculateBondYTM, calculateBondYTC, calculateBondDuration, calculateBondConvexity } from '../../utils/financial-utils';
 import { useHistory } from '../../context/HistoryContext';
 import { Info, HelpCircle, Trash2, Settings, History } from 'lucide-react';
@@ -1182,27 +1292,58 @@ const BondCalculator = ({ toggleHelp, toggleSettings }) => {
     const [showExplanation, setShowExplanation] = useState(false);
     const [showHistory, setShowHistory] = useState(false);
 
+    // Refs for input focus
+    const inputRefs = {
+        faceValue: useRef(null),
+        couponRate: useRef(null),
+        ytm: useRef(null),
+        price: useRef(null),
+        years: useRef(null),
+        callPrice: useRef(null),
+        yearsToCall: useRef(null)
+    };
+
+    const clearField = (field, ref) => {
+        setValues(prev => ({ ...prev, [field]: null }));
+        setResult(null);
+        setMetrics(null);
+        setTimeout(() => ref.current?.focus(), 0);
+    };
+
     const handleCalculate = () => {
-        const { faceValue, couponRate, ytm, price, years, frequency, callPrice, yearsToCall } = values;
-        let res, ytmUsed = ytm;
+        const fv = values.faceValue || 0;
+        const cr = values.couponRate || 0;
+        const ytmVal = values.ytm || 0;
+        const prc = values.price || 0;
+        const yrs = values.years || 0;
+        const freq = values.frequency || 1;
+        const cp = values.callPrice || 0;
+        const ytcVal = values.yearsToCall || 0;
+
+        let res, ytmUsed = ytmVal;
 
         if (target === 'price') {
-            res = calculateBond(faceValue, couponRate, ytm, years, frequency);
+            res = calculateBond(fv, cr, ytmVal, yrs, freq);
         } else {
-            res = calculateBondYTM(faceValue, couponRate, price, years, frequency);
+            res = calculateBondYTM(fv, cr, prc, yrs, freq);
             ytmUsed = res;
         }
 
-        const duration = calculateBondDuration(faceValue, couponRate, ytmUsed, years, frequency);
-        const convexity = calculateBondConvexity(faceValue, couponRate, ytmUsed, years, frequency);
-        const ytc = yearsToCall > 0 ? calculateBondYTC(faceValue, couponRate, target === 'price' ? res : price, yearsToCall, callPrice, frequency) : null;
+        const duration = calculateBondDuration(fv, cr, ytmUsed, yrs, freq);
+        const convexity = calculateBondConvexity(fv, cr, ytmUsed, yrs, freq);
+        const ytc = ytcVal > 0 ? calculateBondYTC(fv, cr, target === 'price' ? res : prc, ytcVal, cp, freq) : null;
 
         setResult(res);
         setMetrics({ duration, convexity, ytc });
         addToHistory('BOND', { ...values, target: target.toUpperCase() }, { result: res, ...duration, convexity, ytc });
     };
 
-    const handleChange = (field, val) => setValues(prev => ({ ...prev, [field]: parseFloat(val) || 0 }));
+    const handleChange = (field, val) => {
+        const numericVal = val === '' ? null : (parseFloat(val.toString().replace(/,/g, '')) || 0);
+        setValues(prev => ({ ...prev, [field]: numericVal }));
+        setResult(null);
+        setMetrics(null);
+    };
 
     const inputFields = [
         { id: 'faceValue', label: 'Face Value', sub: 'Par' },
@@ -1264,10 +1405,22 @@ const BondCalculator = ({ toggleHelp, toggleSettings }) => {
                 {inputFields.map(field => (
                     <div key={field.id} className="bg-neutral-800/40 rounded-lg p-1.5 flex justify-between items-center gap-4 border border-transparent hover:border-neutral-700 transition-all">
                         <div className="flex flex-col shrink-0 items-start text-left">
-                            <label className="text-sm font-bold text-neutral-300">{field.label}</label>
+                            <label 
+                                onClick={() => clearField(field.id, inputRefs[field.id])}
+                                className="text-sm font-bold text-neutral-300 cursor-pointer hover:text-primary-400 transition-colors"
+                                title="Click to Clear"
+                            >
+                                {field.label}
+                            </label>
                             <span className="text-[9px] uppercase tracking-tighter text-neutral-500 font-bold">{field.sub}</span>
                         </div>
-                        <FormattedNumberInput value={values[field.id]} onChange={(e) => handleChange(field.id, e.target.value)} decimals={field.id.includes('years') ? 0 : 2} className="bg-transparent text-right text-lg font-mono text-white focus:outline-none w-full flex-1" />
+                        <FormattedNumberInput 
+                            ref={inputRefs[field.id]}
+                            value={values[field.id]} 
+                            onChange={(e) => handleChange(field.id, e.target.value)} 
+                            decimals={field.id.includes('years') ? 0 : 2} 
+                            className="bg-transparent text-right text-lg font-mono text-white focus:outline-none w-full flex-1" 
+                        />
                     </div>
                 ))}
             </div>
@@ -1366,9 +1519,8 @@ export default BondCalculator;
 import React, { useState, useEffect, useRef } from 'react';
 import { MapPin, Navigation, Info, Loader2, ArrowLeft, ExternalLink, MessageSquare, Zap } from 'lucide-react';
 import { useTransport } from '../../context/TransportContext';
-import LiveFareTracker from './LiveFareTracker';
 
-const DrivingView = ({ onClose, fareData }) => {
+const DrivingView = ({ onClose, fareData, onOpenLiveTracker }) => {
     const {
         origin, destination,
         setDistanceKm, setDurationValue, setDurationText, setRouteVersion,
@@ -1384,7 +1536,6 @@ const DrivingView = ({ onClose, fareData }) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [showSteps, setShowSteps] = useState(false);
-    const [showLiveTracker, setShowLiveTracker] = useState(false);
 
     // Initialize Map and DirectionsRenderer
     useEffect(() => {
@@ -1737,31 +1888,23 @@ const DrivingView = ({ onClose, fareData }) => {
             {/* Top Bar overlay */}
             {hasRoute && (
                 <div className="absolute top-0 left-0 right-0 z-10 p-4 bg-gradient-to-b from-neutral-900/90 to-transparent pointer-events-none">
-                    <div className="flex gap-2 items-start pointer-events-auto max-w-[95%]">
+                    <div className="flex gap-2 items-center pointer-events-auto max-w-[95%]">
                         <button
                             onClick={onClose}
-                            className="p-3.5 bg-neutral-900/80 backdrop-blur-md border border-neutral-700/50 rounded-xl shadow-lg text-neutral-400 hover:text-white transition-all hover:bg-neutral-800 shrink-0"
+                            className="h-12 w-12 flex items-center justify-center bg-neutral-900/80 backdrop-blur-md border border-neutral-700/50 rounded-xl shadow-lg text-neutral-400 hover:text-white transition-all hover:bg-neutral-800 shrink-0"
                             title="Back to Calculator"
                         >
                             <ArrowLeft className="w-5 h-5" />
                         </button>
-                        <div className="bg-neutral-900/80 backdrop-blur-md border border-neutral-700/50 p-2.5 rounded-xl shadow-lg flex-1 overflow-hidden">
-                            <div className="flex items-center gap-2 mb-1.5">
-                                <div className="w-2 h-2 rounded-full bg-primary-500 shrink-0 shadow-[0_0_8px_rgba(14,165,233,0.8)]" />
-                                <span className="text-xs font-bold text-white truncate">{origin?.name || 'Origin'}</span>
-                            </div>
-                            <div className="flex items-center gap-2 ml-1 border-l-2 border-dashed border-neutral-700 pl-3 py-1 my-0.5">
-                                <span className="text-[10px] text-neutral-400 font-medium tracking-wider flex flex-col">
-                                    <span>{error ? 'Route Unavailable' : (routeInfo ? `${routeInfo.distance} • ${routeInfo.duration}` : 'Calculating...')}</span>
-                                    {routeInfo && cachedRoutesData.length > 1 && (
-                                        <span className="text-[9px] text-neutral-500 mt-0.5 italic">Tap grey lines for alternative routes</span>
-                                    )}
-                                </span>
-                            </div>
-                            <div className="flex items-center gap-2 mt-1.5">
-                                <div className="w-2 h-2 rounded-full bg-rose-500 shrink-0 shadow-[0_0_8px_rgba(244,63,94,0.8)]" />
-                                <span className="text-xs font-bold text-white truncate">{destination?.name || 'Destination'}</span>
-                            </div>
+                        <div className="bg-neutral-900/80 backdrop-blur-md border border-neutral-700/50 px-3 rounded-xl shadow-lg flex-1 overflow-hidden flex flex-col justify-center h-12 gap-0">
+                             <div className="flex items-center gap-2 group">
+                                 <div className="w-1.5 h-1.5 rounded-full bg-primary-500 shrink-0 shadow-[0_0_8px_rgba(14,165,233,0.5)]" />
+                                 <span className="text-[10px] font-bold text-white truncate">{origin?.name || 'Origin'}</span>
+                             </div>
+                             <div className="flex items-center gap-2 group">
+                                 <div className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0 shadow-[0_0_8px_rgba(244,63,94,0.5)]" />
+                                 <span className="text-[10px] font-bold text-neutral-400 truncate group-hover:text-white transition-colors">{destination?.name || 'Destination'}</span>
+                             </div>
                         </div>
                     </div>
                 </div>
@@ -1788,12 +1931,73 @@ const DrivingView = ({ onClose, fareData }) => {
 
             {/* Bottom Sheet – Navigate + Turn-by-turn */}
             {routeInfo && (
-                <div className={`absolute bottom-0 left-0 right-0 bg-neutral-900 border-t border-neutral-700 transition-all duration-300 ease-in-out z-30 flex flex-col shadow-[0_-10px_40px_rgba(0,0,0,0.5)] ${showSteps ? 'h-[45%]' : 'h-14'}`}>
-                    <div className="flex items-center gap-2 p-2.5 shrink-0">
+                <div className={`absolute bottom-0 left-0 right-0 bg-neutral-900 border-t border-neutral-700 transition-all duration-300 ease-in-out z-30 flex flex-col shadow-[0_-10px_40px_rgba(0,0,0,0.5)] ${showSteps ? 'h-[45%]' : 'pb-4'}`}>
+                    
+                    {/* Route Cards */}
+                    {!showSteps && cachedRoutesData.length > 0 && (
+                        <div className="flex gap-2 pt-4 px-3 pb-2">
+                            {cachedRoutesData.map((route, index) => {
+                                const isActive = index === cachedActiveRouteIndex;
+                                const durationSecs = parseInt(route.duration) || 0;
+                                const durationMins = Math.ceil(durationSecs / 60);
+                                const distanceMeters = route.distanceMeters || 0;
+                                const distanceKms = parseFloat((distanceMeters / 1000).toFixed(1));
+                                const labels = route.routeLabels || [];
+                                
+                                // Determine label based on route properties
+                                let labelText = 'Alternative';
+                                
+                                // Identify shortest/longest distance
+                                const allDistances = cachedRoutesData.map(r => r.distanceMeters || 0);
+                                const minDistance = Math.min(...allDistances);
+                                const maxDistance = Math.max(...allDistances);
+                                
+                                // Identify fastest/slowest duration
+                                const allDurations = cachedRoutesData.map(r => parseInt(r.duration) || 0);
+                                const minDuration = Math.min(...allDurations);
+                                const maxDuration = Math.max(...allDurations);
+
+                                if (labels.includes('DEFAULT_ROUTE')) labelText = 'Suggested';
+                                else if (distanceMeters === minDistance) labelText = 'Shortest';
+                                else if (durationSecs === minDuration) labelText = 'Fastest';
+                                else if (labels.includes('FUEL_EFFICIENT')) labelText = 'Economical';
+                                else if (distanceMeters === maxDistance) labelText = 'Longest';
+                                else if (durationSecs === maxDuration) labelText = 'Avoid Traffic';
+                                else if (labels.includes('SHORTER_DISTANCE')) labelText = 'Shortest';
+                                else labelText = 'Alternative';
+
+                                return (
+                                    <div 
+                                        key={index}
+                                        onClick={() => setCachedActiveRouteIndex(index)}
+                                        className={`flex-1 min-w-0 p-2 rounded-xl flex flex-col items-center justify-center border-2 cursor-pointer transition-all ${
+                                            isActive 
+                                            ? 'border-primary-500 bg-primary-500/10 scale-100 shadow-[0_0_15px_rgba(14,165,233,0.15)] z-10' 
+                                            : 'border-transparent bg-neutral-800/80 hover:bg-neutral-800 scale-95 opacity-80'
+                                        }`}
+                                    >
+                                        <div className={`text-lg font-black flex items-end tracking-tight ${isActive ? 'text-primary-500' : 'text-white'}`}>
+                                            {durationMins}<span className="text-[10px] font-bold ml-0.5 mb-1">min</span>
+                                        </div>
+                                        <div className="text-[10px] text-neutral-400 font-bold mt-0.5">
+                                            {distanceKms} km
+                                        </div>
+                                        <div className="text-[9px] font-bold text-neutral-500 mt-1 uppercase tracking-wider whitespace-nowrap overflow-hidden text-ellipsis w-full text-center">
+                                            {labelText}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+
+                    <div className={`flex items-center gap-2 p-2.5 shrink-0 ${!showSteps ? 'border-t border-neutral-800/50' : ''}`}>
                         {/* Google Maps Navigate button */}
                         <button
                             onClick={() => {
                                 if (!origin || !destination) return;
+                                const activeRoute = cachedRoutesData[cachedActiveRouteIndex];
+                                // Use basic origin/destination, let Google handle traffic-aware active route
                                 const params = `origin=${origin.lat},${origin.lng}&destination=${destination.lat},${destination.lng}&travelmode=driving&dir_action=navigate`;
                                 const webUrl = `https://www.google.com/maps/dir/?api=1&${params}`;
                                 const isAndroid = /android/i.test(navigator.userAgent);
@@ -1861,7 +2065,7 @@ const DrivingView = ({ onClose, fareData }) => {
 
                         {/* Live Track button */}
                         <button
-                            onClick={() => setShowLiveTracker(true)}
+                            onClick={onOpenLiveTracker}
                             className="flex items-center gap-2 bg-gradient-to-r from-amber-600/30 to-amber-500/20 hover:from-amber-600/50 hover:to-amber-500/35 text-amber-400 font-bold text-xs py-2 px-3 rounded-lg transition-all border border-amber-500/40 active:scale-[0.97] shrink-0"
                             title="Live fare tracking with GPS"
                         >
@@ -1882,9 +2086,6 @@ const DrivingView = ({ onClose, fareData }) => {
                                     <Navigation className="w-3 h-3 text-primary-400" />
                                 </div>
                                 <span className="text-xs font-bold text-white">Steps</span>
-                            </div>
-                            <div className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest bg-neutral-800 px-1.5 py-0.5 rounded">
-                                {showSteps ? 'Hide' : 'Show'}
                             </div>
                         </div>
                     </div>
@@ -1923,12 +2124,6 @@ const DrivingView = ({ onClose, fareData }) => {
                 </div>
             )}
 
-            {/* Live Fare Tracker — always mounted for state persistence */}
-            <LiveFareTracker
-                isVisible={showLiveTracker}
-                onClose={() => setShowLiveTracker(false)}
-                fareData={fareData}
-            />
         </div>
     );
 };
@@ -1985,7 +2180,7 @@ const LiveFareTracker = ({ isVisible, onClose, fareData }) => {
 
     // Fare parameters from parent (with defaults)
     const mileage = fareData?.mileage ?? 0.10; // L/km
-    const costPerLiter = fareData?.costPerLiter ?? 135;
+    const costPerLiter = fareData?.costPerLiter ?? 145;
     const serviceMultiplier = fareData?.serviceMultiplier ?? 3;
     const waitMultiplier = fareData?.waitMultiplier ?? 2.5;
 
@@ -2415,7 +2610,7 @@ export default LiveFareTracker;
 ## src/features/flow/CashFlowCalculator.jsx
 
 ```javascript
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { calculateNPV, calculateIRR, calculateMIRR, calculatePaybackPeriod, calculateDiscountedPaybackPeriod, calculateProfitabilityIndex } from '../../utils/financial-utils';
 import { useHistory } from '../../context/HistoryContext';
 import { Plus, Trash2, Info, HelpCircle, Settings, History } from 'lucide-react';
@@ -2432,23 +2627,47 @@ const CashFlowCalculator = ({ toggleHelp, toggleSettings }) => {
     const [showExplanation, setShowExplanation] = useState(false);
     const [showHistory, setShowHistory] = useState(false);
 
+    // Refs for input focus
+    const rateRef = useRef(null);
+    const reinvestRateRef = useRef(null);
+    const flowRefs = useRef([]);
+
+    const clearRate = (setter, ref) => {
+        setter(null);
+        setResult(null);
+        setTimeout(() => ref.current?.focus(), 0);
+    };
+
+    const clearFlow = (index) => {
+        const newFlows = [...flows];
+        newFlows[index] = null;
+        setFlows(newFlows);
+        setResult(null);
+        setTimeout(() => flowRefs.current[index]?.focus(), 0);
+    };
+
     const handleCalculate = () => {
+        const r = rate || 0;
+        const rr = reinvestRate || 0;
+        const cleanFlows = flows.map(f => f || 0);
+
         const res = {
-            npv: calculateNPV(rate, flows),
-            irr: calculateIRR(flows),
-            mirr: calculateMIRR(flows, rate, reinvestRate),
-            payback: calculatePaybackPeriod(flows),
-            discountedPayback: calculateDiscountedPaybackPeriod(flows, rate),
-            pi: calculateProfitabilityIndex(flows, rate)
+            npv: calculateNPV(r, cleanFlows),
+            irr: calculateIRR(cleanFlows),
+            mirr: calculateMIRR(cleanFlows, r, rr),
+            payback: calculatePaybackPeriod(cleanFlows),
+            discountedPayback: calculateDiscountedPaybackPeriod(cleanFlows, r),
+            pi: calculateProfitabilityIndex(cleanFlows, r)
         };
         setResult(res);
-        addToHistory('FLOW', { rate, reinvestRate, flows: flows.join(', ') }, res);
+        addToHistory('FLOW', { rate: r, reinvestRate: rr, flows: cleanFlows.join(', ') }, res);
     };
 
     const updateFlow = (index, val) => {
         const newFlows = [...flows];
-        newFlows[index] = parseFloat(val) || 0;
+        newFlows[index] = val === '' ? null : (parseFloat(val.replace(/,/g, '')) || 0);
         setFlows(newFlows);
+        setResult(null);
     };
 
     const formatYear = (val) => val === null ? 'Never' : `${val.toFixed(2)} Years`;
@@ -2479,25 +2698,64 @@ const CashFlowCalculator = ({ toggleHelp, toggleSettings }) => {
             )}
 
             <div className="bg-neutral-800/50 p-4 rounded-xl mb-4 grid grid-cols-2 gap-4">
-                {[{ label: 'Finance Rate (%)', value: rate, setter: setRate, color: 'primary' },
-                { label: 'Reinvest Rate (%)', value: reinvestRate, setter: setReinvestRate, color: 'secondary' }].map(item => (
-                    <div key={item.label} className="flex flex-col gap-1 items-start text-left">
-                        <label className="font-bold text-neutral-300 text-xs uppercase tracking-wide">{item.label}</label>
-                        <FormattedNumberInput
-                            value={item.value}
-                            onChange={(e) => item.setter(parseFloat(e.target.value) || 0)}
-                            className={`bg-transparent text-left text-lg font-mono text-${item.color}-400 focus:outline-none w-full border-b border-${item.color}-500/50`}
-                            placeholder="0.00"
-                        />
-                    </div>
-                ))}
+                <div className="flex flex-col gap-1 items-start text-left">
+                    <label 
+                        onClick={() => clearRate(setRate, rateRef)}
+                        className="font-bold text-neutral-300 text-[10px] uppercase tracking-wide cursor-pointer hover:text-primary-400 transition-colors"
+                        title="Click to Clear"
+                    >
+                        Finance Rate (%)
+                    </label>
+                    <FormattedNumberInput
+                        ref={rateRef}
+                        value={rate}
+                        onChange={(e) => {
+                            const val = e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0);
+                            setRate(val);
+                            setResult(null);
+                        }}
+                        className="bg-transparent text-left text-lg font-mono text-primary-400 focus:outline-none w-full border-b border-primary-500/50"
+                        placeholder="0.00"
+                    />
+                </div>
+                <div className="flex flex-col gap-1 items-start text-left">
+                    <label 
+                        onClick={() => clearRate(setReinvestRate, reinvestRateRef)}
+                        className="font-bold text-neutral-300 text-[10px] uppercase tracking-wide cursor-pointer hover:text-secondary-400 transition-colors"
+                        title="Click to Clear"
+                    >
+                        Reinvest Rate (%)
+                    </label>
+                    <FormattedNumberInput
+                        ref={reinvestRateRef}
+                        value={reinvestRate}
+                        onChange={(e) => {
+                            const val = e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0);
+                            setReinvestRate(val);
+                            setResult(null);
+                        }}
+                        className="bg-transparent text-left text-lg font-mono text-secondary-400 focus:outline-none w-full border-b border-secondary-500/50"
+                        placeholder="0.00"
+                    />
+                </div>
             </div>
 
             <div className="flex-1 overflow-y-auto space-y-2 pr-2 mb-4 scrollbar-hide">
                 {flows.map((flow, i) => (
                     <div key={i} className="flex items-center gap-3 bg-neutral-800/30 p-3 rounded-lg border border-transparent focus-within:border-neutral-700">
-                        <span className="text-xs font-bold text-neutral-500 w-8">CF {i}</span>
-                        <FormattedNumberInput value={flow} onChange={(e) => updateFlow(i, e.target.value)} className="flex-1 bg-transparent text-right font-mono text-white focus:outline-none" />
+                        <span 
+                            onClick={() => clearFlow(i)}
+                            className="text-[10px] font-bold text-neutral-500 w-8 cursor-pointer hover:text-primary-400 transition-colors"
+                            title="Click to Clear"
+                        >
+                            CF {i}
+                        </span>
+                        <FormattedNumberInput 
+                            ref={el => flowRefs.current[i] = el}
+                            value={flow} 
+                            onChange={(e) => updateFlow(i, e.target.value)} 
+                            className="flex-1 bg-transparent text-right font-mono text-white focus:outline-none" 
+                        />
                         {i > 0 && <button onClick={() => setFlows(flows.filter((_, idx) => idx !== i))} className="text-neutral-600 hover:text-red-400"><Trash2 size={16} /></button>}
                     </div>
                 ))}
@@ -2639,6 +2897,20 @@ const GoalPlanner = ({ toggleHelp, toggleSettings }) => {
 
     const bottomRef = useRef(null);
 
+    // Refs for input focus
+    const targetFVRef = useRef(null);
+    const yearsRef = useRef(null);
+    const rateRef = useRef(null);
+    const knownPVRef = useRef(null);
+    const knownPMTRef = useRef(null);
+    const pvRatioRef = useRef(null);
+
+    const clearField = (setter, ref) => {
+        setter(null);
+        setResults(null);
+        setTimeout(() => ref.current?.focus(), 0);
+    };
+
     // Auto-scroll to bottom when results are calculated
     useEffect(() => {
         if (results && bottomRef.current) {
@@ -2670,8 +2942,10 @@ const GoalPlanner = ({ toggleHelp, toggleSettings }) => {
     const handleCalculate = () => {
         try {
             const r = getPeriodicRate();
-            const n = years * frequency;
+            const yrs = years || 0;
+            const n = yrs * frequency;
             const isBegin = mode === 'BEGIN';
+            const fv = targetFV || 0;
 
             const fvFactorPV = getFVFactorPV(r, n);
             const fvFactorPMT = getFVFactorPMT(r, n, isBegin);
@@ -2685,69 +2959,74 @@ const GoalPlanner = ({ toggleHelp, toggleSettings }) => {
             if (solveMode === 'pmt') {
                 // Solve for PMT only (PV = 0)
                 calculatedPV = 0;
-                calculatedPMT = targetFV / fvFactorPMT;
+                calculatedPMT = (targetFV || 0) / fvFactorPMT;
                 totalContributions = calculatedPMT * n;
             } else if (solveMode === 'pv') {
                 // Solve for PV only (PMT = 0)
                 calculatedPMT = 0;
-                calculatedPV = targetFV / fvFactorPV;
+                calculatedPV = (targetFV || 0) / fvFactorPV;
                 totalContributions = calculatedPV;
             } else if (solveMode === 'combo') {
+                const fv = targetFV || 0;
+                const kpv = knownPV || 0;
+                const kpmt = knownPMT || 0;
+                const ratio = pvRatio || 0;
+
                 // Combo mode: Calculate based on ratio or known values
-                if (knownPV > 0 && knownPMT === 0) {
+                if (kpv > 0 && kpmt === 0) {
                     // User specified PV, solve for PMT
-                    calculatedPV = knownPV;
+                    calculatedPV = kpv;
                     const pvContributionToFV = calculatedPV * fvFactorPV;
-                    if (pvContributionToFV >= targetFV) {
+                    if (pvContributionToFV >= fv) {
                         // PV alone exceeds target - no PMT needed
                         calculatedPMT = 0;
                         totalContributions = calculatedPV;
                     } else {
-                        const remainingFV = targetFV - pvContributionToFV;
+                        const remainingFV = fv - pvContributionToFV;
                         calculatedPMT = remainingFV / fvFactorPMT;
                         totalContributions = calculatedPV + (calculatedPMT * n);
                     }
-                } else if (knownPMT > 0 && knownPV === 0) {
+                } else if (kpmt > 0 && kpv === 0) {
                     // User specified PMT, solve for PV
-                    calculatedPMT = knownPMT;
+                    calculatedPMT = kpmt;
                     const pmtContributionToFV = calculatedPMT * fvFactorPMT;
-                    if (pmtContributionToFV >= targetFV) {
+                    if (pmtContributionToFV >= fv) {
                         // PMT alone exceeds or meets target - no PV needed
                         calculatedPV = 0;
                         totalContributions = calculatedPMT * n;
                         // Calculate what they'll actually get and what PMT they'd need
                         const actualFV = pmtContributionToFV;
-                        const optimalPMT = targetFV / fvFactorPMT;
+                        const optimalPMT = fv / fvFactorPMT;
                         exceedsSuggestion = {
                             type: 'pmt_exceeds',
                             actualFV,
                             optimalPMT,
-                            currentPMT: knownPMT,
+                            currentPMT: kpmt,
                             actualInterest: actualFV - totalContributions,
                             interestPercent: ((actualFV - totalContributions) / actualFV * 100).toFixed(0)
                         };
                     } else {
-                        calculatedPV = (targetFV - pmtContributionToFV) / fvFactorPV;
+                        calculatedPV = (fv - pmtContributionToFV) / fvFactorPV;
                         totalContributions = calculatedPV + (calculatedPMT * n);
                     }
-                } else if (pvRatio >= 0 && pvRatio <= 100) {
+                } else if (ratio >= 0 && ratio <= 100) {
                     // Use ratio: pvRatio% comes from PV, (100-pvRatio)% from PMT contributions
-                    const pvPortion = pvRatio / 100;
+                    const pvPortion = ratio / 100;
                     const pmtPortion = 1 - pvPortion;
                     const combinedFactor = (pvPortion * fvFactorPV) + ((pmtPortion / n) * fvFactorPMT);
-                    totalContributions = targetFV / combinedFactor;
+                    totalContributions = fv / combinedFactor;
                     calculatedPV = totalContributions * pvPortion;
                     calculatedPMT = (totalContributions * pmtPortion) / n;
                 } else {
                     // Default: Equal weight to PV and total PMT contributions
                     const combinedFactor = (n * fvFactorPV) + fvFactorPMT;
-                    calculatedPMT = targetFV / combinedFactor;
+                    calculatedPMT = fv / combinedFactor;
                     calculatedPV = calculatedPMT * n;
                     totalContributions = calculatedPV + (calculatedPMT * n);
                 }
             }
 
-            totalInterestEarned = targetFV - totalContributions;
+            totalInterestEarned = (targetFV || 0) - totalContributions;
 
             // Calculate actionable insights
             const insights = calculateInsights(calculatedPMT, calculatedPV, totalContributions, totalInterestEarned, years, frequency, rate);
@@ -2891,12 +3170,23 @@ const GoalPlanner = ({ toggleHelp, toggleSettings }) => {
                 <div className="group relative bg-neutral-800/40 rounded-lg p-2 transition-all duration-300 border border-primary-500/50 ring-1 ring-primary-500/10 bg-neutral-800/60">
                     <div className="flex justify-between items-center gap-4">
                         <div className="flex flex-col items-start text-left shrink-0">
-                            <label className="text-xs font-bold text-primary-400 whitespace-nowrap">Target FV</label>
+                            <label 
+                                onClick={() => clearField(setTargetFV, targetFVRef)}
+                                className="text-xs font-bold text-primary-400 whitespace-nowrap cursor-pointer hover:text-white transition-colors"
+                                title="Click to Clear"
+                            >
+                                Target FV
+                            </label>
                             <span className="text-[8px] uppercase tracking-tighter text-neutral-500 font-bold whitespace-nowrap">Goal Amount</span>
                         </div>
                         <FormattedNumberInput
+                            ref={targetFVRef}
                             value={targetFV}
-                            onChange={(e) => setTargetFV(parseFloat(e.target.value.replace(/,/g, '')) || 0)}
+                            onChange={(e) => {
+                                const val = e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0);
+                                setTargetFV(val);
+                                setResults(null);
+                            }}
                             decimals={0}
                             className="bg-transparent text-right text-base font-mono focus:outline-none w-full placeholder-neutral-700 text-primary-400 font-black"
                             placeholder="1,000,000"
@@ -2908,12 +3198,23 @@ const GoalPlanner = ({ toggleHelp, toggleSettings }) => {
                 <div className="group relative bg-neutral-800/40 rounded-lg p-2 transition-all duration-300 border border-transparent hover:border-neutral-700">
                     <div className="flex justify-between items-center gap-4">
                         <div className="flex flex-col items-start text-left shrink-0">
-                            <label className="text-xs font-bold text-neutral-300 whitespace-nowrap">Years</label>
+                            <label 
+                                onClick={() => clearField(setYears, yearsRef)}
+                                className="text-xs font-bold text-neutral-300 whitespace-nowrap cursor-pointer hover:text-primary-400 transition-colors"
+                                title="Click to Clear"
+                            >
+                                Years
+                            </label>
                             <span className="text-[8px] uppercase tracking-tighter text-neutral-500 font-bold whitespace-nowrap">Time to Goal</span>
                         </div>
                         <FormattedNumberInput
+                            ref={yearsRef}
                             value={years}
-                            onChange={(e) => setYears(parseFloat(e.target.value.replace(/,/g, '')) || 0)}
+                            onChange={(e) => {
+                                const val = e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0);
+                                setYears(val);
+                                setResults(null);
+                            }}
                             decimals={0}
                             className="bg-transparent text-right text-base font-mono focus:outline-none w-full placeholder-neutral-700 text-white"
                             placeholder="30"
@@ -2925,12 +3226,23 @@ const GoalPlanner = ({ toggleHelp, toggleSettings }) => {
                 <div className="group relative bg-neutral-800/40 rounded-lg p-2 transition-all duration-300 border border-transparent hover:border-neutral-700">
                     <div className="flex justify-between items-center gap-4">
                         <div className="flex flex-col items-start text-left shrink-0">
-                            <label className="text-xs font-bold text-neutral-300 whitespace-nowrap">I/Y %</label>
+                            <label 
+                                onClick={() => clearField(setRate, rateRef)}
+                                className="text-xs font-bold text-neutral-300 whitespace-nowrap cursor-pointer hover:text-primary-400 transition-colors"
+                                title="Click to Clear"
+                            >
+                                I/Y %
+                            </label>
                             <span className="text-[8px] uppercase tracking-tighter text-neutral-500 font-bold whitespace-nowrap">Annual Rate</span>
                         </div>
                         <FormattedNumberInput
+                            ref={rateRef}
                             value={rate}
-                            onChange={(e) => setRate(parseFloat(e.target.value.replace(/,/g, '')) || 0)}
+                            onChange={(e) => {
+                                const val = e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0);
+                                setRate(val);
+                                setResults(null);
+                            }}
                             decimals={2}
                             className="bg-transparent text-right text-base font-mono focus:outline-none w-full placeholder-neutral-700 text-white"
                             placeholder="10"
@@ -2948,15 +3260,24 @@ const GoalPlanner = ({ toggleHelp, toggleSettings }) => {
                         {/* Known PV */}
                         <div className="flex justify-between items-center gap-4">
                             <div className="flex flex-col items-start text-left">
-                                <label className="text-xs font-bold text-neutral-400">Initial PV</label>
+                                <label 
+                                    onClick={() => clearField(setKnownPV, knownPVRef)}
+                                    className="text-xs font-bold text-neutral-400 cursor-pointer hover:text-white transition-colors"
+                                    title="Click to Clear"
+                                >
+                                    Initial PV
+                                </label>
                                 <span className="text-[8px] uppercase tracking-tighter text-neutral-600 font-bold">Lump Sum</span>
                             </div>
                             <FormattedNumberInput
+                                ref={knownPVRef}
                                 value={knownPV}
                                 onChange={(e) => {
-                                    setKnownPV(parseFloat(e.target.value.replace(/,/g, '')) || 0);
+                                    const val = e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0);
+                                    setKnownPV(val);
                                     setKnownPMT(0);
                                     setPvRatio(0);
+                                    setResults(null);
                                 }}
                                 decimals={0}
                                 className="bg-neutral-800 rounded-lg px-2 py-1 text-right text-sm font-mono focus:outline-none w-24 placeholder-neutral-700 text-white"
@@ -2967,15 +3288,24 @@ const GoalPlanner = ({ toggleHelp, toggleSettings }) => {
                         {/* Known PMT */}
                         <div className="flex justify-between items-center gap-4">
                             <div className="flex flex-col items-start text-left">
-                                <label className="text-xs font-bold text-neutral-400">Fixed PMT</label>
+                                <label 
+                                    onClick={() => clearField(setKnownPMT, knownPMTRef)}
+                                    className="text-xs font-bold text-neutral-400 cursor-pointer hover:text-white transition-colors"
+                                    title="Click to Clear"
+                                >
+                                    Fixed PMT
+                                </label>
                                 <span className="text-[8px] uppercase tracking-tighter text-neutral-600 font-bold">Per Period</span>
                             </div>
                             <FormattedNumberInput
+                                ref={knownPMTRef}
                                 value={knownPMT}
                                 onChange={(e) => {
-                                    setKnownPMT(parseFloat(e.target.value.replace(/,/g, '')) || 0);
+                                    const val = e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0);
+                                    setKnownPMT(val);
                                     setKnownPV(0);
                                     setPvRatio(0);
+                                    setResults(null);
                                 }}
                                 decimals={0}
                                 className="bg-neutral-800 rounded-lg px-2 py-1 text-right text-sm font-mono focus:outline-none w-24 placeholder-neutral-700 text-white"
@@ -2989,7 +3319,13 @@ const GoalPlanner = ({ toggleHelp, toggleSettings }) => {
                                 <div className="flex items-center gap-2 text-left">
                                     <div className="flex flex-col">
                                         <div className="flex items-center gap-1.5">
-                                            <label className="text-xs font-bold text-neutral-400">PV Ratio %</label>
+                                            <label 
+                                                onClick={() => clearField(setPvRatio, pvRatioRef)}
+                                                className="text-xs font-bold text-neutral-400 cursor-pointer hover:text-white transition-colors"
+                                                title="Click to Clear"
+                                            >
+                                                PV Ratio %
+                                            </label>
                                             <button
                                                 onClick={() => setShowPvRatioHelp(!showPvRatioHelp)}
                                                 className={`p-0.5 rounded-full transition-all ${showPvRatioHelp ? 'text-primary-400 bg-primary-400/10' : 'text-neutral-600 hover:text-neutral-400'}`}
@@ -3001,11 +3337,14 @@ const GoalPlanner = ({ toggleHelp, toggleSettings }) => {
                                     </div>
                                 </div>
                                 <FormattedNumberInput
+                                    ref={pvRatioRef}
                                     value={pvRatio}
                                     onChange={(e) => {
-                                        setPvRatio(parseFloat(e.target.value.replace(/,/g, '')) || 0);
+                                        const val = e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0);
+                                        setPvRatio(val);
                                         setKnownPV(0);
                                         setKnownPMT(0);
+                                        setResults(null);
                                     }}
                                     decimals={0}
                                     className="bg-neutral-800 rounded-lg px-2 py-1 text-right text-sm font-mono focus:outline-none w-24 placeholder-neutral-700 text-white"
@@ -3452,6 +3791,13 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                     <strong>Advanced Mode:</strong> Click the gear icon to set different payment frequency (P/Y)
                     and compounding frequency (C/Y) when they differ.
                 </InfoBox>
+
+                <InfoBox type="tip">
+                    <strong>Quick Clear:</strong> Click on any field's <strong>label</strong> 
+                    (e.g., "PV") to instantly clear it and focus the input. 
+                    The field remains blank while you are typing and only defaults to 0 
+                    when you leave the field (blur) without entering a value.
+                </InfoBox>
             </HelpSection>
 
             {/* Goal Planner */}
@@ -3862,41 +4208,64 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
             >
                 <p>
                     Calculate Treasury Bill purchase prices and returns using discount pricing.
-                    Perfect for bidding on government T-Bills and understanding your actual yield.
+                    T-Bills in Ethiopia are issued in units of <strong>5,000 ETB</strong>; this calculator
+                    automatically rounds your input down to the nearest unit to provide realistic bidding results.
                 </p>
+
+                <div className="pt-2">
+                    <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Calculation Modes:</p>
+                    <FieldList fields={[
+                        { name: 'Face→Cost', description: 'Enter the desired face value. The calculator floors this to the nearest 5,000 ETB unit to determine the actual bidding amount' },
+                        { name: 'Budget→Face', description: 'Enter your total investment budget. The calculator determines the maximum number of 5,000 ETB units you can afford including brokerage' }
+                    ]} />
+                </div>
 
                 <div className="pt-2">
                     <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Inputs:</p>
                     <FieldList fields={[
-                        { name: 'Face Value', description: 'The amount you receive at maturity (par value)' },
-                        { name: 'Tenure', description: 'Duration of the T-Bill (28, 91, 182, or 364 days)' },
+                        { name: 'Face Value / Budget', description: 'Face value (forward mode) or total budget (reverse mode) — the primary input swaps based on selected mode' },
+                        { name: 'Tenure', description: 'T-Bill duration (28, 91, 182, or 364 days), labeled with approximate periods: 1, 3, 6 months and 1 year' },
                         { name: 'Discount Rate', description: 'Annual discount rate used to calculate purchase price' },
-                        { name: 'Issue Date', description: 'The date when the T-Bill is issued' },
-                        { name: 'Brokerage %', description: 'Commission percentage charged by your broker' }
+                        { name: 'Brokerage %', description: 'Commission percentage charged by your broker' },
+                        { name: 'Issue Date', description: 'The date when the T-Bill is issued' }
                     ]} />
                 </div>
 
                 <div className="pt-2">
                     <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Results:</p>
                     <FieldList fields={[
-                        { name: 'Purchase Price', description: 'Amount to pay for the T-Bill (before brokerage)' },
-                        { name: 'Brokerage', description: 'Commission amount based on purchase price' },
-                        { name: 'Total Consideration', description: 'Total amount you pay (purchase price + brokerage)' },
-                        { name: 'Maturity Date', description: 'Date when the T-Bill matures' },
-                        { name: 'Discount', description: 'Difference between face value and purchase price' },
-                        { name: 'Net Return', description: 'Your actual profit after brokerage (face value - total consideration)' },
-                        { name: 'Effective Yield', description: 'Annualized return on your investment' }
+                        { name: 'Quantity', description: 'The number of 5,000 ETB units being purchased' },
+                        { name: 'Purchase Price', description: 'The discounted amount to pay for the T-Bill (before brokerage)' },
+                        { name: 'Brokerage', description: 'The commission amount based on the purchase price' },
+                        { name: 'Total Consideration / Face Value', description: 'In forward mode: total out-of-pocket cost. In reverse mode: the final maturity value you receive' },
+                        { name: 'Maturity Date', description: 'The date when the T-Bill matures and you receive the face value' },
+                        { name: 'Discount', description: 'The difference between face value and purchase price (gross profit)' },
+                        { name: 'Net Return', description: 'Your actual profit after accounting for brokerage (Face Value − Total Consideration)' },
+                        { name: 'Effective Yield', description: 'Annualized return based on net profit relative to total consideration' }
                     ]} />
                 </div>
 
                 <InfoBox type="formula">
                     <strong>Purchase Price = Face Value / (1 + (Rate × Days / 365))</strong>
                     <br />This is the standard discount pricing formula for T-Bills.
+                    <br /><br />
+                    <strong>Effective Yield = (Net Return / Total Consideration) × (365 / Days) × 100</strong>
+                    <br />Accounts for brokerage fees in the yield calculation.
                 </InfoBox>
 
                 <InfoBox type="tip">
-                    <strong>Compare Effective Yield:</strong> The effective yield shows your actual annualized return,
-                    which is typically higher than the discount rate due to the discount pricing method.
+                    <strong>Mode Toggle:</strong> Use the <strong>Face→Cost</strong> / <strong>Budget→Face</strong> toggle
+                    in the header to switch between modes. This is useful when you have a specific budget and want to
+                    know the maximum face value T-Bill you can bid on.
+                </InfoBox>
+
+                <InfoBox type="tip">
+                    <strong>Unit Pricing:</strong> All outputs are derived based on a standard unit size of 5,000 ETB per bill.
+                    The "Quantity" result shows exactly how many units your budget or face value allows.
+                </InfoBox>
+                <InfoBox type="tip">
+                    <strong>Reverse Mode:</strong> In Budget→Face mode, the calculator calculates the cost of a single unit (Price + Brokerage)
+                    and divides your budget by this unit cost to find the maximum possible quantity.
                 </InfoBox>
             </HelpSection>
 
@@ -3926,6 +4295,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                     <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Google Maps Integration:</p>
                     <FieldList fields={[
                         { name: 'From / To', description: 'Type an address and select from autocomplete suggestions. Locations are restricted to Ethiopia.' },
+                        { name: 'Quick Clear', description: 'Click the Map Pin icon in the From/To fields to instantly clear the location and focus the input' },
                         { name: 'Auto-Distance', description: 'When both From and To are selected, the driving distance and estimated travel time are fetched automatically via the Distance Matrix API' },
                         { name: '✓ Google Maps', description: 'A green indicator confirms the distance was auto-populated from Google Maps. You can still override it manually.' },
                         { name: '⇅ Swap Button', description: 'Click the swap icon between From and To fields to instantly reverse your origin and destination.' },
@@ -3937,11 +4307,25 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                     <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Map & Driving View:</p>
                     <FieldList fields={[
                         { name: 'View Map & Alternate Routes', description: 'Appears when both From and To are populated. Opens a full-screen interactive map overlay directly within the Ride tab.' },
-                        { name: 'Traffic-Aware Routing', description: 'Routes are fetched using the Google Routes API v2 with TRAFFIC_AWARE preference. Polylines are color-coded: blue (normal), yellow (slow), red (traffic jam).' },
-                        { name: 'Alternative Routes', description: 'When available, alternative routes are displayed as grey lines on the map. Tap any grey line to switch to that route.' },
-                        { name: 'Route Sync', description: 'Selecting a route on the map automatically updates the distance and travel time in the fare calculator — no need to re-enter values.' },
-                        { name: 'Turn-by-Turn Steps', description: 'An expandable bottom sheet on the map view shows step-by-step navigation directions with distance and time for each step.' },
-                        { name: '← Back Button', description: 'Press the back arrow on the map overlay to return to the fare calculator with your selected route data preserved.' }
+                        { name: 'Traffic-Aware Routing', description: 'Routes are color-coded: blue (normal), yellow (slow), red (traffic jam).' },
+                        { name: 'Alternative Routes', description: 'Up to 3 routes are shown with labels like Suggested, Shortest, Fastest, or Economical. Grey lines on the map indicate alternate paths — tap any to switch routes.' },
+                        { name: 'Navigate Button', description: 'Opens your selected route directly in the Google Maps app (Android) or browser for turn-by-turn navigation.' },
+                        { name: 'SMS Button', description: 'Generates a professional trip summary message (for the passenger) with fare, distance, and payment options (TeleBirr, CBE, or Cash).' },
+                        { name: 'Live Button', description: 'Opens the Live Fare Tracker for real-time GPS tracking (see below).' },
+                        { name: 'Turn-by-Turn Steps', description: 'An expandable bottom sheet shows step-by-step navigation directions.' },
+                        { name: '← Back Button', description: 'Return to the calculator with your selected route data preserved.' }
+                    ]} />
+                </div>
+
+                <div className="pt-2">
+                    <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Live Fare Tracker (GPS):</p>
+                    <p className="text-xs mb-2">Track your trip in real-time using your device's GPS. Perfect for verifying distances and calculating fares on the go.</p>
+                    <FieldList fields={[
+                        { name: 'Start Tracking', description: 'Begins recording distance and wait time. Your location must be enabled.' },
+                        { name: 'Wait Time Detection', description: 'Automatically detects when the vehicle is moving below 5 km/h to accumulate wait time charges.' },
+                        { name: 'Running Fare', description: 'A large, live display of the fare, updated every second based on distance and wait time.' },
+                        { name: 'GPS Accuracy', description: 'A real-time indicator (± meters) shows the reliability of your GPS fix.' },
+                        { name: 'Trip Summary', description: 'When stopped, view a complete breakdown of distance, duration, avg speed, and net gain.' }
                     ]} />
                 </div>
 
@@ -3968,12 +4352,11 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                         { name: 'Wait Time Charge', description: 'Total charge for wait time — estimated travel time + 10% buffer, multiplied by the Wait Multiplier. Added to the fare. Only shown when using Google Maps route.' },
                         { name: 'Total to Charge', description: 'The recommended fare (forward mode) or the entered fare (reverse mode), including wait time charge' },
                         { name: 'Per Head', description: 'Price divided by 4 passengers for cost-sharing' },
-                        { name: 'Total Fuel Cost', description: 'Distance × Mileage × Fuel Cost per Liter (always calculated as round-trip for true out-of-pocket cost)' },
-                        { name: 'Net Gain', description: 'Total to Charge minus Total Fuel Cost' },
-                        { name: 'Fuel / Km', description: 'Fuel cost per kilometer (one-way)' },
+                        { name: 'Fuel Cost', description: 'Distance × Mileage × Fuel Cost per Liter (always shown as round-trip for true out-of-pocket cost)' },
+                        { name: 'Net Gain', description: 'Total to Charge minus Total Fuel Cost. Displayed as (One-way / Round-trip) for better comparison.' },
                         { name: 'Revenue / Km', description: 'Total to Charge per kilometer' },
                         { name: 'Gain / Km', description: 'Net Gain per kilometer' },
-                        { name: 'Implied Service Multiplier', description: 'In reverse mode, shows what multiplier the entered fare represents' }
+                        { name: 'Service ×', description: 'In reverse mode, shows what service multiplier the entered fare represents.' }
                     ]} />
                 </div>
 
@@ -4180,7 +4563,15 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
             >
                 <div className="space-y-3">
                     <InfoBox type="tip">
-                        <strong>Clear Button:</strong> Use the CLR button to reset all fields to zero before starting a new calculation.
+                        <strong>Click Label to Clear:</strong> Standardized interaction across all calculators!
+                        Click any input field's <strong>label</strong> to instantly clear it and focus the 
+                        input. The field stays blank while focused and only defaults to 0 when you 
+                        leave the field (blur) without entering data. (Note: Date and Location fields are excluded).
+                    </InfoBox>
+
+                    <InfoBox type="tip">
+                        <strong>Clear Button:</strong> Use the CLR button at the bottom to reset <strong>all</strong> fields 
+                        to their default values at once.
                     </InfoBox>
 
                     <InfoBox type="tip">
@@ -4402,7 +4793,7 @@ export const FORECAST_END = 2050;
 ## src/features/inflation/InflationCalculator.jsx
 
 ```javascript
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { TrendingUp, Info, HelpCircle, Trash2, Settings, History, ChevronDown, ChevronUp } from 'lucide-react';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
 import { CalculateIcon } from '../../components/Icons';
@@ -4426,6 +4817,15 @@ const InflationCalculator = ({ toggleHelp, toggleSettings }) => {
     const [showHistory, setShowHistory] = useState(false);
     const [showPrediction, setShowPrediction] = useState(false);
     const [showInterpretation, setShowInterpretation] = useState(false);
+
+    // Refs for input focus
+    const amountRef = useRef(null);
+
+    const clearAmount = () => {
+        setAmount(null);
+        setResult(null);
+        setTimeout(() => amountRef.current?.focus(), 0);
+    };
 
     // Auto ARIMA: selects best (p,d,q) via AIC
     const { predictions, modelInfo } = useMemo(() => {
@@ -4495,21 +4895,22 @@ const InflationCalculator = ({ toggleHelp, toggleSettings }) => {
             }
         }
 
-        const adjustedValue = amount * cumulativeMultiplier;
+        const amt = amount || 0;
+        const adjustedValue = amt * cumulativeMultiplier;
         const cumulativeRate = (cumulativeMultiplier - 1) * 100;
         const avgAnnualRate = yearlyBreakdown.length > 0
             ? (Math.pow(cumulativeMultiplier, 1 / yearlyBreakdown.length) - 1) * 100
             : 0;
 
         // Purchasing power: how much would you need today to match the amount from startYear
-        const purchasingPower = amount / cumulativeMultiplier;
+        const purchasingPower = amt / cumulativeMultiplier;
 
         const isPredicted = yearlyBreakdown.some(yb => yb.predicted);
 
         const res = {
             startYear: sYear,
             endYear: eYear,
-            amount,
+            amount: amt,
             adjustedValue,
             cumulativeRate,
             avgAnnualRate,
@@ -4519,7 +4920,7 @@ const InflationCalculator = ({ toggleHelp, toggleSettings }) => {
         };
 
         setResult(res);
-        addToHistory('INFLATION', { startYear: sYear, endYear: eYear, amount }, res);
+        addToHistory('INFLATION', { startYear: sYear, endYear: eYear, amount: amt }, res);
     };
 
     const handleClear = () => {
@@ -4703,12 +5104,23 @@ const InflationCalculator = ({ toggleHelp, toggleSettings }) => {
                     <div className="bg-neutral-800/40 rounded-xl p-2.5 border border-primary-500/50 ring-1 ring-primary-500/10">
                         <div className="flex justify-between items-center gap-2 min-w-0">
                             <div className="shrink-0">
-                                <label className="text-sm font-bold text-primary-400 block leading-tight text-left">Amount (Birr)</label>
+                                <label 
+                                    onClick={clearAmount}
+                                    className="text-sm font-bold text-primary-400 block leading-tight text-left cursor-pointer hover:text-white transition-colors"
+                                    title="Click to Clear"
+                                >
+                                    Amount (Birr)
+                                </label>
                                 <span className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold text-left block">Value in Start Year</span>
                             </div>
                             <FormattedNumberInput
+                                ref={amountRef}
                                 value={amount}
-                                onChange={(e) => setAmount(parseFloat(e.target.value.replace(/,/g, '')) || 0)}
+                                onChange={(e) => {
+                                    const val = e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0);
+                                    setAmount(val);
+                                    setResult(null);
+                                }}
                                 decimals={2}
                                 className="bg-transparent text-right text-lg font-mono focus:outline-none text-primary-400 font-black min-w-0 flex-1"
                                 placeholder="1,000"
@@ -4896,7 +5308,7 @@ export default InflationCalculator;
 ## src/features/loan/LoanCalculator.jsx
 
 ```javascript
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { calculateLoan, getAmortizationSchedule } from '../../utils/financial-utils';
 import { useHistory } from '../../context/HistoryContext';
 import { List, X, FileText, FileSpreadsheet, Info, HelpCircle, Trash2, Settings, History } from 'lucide-react';
@@ -4940,6 +5352,25 @@ const LoanCalculator = ({ toggleHelp, toggleSettings }) => {
     const [showExplanation, setShowExplanation] = useState(false);
     const [showHistory, setShowHistory] = useState(false);
 
+    // Refs for input focus
+    const amountRef = useRef(null);
+    const rateRef = useRef(null);
+    const yearsRef = useRef(null);
+    const paymentsMadeRef = useRef(null);
+
+    const inputRefs = {
+        amount: amountRef,
+        rate: rateRef,
+        years: yearsRef,
+        paymentsMade: paymentsMadeRef
+    };
+
+    const clearField = (field, ref) => {
+        setValues(prev => ({ ...prev, [field]: null }));
+        setResult(null);
+        setTimeout(() => ref.current?.focus(), 0);
+    };
+
     const calculatePeriodsBetween = (d1, d2, freq) => {
         const start = new Date(d1), end = new Date(d2);
         if (isNaN(start) || isNaN(end)) return 0;
@@ -4956,18 +5387,28 @@ const LoanCalculator = ({ toggleHelp, toggleSettings }) => {
     };
 
     const handleCalculate = () => {
-        const termPeriods = values.years * values.frequency;
-        let pmtMade = useDates
-            ? Math.max(0, Math.min(calculatePeriodsBetween(values.startDate, values.futureDate, values.frequency), termPeriods))
-            : values.paymentsMade;
+        const amt = values.amount || 0;
+        const rate = values.rate || 0;
+        const yrs = values.years || 0;
+        const freq = values.frequency || 12;
+        const pmtMadeState = values.paymentsMade || 0;
 
-        const res = calculateLoan(values.amount, values.rate, values.years, pmtMade, values.frequency);
+        const termPeriods = yrs * freq;
+        let pmtMade = useDates
+            ? Math.max(0, Math.min(calculatePeriodsBetween(values.startDate, values.futureDate, freq), termPeriods))
+            : pmtMadeState;
+
+        const res = calculateLoan(amt, rate, yrs, pmtMade, freq);
         setResult({ ...res, calculatedPayments: pmtMade });
         addToHistory('LOAN', { ...values, useDates, calculatedPayments: pmtMade }, res);
     };
 
     const handleChange = (field, val) => {
-        setValues(prev => ({ ...prev, [field]: field.includes('Date') ? val : (parseFloat(val) || 0) }));
+        const isDate = field.toLowerCase().includes('date');
+        const cleanVal = typeof val === 'string' ? val.replace(/,/g, '') : val;
+        const numericVal = cleanVal === '' ? null : (parseFloat(cleanVal) || 0);
+        setValues(prev => ({ ...prev, [field]: isDate ? val : numericVal }));
+        setResult(null);
     };
 
     const schedule = result ? getAmortizationSchedule(values.amount, values.rate, values.years, values.frequency, values.startDate) : [];
@@ -5125,10 +5566,22 @@ const LoanCalculator = ({ toggleHelp, toggleSettings }) => {
                                 <div key={field.id} className="bg-neutral-800/50 rounded-xl p-3 border border-transparent hover:border-neutral-700 transition-all">
                                     <div className="flex justify-between items-center gap-4">
                                         <div className="flex flex-col shrink-0 items-start text-left">
-                                            <label className="text-base font-bold text-neutral-300">{field.label}</label>
+                                            <label 
+                                                onClick={() => clearField(field.id, inputRefs[field.id])}
+                                                className="text-base font-bold text-neutral-300 cursor-pointer hover:text-primary-400 transition-colors"
+                                                title="Click to Clear"
+                                            >
+                                                {field.label}
+                                            </label>
                                             <span className="text-[10px] uppercase tracking-wider text-neutral-500 font-semibold">{field.sub}</span>
                                         </div>
-                                        <FormattedNumberInput value={values[field.id]} onChange={(e) => handleChange(field.id, e.target.value)} decimals={field.decimals} className="bg-transparent text-right text-xl font-mono text-white focus:outline-none w-full flex-1" />
+                                        <FormattedNumberInput 
+                                            ref={inputRefs[field.id]}
+                                            value={values[field.id]} 
+                                            onChange={(e) => handleChange(field.id, e.target.value)} 
+                                            decimals={field.decimals} 
+                                            className="bg-transparent text-right text-xl font-mono text-white focus:outline-none w-full flex-1" 
+                                        />
                                     </div>
                                 </div>
                             ))}
@@ -5146,10 +5599,22 @@ const LoanCalculator = ({ toggleHelp, toggleSettings }) => {
                                 <div className="bg-neutral-800/50 rounded-xl p-3 border border-transparent hover:border-neutral-700 transition-all">
                                     <div className="flex justify-between items-center gap-4">
                                         <div className="flex flex-col shrink-0 items-start text-left">
-                                            <label className="text-base font-bold text-neutral-300">Payments Made</label>
+                                            <label 
+                                                onClick={() => clearField('paymentsMade', paymentsMadeRef)}
+                                                className="text-base font-bold text-neutral-300 cursor-pointer hover:text-primary-400 transition-colors"
+                                                title="Click to Clear"
+                                            >
+                                                Payments Made
+                                            </label>
                                             <span className="text-[10px] uppercase tracking-wider text-neutral-500 font-semibold">Count</span>
                                         </div>
-                                        <FormattedNumberInput value={values.paymentsMade} onChange={(e) => handleChange('paymentsMade', e.target.value)} decimals={0} className="bg-transparent text-right text-xl font-mono text-white focus:outline-none w-full flex-1" />
+                                        <FormattedNumberInput 
+                                            ref={paymentsMadeRef}
+                                            value={values.paymentsMade} 
+                                            onChange={(e) => handleChange('paymentsMade', e.target.value)} 
+                                            decimals={0} 
+                                            className="bg-transparent text-right text-xl font-mono text-white focus:outline-none w-full flex-1" 
+                                        />
                                     </div>
                                 </div>
                             )}
@@ -5285,7 +5750,7 @@ export default LoanCalculator;
 ## src/features/pension/PensionCalculator.jsx
 
 ```javascript
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useHistory } from '../../context/HistoryContext';
 import { Wallet, Info, HelpCircle, Trash2, Settings, History } from 'lucide-react';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
@@ -5309,6 +5774,17 @@ const PensionCalculator = ({ toggleHelp, toggleSettings }) => {
     const [showExplanation, setShowExplanation] = useState(false);
     const [showHistory, setShowHistory] = useState(false);
 
+    // Refs for input focus
+    const salaryRef = useRef(null);
+    const serviceRef = useRef(null);
+    const ageRef = useRef(null);
+
+    const clearField = (setter, ref) => {
+        setter(null);
+        setResult(null);
+        setTimeout(() => ref.current?.focus(), 0);
+    };
+
     const handleCalculate = () => {
         // Ethiopian Defined Benefit Pension Formula:
         // Civil Servant: Replacement Rate = 30% + (1.25% × years beyond 10)
@@ -5316,21 +5792,25 @@ const PensionCalculator = ({ toggleHelp, toggleSettings }) => {
         // Minimum service: 10 years
         // Maximum replacement rate: 70%
 
+        const avgSalary = averageSalary || 0;
+        const yrsService = yearsOfService || 0;
+        const retAge = retirementAge || 0;
+
         let replacementRate = 0;
         let monthlyPension = 0;
         let annualPension = 0;
-        let isEligible = yearsOfService >= 10;
+        let isEligible = yrsService >= 10;
 
         if (isEligible) {
             // Base 30% for first 10 years, then accrual rate per additional year
-            const additionalYears = Math.max(0, yearsOfService - 10);
+            const additionalYears = Math.max(0, yrsService - 10);
             const accrualRate = pensionType === 'military' ? 1.65 : 1.25;
             replacementRate = 30 + (accrualRate * additionalYears);
 
             // Cap at 70%
             replacementRate = Math.min(replacementRate, 70);
 
-            monthlyPension = averageSalary * (replacementRate / 100);
+            monthlyPension = avgSalary * (replacementRate / 100);
             annualPension = monthlyPension * 12;
         }
 
@@ -5339,14 +5819,14 @@ const PensionCalculator = ({ toggleHelp, toggleSettings }) => {
             replacementRate,
             monthlyPension,
             annualPension,
-            yearsOfService,
-            retirementAge,
-            averageSalary,
+            yearsOfService: yrsService,
+            retirementAge: retAge,
+            averageSalary: avgSalary,
             pensionType: pensionType === 'civil' ? 'Civil Servant' : 'Military/Police',
         };
 
         setResult(res);
-        addToHistory('PENSION', { averageSalary, yearsOfService, retirementAge, pensionType }, res);
+        addToHistory('PENSION', { averageSalary: avgSalary, yearsOfService: yrsService, retirementAge: retAge, pensionType }, res);
     };
 
     const formatCurrency = (val) => val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -5417,12 +5897,23 @@ const PensionCalculator = ({ toggleHelp, toggleSettings }) => {
                 <div className="bg-neutral-800/40 rounded-xl p-2.5 border border-primary-500/50 ring-1 ring-primary-500/10">
                     <div className="flex justify-between items-center gap-2 min-w-0">
                         <div className="shrink-0">
-                            <label className="text-sm font-bold text-primary-400 block leading-tight text-left">Average Salary</label>
+                            <label 
+                                onClick={() => clearField(setAverageSalary, salaryRef)}
+                                className="text-sm font-bold text-primary-400 block leading-tight text-left cursor-pointer hover:text-white transition-colors"
+                                title="Click to Clear"
+                            >
+                                Average Salary
+                            </label>
                             <span className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold text-left block">Last 3 Years (36 Months)</span>
                         </div>
                         <FormattedNumberInput
+                            ref={salaryRef}
                             value={averageSalary}
-                            onChange={(e) => setAverageSalary(parseFloat(e.target.value.replace(/,/g, '')) || 0)}
+                            onChange={(e) => {
+                                const val = e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0);
+                                setAverageSalary(val);
+                                setResult(null);
+                            }}
                             decimals={2}
                             className="bg-transparent text-right text-lg font-mono focus:outline-none text-primary-400 font-black min-w-0 flex-1"
                             placeholder="25,000"
@@ -5434,12 +5925,23 @@ const PensionCalculator = ({ toggleHelp, toggleSettings }) => {
                 <div className="bg-neutral-800/40 rounded-xl p-2.5 border border-transparent hover:border-neutral-700">
                     <div className="flex justify-between items-center gap-2 min-w-0">
                         <div className="shrink-0">
-                            <label className="text-sm font-bold text-white block leading-tight text-left">Years of Service</label>
+                            <label 
+                                onClick={() => clearField(setYearsOfService, serviceRef)}
+                                className="text-sm font-bold text-white block leading-tight text-left cursor-pointer hover:text-primary-400 transition-colors"
+                                title="Click to Clear"
+                            >
+                                Years of Service
+                            </label>
                             <span className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold text-left block">Total Working Years</span>
                         </div>
                         <FormattedNumberInput
+                            ref={serviceRef}
                             value={yearsOfService}
-                            onChange={(e) => setYearsOfService(parseFloat(e.target.value.replace(/,/g, '')) || 0)}
+                            onChange={(e) => {
+                                const val = e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0);
+                                setYearsOfService(val);
+                                setResult(null);
+                            }}
                             decimals={0}
                             className="bg-transparent text-right text-lg font-mono focus:outline-none text-white min-w-0 flex-1"
                             placeholder="30"
@@ -5451,12 +5953,23 @@ const PensionCalculator = ({ toggleHelp, toggleSettings }) => {
                 <div className="bg-neutral-800/40 rounded-xl p-2.5 border border-transparent hover:border-neutral-700">
                     <div className="flex justify-between items-center gap-2 min-w-0">
                         <div className="shrink-0">
-                            <label className="text-sm font-bold text-white block leading-tight text-left">Retirement Age</label>
+                            <label 
+                                onClick={() => clearField(setRetirementAge, ageRef)}
+                                className="text-sm font-bold text-white block leading-tight text-left cursor-pointer hover:text-primary-400 transition-colors"
+                                title="Click to Clear"
+                            >
+                                Retirement Age
+                            </label>
                             <span className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold text-left block">Expected Age</span>
                         </div>
                         <FormattedNumberInput
+                            ref={ageRef}
                             value={retirementAge}
-                            onChange={(e) => setRetirementAge(parseFloat(e.target.value.replace(/,/g, '')) || 0)}
+                            onChange={(e) => {
+                                const val = e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0);
+                                setRetirementAge(val);
+                                setResult(null);
+                            }}
                             decimals={0}
                             className="bg-transparent text-right text-lg font-mono focus:outline-none text-white min-w-0 flex-1"
                             placeholder="60"
@@ -5588,7 +6101,7 @@ export default PensionCalculator;
 ## src/features/rates/RateConverter.jsx
 
 ```javascript
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { calculateEAR } from '../../utils/financial-utils';
 import { useHistory } from '../../context/HistoryContext';
 import { Info, HelpCircle, Trash2, Settings, History } from 'lucide-react';
@@ -5621,11 +6134,22 @@ const RateConverter = ({ toggleHelp, toggleSettings }) => {
     const [periodicRate, setPeriodicRate] = useState(2);
     const [selectedFrequency, setSelectedFrequency] = useState(365); // Default to Daily
 
+    // Refs for input focus
+    const nominalRef = useRef(null);
+    const periodicRateRef = useRef(null);
+
+    const clearField = (setter, ref) => {
+        setter(null);
+        setResult(null);
+        setTimeout(() => ref.current?.focus(), 0);
+    };
+
     const handleCalculate = () => {
-        const res = calculateEAR(nominal, compounding);
+        const nom = nominal || 0;
+        const res = calculateEAR(nom, compounding);
         setResult(res);
 
-        const r = nominal / 100;
+        const r = nom / 100;
         let t = r > 0 ? Math.log(2) / (compounding * Math.log(1 + r / compounding)) : 0;
 
         const years = Math.floor(t);
@@ -5634,7 +6158,7 @@ const RateConverter = ({ toggleHelp, toggleSettings }) => {
         const days = Math.round((remainderMonths - months) * 30.44);
 
         setDoublingTime({ years, months, days });
-        addToHistory('RATES', { nominal, compounding, doublingTime: { years, months, days } }, res);
+        addToHistory('RATES', { nominal: nom, compounding, doublingTime: { years, months, days } }, res);
     };
 
     return (
@@ -5664,8 +6188,23 @@ const RateConverter = ({ toggleHelp, toggleSettings }) => {
             <div className="flex-1 flex flex-col min-h-0 space-y-2 overflow-y-auto custom-scrollbar pb-1">
                 <div className="bg-neutral-800/50 rounded-xl p-2 shrink-0">
                     <div className="flex items-center gap-4 mb-2">
-                        <label className="text-xs font-bold text-neutral-400 shrink-0">Nominal (%)</label>
-                        <FormattedNumberInput value={nominal} onChange={(e) => setNominal(parseFloat(e.target.value) || 0)} className="flex-1 w-full bg-transparent text-xl font-mono text-white focus:outline-none border-b border-neutral-700 focus:border-primary-500 transition-colors pb-1 text-right" />
+                        <label 
+                            onClick={() => clearField(setNominal, nominalRef)}
+                            className="text-xs font-bold text-neutral-400 shrink-0 cursor-pointer hover:text-primary-400 transition-colors"
+                            title="Click to Clear"
+                        >
+                            Nominal (%)
+                        </label>
+                        <FormattedNumberInput 
+                            ref={nominalRef}
+                            value={nominal} 
+                            onChange={(e) => {
+                                const val = e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0);
+                                setNominal(val);
+                                setResult(null);
+                            }} 
+                            className="flex-1 w-full bg-transparent text-xl font-mono text-white focus:outline-none border-b border-neutral-700 focus:border-primary-500 transition-colors pb-1 text-right" 
+                        />
                     </div>
                     <div className="space-y-1">
                         <label className="block text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Compounding</label>
@@ -5718,7 +6257,7 @@ const RateConverter = ({ toggleHelp, toggleSettings }) => {
                                         {FREQUENCIES.map(freq => (
                                             <div key={freq.n} className="flex justify-between items-center py-1 border-b border-neutral-800/50 last:border-0 text-xs">
                                                 <span className="text-neutral-500 truncate mr-2">{freq.label}</span>
-                                                <span className="font-mono text-primary-400">{(nominal / freq.n).toFixed(4)}%</span>
+                                                <span className="font-mono text-primary-400">{((nominal || 0) / freq.n).toFixed(4)}%</span>
                                             </div>
                                         ))}
                                     </div>
@@ -5727,10 +6266,20 @@ const RateConverter = ({ toggleHelp, toggleSettings }) => {
                                     <div className="space-y-3">
                                         {/* Periodic Rate Input */}
                                         <div className="flex items-center gap-2">
-                                            <label className="text-[10px] font-bold text-neutral-500 shrink-0">Rate (%)</label>
+                                            <label 
+                                                onClick={() => clearField(setPeriodicRate, periodicRateRef)}
+                                                className="text-[10px] font-bold text-neutral-500 shrink-0 cursor-pointer hover:text-primary-400 transition-colors"
+                                                title="Click to Clear"
+                                            >
+                                                Rate (%)
+                                            </label>
                                             <FormattedNumberInput
+                                                ref={periodicRateRef}
                                                 value={periodicRate}
-                                                onChange={(e) => setPeriodicRate(parseFloat(e.target.value) || 0)}
+                                                onChange={(e) => {
+                                                    const val = e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0);
+                                                    setPeriodicRate(val);
+                                                }}
                                                 className="flex-1 bg-transparent text-sm font-mono text-white focus:outline-none border-b border-neutral-700 focus:border-primary-500 transition-colors pb-0.5 text-right"
                                             />
                                         </div>
@@ -5753,13 +6302,13 @@ const RateConverter = ({ toggleHelp, toggleSettings }) => {
                                             <div className="bg-neutral-900/50 rounded-lg p-2 border border-white/5">
                                                 <div className="text-[8px] text-neutral-500 uppercase font-bold mb-0.5">Simple APR</div>
                                                 <div className="text-sm font-bold text-white font-mono">
-                                                    {(periodicRate * selectedFrequency).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%
+                                                    {((periodicRate || 0) * selectedFrequency).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%
                                                 </div>
                                             </div>
                                             <div className="bg-neutral-900/50 rounded-lg p-2 border border-white/5">
                                                 <div className="text-[8px] text-neutral-500 uppercase font-bold mb-0.5">Compound APY</div>
                                                 <div className="text-sm font-bold text-primary-400 font-mono">
-                                                    {((Math.pow(1 + periodicRate / 100, selectedFrequency) - 1) * 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%
+                                                    {((Math.pow(1 + (periodicRate || 0) / 100, selectedFrequency) - 1) * 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%
                                                 </div>
                                             </div>
                                         </div>
@@ -5854,7 +6403,7 @@ export default RateConverter;
 ## src/features/tbill/TBillCalculator.jsx
 
 ```javascript
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useHistory } from '../../context/HistoryContext';
 import { Receipt, Info, HelpCircle, Trash2, Settings, History } from 'lucide-react';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
@@ -5862,24 +6411,38 @@ import { CalculateIcon } from '../../components/Icons';
 import HistoryOverlay from '../../components/HistoryOverlay';
 
 const TENURES = [
-    { days: 28, label: '28 Days' },
-    { days: 91, label: '91 Days' },
-    { days: 182, label: '182 Days' },
-    { days: 364, label: '364 Days' },
+    { days: 28, label: '28 Days', sub: '1 Month' },
+    { days: 91, label: '91 Days', sub: '3 Months' },
+    { days: 182, label: '182 Days', sub: '6 Months' },
+    { days: 364, label: '364 Days', sub: '1 Year' },
 ];
 
 const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
     const { addToHistory } = useHistory();
 
     const [faceValue, setFaceValue] = useState(500000);
+    const [totalBudget, setTotalBudget] = useState(490000);
     const [issueDate, setIssueDate] = useState(new Date().toISOString().split('T')[0]);
     const [tenure, setTenure] = useState(28);
     const [discountRate, setDiscountRate] = useState(12);
     const [brokerageRate, setBrokerageRate] = useState(0.1);
 
+    const [mode, setMode] = useState('forward');
     const [result, setResult] = useState(null);
     const [showExplanation, setShowExplanation] = useState(false);
     const [showHistory, setShowHistory] = useState(false);
+
+    // Refs for input focus
+    const faceValueRef = useRef(null);
+    const totalBudgetRef = useRef(null);
+    const discountRateRef = useRef(null);
+    const brokerageRateRef = useRef(null);
+
+    const clearField = (setter, ref) => {
+        setter(null);
+        setResult(null);
+        setTimeout(() => ref.current?.focus(), 0);
+    };
 
     const calculateMaturityDate = (issueStr, tenureDays) => {
         const issue = new Date(issueStr);
@@ -5888,47 +6451,109 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
     };
 
     const handleCalculate = () => {
-        // T-Bill pricing: Purchase Price = Face Value / (1 + (Discount Rate × Days / 365))
-        // This matches the Excel formula
-        const purchasePrice = faceValue / (1 + (discountRate / 100) * (tenure / 365));
-        const brokerage = purchasePrice * (brokerageRate / 100);
-        const totalConsideration = purchasePrice + brokerage;
         const maturityDate = calculateMaturityDate(issueDate, tenure);
+        const fv = faceValue || 0;
+        const budget = totalBudget || 0;
+        const disc = discountRate || 0;
+        const brok = brokerageRate || 0;
 
-        // Calculate effective yield
-        const discountAmount = faceValue - purchasePrice;
-        const effectiveYield = (discountAmount / purchasePrice) * (365 / tenure) * 100;
+        // Base unit calculations: 5,000 ETB per T-Bill
+        const UNIT_FV = 5000;
+        const unitPrice = UNIT_FV / (1 + (disc / 100) * (tenure / 365));
 
-        const res = {
-            maturityDate,
-            purchasePrice,
-            brokerage,
-            totalConsideration,
-            discountAmount,
-            effectiveYield,
-            netReturn: faceValue - totalConsideration
-        };
+        if (mode === 'forward') {
+            // Forward: Face Value → Total Consideration
+            const quantity = fv > 0 ? Math.floor(fv / UNIT_FV) : 0;
+            const actualFaceValue = quantity * UNIT_FV;
 
-        setResult(res);
-        addToHistory('T-BILL', { faceValue, issueDate, tenure, discountRate, brokerageRate }, res);
+            const purchasePrice = quantity * unitPrice;
+            const brokerage = purchasePrice * (brok / 100);
+            const totalConsideration = purchasePrice + brokerage;
+            
+            const discountAmount = actualFaceValue - purchasePrice;
+            const netReturn = actualFaceValue - totalConsideration;
+            const effectiveYield = totalConsideration > 0 ? (netReturn / totalConsideration) * (365 / tenure) * 100 : 0;
+
+            const res = {
+                mode: 'forward',
+                maturityDate,
+                faceValue: actualFaceValue,
+                purchasePrice,
+                brokerage,
+                totalConsideration,
+                discountAmount,
+                effectiveYield,
+                netReturn,
+                quantity
+            };
+
+            setResult(res);
+            addToHistory('T-BILL', { faceValue: actualFaceValue, issueDate, tenure, discountRate: disc, brokerageRate: brok, mode: 'forward' }, res);
+        } else {
+            // Reverse: Total Consideration → Face Value
+            // Quantity = Investment amount ÷ (price + brokerage) (rounded down)
+            const unitPriceInclBrok = unitPrice * (1 + (brok / 100));
+            const quantity = budget > 0 ? Math.floor(budget / unitPriceInclBrok) : 0;
+            
+            const purchasePrice = quantity * unitPrice;
+            const brokerage = purchasePrice * (brok / 100);
+            const totalConsideration = purchasePrice + brokerage;
+            
+            const computedFaceValue = quantity * UNIT_FV;
+            const discountAmount = computedFaceValue - purchasePrice;
+            const netReturn = computedFaceValue - totalConsideration;
+            const effectiveYield = totalConsideration > 0 ? (netReturn / totalConsideration) * (365 / tenure) * 100 : 0;
+
+            const res = {
+                mode: 'reverse',
+                maturityDate,
+                faceValue: computedFaceValue,
+                purchasePrice,
+                brokerage,
+                totalConsideration,
+                discountAmount,
+                effectiveYield,
+                netReturn,
+                quantity
+            };
+
+            setResult(res);
+            addToHistory('T-BILL', { totalBudget: budget, issueDate, tenure, discountRate: disc, brokerageRate: brok, mode: 'reverse' }, res);
+        }
     };
 
     const formatCurrency = (val) => val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
     return (
         <div className="flex flex-col h-full">
-            {/* Header */}
-            <div className="flex justify-between items-start mb-4">
-                <div>
-                    <h1 className="text-xl font-bold bg-gradient-to-r from-white to-neutral-400 bg-clip-text text-transparent flex items-center gap-2">
-                        <Receipt className="w-5 h-5 text-primary-500" />
-                        T-Bill Calculator
-                    </h1>
-                    <p className="text-neutral-500 text-[10px] font-medium uppercase tracking-wider">
-                        Treasury Bill Bidding
-                    </p>
+            {/* Header + Mode Toggle */}
+            <div className="flex justify-between items-center mb-2">
+                <div className="flex items-center gap-2 min-w-0">
+                    <Receipt className="w-5 h-5 text-primary-500 shrink-0" />
+                    <div className="min-w-0">
+                        <h1 className="text-lg font-bold bg-gradient-to-r from-white to-neutral-400 bg-clip-text text-transparent leading-tight">
+                            T-Bill Calculator
+                        </h1>
+                        <p className="text-neutral-500 text-[9px] font-medium uppercase tracking-wider">
+                            Treasury Bill Bidding
+                        </p>
+                    </div>
                 </div>
-                <div className="flex gap-1.5">
+                <div className="flex items-center gap-1">
+                    <div className="flex bg-neutral-900/70 rounded-md p-0.5 ring-1 ring-neutral-800">
+                        <button
+                            onClick={() => { if (mode !== 'forward') { setMode('forward'); setResult(null); } }}
+                            className={`px-2 py-1 text-[8px] font-bold uppercase tracking-wider rounded transition-all ${mode === 'forward' ? 'bg-primary-600/25 text-primary-400 ring-1 ring-primary-500/40' : 'text-neutral-500 hover:text-neutral-300'}`}
+                        >
+                            Face→Cost
+                        </button>
+                        <button
+                            onClick={() => { if (mode !== 'reverse') { setMode('reverse'); setResult(null); } }}
+                            className={`px-2 py-1 text-[8px] font-bold uppercase tracking-wider rounded transition-all ${mode === 'reverse' ? 'bg-emerald-600/25 text-emerald-400 ring-1 ring-emerald-500/40' : 'text-neutral-500 hover:text-neutral-300'}`}
+                        >
+                            Budget→Face
+                        </button>
+                    </div>
                     <button
                         onClick={() => setShowExplanation(!showExplanation)}
                         className={`flex items-center justify-center p-1 rounded-full transition-all ${showExplanation ? 'bg-primary-600/20 text-primary-400 ring-1 ring-primary-500/50' : 'bg-neutral-800 text-neutral-500 hover:bg-neutral-700'}`}
@@ -5941,48 +6566,93 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
 
             {/* Explanation Panel */}
             {showExplanation && (
-                <div className="bg-gradient-to-r from-primary-900/30 to-neutral-800/50 border border-primary-500/30 rounded-xl p-3 mb-4 text-xs text-neutral-300 text-left">
-                    <p className="font-bold text-primary-400 mb-1">Treasury Bill Calculator</p>
+                <div className="bg-gradient-to-r from-primary-900/30 to-neutral-800/50 border border-primary-500/30 rounded-xl p-2 mb-2 text-xs text-neutral-300 text-left scale-100 animate-in fade-in slide-in-from-top-1 duration-200">
+                    <p className="font-bold text-primary-400 mb-1 flex items-center gap-1.5">
+                        <Info className="w-3 h-3" />
+                        Treasury Bill Unit-Based Bidding
+                    </p>
                     <p className="text-[11px] leading-relaxed">
-                        Calculate T-Bill purchase price using discount pricing. Enter face value, tenure,
-                        and discount rate to determine your total investment including brokerage fees.
+                        {mode === 'forward'
+                            ? 'Face→Cost: Enter your target face value. The calculator floors this to the nearest 5,000 ETB unit and calculates your purchase price and brokerage.'
+                            : 'Budget→Face: Enter your investment budget. The calculator determines the maximum number of 5,000 ETB units you can afford.'}
+                    </p>
+                    <p className="text-[11px] leading-relaxed mt-1 text-neutral-400">
+                        <span className="font-bold text-primary-400">Unit Logic:</span> T-Bills are sold in denominations of <span className="text-white">5,000 ETB</span>.
+                    </p>
+                    <p className="text-[11px] leading-relaxed mt-1 text-neutral-500 italic">
+                        Yield = (Net Return / Total Cost) × (365 / Days) × 100
                     </p>
                 </div>
             )}
 
             {/* Input Fields */}
-            <div className="space-y-1.5 flex-1 overflow-y-auto pr-1 scrollbar-hide">
-                {/* Face Value */}
-                <div className="bg-neutral-800/40 rounded-xl p-2.5 border border-primary-500/50 ring-1 ring-primary-500/10">
-                    <div className="flex justify-between items-center gap-2 min-w-0">
-                        <div className="shrink-0">
-                            <label className="text-sm font-bold text-primary-400 block leading-tight text-left">Face Value</label>
-                            <span className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold">Amount at Maturity</span>
+            <div className="space-y-1 flex-1 overflow-y-auto pr-1 scrollbar-hide">
+                {/* Primary Input — swaps based on mode */}
+                {mode === 'forward' ? (
+                    <div className="bg-neutral-800/40 rounded-xl p-2 border border-primary-500/50 ring-1 ring-primary-500/10">
+                        <div className="flex justify-between items-center gap-2 min-w-0">
+                            <div className="shrink-0">
+                                <label 
+                                    onClick={() => clearField(setFaceValue, faceValueRef)}
+                                    className="text-sm font-bold text-primary-400 block leading-tight text-left cursor-pointer hover:text-white transition-colors"
+                                    title="Click to Clear"
+                                >
+                                    Face Value
+                                </label>
+                                <span className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold">Amount at Maturity</span>
+                            </div>
+                            <FormattedNumberInput
+                                ref={faceValueRef}
+                                value={faceValue}
+                                onChange={(e) => setFaceValue(e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0))}
+                                decimals={2}
+                                className="bg-transparent text-right text-lg font-mono focus:outline-none text-primary-400 font-black min-w-0 flex-1"
+                                placeholder="500,000"
+                            />
                         </div>
-                        <FormattedNumberInput
-                            value={faceValue}
-                            onChange={(e) => setFaceValue(parseFloat(e.target.value.replace(/,/g, '')) || 0)}
-                            decimals={2}
-                            className="bg-transparent text-right text-lg font-mono focus:outline-none text-primary-400 font-black min-w-0 flex-1"
-                            placeholder="500,000"
-                        />
                     </div>
-                </div>
+                ) : (
+                    <div className="bg-neutral-800/40 rounded-xl p-2 border border-emerald-500/50 ring-1 ring-emerald-500/10">
+                        <div className="flex justify-between items-center gap-2 min-w-0">
+                            <div className="shrink-0">
+                                <label 
+                                    onClick={() => clearField(setTotalBudget, totalBudgetRef)}
+                                    className="text-sm font-bold text-emerald-400 block leading-tight text-left cursor-pointer hover:text-white transition-colors"
+                                    title="Click to Clear"
+                                >
+                                    Budget
+                                </label>
+                                <span className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold">Total Consideration</span>
+                            </div>
+                            <FormattedNumberInput
+                                ref={totalBudgetRef}
+                                value={totalBudget}
+                                onChange={(e) => setTotalBudget(e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0))}
+                                decimals={2}
+                                className="bg-transparent text-right text-lg font-mono focus:outline-none text-emerald-400 font-black min-w-0 flex-1"
+                                placeholder="490,000"
+                            />
+                        </div>
+                    </div>
+                )}
 
                 {/* Tenure Selector */}
-                <div className="bg-neutral-800/40 rounded-xl p-2.5 border border-transparent hover:border-neutral-700">
+                <div className="bg-neutral-800/40 rounded-xl p-2 border border-transparent hover:border-neutral-700">
                     <label className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold block mb-1">Tenure (Days)</label>
                     <div className="grid grid-cols-4 gap-1">
                         {TENURES.map(t => (
                             <button
                                 key={t.days}
                                 onClick={() => setTenure(t.days)}
-                                className={`py-2 px-2 rounded-lg text-xs font-bold transition-all ${tenure === t.days
+                                className={`py-1.5 px-1 rounded-lg transition-all flex flex-col items-center justify-center gap-0.5 ${tenure === t.days
                                     ? 'bg-primary-600/20 text-primary-400 ring-1 ring-primary-500/50'
                                     : 'bg-neutral-900/50 text-neutral-500 hover:bg-neutral-900'
                                     }`}
                             >
-                                {t.days}
+                                <span className="text-sm font-black leading-none">{t.days}</span>
+                                <span className={`text-[8px] font-bold uppercase tracking-tight ${tenure === t.days ? 'text-primary-400/80' : 'text-neutral-500'}`}>
+                                    {t.sub}
+                                </span>
                             </button>
                         ))}
                     </div>
@@ -5990,24 +6660,38 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
 
                 {/* Discount Rate & Brokerage Row */}
                 <div className="grid grid-cols-2 gap-2">
-                    <div className="bg-neutral-800/40 rounded-xl p-2.5 border border-transparent hover:border-neutral-700">
+                    <div className="bg-neutral-800/40 rounded-xl p-2 border border-transparent hover:border-neutral-700">
                         <div className="flex flex-col">
-                            <label className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold mb-1 text-left">Discount Rate %</label>
+                            <label 
+                                onClick={() => clearField(setDiscountRate, discountRateRef)}
+                                className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold mb-1 text-left cursor-pointer hover:text-white transition-colors"
+                                title="Click to Clear"
+                            >
+                                Discount Rate %
+                            </label>
                             <FormattedNumberInput
+                                ref={discountRateRef}
                                 value={discountRate}
-                                onChange={(e) => setDiscountRate(parseFloat(e.target.value.replace(/,/g, '')) || 0)}
+                                onChange={(e) => setDiscountRate(e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0))}
                                 decimals={2}
                                 className="bg-transparent text-right text-lg font-mono focus:outline-none w-full text-white"
                                 placeholder="12"
                             />
                         </div>
                     </div>
-                    <div className="bg-neutral-800/40 rounded-xl p-2.5 border border-transparent hover:border-neutral-700">
+                    <div className="bg-neutral-800/40 rounded-xl p-2 border border-transparent hover:border-neutral-700">
                         <div className="flex flex-col">
-                            <label className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold mb-1 text-left">Brokerage %</label>
+                            <label 
+                                onClick={() => clearField(setBrokerageRate, brokerageRateRef)}
+                                className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold mb-1 text-left cursor-pointer hover:text-white transition-colors"
+                                title="Click to Clear"
+                            >
+                                Brokerage %
+                            </label>
                             <FormattedNumberInput
+                                ref={brokerageRateRef}
                                 value={brokerageRate}
-                                onChange={(e) => setBrokerageRate(parseFloat(e.target.value.replace(/,/g, '')) || 0)}
+                                onChange={(e) => setBrokerageRate(e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0))}
                                 decimals={2}
                                 className="bg-transparent text-right text-lg font-mono focus:outline-none w-full text-white"
                                 placeholder="0.1"
@@ -6017,7 +6701,7 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
                 </div>
 
                 {/* Issue Date */}
-                <div className="bg-neutral-800/40 rounded-xl p-2.5 border border-transparent hover:border-neutral-700 text-left">
+                <div className="bg-neutral-800/40 rounded-xl p-2 border border-transparent hover:border-neutral-700 text-left">
                     <label className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold block mb-1">Issue Date</label>
                     <input
                         type="date"
@@ -6029,72 +6713,96 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
             </div>
 
             {/* Results */}
-            {result && (
-                <div className="mt-2 bg-gradient-to-br from-primary-900/30 to-neutral-800/50 border border-primary-500/30 rounded-xl p-3 space-y-2">
-                    <div className="flex justify-between items-center mb-1">
-                        <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Results</span>
-                        <button
-                            onClick={() => setShowHistory(true)}
-                            className="text-[9px] text-primary-500 font-bold uppercase tracking-wider flex items-center gap-1 hover:text-primary-400 transition-colors"
-                        >
-                            <History size={12} /> View History
-                        </button>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                        <div className="bg-neutral-900/50 rounded-lg p-2.5">
-                            <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Purchase Price</p>
-                            <p className="text-lg font-black text-primary-400">
-                                {formatCurrency(result.purchasePrice)}
-                            </p>
+            {result && (() => {
+                const isReverse = result.mode === 'reverse';
+                return (
+                    <div className={`mt-1.5 bg-gradient-to-br ${isReverse ? 'from-emerald-900/30' : 'from-primary-900/30'} to-neutral-800/50 border ${isReverse ? 'border-emerald-500/30' : 'border-primary-500/30'} rounded-xl p-2.5 space-y-2`}>
+                        <div className="flex justify-between items-center mb-1">
+                            <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Results</span>
+                            <button
+                                onClick={() => setShowHistory(true)}
+                                className="text-[9px] text-primary-500 font-bold uppercase tracking-wider flex items-center gap-1 hover:text-primary-400 transition-colors"
+                            >
+                                <History size={12} /> View History
+                            </button>
                         </div>
-                        <div className="bg-neutral-900/50 rounded-lg p-2">
-                            <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Brokerage ({brokerageRate}%)</p>
-                            <p className="text-lg font-black text-amber-400">
-                                {formatCurrency(result.brokerage)}
-                            </p>
-                        </div>
-                    </div>
 
-                    <div className="bg-neutral-900/80 rounded-lg p-2 border border-primary-500/30">
-                        <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Total Consideration</p>
-                        <p className="text-xl font-black text-white">
-                            {formatCurrency(result.totalConsideration)}
-                        </p>
-                    </div>
+                        <div className="flex justify-between items-center bg-neutral-900/50 rounded-lg p-2 mb-1 border border-neutral-700/50">
+                            <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Quantity</span>
+                            <span className="text-sm font-black text-primary-400">{result.quantity} UNITS</span>
+                        </div>
 
-                    <div className="grid grid-cols-4 gap-2 pt-2 border-t border-neutral-700">
-                        <div>
-                            <p className="text-[9px] font-bold text-neutral-500 uppercase">Maturity</p>
-                            <p className="text-xs font-bold text-white">{result.maturityDate}</p>
+                        <div className="grid grid-cols-2 gap-2">
+                            <div className="bg-neutral-900/50 rounded-lg p-2">
+                                <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">
+                                    Purchase Price
+                                </p>
+                                <p className="text-lg font-black text-primary-400">
+                                    {formatCurrency(result.purchasePrice)}
+                                </p>
+                            </div>
+                            <div className="bg-neutral-900/50 rounded-lg p-2">
+                                <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Brokerage ({brokerageRate}%)</p>
+                                <p className="text-lg font-black text-amber-400">
+                                    {formatCurrency(result.brokerage)}
+                                </p>
+                            </div>
                         </div>
-                        <div>
-                            <p className="text-[9px] font-bold text-neutral-500 uppercase">Discount</p>
-                            <p className="text-xs font-bold text-emerald-400">{formatCurrency(result.discountAmount)}</p>
+
+                        <div className={`bg-neutral-900/80 rounded-lg p-2 border ${isReverse ? 'border-emerald-500/30' : 'border-primary-500/30'}`}>
+                            <div className="flex justify-between items-center">
+                                <div>
+                                    <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">
+                                        {isReverse ? 'Face Value You Get' : 'Total Consideration'}
+                                    </p>
+                                    <p className={`text-xl font-black ${isReverse ? 'text-emerald-400' : 'text-white'}`}>
+                                        {formatCurrency(isReverse ? result.faceValue : result.totalConsideration)}
+                                    </p>
+                                </div>
+                                {isReverse && (
+                                    <div className="text-right">
+                                        <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Actual Cost</p>
+                                        <p className="text-sm font-black text-white">{formatCurrency(result.totalConsideration)}</p>
+                                    </div>
+                                )}
+                            </div>
                         </div>
-                        <div>
-                            <p className="text-[9px] font-bold text-neutral-500 uppercase">Net Return</p>
-                            <p className="text-xs font-bold text-emerald-400">{formatCurrency(result.netReturn)}</p>
-                        </div>
-                        <div>
-                            <p className="text-[9px] font-bold text-neutral-500 uppercase">Eff. Yield</p>
-                            <p className="text-xs font-bold text-emerald-400">{result.effectiveYield.toFixed(2)}%</p>
+
+                        <div className="grid grid-cols-4 gap-2 pt-2 border-t border-neutral-700 mt-1">
+                            <div>
+                                <p className="text-[9px] font-bold text-neutral-500 uppercase">Maturity</p>
+                                <p className="text-xs font-bold text-white">{result.maturityDate}</p>
+                            </div>
+                            <div>
+                                <p className="text-[9px] font-bold text-neutral-500 uppercase">Discount</p>
+                                <p className="text-xs font-bold text-emerald-400">{formatCurrency(result.discountAmount)}</p>
+                            </div>
+                            <div>
+                                <p className="text-[9px] font-bold text-neutral-500 uppercase">Net Return</p>
+                                <p className="text-xs font-bold text-emerald-400">{formatCurrency(result.netReturn)}</p>
+                            </div>
+                            <div>
+                                <p className="text-[9px] font-bold text-neutral-500 uppercase">Eff. Yield</p>
+                                <p className="text-xs font-bold text-emerald-400">{result.effectiveYield.toFixed(2)}%</p>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                );
+            })()}
 
             {/* Action Buttons */}
-            <div className="mt-2 flex gap-1.5">
+            <div className="mt-1.5 flex gap-1.5">
                 <button
                     onClick={() => {
                         setFaceValue(500000);
+                        setTotalBudget(490000);
                         setTenure(28);
                         setDiscountRate(12);
                         setBrokerageRate(0.1);
                         setIssueDate(new Date().toISOString().split('T')[0]);
                         setResult(null);
                     }}
-                    className="w-[15%] bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-xs py-3.5 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center gap-1 uppercase tracking-wider"
+                    className="w-[15%] bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-xs py-2.5 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center gap-1 uppercase tracking-wider"
                     title="Clear all values"
                 >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -6116,7 +6824,7 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
                 </button>
                 <button
                     onClick={handleCalculate}
-                    className="flex-1 bg-gradient-to-r from-primary-600 to-primary-500 text-neutral-900 font-black text-base py-3.5 rounded-xl shadow-lg shadow-primary-900/20 active:scale-[0.98] transition-all hover:brightness-110 flex items-center justify-center gap-2 uppercase tracking-widest"
+                    className="flex-1 bg-gradient-to-r from-primary-600 to-primary-500 text-neutral-900 font-black text-base py-2.5 rounded-xl shadow-lg shadow-primary-900/20 active:scale-[0.98] transition-all hover:brightness-110 flex items-center justify-center gap-2 uppercase tracking-widest"
                 >
                     <CalculateIcon className="w-5 h-5" />
                     Calculate
@@ -6155,7 +6863,7 @@ import LiveFareTracker from '../driving/LiveFareTracker';
 const DEFAULT_VALUES = {
     distance: 15,
     mileage: 0.1,
-    costPerLiter: 135,
+    costPerLiter: 145,
     serviceMultiplier: 3
 };
 
@@ -6192,6 +6900,31 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
 
     const fromInputRef = useRef(null);
     const toInputRef = useRef(null);
+
+    // Refs for numeric input focus
+    const distanceRef = useRef(null);
+    const costPerLiterRef = useRef(null);
+    const waitMultiplierRef = useRef(null);
+    const serviceMultiplierRef = useRef(null);
+    const priceToChargeRef = useRef(null);
+
+    const clearValuesField = (field, ref) => {
+        setValues(prev => ({ ...prev, [field]: null }));
+        setResults(null);
+        setTimeout(() => ref.current?.focus(), 0);
+    };
+
+    const clearWaitMultiplier = () => {
+        setWaitMultiplier(null);
+        setResults(null);
+        setTimeout(() => waitMultiplierRef.current?.focus(), 0);
+    };
+
+    const clearPriceToCharge = () => {
+        setPriceToCharge(null);
+        setResults(null);
+        setTimeout(() => priceToChargeRef.current?.focus(), 0);
+    };
 
     const handleSwapLocations = useCallback(() => {
         const prevOrigin = origin;
@@ -6446,41 +7179,52 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
         const chargeMultiplier = roundTrip ? 2 : 1;
         const actualFuelMultiplier = 2; // Always estimate fuel for round-trip for true cost out of pocket
 
-        const oneWayFuelCost = values.distance * values.mileage * values.costPerLiter;
+        const dist = values.distance || 0;
+        const mileage = values.mileage || 0;
+        const cost = values.costPerLiter || 0;
+        const waitMult = waitMultiplier || 0;
+        const serviceMult = values.serviceMultiplier || 0;
+        const chargingPrice = priceToCharge || 0;
+
+        const oneWayFuelCost = dist * mileage * cost;
         const chargingFuelCost = oneWayFuelCost * chargeMultiplier;
         const totalFuelCost = oneWayFuelCost * actualFuelMultiplier;
 
-        const waitTimeBase = durationValue != null ? durationValue * 1.1 * waitMultiplier : 0;
+        const waitTimeBase = durationValue != null ? durationValue * 1.1 * waitMult : 0;
         const waitTime = waitTimeBase * 2; // Always double to represent true round-trip even in one-way mode
 
         if (mode === 'forward') {
-            const basePrice = chargingFuelCost * values.serviceMultiplier;
+            const basePrice = chargingFuelCost * serviceMult;
             const totalToCharge = basePrice + waitTime;
-            const revenuePerKm = values.distance > 0 ? totalToCharge / values.distance : 0;
+            const revenuePerKm = dist > 0 ? totalToCharge / dist : 0;
             const netGain = totalToCharge - totalFuelCost;
-            const netGainPerKm = values.distance > 0 ? netGain / values.distance : 0;
-            const fuelPerKm = values.distance > 0 ? (totalFuelCost / values.distance) / actualFuelMultiplier : 0;
+            const netGainPerKm = dist > 0 ? netGain / dist : 0;
+            const fuelPerKm = dist > 0 ? (totalFuelCost / dist) / 2 : 0;
             const perHead = totalToCharge / 4;
-            const newResults = { totalFuelCost, reasonablePrice: basePrice, totalToCharge, waitTime, revenuePerKm, netGain, netGainPerKm, fuelPerKm, perHead };
+            const netGainSingle = totalToCharge - oneWayFuelCost;
+            const netGainRound = totalToCharge - totalFuelCost;
+            const newResults = { totalFuelCost, reasonablePrice: basePrice, totalToCharge, waitTime, revenuePerKm, netGain, netGainPerKm, fuelPerKm, perHead, netGainSingle, netGainRound };
             setResults(newResults);
             addToHistory('Ride', { ...values, mode: 'forward', roundTrip }, newResults);
         } else {
-            const totalToCharge = priceToCharge;
+            const totalToCharge = chargingPrice;
             const basePrice = Math.max(0, totalToCharge - waitTime);
             const netGain = totalToCharge - totalFuelCost;
             const perHead = totalToCharge / 4;
-            const revenuePerKm = values.distance > 0 ? totalToCharge / values.distance : 0;
-            const fuelPerKm = values.distance > 0 ? (totalFuelCost / values.distance) / actualFuelMultiplier : 0;
-            const netGainPerKm = values.distance > 0 ? netGain / values.distance : 0;
-            const serviceMultiplier = chargingFuelCost > 0 ? basePrice / chargingFuelCost : 0;
-            const newResults = { totalFuelCost, reasonablePrice: basePrice, totalToCharge, waitTime, revenuePerKm, netGain, netGainPerKm, fuelPerKm, perHead, serviceMultiplier };
+            const revenuePerKm = dist > 0 ? totalToCharge / dist : 0;
+            const fuelPerKm = dist > 0 ? (totalFuelCost / dist) / 2 : 0;
+            const netGainPerKm = dist > 0 ? netGain / dist : 0;
+            const serviceMultiplierValue = chargingFuelCost > 0 ? (totalToCharge - waitTime) / chargingFuelCost : 0;
+            const netGainSingle = totalToCharge - oneWayFuelCost;
+            const netGainRound = totalToCharge - totalFuelCost;
+            const newResults = { totalFuelCost, reasonablePrice: basePrice, totalToCharge, waitTime, revenuePerKm, netGain, netGainPerKm, fuelPerKm, perHead, serviceMultiplier: serviceMultiplierValue, netGainSingle, netGainRound };
             setResults(newResults);
-            addToHistory('Ride', { ...values, priceToCharge, mode: 'reverse', roundTrip }, newResults);
+            addToHistory('Ride', { ...values, priceToCharge: chargingPrice, mode: 'reverse', roundTrip }, newResults);
         }
     };
 
     const handleChange = (field, val) => {
-        const numericVal = parseFloat(val) || 0;
+        const numericVal = val === '' ? null : (parseFloat(val) || 0);
         setValues(prev => ({ ...prev, [field]: numericVal }));
         if (field === 'distance') setDistanceSource('manual');
         setResults(null);
@@ -6656,7 +7400,11 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                 {/* Distance */}
                 <div className={`rounded-xl p-2 border ${distanceSource === 'maps' ? 'bg-emerald-900/10 border-emerald-500/40' : 'bg-neutral-800/40 border-primary-500/40'}`}>
                     <div className="flex justify-between items-center mb-0.5">
-                        <label className={`text-[10px] uppercase tracking-wider font-bold block ${distanceSource === 'maps' ? 'text-emerald-400' : 'text-primary-400'}`}>
+                        <label 
+                            onClick={() => clearValuesField('distance', distanceRef)}
+                            className={`text-[10px] uppercase tracking-wider font-bold block cursor-pointer hover:text-white transition-colors ${distanceSource === 'maps' ? 'text-emerald-400' : 'text-primary-400'}`}
+                            title="Click to Clear"
+                        >
                             Distance (Km)
                         </label>
                         <div className="flex bg-neutral-900/60 rounded-md p-0.5 ring-1 ring-neutral-700/50">
@@ -6680,6 +7428,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                         </div>
                     ) : (
                         <FormattedNumberInput
+                            ref={distanceRef}
                             value={values.distance}
                             onChange={(e) => handleChange('distance', e.target.value)}
                             decimals={2}
@@ -6693,27 +7442,41 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
 
                 {/* Fuel Cost */}
                 <div className="bg-neutral-800/40 rounded-xl p-2 border border-transparent">
-                    <label className="text-[10px] uppercase tracking-wider font-bold text-white block mb-0.5">
+                    <label 
+                        onClick={() => clearValuesField('costPerLiter', costPerLiterRef)}
+                        className="text-[10px] uppercase tracking-wider font-bold text-white block mb-0.5 cursor-pointer hover:text-primary-400 transition-colors"
+                        title="Click to Clear"
+                    >
                         Fuel Cost / Liter
                     </label>
                     <FormattedNumberInput
+                        ref={costPerLiterRef}
                         value={values.costPerLiter}
                         onChange={(e) => handleChange('costPerLiter', e.target.value)}
                         decimals={2}
                         className="bg-transparent text-right text-lg font-mono focus:outline-none text-white w-full"
-                        placeholder="135.00"
+                        placeholder="145.00"
                     />
                     <span className="text-[8px] uppercase tracking-wider text-neutral-600 font-bold block">Current Price</span>
                 </div>
 
                 {/* Wait Multiplier */}
                 <div className="bg-neutral-800/40 rounded-xl p-2 border border-amber-500/30">
-                    <label className="text-[10px] uppercase tracking-wider font-bold text-amber-400 block mb-0.5">
+                    <label 
+                        onClick={clearWaitMultiplier}
+                        className="text-[10px] uppercase tracking-wider font-bold text-amber-400 block mb-0.5 cursor-pointer hover:text-white transition-colors"
+                        title="Click to Clear"
+                    >
                         Wait Multiplier
                     </label>
                     <FormattedNumberInput
+                        ref={waitMultiplierRef}
                         value={waitMultiplier}
-                        onChange={(e) => { setWaitMultiplier(parseFloat(e.target.value.replace(/,/g, '')) || 0); setResults(null); }}
+                        onChange={(e) => {
+                            const val = e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0);
+                            setWaitMultiplier(val);
+                            setResults(null);
+                        }}
                         decimals={1}
                         className="bg-transparent text-right text-lg font-mono focus:outline-none text-amber-400 font-black w-full"
                     />
@@ -6723,10 +7486,15 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                 {/* Service Factor or Price to Charge */}
                 {mode === 'forward' ? (
                     <div className="bg-neutral-800/40 rounded-xl p-2 border border-transparent">
-                        <label className="text-[10px] uppercase tracking-wider font-bold text-white block mb-0.5">
+                        <label 
+                            onClick={() => clearValuesField('serviceMultiplier', serviceMultiplierRef)}
+                            className="text-[10px] uppercase tracking-wider font-bold text-white block mb-0.5 cursor-pointer hover:text-primary-400 transition-colors"
+                            title="Click to Clear"
+                        >
                             Service Multiplier
                         </label>
                         <FormattedNumberInput
+                            ref={serviceMultiplierRef}
                             value={values.serviceMultiplier}
                             onChange={(e) => handleChange('serviceMultiplier', e.target.value)}
                             decimals={1}
@@ -6736,12 +7504,21 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                     </div>
                 ) : (
                     <div className="bg-neutral-800/40 rounded-xl p-2 border border-emerald-500/40">
-                        <label className="text-[10px] uppercase tracking-wider font-bold text-emerald-400 block mb-0.5">
+                        <label 
+                            onClick={clearPriceToCharge}
+                            className="text-[10px] uppercase tracking-wider font-bold text-emerald-400 block mb-0.5 cursor-pointer hover:text-white transition-colors"
+                            title="Click to Clear"
+                        >
                             Price to Charge
                         </label>
                         <FormattedNumberInput
+                            ref={priceToChargeRef}
                             value={priceToCharge}
-                            onChange={(e) => { setPriceToCharge(parseFloat(e.target.value.replace(/,/g, '')) || 0); setResults(null); }}
+                            onChange={(e) => {
+                                const val = e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0);
+                                setPriceToCharge(val);
+                                setResults(null);
+                            }}
                             decimals={2}
                             className="bg-transparent text-right text-lg font-mono focus:outline-none text-emerald-400 font-black w-full"
                         />
@@ -6801,25 +7578,25 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                         </div>
 
                         {/* Secondary metrics */}
-                        <div className={`grid ${mode === 'reverse' && results.serviceMultiplier !== undefined ? 'grid-cols-3' : 'grid-cols-2'} gap-1.5`}>
+                        <div className="grid grid-cols-2 gap-1.5">
                             <div className="bg-neutral-900/50 rounded-lg p-2">
                                 <p className="text-[8px] font-bold text-neutral-500 uppercase tracking-wider">Total Fuel Cost</p>
                                 <p className="text-base font-black text-amber-400">{formatNum(results.totalFuelCost)}</p>
                             </div>
                             <div className="bg-neutral-900/50 rounded-lg p-2">
                                 <p className="text-[8px] font-bold text-neutral-500 uppercase tracking-wider">Net Gain</p>
-                                <p className="text-base font-black text-emerald-400">{formatNum(results.netGain)}</p>
+                                <p className="text-base font-black text-emerald-400">
+                                    {!roundTrip ? (
+                                        <>{formatNum(results.netGainSingle)} <span className="text-neutral-500 font-medium">/</span> {formatNum(results.netGainRound)}</>
+                                    ) : (
+                                        formatNum(results.netGain)
+                                    )}
+                                </p>
                             </div>
-                            {mode === 'reverse' && results.serviceMultiplier !== undefined && (
-                                <div className="bg-neutral-900/50 rounded-lg p-2">
-                                    <p className="text-[8px] font-bold text-neutral-500 uppercase tracking-wider">Implied Mult</p>
-                                    <p className="text-base font-black text-white">{results.serviceMultiplier.toFixed(2)}x</p>
-                                </div>
-                            )}
                         </div>
 
                         {/* Per-km breakdown */}
-                        <div className="grid grid-cols-3 gap-1.5 pt-1.5 border-t border-neutral-700/50">
+                        <div className={`grid ${mode === 'reverse' && results.serviceMultiplier !== undefined ? 'grid-cols-4' : 'grid-cols-3'} gap-1.5 pt-1.5 border-t border-neutral-700/50`}>
                             <div>
                                 <p className="text-[8px] font-bold text-neutral-500 uppercase">Fuel / Km</p>
                                 <p className="text-[10px] font-bold text-white">{formatNum(results.fuelPerKm)}</p>
@@ -6832,6 +7609,12 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                                 <p className="text-[8px] font-bold text-neutral-500 uppercase">Gain / Km</p>
                                 <p className="text-[10px] font-bold text-white">{formatNum(results.netGainPerKm)}</p>
                             </div>
+                            {mode === 'reverse' && results.serviceMultiplier !== undefined && (
+                                <div>
+                                    <p className="text-[8px] font-bold text-neutral-500 uppercase">Implied Mult</p>
+                                    <p className="text-[10px] font-bold text-white">{results.serviceMultiplier.toFixed(2)}x</p>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )
@@ -6883,7 +7666,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                     : 'opacity-0 pointer-events-none scale-95 -z-10'
                     }`}
             >
-                <DrivingView onClose={() => setShowMap(false)} fareData={{ ...results, ...values, waitMultiplier }} />
+                <DrivingView onClose={() => setShowMap(false)} fareData={{ ...results, ...values, waitMultiplier }} onOpenLiveTracker={() => setShowLiveTracker(true)} />
             </div>
 
             <LiveFareTracker
@@ -6905,10 +7688,11 @@ export default RideFareCalculator;
 import React, { useState } from 'react';
 import { calculateTVM } from '../../utils/financial-utils';
 import { useHistory } from '../../context/HistoryContext';
-import { Settings2, Info, HelpCircle, Trash2, Settings, History } from 'lucide-react';
+import { Settings2, Info, HelpCircle, Trash2, Settings, History, X } from 'lucide-react';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
 import { CalculateIcon } from '../../components/Icons';
 import HistoryOverlay from '../../components/HistoryOverlay';
+import { useRef } from 'react';
 
 // Constants
 const FREQUENCIES = [
@@ -6968,34 +7752,68 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
     const [totalInterest, setTotalInterest] = useState(0);
     const [showHistory, setShowHistory] = useState(false);
 
+    // Refs for each input field to support focusing after "Clear on Label"
+    const inputRefs = {
+        n: useRef(null),
+        i: useRef(null),
+        pv: useRef(null),
+        pmt: useRef(null),
+        fv: useRef(null),
+        totalInterest: useRef(null),
+    };
+
+    const clearField = (fieldId) => {
+        if (fieldId === 'totalInterest') {
+            setTotalInterest(null);
+        } else if (fieldId === 'totalPMT') {
+            return; // Read-only
+        } else {
+            setValues(prev => ({ ...prev, [fieldId]: null }));
+        }
+        setCalculatedValue(null);
+        
+        // Focus the input
+        setTimeout(() => {
+            inputRefs[fieldId]?.current?.focus();
+        }, 0);
+    };
+
     // Determine effective sign for TI based on context
     const getEffectiveTI = (ti, calcValues, targetField) => {
-        let effectiveTI = ti;
+        let effectiveTI = ti || 0;
+        const pv = calcValues.pv || 0;
+        const pmt = calcValues.pmt || 0;
+
         if (targetField !== 'pv' && targetField !== 'pmt') {
-            if (calcValues.pv > 0 && ti > 0) effectiveTI = -ti;
-        } else if (calcValues.pmt < 0 && ti > 0) {
-            effectiveTI = -ti;
+            if (pv > 0 && effectiveTI > 0) effectiveTI = -effectiveTI;
+        } else if (pmt < 0 && effectiveTI > 0) {
+            effectiveTI = -effectiveTI;
         }
         return effectiveTI;
     };
 
     // Solve for PV or PMT using TI constraint
     const solveWithTIConstraint = (targetField, calcValues, effectiveTI, effectiveCY) => {
-        const rPeriodic = (calcValues.i / 100) / effectiveCY;
-        const { termPV, termPMT } = calcTVMFactors(rPeriodic, calcValues.n, mode === 'BEGIN');
+        const rate = calcValues.i || 0;
+        const n = calcValues.n || 0;
+        const pmt = calcValues.pmt || 0;
+        const pv = calcValues.pv || 0;
+
+        const rPeriodic = (rate / 100) / effectiveCY;
+        const { termPV, termPMT } = calcTVMFactors(rPeriodic, n, mode === 'BEGIN');
 
         if (targetField === 'pv') {
             if (Math.abs(termPV) > 1e-9) {
-                return (effectiveTI - calcValues.pmt * termPMT) / termPV;
+                return (effectiveTI - pmt * termPMT) / termPV;
             }
             return 0;
         }
 
         if (targetField === 'pmt') {
             let ti = effectiveTI;
-            if (calcValues.pv > 0 && ti > 0) ti = -ti;
+            if (pv > 0 && ti > 0) ti = -ti;
             if (Math.abs(termPMT) > 1e-9) {
-                return (ti - calcValues.pv * termPV) / termPMT;
+                return (ti - pv * termPV) / termPMT;
             }
             return 0;
         }
@@ -7016,29 +7834,51 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
                 if (target === 'pv' || target === 'pmt') {
                     result = solveWithTIConstraint(target, calcValues, effectiveTI, effectiveCY);
                     calcValues[target] = result;
-                    calcValues.fv = effectiveTI - calcValues.pv - calcValues.pmt * calcValues.n;
+                    calcValues.fv = effectiveTI - (calcValues.pv || 0) - (calcValues.pmt || 0) * (calcValues.n || 0);
                 } else {
                     // Target is I, N, or FV - derive PMT or FV to satisfy TI
-                    const adjustedTI = calcValues.pv > 0 && effectiveTI > 0 ? -effectiveTI : effectiveTI;
+                    const adjustedTI = (calcValues.pv || 0) > 0 && effectiveTI > 0 ? -effectiveTI : effectiveTI;
 
-                    if (Math.abs(calcValues.fv) < 0.01 && calcValues.n !== 0) {
-                        calcValues.pmt = (adjustedTI - calcValues.pv - calcValues.fv) / calcValues.n;
+                    if (Math.abs(calcValues.fv || 0) < 0.01 && (calcValues.n || 0) !== 0) {
+                        calcValues.pmt = (adjustedTI - (calcValues.pv || 0) - (calcValues.fv || 0)) / calcValues.n;
                         setValues(prev => ({ ...prev, pmt: parseFloat(calcValues.pmt.toFixed(2)) }));
                     } else {
-                        calcValues.fv = adjustedTI - calcValues.pv - calcValues.pmt * calcValues.n;
+                        calcValues.fv = adjustedTI - (calcValues.pv || 0) - (calcValues.pmt || 0) * (calcValues.n || 0);
                         setValues(prev => ({ ...prev, fv: parseFloat(calcValues.fv.toFixed(2)) }));
                     }
-                    result = calculateTVM(target, calcValues, mode, frequency, interestType, effectiveCY);
+                    // Sanitize for calculateTVM
+                    const sanitized = {
+                        n: calcValues.n || 0,
+                        i: calcValues.i || 0,
+                        pv: calcValues.pv || 0,
+                        pmt: calcValues.pmt || 0,
+                        fv: calcValues.fv || 0
+                    };
+                    result = calculateTVM(target, sanitized, mode, frequency, interestType, effectiveCY);
                 }
             } else if (target === 'totalInterest') {
                 // Calculate PMT first if needed
-                if (Math.abs(calcValues.pmt) < 0.01) {
-                    calcValues.pmt = calculateTVM('pmt', calcValues, mode, frequency, interestType, effectiveCY);
+                if (Math.abs(calcValues.pmt || 0) < 0.01) {
+                    const sanitized = {
+                        n: calcValues.n || 0,
+                        i: calcValues.i || 0,
+                        pv: calcValues.pv || 0,
+                        pmt: calcValues.pmt || 0,
+                        fv: calcValues.fv || 0
+                    };
+                    calcValues.pmt = calculateTVM('pmt', sanitized, mode, frequency, interestType, effectiveCY);
                     setValues(prev => ({ ...prev, pmt: parseFloat(calcValues.pmt.toFixed(2)) }));
                 }
-                result = calcValues.pv + calcValues.pmt * calcValues.n + calcValues.fv;
+                result = (calcValues.pv || 0) + (calcValues.pmt || 0) * (calcValues.n || 0) + (calcValues.fv || 0);
             } else {
-                result = calculateTVM(target, calcValues, mode, frequency, interestType, effectiveCY);
+                const sanitized = {
+                    n: calcValues.n || 0,
+                    i: calcValues.i || 0,
+                    pv: calcValues.pv || 0,
+                    pmt: calcValues.pmt || 0,
+                    fv: calcValues.fv || 0
+                };
+                result = calculateTVM(target, sanitized, mode, frequency, interestType, effectiveCY);
             }
 
             // Update state
@@ -7055,7 +7895,7 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
                     { pmt: calcValues.pmt, totalInterest: result });
             } else {
                 const finalValues = { ...calcValues, [target]: result };
-                const currentInterest = finalValues.pv + finalValues.pmt * finalValues.n + finalValues.fv;
+                const currentInterest = (finalValues.pv || 0) + (finalValues.pmt || 0) * (finalValues.n || 0) + (finalValues.fv || 0);
                 setTotalInterest(currentInterest);
                 setValues(prev => ({ ...prev, [target]: parseFloat(result.toFixed(6)) }));
                 addToHistory('TVM', { ...calcValues, mode, target, frequency, compoundingFrequency: effectiveCY, interestType },
@@ -7068,9 +7908,11 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
 
     const handleChange = (field, val) => {
         const cleanVal = typeof val === 'string' ? val.replace(/,/g, '') : val;
-        let numericVal = parseFloat(cleanVal) || 0;
+        // Allow null for empty strings during editing
+        let numericVal = cleanVal === '' ? null : parseFloat(cleanVal);
+        if (numericVal !== null && isNaN(numericVal)) numericVal = 0;
 
-        if (field === 'n' && nMode === 'YEARS') {
+        if (numericVal !== null && field === 'n' && nMode === 'YEARS') {
             numericVal *= frequency;
         }
 
@@ -7080,8 +7922,9 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
 
     const handleInterestInput = (val) => {
         const cleanVal = typeof val === 'string' ? val.replace(/,/g, '') : val;
-        const newInterest = parseFloat(cleanVal);
-        setTotalInterest(isNaN(newInterest) ? 0 : newInterest);
+        // Allow null for empty strings during editing
+        const newInterest = (cleanVal === '' || cleanVal === '-') ? null : parseFloat(cleanVal);
+        setTotalInterest(newInterest);
         setCalculatedValue(null);
     };
 
@@ -7097,15 +7940,20 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
     };
 
     const getDisplayValue = (field) => {
-        if (field === 'n' && nMode === 'YEARS') return values.n / frequency;
+        if (field === 'n' && nMode === 'YEARS') {
+            return values.n === null ? null : values.n / frequency;
+        }
         if (field === 'totalInterest') return totalInterest;
         if (field === 'totalPMT') return totalPMT;
         return values[field];
     };
 
     // Calculate Total PMT - when PV and PMT have different signs, use only PMT × N
-    const pvPmtDifferentSigns = (values.pv > 0 && values.pmt < 0) || (values.pv < 0 && values.pmt > 0);
-    const totalPMT = pvPmtDifferentSigns ? (values.pmt * values.n) : (values.pv + (values.pmt * values.n));
+    const pv = values.pv || 0;
+    const pmt = values.pmt || 0;
+    const n = values.n || 0;
+    const pvPmtDifferentSigns = (pv > 0 && pmt < 0) || (pv < 0 && pmt > 0);
+    const totalPMT = pvPmtDifferentSigns ? (pmt * n) : (pv + (pmt * n));
 
     // Field definitions
     const fields = [
@@ -7222,11 +8070,15 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
                         <div className="flex justify-between items-center gap-4">
                             <div className="flex flex-col items-start text-left">
                                 <div className="flex items-center gap-2">
-                                    <label className={`text-sm font-bold transition-colors ${field.isReadOnly ? 'text-neutral-500' : target === field.id ? 'text-primary-400' : 'text-neutral-300'}`}>
+                                    <label 
+                                        onClick={() => !field.isReadOnly && clearField(field.id)}
+                                        className={`text-sm font-bold transition-colors ${field.isReadOnly ? 'text-neutral-500' : 'cursor-pointer hover:text-white'} ${!field.isReadOnly && target === field.id ? 'text-primary-400' : 'text-neutral-300'}`}
+                                        title={!field.isReadOnly ? "Click to Clear" : ""}
+                                    >
                                         {field.label}
-                                        {field.id === 'totalInterest' && totalInterest !== 0 && (values.fv || values.pv) !== 0 && (
+                                        {field.id === 'totalInterest' && totalInterest !== 0 && totalInterest !== null && ((values.fv || 0) || (values.pv || 0)) !== 0 && (
                                             <span className="text-[#00ff00] ml-1 text-xs">
-                                                ({Math.abs((totalInterest / (values.fv || values.pv)) * 100).toFixed(2)}% of {values.fv ? 'FV' : 'PV'})
+                                                ({Math.abs((totalInterest / ((values.fv || 0) || (values.pv || 0))) * 100).toFixed(2)}% of {values.fv ? 'FV' : 'PV'})
                                             </span>
                                         )}
                                     </label>
@@ -7241,27 +8093,30 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
                                 </div>
                                 <span className="text-[9px] uppercase tracking-tighter text-neutral-500 font-bold">{field.sub}</span>
                             </div>
-                            <div className="relative flex-1">
-                                {field.isReadOnly ? (
-                                    <span className="block text-right text-lg font-mono text-neutral-400 w-full">
-                                        {getDisplayValue(field.id)?.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                    </span>
-                                ) : target === field.id && calculatedValue === null ? (
-                                    <span className="text-neutral-600 italic text-xs font-bold px-2">CALC...</span>
-                                ) : target === field.id && calculatedValue === 'INVALID_SIGN' ? (
-                                    <span className="text-red-400 text-[10px] leading-tight font-bold text-right w-full block">PV/PMT and FV can't have the same sign.</span>
-                                ) : target === field.id && (calculatedValue === "Error" || (typeof calculatedValue === 'number' && isNaN(calculatedValue))) ? (
-                                    <span className="text-red-400 italic text-xs font-bold px-2">Error</span>
-                                ) : (
-                                    <FormattedNumberInput
-                                        value={getDisplayValue(field.id)}
-                                        onChange={(e) => field.id === 'totalInterest' ? handleInterestInput(e.target.value) : handleChange(field.id, e.target.value)}
-                                        decimals={field.id === 'n' ? 0 : 2}
-                                        forceFixedOnFocus={field.id === 'totalInterest'}
-                                        className={`bg-transparent text-right text-lg font-mono focus:outline-none w-full placeholder-neutral-700 transition-colors ${target === field.id ? 'text-primary-400 font-black' : 'text-white'}`}
-                                        placeholder="0"
-                                    />
-                                )}
+                            <div className="relative flex-1 flex items-center justify-end gap-2">
+                                <div className="flex-1">
+                                    {field.isReadOnly ? (
+                                        <span className="block text-right text-lg font-mono text-neutral-400 w-full">
+                                            {getDisplayValue(field.id)?.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                        </span>
+                                    ) : target === field.id && calculatedValue === null ? (
+                                        <span className="text-neutral-600 italic text-xs font-bold px-2">CALC...</span>
+                                    ) : target === field.id && calculatedValue === 'INVALID_SIGN' ? (
+                                        <span className="text-red-400 text-[10px] leading-tight font-bold text-right w-full block">PV/PMT and FV can't have the same sign.</span>
+                                    ) : target === field.id && (calculatedValue === "Error" || (typeof calculatedValue === 'number' && isNaN(calculatedValue))) ? (
+                                        <span className="text-red-400 italic text-xs font-bold px-2">Error</span>
+                                    ) : (
+                                        <FormattedNumberInput
+                                            ref={inputRefs[field.id]}
+                                            value={getDisplayValue(field.id)}
+                                            onChange={(e) => field.id === 'totalInterest' ? handleInterestInput(e.target.value) : handleChange(field.id, e.target.value)}
+                                            decimals={field.id === 'n' ? 0 : 2}
+                                            forceFixedOnFocus={field.id === 'totalInterest'}
+                                            className={`bg-transparent text-right text-lg font-mono focus:outline-none w-full placeholder-neutral-700 transition-colors ${target === field.id ? 'text-primary-400 font-black' : 'text-white'}`}
+                                            placeholder="0"
+                                        />
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>

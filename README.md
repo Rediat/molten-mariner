@@ -23,8 +23,10 @@ This is a React + Tailwind CSS rebuild of the FinCalc Android Pro TVM Calculator
 ## Features implemented
 
 - **TVM Calculator**: Full Time Value of Money calculator (PV, FV, PMT, N, I/Y).
-- **Responsive Layout**: Mobile-friendly design resembling the original app.
-- **Dark Mode**: sleek dark interface with green accents.
+- **T-Bill Bidding**: Unit-based (5,000 ETB) Treasury Bill calculator with forward/reverse modes and effective yield.
+- **Advanced Tools**: Loan amortization, Bond valuation, Cash Flow (NPV/IRR), and Pension modeling.
+- **Drive & Ride**: Traffic-aware fare calculator with route comparison and GPS live tracking.
+- **Dark Mode**: Sleek dark interface with glassmorphism and premium aesthetics.
 
 ## Troubleshooting
 

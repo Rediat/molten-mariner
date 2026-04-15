@@ -629,15 +629,15 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
             >
                 <p>
                     Calculate Treasury Bill purchase prices and returns using discount pricing.
-                    Supports two modes: calculate what you pay for a given face value, or find
-                    what face value you can get for a given budget.
+                    T-Bills in Ethiopia are issued in units of <strong>5,000 ETB</strong>; this calculator
+                    automatically rounds your input down to the nearest unit to provide realistic bidding results.
                 </p>
 
                 <div className="pt-2">
                     <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Calculation Modes:</p>
                     <FieldList fields={[
-                        { name: 'Face→Cost', description: 'Enter the face value (amount at maturity) to calculate purchase price, brokerage, and total consideration' },
-                        { name: 'Budget→Face', description: 'Enter your total budget (total consideration) to find what face value T-Bill you can purchase' }
+                        { name: 'Face→Cost', description: 'Enter the desired face value. The calculator floors this to the nearest 5,000 ETB unit to determine the actual bidding amount' },
+                        { name: 'Budget→Face', description: 'Enter your total investment budget. The calculator determines the maximum number of 5,000 ETB units you can afford including brokerage' }
                     ]} />
                 </div>
 
@@ -655,13 +655,14 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                 <div className="pt-2">
                     <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Results:</p>
                     <FieldList fields={[
-                        { name: 'Purchase Price', description: 'Amount to pay for the T-Bill (before brokerage)' },
-                        { name: 'Brokerage', description: 'Commission amount based on purchase price' },
-                        { name: 'Total Consideration / Face Value', description: 'In forward mode: total you pay. In reverse mode: the face value you can purchase with your budget' },
-                        { name: 'Maturity Date', description: 'Date when the T-Bill matures' },
-                        { name: 'Discount', description: 'Difference between face value and purchase price' },
-                        { name: 'Net Return', description: 'Your actual profit after brokerage (face value − total consideration)' },
-                        { name: 'Effective Yield', description: 'Annualized return based on net return relative to total consideration' }
+                        { name: 'Quantity', description: 'The number of 5,000 ETB units being purchased' },
+                        { name: 'Purchase Price', description: 'The discounted amount to pay for the T-Bill (before brokerage)' },
+                        { name: 'Brokerage', description: 'The commission amount based on the purchase price' },
+                        { name: 'Total Consideration / Face Value', description: 'In forward mode: total out-of-pocket cost. In reverse mode: the final maturity value you receive' },
+                        { name: 'Maturity Date', description: 'The date when the T-Bill matures and you receive the face value' },
+                        { name: 'Discount', description: 'The difference between face value and purchase price (gross profit)' },
+                        { name: 'Net Return', description: 'Your actual profit after accounting for brokerage (Face Value − Total Consideration)' },
+                        { name: 'Effective Yield', description: 'Annualized return based on net profit relative to total consideration' }
                     ]} />
                 </div>
 
@@ -680,8 +681,12 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                 </InfoBox>
 
                 <InfoBox type="tip">
-                    <strong>Reverse Mode:</strong> In Budget→Face mode, the calculator derives the purchase price
-                    from your budget after removing brokerage, then calculates the face value using the discount formula in reverse.
+                    <strong>Unit Pricing:</strong> All outputs are derived based on a standard unit size of 5,000 ETB per bill.
+                    The "Quantity" result shows exactly how many units your budget or face value allows.
+                </InfoBox>
+                <InfoBox type="tip">
+                    <strong>Reverse Mode:</strong> In Budget→Face mode, the calculator calculates the cost of a single unit (Price + Brokerage)
+                    and divides your budget by this unit cost to find the maximum possible quantity.
                 </InfoBox>
             </HelpSection>
 
