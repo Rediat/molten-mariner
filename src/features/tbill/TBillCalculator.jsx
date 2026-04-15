@@ -185,6 +185,9 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
                     <p className="text-[11px] leading-relaxed mt-1 text-neutral-400">
                         <span className="font-bold text-primary-400">Unit Logic:</span> T-Bills are sold in denominations of <span className="text-white">5,000 ETB</span>.
                     </p>
+                    <p className="text-[11px] leading-relaxed mt-1 text-indigo-300">
+                        <span className="font-bold text-indigo-400">AI Yield:</span> Predicts the cut-off yield using historical NBE patterns based on your tenure.
+                    </p>
                     <p className="text-[11px] leading-relaxed mt-1 text-neutral-500 italic">
                         Yield = (Net Return / Total Cost) × (365 / Days) × 100
                     </p>

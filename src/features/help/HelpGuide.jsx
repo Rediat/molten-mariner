@@ -647,6 +647,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                         { name: 'Face Value / Budget', description: 'Face value (forward mode) or total budget (reverse mode) — the primary input swaps based on selected mode' },
                         { name: 'Tenure', description: 'T-Bill duration (28, 91, 182, or 364 days), labeled with approximate periods: 1, 3, 6 months and 1 year' },
                         { name: 'Discount Rate', description: 'Annual discount rate used to calculate purchase price' },
+                        { name: 'Predicted Yield', description: 'Dynamic forecast based on the latest NBE cut-off yields. Click the prediction badge to automatically apply it to the discount rate.' },
                         { name: 'Brokerage %', description: 'Commission percentage charged by your broker' },
                         { name: 'Issue Date', description: 'The date when the T-Bill is issued' }
                     ]} />
@@ -688,6 +689,10 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                 <InfoBox type="tip">
                     <strong>Reverse Mode:</strong> In Budget→Face mode, the calculator calculates the cost of a single unit (Price + Brokerage)
                     and divides your budget by this unit cost to find the maximum possible quantity.
+                </InfoBox>
+
+                <InfoBox type="note">
+                    <strong>Developer Sync:</strong> The predicted yield is generated dynamically using an offline dataset. Developers can keep this data current by executing <code>npm run sync-tbill</code> in the project terminal to systematically scrape the latest NBE yields.
                 </InfoBox>
             </HelpSection>
 
