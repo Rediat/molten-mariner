@@ -214,9 +214,9 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                 </InfoBox>
 
                 <InfoBox type="tip">
-                    <strong>Quick Clear:</strong> Click on any field's <strong>label</strong> 
-                    (e.g., "PV") to instantly clear it and focus the input. 
-                    The field remains blank while you are typing and only defaults to 0 
+                    <strong>Quick Clear:</strong> Click on any field's <strong>label</strong>
+                    (e.g., "PV") to instantly clear it and focus the input.
+                    The field remains blank while you are typing and only defaults to 0
                     when you leave the field (blur) without entering a value.
                 </InfoBox>
             </HelpSection>
@@ -692,7 +692,46 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                 </InfoBox>
 
                 <InfoBox type="note">
-                    <strong>Developer Sync:</strong> The predicted yield is generated dynamically using an offline dataset. Developers can keep this data current by executing <code>npm run sync-tbill</code> in the project terminal to systematically scrape the latest NBE yields.
+                    <strong>Data Refresh (Sync):</strong> The calculator uses an offline database of historical Treasury Bill auction results from the National Bank of Ethiopia (NBE) to deliver fast, local predictions without API dependencies.
+                    <br /><br />
+                    <strong>How it works:</strong> Developers execute <code>npm run sync-tbill</code> in the project terminal. This command triggers a specialized scraper that accesses the NBE website, extracts raw auction tables, handles structural inconsistencies, and appends new auction records into the dashboard's dataset (<code>data.json</code>), ensuring the predictive model is aware of the current market conditions.
+                </InfoBox>
+
+                <InfoBox type="formula">
+                    <strong>Prediction Model</strong>
+                    <br />Based directly on the <code>predictNextYield()</code> function in <code>index.js</code>:
+                    <br /><br />
+                    Stage 1 — Holt's Linear Exponential Smoothing — explains the double-smoothing algorithm with the real parameter values (α = 0.7 for yields, α = 0.4 for supply/demand, β = 0.2–0.3) and the 18-record look-back window
+                    <br /><br />
+                    Stage 2 — Demand-Supply Sensitivity Adjustment — explains the baseline BTC of 1.20×, the −0.45% sensitivity factor, and how high/low demand nudges the yield forecast with a worked numeric example
+                    <br /><br />
+                    <strong>Prediction outputs — table mapping each output to where it appears in the UI</strong>
+                    <table className="w-full mt-1 mb-2 text-[10px] border-collapse border border-blue-500/30">
+                        <thead>
+                            <tr className="bg-blue-900/20">
+                                <th className="border border-blue-500/30 p-1 text-left font-bold text-blue-400">Output</th>
+                                <th className="border border-blue-500/30 p-1 text-left font-bold text-blue-400">UI Location</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td className="border border-blue-500/30 p-1">Yield</td>
+                                <td className="border border-blue-500/30 p-1">Glowing "AI: X.XX%" badge next to Discount Rate</td>
+                            </tr>
+                            <tr>
+                                <td className="border border-blue-500/30 p-1">BTC / Supply / Demand</td>
+                                <td className="border border-blue-500/30 p-1">Internal (drives yield calculation)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <strong>Limitations</strong>
+                    <div className="space-y-3 mt-2">
+                        <p><strong>3-record minimum:</strong> The app’s math needs to see at least three past auctions to understand the "rhythm" of the market. If a specific T-Bill (like the 364-day one) hasn't been sold at least three times recently, the app won't make a guess because it doesn't have enough history to be helpful.</p>
+                        <p><strong>Can't predict policy shocks:</strong> The app only knows what happened in the past. It has no way of knowing if the National Bank suddenly changes the law, if there is a major political announcement, or a sudden economic crisis. It’s like trying to predict the weather based only on yesterday's temperature—it can't "see" an unannounced storm coming.</p>
+                        <p><strong>Shorter maturities more reliable:</strong> It is much easier to guess what will happen 28 days from now than it is to guess what will happen a year (364 days) from now. The shorter-term rates are usually more stable, so the app’s predictions for them are generally "closer to the pin" than for the long-term ones.</p>
+                        <p><strong>Recalculated fresh every load:</strong> The app doesn't store "old" predictions. Every single time you open the page or hit refresh, the computer re-runs all its calculations from scratch using the most recent data it just scraped. You are always getting the most current math possible.</p>
+                    </div>
                 </InfoBox>
             </HelpSection>
 
@@ -991,13 +1030,13 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                 <div className="space-y-3">
                     <InfoBox type="tip">
                         <strong>Click Label to Clear:</strong> Standardized interaction across all calculators!
-                        Click any input field's <strong>label</strong> to instantly clear it and focus the 
-                        input. The field stays blank while focused and only defaults to 0 when you 
+                        Click any input field's <strong>label</strong> to instantly clear it and focus the
+                        input. The field stays blank while focused and only defaults to 0 when you
                         leave the field (blur) without entering data. (Note: Date and Location fields are excluded).
                     </InfoBox>
 
                     <InfoBox type="tip">
-                        <strong>Clear Button:</strong> Use the CLR button at the bottom to reset <strong>all</strong> fields 
+                        <strong>Clear Button:</strong> Use the CLR button at the bottom to reset <strong>all</strong> fields
                         to their default values at once.
                     </InfoBox>
 
