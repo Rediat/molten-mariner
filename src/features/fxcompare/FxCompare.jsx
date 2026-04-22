@@ -137,12 +137,18 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
                         Comparison Methodology
                     </p>
                     <p className="text-[11px] leading-relaxed">
-                        This tool compares investing your budget into Treasury Bills vs. buying foreign currency on the black market and holding it.
+                        Compare investing your budget into Treasury Bills vs. buying foreign currency on the parallel market.
                     </p>
-                    <ul className="text-[10px] mt-1 space-y-0.5 list-disc pl-4 text-neutral-400">
-                        <li><span className="text-emerald-400 font-bold">T-Bill Strategy:</span> Buy max units with budget, hold to maturity, get face value.</li>
-                        <li><span className="text-emerald-400 font-bold">FX Strategy:</span> Buy currency at starting month's rate, hold until T-Bill maturity, sell at ending month's rate.</li>
-                    </ul>
+                    <div className="mt-2 space-y-2">
+                        <div>
+                            <p className="text-[10px] font-bold text-white mb-0.5 uppercase tracking-tight">Single Mode</p>
+                            <p className="text-[10px] text-neutral-400">A one-time participation. Buy T-Bills at the start and compare returns at that single maturity date against holding FX for the same period.</p>
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-bold text-white mb-0.5 uppercase tracking-tight">Rolling Mode</p>
+                            <p className="text-[10px] text-neutral-400">Continuous reinvestment. Automatically enters subsequent auctions upon maturity until the current date. Compares total compounded returns against long-term FX holding.</p>
+                        </div>
+                    </div>
                 </div>
             )}
 

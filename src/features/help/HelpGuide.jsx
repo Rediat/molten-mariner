@@ -751,18 +751,20 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                 </p>
 
                 <div className="pt-2">
-                    <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">How it works:</p>
-                    <ul className="space-y-2 text-xs">
+                    <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Investment Modes:</p>
+                    <ul className="space-y-3 text-xs">
                         <li className="flex gap-2">
-                            <ArrowRight className="w-3 h-3 mt-1 text-primary-400 shrink-0" />
+                            <ArrowRight className="w-3 h-3 mt-1 text-emerald-400 shrink-0" />
                             <div>
-                                <span className="font-bold text-white">Strategy A (T-Bills):</span> The app calculates the maximum number of 5,000 ETB units you could buy with your budget at a historical auction, factoring in brokerage fees.
+                                <span className="font-bold text-white uppercase tracking-tight">Single Mode:</span>
+                                <p className="text-neutral-400 mt-1">Simulates a one-time T-Bill purchase. The investment is compared against holding foreign currency for exactly the same duration (e.g., 28 days or 364 days).</p>
                             </div>
                         </li>
                         <li className="flex gap-2">
-                            <ArrowRight className="w-3 h-3 mt-1 text-primary-400 shrink-0" />
+                            <ArrowRight className="w-3 h-3 mt-1 text-emerald-400 shrink-0" />
                             <div>
-                                <span className="font-bold text-white">Strategy B (FX):</span> The app simulates using that <em>exact same</em> total investment amount to buy a foreign currency at the black-market rate on the auction date, holding it until the T-Bill's maturity date, and then selling it back for ETB.
+                                <span className="font-bold text-white uppercase tracking-tight">Rolling Mode:</span>
+                                <p className="text-neutral-400 mt-1">Simulates a long-term reinvestment strategy. Upon each T-Bill maturity, the principal and interest are automatically reinvested into the <em>next available auction</em> of the same tenure. This continues until the most recent historical data point, comparing the compounded total against holding FX over the entire multi-round period.</p>
                             </div>
                         </li>
                     </ul>
@@ -772,19 +774,18 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                     <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Inputs:</p>
                     <FieldList fields={[
                         { name: 'Investment Budget', description: 'The total amount in ETB you are considering for investment' },
-                        { name: 'T-Bill Auction Date', description: 'Select a historical auction. Only dates with overlapping FX price data are shown' },
-                        { name: 'Foreign Currency', description: 'Choose the currency to compare against (USD, EUR, GBP, AED, etc.)' }
+                        { name: 'Start Auction', description: 'Select the initial historical auction to begin the simulation' },
+                        { name: 'Foreign Currency', description: 'Choose the currency to compare against (USD, EUR, GBP, etc.)' },
+                        { name: 'Tenure Strategy', description: '(Rolling Mode only) Choose whether to roll 28D, 91D, 182D, or 364D bills' }
                     ]} />
                 </div>
 
                 <div className="pt-2">
-                    <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Results (Per Tenure):</p>
-                    <p className="text-xs mb-2">Comparison results are shown side-by-side for 28, 91, 182, and 364 day periods:</p>
+                    <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Results:</p>
                     <FieldList fields={[
-                        { name: 'Winner Badge', description: 'Clearly identifies which strategy yielded higher profit and the absolute difference in ETB' },
-                        { name: 'Invested', description: 'The actual ETB spent (Strategy A) or the equivalent FX units bought (Strategy B)' },
-                        { name: 'End Value', description: 'The final ETB value received at maturity' },
-                        { name: 'Profit / ROI', description: 'The net gain in ETB and the percentage return on investment (ROI)' }
+                        { name: 'Winner Badge', description: 'Identifies which strategy yielded higher profit over the selected horizon' },
+                        { name: 'End Value', description: 'The final ETB value received (after one round in Single, or multiple rounds in Rolling)' },
+                        { name: 'Round-by-Round', description: '(Rolling Mode only) A collapsible breakdown showing the Yield, Quantity, Profit, and Leftover Cash for every reinvestment round' }
                     ]} />
                 </div>
 
