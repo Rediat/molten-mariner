@@ -362,7 +362,7 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
                     <div className="mt-2 space-y-3 pb-4">
                         {rollingResult.error ? (
                             <div className="bg-neutral-800/50 border border-red-500/30 rounded-xl p-3 text-center">
-                                <p className="text-xs font-bold text-red-400">Rolling Error</p>
+                                <p className="text-xs font-bold text-red-400">{selectedTenure} Days</p>
                                 <p className="text-[10px] text-neutral-500">{rollingResult.error}</p>
                             </div>
                         ) : (
@@ -371,7 +371,7 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
                                 <div className="bg-neutral-900/60 border border-neutral-700 rounded-xl p-3">
                                     <div className="flex justify-between items-stretch mb-2">
                                         <div className="text-left">
-                                            <h3 className="text-sm font-bold text-white leading-none">{selectedTenure}D Rolling × {rollingResult.totalRounds}</h3>
+                                            <h3 className="text-sm font-bold text-white leading-none">{selectedTenure} Days Rolling × {rollingResult.totalRounds}</h3>
                                             <p className="text-[9px] text-neutral-500 uppercase mt-1">{rollingResult.issueDate} → {rollingResult.finalMaturityDate} ({rollingResult.totalDays} days)</p>
                                         </div>
                                         <div className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider flex items-center text-right ${rollingResult.winner === 'T-BILL' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
