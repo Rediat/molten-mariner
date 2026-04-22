@@ -90,9 +90,8 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
                 </div>
             )}
 
-            {/* Inputs */}
-            <div className="space-y-2 flex-1 overflow-y-auto pr-1 custom-scrollbar">
-                
+            {/* Fixed Inputs Area */}
+            <div className="space-y-2 shrink-0 mb-2">
                 {/* Budget */}
                 <div className="bg-neutral-800/40 rounded-xl p-2 border border-neutral-700 hover:border-neutral-600">
                     <div className="flex justify-between items-center gap-2">
@@ -144,10 +143,12 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
                         </select>
                     </div>
                 </div>
+            </div>
 
-                {/* Results Section */}
+            {/* Scrollable Results Section */}
+            <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar">
                 {resultData && (
-                    <div className="mt-4 space-y-3 pb-4">
+                    <div className="mt-2 space-y-3 pb-4">
                         {TENURES.map(tenure => {
                             const res = resultData.results[tenure];
                             if (!res) return null;
