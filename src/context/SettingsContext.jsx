@@ -28,7 +28,8 @@ const DEFAULT_SETTINGS = {
     showGoal: true,
     showTransport: false,
     showHistory: false,
-    tabOrder: ['tvm', 'goal', 'loan', 'pension', 'inflation', 'tbill', 'transport', 'rates', 'history', 'flow', 'bond'],
+    showFxCompare: true,
+    tabOrder: ['tvm', 'goal', 'loan', 'pension', 'inflation', 'tbill', 'fxcompare', 'transport', 'rates', 'history', 'flow', 'bond'],
 };
 
 export const SettingsProvider = ({ children }) => {

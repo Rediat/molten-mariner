@@ -8,7 +8,8 @@
     "build": "chmod +x node_modules/.bin/vite && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "sync-tbill": "node scripts/sync-tbill.js"
+    "sync-tbill": "node scripts/sync-tbill.js",
+    "sync-fx": "node scripts/sync-fx.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.27.1",

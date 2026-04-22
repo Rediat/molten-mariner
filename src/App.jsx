@@ -17,6 +17,7 @@ import TBillCalculator from './features/tbill/TBillCalculator';
 import PensionCalculator from './features/pension/PensionCalculator';
 import InflationCalculator from './features/inflation/InflationCalculator';
 import RideFareCalculator from './features/transport/RideFareCalculator';
+import FxCompare from './features/fxcompare/FxCompare';
 
 const TAB_TO_SETTING = {
     tvm: 'showTVM',
@@ -28,6 +29,7 @@ const TAB_TO_SETTING = {
     bond: 'showBond',
     rates: 'showRates',
     tbill: 'showTBill',
+    fxcompare: 'showFxCompare',
     inflation: 'showInflation',
     history: 'showHistory'
 };
@@ -36,7 +38,7 @@ function AppContent() {
     const { settings } = useSettings();
     const [activeTab, setActiveTab] = useState(() => {
         // Initialize to first enabled tab
-        const tabOrder = settings.tabOrder || ['tvm', 'goal', 'loan', 'pension', 'inflation', 'tbill', 'transport', 'flow', 'bond', 'rates', 'history'];
+        const tabOrder = settings.tabOrder || ['tvm', 'goal', 'loan', 'pension', 'inflation', 'tbill', 'fxcompare', 'transport', 'flow', 'bond', 'rates', 'history'];
         const firstEnabled = tabOrder.find(id => settings[TAB_TO_SETTING[id]]);
         return firstEnabled || 'tvm';
     });
@@ -53,7 +55,7 @@ function AppContent() {
     useEffect(() => {
         const settingKey = TAB_TO_SETTING[activeTab];
         if (settingKey && !settings[settingKey]) {
-            const tabOrder = settings.tabOrder || ['tvm', 'goal', 'loan', 'pension', 'inflation', 'tbill', 'transport', 'flow', 'bond', 'rates', 'history'];
+            const tabOrder = settings.tabOrder || ['tvm', 'goal', 'loan', 'pension', 'inflation', 'tbill', 'fxcompare', 'transport', 'flow', 'bond', 'rates', 'history'];
             const firstEnabled = tabOrder.find(id => settings[TAB_TO_SETTING[id]]);
             if (firstEnabled) {
                 setActiveTab(firstEnabled);
@@ -144,6 +146,9 @@ function AppContent() {
             </div>
             <div className={activeTab === 'tbill' ? 'block h-full' : 'hidden'}>
                 <TBillCalculator toggleHelp={toggleHelp} toggleSettings={toggleSettings} />
+            </div>
+            <div className={activeTab === 'fxcompare' ? 'block h-full' : 'hidden'}>
+                <FxCompare toggleHelp={toggleHelp} toggleSettings={toggleSettings} />
             </div>
             <div className={activeTab === 'pension' ? 'block h-full' : 'hidden'}>
                 <PensionCalculator toggleHelp={toggleHelp} toggleSettings={toggleSettings} />

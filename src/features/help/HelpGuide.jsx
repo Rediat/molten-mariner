@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
     HelpCircle, Calculator, Target, DollarSign, Activity, FileText, Percent,
-    ChevronDown, ChevronUp, Book, Lightbulb, Hash, ArrowRight, History, Trash2, Receipt, Settings, Wallet, TrendingUp, Car
+    ChevronDown, ChevronUp, Book, Lightbulb, Hash, ArrowRight, History, Trash2, Receipt, Settings, Wallet, TrendingUp, Car, ArrowRightLeft
 } from 'lucide-react';
 import { MIN_YEAR, MAX_YEAR, FORECAST_END } from '../inflation/data';
 
@@ -16,6 +16,7 @@ const TAB_TO_SECTION = {
     bond: 'bond',
     rates: 'rates',
     tbill: 'tbill',
+    fxcompare: 'fxcompare',
     transport: 'transport',
     history: 'history',
     settings: 'settings'
@@ -158,6 +159,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                         <li>• <strong>Rates</strong> - Interest rate conversions</li>
                         <li>• <strong>Ride</strong> - Ride Fare Calculator</li>
                         <li>• <strong>T-Bill</strong> - Treasury Bill bidding calculator</li>
+                        <li>• <strong>FX-VS</strong> - FX vs T-Bill return comparison</li>
                         <li>• <strong>History</strong> - View past calculations</li>
                     </ul>
                 </div>
@@ -734,6 +736,72 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                     </div>
                 </InfoBox>
             </HelpSection>
+            
+            {/* FX vs T-Bill Compare */}
+            <HelpSection
+                id="fxcompare"
+                title="FX vs T-Bill Compare"
+                icon={ArrowRightLeft}
+                isOpen={openSection === 'fxcompare'}
+                onToggle={handleToggle}
+            >
+                <p>
+                    Compare the historical returns of investing in Ethiopian Treasury Bills versus holding foreign currencies 
+                    (e.g., USD, EUR, GBP) purchased on the parallel market. 
+                </p>
+
+                <div className="pt-2">
+                    <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">How it works:</p>
+                    <ul className="space-y-2 text-xs">
+                        <li className="flex gap-2">
+                            <ArrowRight className="w-3 h-3 mt-1 text-primary-400 shrink-0" />
+                            <div>
+                                <span className="font-bold text-white">Strategy A (T-Bills):</span> The app calculates the maximum number of 5,000 ETB units you could buy with your budget at a historical auction, factoring in brokerage fees.
+                            </div>
+                        </li>
+                        <li className="flex gap-2">
+                            <ArrowRight className="w-3 h-3 mt-1 text-primary-400 shrink-0" />
+                            <div>
+                                <span className="font-bold text-white">Strategy B (FX):</span> The app simulates using that <em>exact same</em> total investment amount to buy a foreign currency at the black-market rate on the auction date, holding it until the T-Bill's maturity date, and then selling it back for ETB.
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+
+                <div className="pt-2">
+                    <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Inputs:</p>
+                    <FieldList fields={[
+                        { name: 'Investment Budget', description: 'The total amount in ETB you are considering for investment' },
+                        { name: 'T-Bill Auction Date', description: 'Select a historical auction. Only dates with overlapping FX price data are shown' },
+                        { name: 'Foreign Currency', description: 'Choose the currency to compare against (USD, EUR, GBP, AED, etc.)' }
+                    ]} />
+                </div>
+
+                <div className="pt-2">
+                    <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Results (Per Tenure):</p>
+                    <p className="text-xs mb-2">Comparison results are shown side-by-side for 28, 91, 182, and 364 day periods:</p>
+                    <FieldList fields={[
+                        { name: 'Winner Badge', description: 'Clearly identifies which strategy yielded higher profit and the absolute difference in ETB' },
+                        { name: 'Invested', description: 'The actual ETB spent (Strategy A) or the equivalent FX units bought (Strategy B)' },
+                        { name: 'End Value', description: 'The final ETB value received at maturity' },
+                        { name: 'Profit / ROI', description: 'The net gain in ETB and the percentage return on investment (ROI)' }
+                    ]} />
+                </div>
+
+                <InfoBox type="tip">
+                    <strong>Real-Time Data:</strong> FX rates are pulled from <code>ethioblackmarket.com</code> API monthly history. Rates reflect the parallel market monthly averages.
+                </InfoBox>
+
+                <InfoBox type="note">
+                    <strong>Data Refresh (Sync):</strong> Similar to the T-Bill module, this feature uses a local JSON database (<code>fxData.json</code>) to ensure maximum speed and reliability. 
+                    <br /><br />
+                    <strong>How it works:</strong> Developers run <code>npm run sync-fx</code> in the terminal to update the pricing history. This script fetches the latest 40 months of parallel market data from <code>ethioblackmarket.com</code> and synchronizes it with the local dataset, ensuring the comparison tool has access to the most recent exchange rates.
+                </InfoBox>
+
+                <InfoBox type="note">
+                    <strong>Brokerage Fees:</strong> T-Bill calculations assume a standard 0.1% brokerage fee on the purchase price, matching the default setting in the main T-Bill tab.
+                </InfoBox>
+            </HelpSection>
 
             {/* Ride Fare Calculator */}
             <HelpSection
@@ -951,6 +1019,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                         <li>• <strong>Rate Converter</strong> - Interest rate conversions</li>
                         <li>• <strong>Ride</strong> - Ride Fare Calculator</li>
                         <li>• <strong>T-Bill</strong> - Treasury Bill calculator</li>
+                        <li>• <strong>FX-VS</strong> - FX vs T-Bill comparison</li>
                         <li>• <strong>History</strong> - View past calculations</li>
                     </ul>
                 </div>

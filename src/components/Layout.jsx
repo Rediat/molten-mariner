@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calculator, DollarSign, Activity, FileText, History, Percent, Target, HelpCircle, X, Receipt, Wallet, TrendingUp, Car, Map as MapIcon } from 'lucide-react';
+import { Calculator, DollarSign, Activity, FileText, History, Percent, Target, HelpCircle, X, Receipt, Wallet, TrendingUp, Car, Map as MapIcon, ArrowRightLeft } from 'lucide-react';
 import HelpGuide from '../features/help/HelpGuide';
 import { useSettings } from '../context/SettingsContext';
 
@@ -16,12 +16,13 @@ const Layout = ({ children, activeTab, onTabChange, showHelp, onCloseHelp }) => 
         { id: 'bond', label: 'BOND', icon: FileText, settingKey: 'showBond' },
         { id: 'rates', label: 'RATES', icon: Percent, settingKey: 'showRates' },
         { id: 'tbill', label: 'T-BILL', icon: Receipt, settingKey: 'showTBill' },
+        { id: 'fxcompare', label: 'FX-VS', icon: ArrowRightLeft, settingKey: 'showFxCompare' },
         { id: 'inflation', label: 'INFL', icon: TrendingUp, settingKey: 'showInflation' },
         { id: 'history', label: 'HISTORY', icon: History, settingKey: 'showHistory' },
     ];
 
     // Get tab order from settings
-    const tabOrder = settings.tabOrder || ['tvm', 'goal', 'loan', 'pension', 'inflation', 'tbill', 'transport', 'flow', 'bond', 'rates', 'history'];
+    const tabOrder = settings.tabOrder || ['tvm', 'goal', 'loan', 'pension', 'inflation', 'tbill', 'fxcompare', 'transport', 'flow', 'bond', 'rates', 'history'];
 
     // Filter nav items based on settings and sort by tabOrder
     // History tab is always placed at the far right (last position)
