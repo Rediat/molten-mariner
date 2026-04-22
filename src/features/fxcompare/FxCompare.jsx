@@ -459,7 +459,7 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
                 </button>
                 <button
                     onClick={handleCalculate}
-                    className="flex-1 bg-gradient-to-r from-emerald-600 to-emerald-500 text-neutral-900 font-black text-base py-3 rounded-xl shadow-lg shadow-emerald-900/20 active:scale-[0.98] transition-all hover:brightness-110 flex items-center justify-center gap-2 uppercase tracking-widest"
+                    className="flex-1 bg-gradient-to-r from-primary-600 to-primary-500 text-neutral-900 font-black text-base py-2.5 rounded-xl shadow-lg shadow-primary-900/20 active:scale-[0.98] transition-all hover:brightness-110 flex items-center justify-center gap-2 uppercase tracking-widest"
                 >
                     <CalculateIcon className="w-5 h-5" />
                     Calculate

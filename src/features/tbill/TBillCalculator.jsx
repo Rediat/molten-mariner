@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useHistory } from '../../context/HistoryContext';
-import { Receipt, Info, HelpCircle, Trash2, Settings, History } from 'lucide-react';
+import { Receipt, Info, HelpCircle, Settings, History } from 'lucide-react';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
 import { CalculateIcon } from '../../components/Icons';
 import HistoryOverlay from '../../components/HistoryOverlay';
@@ -43,12 +43,6 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
     const totalBudgetRef = useRef(null);
     const discountRateRef = useRef(null);
     const brokerageRateRef = useRef(null);
-
-    const clearField = (setter, ref) => {
-        setter(null);
-        setResult(null);
-        setTimeout(() => ref.current?.focus(), 0);
-    };
 
     const calculateMaturityDate = (issueStr, tenureDays) => {
         const issue = new Date(issueStr);
@@ -202,9 +196,7 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
                         <div className="flex justify-between items-center gap-2 min-w-0">
                             <div className="shrink-0">
                                 <label 
-                                    onClick={() => clearField(setFaceValue, faceValueRef)}
-                                    className="text-sm font-bold text-primary-400 block leading-tight text-left cursor-pointer hover:text-white transition-colors"
-                                    title="Click to Clear"
+                                    className="text-sm font-bold text-primary-400 block leading-tight text-left"
                                 >
                                     Face Value
                                 </label>
@@ -225,9 +217,7 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
                         <div className="flex justify-between items-center gap-2 min-w-0">
                             <div className="shrink-0">
                                 <label 
-                                    onClick={() => clearField(setTotalBudget, totalBudgetRef)}
-                                    className="text-sm font-bold text-emerald-400 block leading-tight text-left cursor-pointer hover:text-white transition-colors"
-                                    title="Click to Clear"
+                                    className="text-sm font-bold text-emerald-400 block leading-tight text-left"
                                 >
                                     Budget
                                 </label>
@@ -272,9 +262,7 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
                     <div className="bg-neutral-800/40 rounded-xl p-2 border border-transparent hover:border-neutral-700">
                         <div className="flex flex-col">
                             <label 
-                                onClick={() => clearField(setDiscountRate, discountRateRef)}
-                                className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold mb-1 text-left cursor-pointer hover:text-white transition-colors"
-                                title="Click to Clear"
+                                className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold mb-1 text-left"
                             >
                                 Discount Rate %
                             </label>
@@ -304,9 +292,7 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
                     <div className="bg-neutral-800/40 rounded-xl p-2 border border-transparent hover:border-neutral-700">
                         <div className="flex flex-col">
                             <label 
-                                onClick={() => clearField(setBrokerageRate, brokerageRateRef)}
-                                className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold mb-1 text-left cursor-pointer hover:text-white transition-colors"
-                                title="Click to Clear"
+                                className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold mb-1 text-left"
                             >
                                 Brokerage %
                             </label>
@@ -419,22 +405,6 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
 
             {/* Action Buttons */}
             <div className="mt-1.5 flex gap-1.5">
-                <button
-                    onClick={() => {
-                        setFaceValue(500000);
-                        setTotalBudget(490000);
-                        setTenure(28);
-                        setDiscountRate(12);
-                        setBrokerageRate(0.1);
-                        setIssueDate(new Date().toISOString().split('T')[0]);
-                        setResult(null);
-                    }}
-                    className="w-[15%] bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-xs py-2.5 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center gap-1 uppercase tracking-wider"
-                    title="Clear all values"
-                >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    CLR
-                </button>
                 <button
                     onClick={toggleHelp}
                     className="bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-sm px-2 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center"

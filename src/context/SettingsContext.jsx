@@ -29,14 +29,29 @@ const DEFAULT_SETTINGS = {
     showTransport: false,
     showHistory: false,
     showFxCompare: true,
-    tabOrder: ['tvm', 'goal', 'loan', 'pension', 'inflation', 'tbill', 'fxcompare', 'transport', 'rates', 'history', 'flow', 'bond'],
+    tabOrder: ['tvm', 'goal', 'loan', 'pension', 'inflation', 'tbill', 'fxcompare', 'transport', 'flow', 'bond', 'rates', 'history'],
 };
 
 export const SettingsProvider = ({ children }) => {
     const [settings, setSettings] = useState(() => {
         try {
             const stored = localStorage.getItem(STORAGE_KEY);
-            return stored ? { ...DEFAULT_SETTINGS, ...JSON.parse(stored) } : DEFAULT_SETTINGS;
+            if (!stored) return DEFAULT_SETTINGS;
+            
+            const parsed = JSON.parse(stored);
+            const merged = { ...DEFAULT_SETTINGS, ...parsed };
+            
+            // Ensure fxcompare is in tabOrder if it's missing (migration)
+            if (merged.tabOrder && !merged.tabOrder.includes('fxcompare')) {
+                const tbillIndex = merged.tabOrder.indexOf('tbill');
+                if (tbillIndex !== -1) {
+                    merged.tabOrder.splice(tbillIndex + 1, 0, 'fxcompare');
+                } else {
+                    merged.tabOrder.push('fxcompare');
+                }
+            }
+            
+            return merged;
         } catch {
             return DEFAULT_SETTINGS;
         }
