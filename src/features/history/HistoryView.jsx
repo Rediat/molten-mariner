@@ -1,6 +1,6 @@
 import React from 'react';
 import { useHistory } from '../../context/HistoryContext';
-import { Trash2, Clock, HelpCircle, Settings } from 'lucide-react';
+import { Trash2, Clock, HelpCircle, Settings, History } from 'lucide-react';
 
 const HistoryView = ({ toggleHelp, toggleSettings }) => {
     const { history, clearHistory } = useHistory();
@@ -32,9 +32,14 @@ const HistoryView = ({ toggleHelp, toggleSettings }) => {
     return (
         <div className="flex flex-col h-full">
             <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-neutral-400 bg-clip-text text-transparent">
-                    History
-                </h1>
+                <div className="flex items-center gap-2 min-w-0">
+                    <History className="w-5 h-5 text-primary-500 shrink-0" />
+                    <div className="min-w-0">
+                        <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-neutral-400 bg-clip-text text-transparent leading-tight">
+                            History
+                        </h1>
+                    </div>
+                </div>
                 <div className="flex items-center gap-2">
                     <button
                         onClick={toggleSettings}

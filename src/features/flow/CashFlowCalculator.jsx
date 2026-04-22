@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { calculateNPV, calculateIRR, calculateMIRR, calculatePaybackPeriod, calculateDiscountedPaybackPeriod, calculateProfitabilityIndex } from '../../utils/financial-utils';
 import { useHistory } from '../../context/HistoryContext';
-import { Plus, Trash2, Info, HelpCircle, Settings, History } from 'lucide-react';
+import { Plus, Trash2, Info, HelpCircle, Settings, History, Activity } from 'lucide-react';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
 import { CalculateIcon } from '../../components/Icons';
 import HistoryOverlay from '../../components/HistoryOverlay';
@@ -63,7 +63,12 @@ const CashFlowCalculator = ({ toggleHelp, toggleSettings }) => {
     return (
         <div className="flex flex-col h-full">
             <div className="flex justify-between items-start mb-4">
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-neutral-400 bg-clip-text text-transparent">Cash Flow</h1>
+                <div className="flex items-center gap-2 min-w-0">
+                    <Activity className="w-5 h-5 text-primary-500 shrink-0" />
+                    <div className="min-w-0">
+                        <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-neutral-400 bg-clip-text text-transparent leading-tight">Cash Flow</h1>
+                    </div>
+                </div>
                 <button
                     onClick={() => setShowExplanation(!showExplanation)}
                     className={`flex items-center justify-center p-1 rounded-full transition-all ${showExplanation ? 'bg-primary-600/20 text-primary-400 ring-1 ring-primary-500/50' : 'bg-neutral-800 text-neutral-500 hover:bg-neutral-700'}`}

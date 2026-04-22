@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { calculateLoan, getAmortizationSchedule } from '../../utils/financial-utils';
 import { useHistory } from '../../context/HistoryContext';
-import { List, X, FileText, FileSpreadsheet, Info, HelpCircle, Trash2, Settings, History } from 'lucide-react';
+import { List, X, FileText, FileSpreadsheet, Info, HelpCircle, Trash2, Settings, History, DollarSign } from 'lucide-react';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
 import { CalculateIcon } from '../../components/Icons';
 import HistoryOverlay from '../../components/HistoryOverlay';
@@ -216,7 +216,12 @@ const LoanCalculator = ({ toggleHelp, toggleSettings }) => {
     return (
         <div className="flex flex-col h-full relative">
             <div className="flex justify-between items-start mb-4">
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-neutral-400 bg-clip-text text-transparent">Loan Calculator</h1>
+                <div className="flex items-center gap-2 min-w-0">
+                    <DollarSign className="w-5 h-5 text-primary-500 shrink-0" />
+                    <div className="min-w-0">
+                        <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-neutral-400 bg-clip-text text-transparent leading-tight">Loan Calculator</h1>
+                    </div>
+                </div>
                 <div className="flex flex-col items-end gap-2">
                     <div className="flex gap-1.5">
                         <button

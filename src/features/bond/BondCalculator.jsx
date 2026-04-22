@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { calculateBond, calculateBondYTM, calculateBondYTC, calculateBondDuration, calculateBondConvexity } from '../../utils/financial-utils';
 import { useHistory } from '../../context/HistoryContext';
-import { Info, HelpCircle, Trash2, Settings, History } from 'lucide-react';
+import { Info, HelpCircle, Trash2, Settings, History, FileText } from 'lucide-react';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
 import { CalculateIcon } from '../../components/Icons';
 import HistoryOverlay from '../../components/HistoryOverlay';
@@ -82,9 +82,12 @@ const BondCalculator = ({ toggleHelp, toggleSettings }) => {
     return (
         <div className="flex flex-col h-full">
             <div className="flex justify-between items-start mb-2">
-                <div>
-                    <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-neutral-400 bg-clip-text text-transparent">Bond Pricing</h1>
-                    <p className="text-neutral-500 text-[10px] font-medium uppercase tracking-wider">Valuation & Yield</p>
+                <div className="flex items-center gap-2 min-w-0">
+                    <FileText className="w-5 h-5 text-primary-500 shrink-0" />
+                    <div className="min-w-0">
+                        <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-neutral-400 bg-clip-text text-transparent leading-tight">Bond Pricing</h1>
+                        <p className="text-neutral-500 text-[10px] font-medium uppercase tracking-wider">Valuation & Yield</p>
+                    </div>
                 </div>
                 <div className="flex flex-col items-end gap-1">
                     <div className="flex gap-1.5">

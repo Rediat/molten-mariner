@@ -246,14 +246,16 @@ const GoalPlanner = ({ toggleHelp, toggleSettings }) => {
         <div className="flex flex-col h-full overflow-hidden">
             {/* Header */}
             <div className="flex justify-between items-start mb-4 shrink-0">
-                <div>
-                    <h1 className="text-xl font-bold bg-gradient-to-r from-white to-neutral-400 bg-clip-text text-transparent flex items-center gap-2">
-                        <Target className="w-5 h-5 text-primary-500" />
-                        Goal Planner
-                    </h1>
-                    <p className="text-neutral-500 text-[10px] font-medium uppercase tracking-wider">
-                        PV + Annuity to Target FV
-                    </p>
+                <div className="flex items-center gap-2 min-w-0">
+                    <Target className="w-5 h-5 text-primary-500 shrink-0" />
+                    <div className="min-w-0">
+                        <h1 className="text-xl font-bold bg-gradient-to-r from-white to-neutral-400 bg-clip-text text-transparent leading-tight">
+                            Goal Planner
+                        </h1>
+                        <p className="text-neutral-500 text-[10px] font-medium uppercase tracking-wider">
+                            PV + Annuity to Target FV
+                        </p>
+                    </div>
                 </div>
                 <div className="flex flex-col items-end gap-1.5">
                     <div className="flex gap-1.5">
