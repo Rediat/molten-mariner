@@ -43,6 +43,7 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
     const [selectedTenure, setSelectedTenure] = useState(28);
     const [rollingResult, setRollingResult] = useState(null);
     const [expandedRounds, setExpandedRounds] = useState(false);
+    const [auctionSearch, setAuctionSearch] = useState('');
     
     // Refs for input focus
     const budgetRef = useRef(null);
@@ -179,19 +180,75 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
 
                 <div className="grid grid-cols-2 gap-2">
                     {/* Auction Selection */}
-                    <div className="bg-neutral-800/40 rounded-xl p-2 border border-neutral-700 text-left">
-                        <label className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold block mb-1">{mode === 'rolling' ? 'Start Auction' : 'T-Bill Auction Date'}</label>
+                    <div className="bg-neutral-800/40 rounded-xl p-2 border border-neutral-700 text-left flex flex-col">
+                        <div className="flex justify-between items-center mb-1">
+                            <label className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold">{mode === 'rolling' ? 'Start Auction' : 'Auction Date'}</label>
+                            <input 
+                                type="text"
+                                placeholder="Search..."
+                                value={auctionSearch}
+                                onChange={(e) => setAuctionSearch(e.target.value)}
+                                className="bg-neutral-900/50 border border-neutral-700 rounded px-1.5 py-0.5 text-[9px] text-white focus:outline-none focus:border-emerald-500 w-16"
+                            />
+                        </div>
+                        
+                        {/* Quick Selection Pills for the latest 4 auctions */}
+                        {!auctionSearch && validAuctions.length > 0 && (
+                            <div className="flex gap-1 mb-1.5 overflow-x-auto no-scrollbar pb-0.5">
+                                {validAuctions.slice(0, 4).map((auc, idx) => (
+                                    <button
+                                        key={auc.timestamp}
+                                        onClick={() => setSelectedAuctionIdx(idx)}
+                                        className={`shrink-0 px-1.5 py-0.5 rounded text-[8px] font-bold transition-all ${selectedAuctionIdx === idx ? 'bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500/40' : 'bg-neutral-900 text-neutral-500 hover:text-white'}`}
+                                    >
+                                        {auc.date.split(',')[0]}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+
                         <select
                             value={selectedAuctionIdx}
                             onChange={(e) => setSelectedAuctionIdx(parseInt(e.target.value))}
                             className="w-full bg-neutral-900 border border-neutral-700 rounded-md text-white text-xs p-1.5 focus:outline-none focus:border-emerald-500"
                         >
                             {validAuctions.length === 0 && <option value="">No overlapping dates</option>}
-                            {validAuctions.map((auc, idx) => (
-                                <option key={auc.timestamp} value={idx}>
-                                    {auc.date} ({auc.auctionNo})
-                                </option>
-                            ))}
+                            {(() => {
+                                const filtered = validAuctions
+                                    .map((auc, idx) => ({ ...auc, originalIdx: idx }))
+                                    .filter(auc => 
+                                        auctionSearch === '' || 
+                                        auc.date.toLowerCase().includes(auctionSearch.toLowerCase()) || 
+                                        auc.auctionNo.toLowerCase().includes(auctionSearch.toLowerCase())
+                                    );
+
+                                if (auctionSearch) {
+                                    return filtered.map(auc => (
+                                        <option key={auc.timestamp} value={auc.originalIdx}>
+                                            {auc.date} ({auc.auctionNo})
+                                        </option>
+                                    ));
+                                }
+
+                                // Group by Month Year
+                                const groups = {};
+                                filtered.forEach(auc => {
+                                    const d = new Date(auc.timestamp);
+                                    const key = d.toLocaleString('default', { month: 'long', year: 'numeric' });
+                                    if (!groups[key]) groups[key] = [];
+                                    groups[key].push(auc);
+                                });
+
+                                return Object.entries(groups).map(([groupName, auctions]) => (
+                                    <optgroup key={groupName} label={groupName} className="bg-neutral-800 text-emerald-400 font-bold not-italic">
+                                        {auctions.map(auc => (
+                                            <option key={auc.timestamp} value={auc.originalIdx} className="bg-neutral-900 text-white font-normal">
+                                                {auc.date} ({auc.auctionNo})
+                                            </option>
+                                        ))}
+                                    </optgroup>
+                                ));
+                            })()}
                         </select>
                     </div>
 

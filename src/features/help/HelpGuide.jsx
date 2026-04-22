@@ -790,6 +790,10 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                 </div>
 
                 <InfoBox type="tip">
+                    <strong>Efficient Navigation:</strong> As the auction database grows, use the <strong>Search</strong> bar within the Auction Date selector to find specific dates. Use the <strong>Quick-Select chips</strong> for the latest 4 auctions, or browse the <strong>Grouped Dropdown</strong> (organized by Month/Year) for rapid scannability.
+                </InfoBox>
+
+                <InfoBox type="tip">
                     <strong>Real-Time Data:</strong> FX rates are pulled from <code>ethioblackmarket.com</code> API monthly history. Rates reflect the parallel market monthly averages.
                 </InfoBox>
 
