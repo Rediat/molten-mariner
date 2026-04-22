@@ -1,10 +1,17 @@
-import React, { useState, useMemo } from 'react';
-import { ArrowRightLeft, Info, HelpCircle, Settings } from 'lucide-react';
+import React, { useState, useMemo, useRef } from 'react';
+import { ArrowRightLeft, Info, HelpCircle, Settings, ChevronDown, ChevronUp } from 'lucide-react';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
 import { CalculateIcon } from '../../components/Icons';
 import tbillData from '../tbill/data.json';
 import fxData from './fxData.json';
-import { compareReturns, TENURES } from './compareLogic';
+import { compareReturns, compareRollingReturns, TENURES } from './compareLogic';
+
+const TENURE_OPTIONS = [
+    { days: 28, label: '28 Days', sub: '1 Month' },
+    { days: 91, label: '91 Days', sub: '3 Months' },
+    { days: 182, label: '182 Days', sub: '6 Months' },
+    { days: 364, label: '364 Days', sub: '1 Year' },
+];
 
 const FxCompare = ({ toggleHelp, toggleSettings }) => {
     // Extract available currencies from the first month of fxData
@@ -32,17 +39,52 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
     const [selectedAuctionIdx, setSelectedAuctionIdx] = useState(0);
     const [resultData, setResultData] = useState(null);
     const [showExplanation, setShowExplanation] = useState(false);
+    const [mode, setMode] = useState('rolling'); // 'rolling' or 'single'
+    const [selectedTenure, setSelectedTenure] = useState(28);
+    const [rollingResult, setRollingResult] = useState(null);
+    const [expandedRounds, setExpandedRounds] = useState(false);
+    
+    // Refs for input focus
+    const budgetRef = useRef(null);
+
+    const clearField = (setter, ref) => {
+        setter(null);
+        setResultData(null);
+        setRollingResult(null);
+        setTimeout(() => {
+            if (ref.current) {
+                ref.current.focus();
+                if (ref.current.select) ref.current.select();
+            }
+        }, 0);
+    };
 
     const handleCalculate = () => {
         if (!validAuctions[selectedAuctionIdx]) return;
-        const res = compareReturns(
-            budget || 0,
-            validAuctions[selectedAuctionIdx],
-            fxData,
-            selectedCurrency,
-            0.1 // 0.1% default brokerage for T-Bills
-        );
-        setResultData(res);
+        if (mode === 'single') {
+            setRollingResult(null);
+            const res = compareReturns(
+                budget || 0,
+                validAuctions[selectedAuctionIdx],
+                fxData,
+                selectedCurrency,
+                0.1
+            );
+            setResultData(res);
+        } else {
+            setResultData(null);
+            setExpandedRounds(false);
+            const res = compareRollingReturns(
+                budget || 0,
+                validAuctions[selectedAuctionIdx],
+                tbillData,
+                fxData,
+                selectedCurrency,
+                0.1,
+                selectedTenure
+            );
+            setRollingResult(res);
+        }
     };
 
     const formatCurrency = (val) => val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -52,20 +94,34 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
             {/* Header */}
             <div className="flex justify-between items-center mb-2">
                 <div className="flex items-center gap-2 min-w-0">
-                    <ArrowRightLeft className="w-5 h-5 text-indigo-500 shrink-0" />
+                    <ArrowRightLeft className="w-5 h-5 text-emerald-500 shrink-0" />
                     <div className="min-w-0">
                         <h1 className="text-lg font-bold bg-gradient-to-r from-white to-neutral-400 bg-clip-text text-transparent leading-tight">
                             FX vs T-Bill Compare
                         </h1>
-                        <p className="text-neutral-500 text-[9px] font-medium uppercase tracking-wider">
+                        <p className="text-neutral-500 text-[9px] font-medium uppercase tracking-wider text-left">
                             Return Analysis
                         </p>
                     </div>
                 </div>
                 <div className="flex items-center gap-1">
+                    <div className="flex bg-neutral-900/70 rounded-md p-0.5 ring-1 ring-neutral-800">
+                        <button
+                            onClick={() => { setMode('rolling'); setResultData(null); setRollingResult(null); }}
+                            className={`px-2 py-1 text-[8px] font-bold uppercase tracking-wider rounded transition-all ${mode === 'rolling' ? 'bg-emerald-600/25 text-emerald-400 ring-1 ring-emerald-500/40' : 'text-neutral-500 hover:text-neutral-300'}`}
+                        >
+                            Rolling
+                        </button>
+                        <button
+                            onClick={() => { setMode('single'); setResultData(null); setRollingResult(null); }}
+                            className={`px-2 py-1 text-[8px] font-bold uppercase tracking-wider rounded transition-all ${mode === 'single' ? 'bg-emerald-600/25 text-emerald-400 ring-1 ring-emerald-500/40' : 'text-neutral-500 hover:text-neutral-300'}`}
+                        >
+                            Single
+                        </button>
+                    </div>
                     <button
                         onClick={() => setShowExplanation(!showExplanation)}
-                        className={`flex items-center justify-center p-1 rounded-full transition-all ${showExplanation ? 'bg-indigo-600/20 text-indigo-400 ring-1 ring-indigo-500/50' : 'bg-neutral-800 text-neutral-500 hover:bg-neutral-700'}`}
+                        className={`flex items-center justify-center p-1 rounded-full transition-all ${showExplanation ? 'bg-emerald-600/20 text-emerald-400 ring-1 ring-emerald-500/50' : 'bg-neutral-800 text-neutral-500 hover:bg-neutral-700'}`}
                         title="Show Info"
                     >
                         <Info className="w-3 h-3" />
@@ -75,8 +131,8 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
 
             {/* Explanation Panel */}
             {showExplanation && (
-                <div className="bg-gradient-to-r from-neutral-900/50 to-neutral-800/50 border border-indigo-500/30 rounded-xl p-2 mb-2 text-xs text-neutral-300 text-left scale-100 animate-in fade-in slide-in-from-top-1 duration-200">
-                    <p className="font-bold text-indigo-400 mb-1 flex items-center gap-1.5">
+                <div className="bg-gradient-to-r from-neutral-900/50 to-neutral-800/50 border border-emerald-500/30 rounded-xl p-2 mb-2 text-xs text-neutral-300 text-left scale-100 animate-in fade-in slide-in-from-top-1 duration-200">
+                    <p className="font-bold text-emerald-400 mb-1 flex items-center gap-1.5">
                         <Info className="w-3 h-3" />
                         Comparison Methodology
                     </p>
@@ -84,7 +140,7 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
                         This tool compares investing your budget into Treasury Bills vs. buying foreign currency on the black market and holding it.
                     </p>
                     <ul className="text-[10px] mt-1 space-y-0.5 list-disc pl-4 text-neutral-400">
-                        <li><span className="text-primary-400 font-bold">T-Bill Strategy:</span> Buy max units with budget, hold to maturity, get face value.</li>
+                        <li><span className="text-emerald-400 font-bold">T-Bill Strategy:</span> Buy max units with budget, hold to maturity, get face value.</li>
                         <li><span className="text-emerald-400 font-bold">FX Strategy:</span> Buy currency at starting month's rate, hold until T-Bill maturity, sell at ending month's rate.</li>
                     </ul>
                 </div>
@@ -95,15 +151,19 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
                 {/* Budget */}
                 <div className="bg-neutral-800/40 rounded-xl p-2 border border-neutral-700 hover:border-neutral-600">
                     <div className="flex justify-between items-center gap-2">
-                        <div className="shrink-0">
-                            <label className="text-sm font-bold text-white block leading-tight text-left">
+                        <div className="shrink-0 text-left">
+                            <label 
+                                onClick={() => clearField(setBudget, budgetRef)}
+                                className="text-sm font-bold text-white block leading-tight cursor-pointer hover:text-emerald-400 transition-colors select-none"
+                            >
                                 Investment Budget
                             </label>
-                            <span className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold">ETB</span>
+                            <span className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold block">ETB</span>
                         </div>
                         <FormattedNumberInput
+                            ref={budgetRef}
                             value={budget}
-                            onChange={(e) => setBudget(e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0))}
+                            onChange={(e) => setBudget(parseFloat(e.target.value.replace(/,/g, '')))}
                             decimals={2}
                             className="bg-transparent text-right text-lg font-mono focus:outline-none text-white font-black min-w-0 flex-1"
                             placeholder="500,000"
@@ -114,11 +174,11 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
                 <div className="grid grid-cols-2 gap-2">
                     {/* Auction Selection */}
                     <div className="bg-neutral-800/40 rounded-xl p-2 border border-neutral-700 text-left">
-                        <label className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold block mb-1">T-Bill Auction Date</label>
+                        <label className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold block mb-1">{mode === 'rolling' ? 'Start Auction' : 'T-Bill Auction Date'}</label>
                         <select
                             value={selectedAuctionIdx}
                             onChange={(e) => setSelectedAuctionIdx(parseInt(e.target.value))}
-                            className="w-full bg-neutral-900 border border-neutral-700 rounded-md text-white text-xs p-1.5 focus:outline-none focus:border-indigo-500"
+                            className="w-full bg-neutral-900 border border-neutral-700 rounded-md text-white text-xs p-1.5 focus:outline-none focus:border-emerald-500"
                         >
                             {validAuctions.length === 0 && <option value="">No overlapping dates</option>}
                             {validAuctions.map((auc, idx) => (
@@ -135,7 +195,7 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
                         <select
                             value={selectedCurrency}
                             onChange={(e) => setSelectedCurrency(e.target.value)}
-                            className="w-full bg-neutral-900 border border-neutral-700 rounded-md text-white text-xs p-1.5 focus:outline-none focus:border-indigo-500"
+                            className="w-full bg-neutral-900 border border-neutral-700 rounded-md text-white text-xs p-1.5 focus:outline-none focus:border-emerald-500"
                         >
                             {currencies.map(c => (
                                 <option key={c} value={c}>{c}</option>
@@ -143,11 +203,36 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
                         </select>
                     </div>
                 </div>
+
+                {/* Tenure Selector - Rolling mode only */}
+                {mode === 'rolling' && (
+                    <div className="bg-neutral-800/40 rounded-xl p-2 border border-transparent hover:border-neutral-700 text-left">
+                        <label className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold block mb-1">Tenure Strategy</label>
+                        <div className="grid grid-cols-4 gap-1">
+                            {TENURE_OPTIONS.map(t => (
+                                <button
+                                    key={t.days}
+                                    onClick={() => setSelectedTenure(t.days)}
+                                    className={`py-1.5 px-1 rounded-lg transition-all flex flex-col items-center justify-center gap-0.5 ${selectedTenure === t.days
+                                        ? 'bg-emerald-600/20 text-emerald-400 ring-1 ring-emerald-500/50'
+                                        : 'bg-neutral-900/50 text-neutral-500 hover:bg-neutral-900'
+                                        }`}
+                                >
+                                    <span className="text-sm font-black leading-none">{t.days}</span>
+                                    <span className={`text-[8px] font-bold uppercase tracking-tight ${selectedTenure === t.days ? 'text-emerald-400/80' : 'text-neutral-500'}`}>
+                                        {t.sub}
+                                    </span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Scrollable Results Section */}
             <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar">
-                {resultData && (
+                {/* Single mode results (unchanged) */}
+                {mode === 'single' && resultData && (
                     <div className="mt-2 space-y-3 pb-4">
                         {TENURES.map(tenure => {
                             const res = resultData.results[tenure];
@@ -160,10 +245,8 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
                                     </div>
                                 );
                             }
-
                             const tbillWins = res.winner === 'T-BILL';
                             const fxWins = res.winner === 'FX';
-
                             return (
                                 <div key={tenure} className="bg-neutral-900/60 border border-neutral-700 rounded-xl p-3 relative overflow-hidden">
                                     <div className="flex justify-between items-stretch mb-3">
@@ -171,97 +254,126 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
                                             <h3 className="text-sm font-bold text-white leading-none">{tenure} Days</h3>
                                             <p className="text-[9px] text-neutral-500 uppercase mt-1">Matures: {res.maturityDate}</p>
                                         </div>
-                                        <div className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider flex items-center text-right ${tbillWins ? 'bg-primary-500/20 text-primary-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
+                                        <div className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider flex items-center text-right ${tbillWins ? 'bg-emerald-500/20 text-emerald-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
                                             Winner: {res.winner} (+{formatCurrency(res.diffAmount)} ETB | +{res.diffROI.toFixed(2)}% ROI)
                                         </div>
                                     </div>
-
                                     <div className="grid grid-cols-2 gap-3">
-                                        {/* T-Bill Column */}
-                                        <div className={`rounded-lg p-2 border ${tbillWins ? 'border-primary-500/40 bg-primary-900/10' : 'border-neutral-800 bg-neutral-800/30'}`}>
-                                            <p className="text-[10px] font-bold text-primary-400 uppercase text-center mb-2 tracking-wider">T-Bill Strategy</p>
+                                        <div className={`rounded-lg p-2 border ${tbillWins ? 'border-emerald-500/40 bg-emerald-900/10' : 'border-neutral-800 bg-neutral-800/30'}`}>
+                                            <p className="text-[10px] font-bold text-emerald-400 uppercase text-center mb-2 tracking-wider">T-Bill Strategy</p>
                                             <div className="space-y-1">
-                                                <div className="flex justify-between">
-                                                    <span className="text-[9px] text-neutral-500 uppercase">Invested</span>
-                                                    <span className="text-[10px] text-white font-mono">{formatCurrency(res.tbillInvestment)}</span>
-                                                </div>
-                                                <div className="flex justify-between">
-                                                    <span className="text-[9px] text-neutral-500 uppercase">End Value</span>
-                                                    <span className={`text-[11px] font-black font-mono ${tbillWins ? 'text-primary-400' : 'text-neutral-400'}`}>{formatCurrency(res.tbillEndValue)}</span>
-                                                </div>
+                                                <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase">Invested</span><span className="text-[10px] text-white font-mono">{formatCurrency(res.tbillInvestment)}</span></div>
+                                                <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase">End Value</span><span className={`text-[11px] font-black font-mono ${tbillWins ? 'text-emerald-400' : 'text-neutral-400'}`}>{formatCurrency(res.tbillEndValue)}</span></div>
                                                 <div className="flex flex-col gap-1 pt-1 border-t border-neutral-700/50 mt-1">
-                                                    <div className="flex justify-between">
-                                                        <span className="text-[9px] text-neutral-500 uppercase">Yield (Avg)</span>
-                                                        <span className="text-[10px] text-primary-400 font-bold font-mono">{res.tbillYield.toFixed(3)}%</span>
-                                                    </div>
-                                                    <div className="flex justify-between">
-                                                        <span className="text-[9px] text-neutral-500 uppercase">Yield (Cut)</span>
-                                                        <span className="text-[10px] text-primary-400/80 font-mono">{res.tbillCutOffYield ? res.tbillCutOffYield.toFixed(3) + '%' : 'N/A'}</span>
-                                                    </div>
-                                                    <div className="flex justify-between">
-                                                        <span className="text-[9px] text-neutral-500 uppercase">Eff. Yield</span>
-                                                        <span className="text-[10px] text-primary-400 font-black font-mono">{res.tbillEffectiveYield.toFixed(3)}%</span>
-                                                    </div>
+                                                    <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase">Yield (Avg)</span><span className="text-[10px] text-emerald-400 font-bold font-mono">{res.tbillYield.toFixed(3)}%</span></div>
+                                                    <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase">Yield (Cut)</span><span className="text-[10px] text-emerald-400/80 font-mono">{res.tbillCutOffYield ? res.tbillCutOffYield.toFixed(3) + '%' : 'N/A'}</span></div>
+                                                    <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase">Eff. Yield</span><span className="text-[10px] text-emerald-400 font-black font-mono">{res.tbillEffectiveYield.toFixed(3)}%</span></div>
                                                 </div>
-                                                <div className="flex justify-between pt-1 border-t border-neutral-700/50">
-                                                    <span className="text-[9px] text-neutral-500 uppercase">Profit</span>
-                                                    <span className={`text-[10px] font-bold font-mono ${res.tbillProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                                        {res.tbillProfit >= 0 ? '+' : ''}{formatCurrency(res.tbillProfit)}
-                                                    </span>
-                                                </div>
-                                                <div className="flex justify-between items-center">
-                                                    <span className="text-[9px] text-neutral-500 uppercase">ROI</span>
-                                                    <span className={`text-[10px] font-bold font-mono ${res.tbillROI >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                                        {res.tbillROI.toFixed(2)}%
-                                                    </span>
-                                                </div>
+                                                <div className="flex justify-between pt-1 border-t border-neutral-700/50"><span className="text-[9px] text-neutral-500 uppercase">Profit</span><span className={`text-[10px] font-bold font-mono ${res.tbillProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>{res.tbillProfit >= 0 ? '+' : ''}{formatCurrency(res.tbillProfit)}</span></div>
+                                                <div className="flex justify-between items-center"><span className="text-[9px] text-neutral-500 uppercase">ROI</span><span className={`text-[10px] font-bold font-mono ${res.tbillROI >= 0 ? 'text-green-400' : 'text-red-400'}`}>{res.tbillROI.toFixed(2)}%</span></div>
                                             </div>
                                         </div>
-
-                                        {/* FX Column */}
                                         <div className={`rounded-lg p-2 border ${fxWins ? 'border-emerald-500/40 bg-emerald-900/10' : 'border-neutral-800 bg-neutral-800/30'}`}>
                                             <p className="text-[10px] font-bold text-emerald-400 uppercase text-center mb-2 tracking-wider">Hold {selectedCurrency}</p>
                                             <div className="space-y-1">
-                                                <div className="flex justify-between">
-                                                    <span className="text-[9px] text-neutral-500 uppercase">Invested</span>
-                                                    <span className="text-[10px] text-white font-mono">{formatCurrency(res.fxUnitsBought)} {selectedCurrency}</span>
-                                                </div>
-                                                <div className="flex justify-between">
-                                                    <span className="text-[9px] text-neutral-500 uppercase">End Value</span>
-                                                    <span className={`text-[11px] font-black font-mono ${fxWins ? 'text-emerald-400' : 'text-neutral-400'}`}>{formatCurrency(res.fxEndValue)}</span>
-                                                </div>
+                                                <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase">Invested</span><span className="text-[10px] text-white font-mono">{formatCurrency(res.fxUnitsBought)} {selectedCurrency}</span></div>
+                                                <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase">End Value</span><span className={`text-[11px] font-black font-mono ${fxWins ? 'text-emerald-400' : 'text-neutral-400'}`}>{formatCurrency(res.fxEndValue)}</span></div>
                                                 <div className="flex flex-col gap-1 pt-1 border-t border-neutral-700/50 mt-1">
-                                                    <div className="flex justify-between">
-                                                        <span className="text-[9px] text-neutral-500 uppercase">Rate (Start)</span>
-                                                        <span className="text-[10px] text-neutral-400 font-mono">{formatCurrency(res.fxStartRate)}</span>
-                                                    </div>
-                                                    <div className="flex justify-between">
-                                                        <span className="text-[9px] text-neutral-500 uppercase">Rate (End)</span>
-                                                        <span className="text-[10px] text-neutral-400 font-mono">{formatCurrency(res.fxEndRate)}</span>
-                                                    </div>
-                                                    <div className="flex justify-between">
-                                                        <span className="text-[9px] text-neutral-500 uppercase">Multiplier</span>
-                                                        <span className="text-[10px] text-emerald-500/80 font-bold font-mono">{(res.fxEndRate / res.fxStartRate).toFixed(4)}x</span>
-                                                    </div>
+                                                    <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase">Rate (Start)</span><span className="text-[10px] text-neutral-400 font-mono">{formatCurrency(res.fxStartRate)}</span></div>
+                                                    <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase">Rate (End)</span><span className="text-[10px] text-neutral-400 font-mono">{formatCurrency(res.fxEndRate)}</span></div>
+                                                    <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase">Multiplier</span><span className="text-[10px] text-emerald-500/80 font-bold font-mono">{(res.fxEndRate / res.fxStartRate).toFixed(4)}x</span></div>
                                                 </div>
-                                                <div className="flex justify-between pt-1 border-t border-neutral-700/50">
-                                                    <span className="text-[9px] text-neutral-500 uppercase">Profit</span>
-                                                    <span className={`text-[10px] font-bold font-mono ${res.fxProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                                        {res.fxProfit >= 0 ? '+' : ''}{formatCurrency(res.fxProfit)}
-                                                    </span>
-                                                </div>
-                                                <div className="flex justify-between items-center">
-                                                    <span className="text-[9px] text-neutral-500 uppercase">ROI</span>
-                                                    <span className={`text-[10px] font-bold font-mono ${res.fxROI >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                                        {res.fxROI.toFixed(2)}%
-                                                    </span>
-                                                </div>
+                                                <div className="flex justify-between pt-1 border-t border-neutral-700/50"><span className="text-[9px] text-neutral-500 uppercase">Profit</span><span className={`text-[10px] font-bold font-mono ${res.fxProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>{res.fxProfit >= 0 ? '+' : ''}{formatCurrency(res.fxProfit)}</span></div>
+                                                <div className="flex justify-between items-center"><span className="text-[9px] text-neutral-500 uppercase">ROI</span><span className={`text-[10px] font-bold font-mono ${res.fxROI >= 0 ? 'text-green-400' : 'text-red-400'}`}>{res.fxROI.toFixed(2)}%</span></div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             );
                         })}
+                    </div>
+                )}
+
+                {/* Rolling mode results */}
+                {mode === 'rolling' && rollingResult && (
+                    <div className="mt-2 space-y-3 pb-4">
+                        {rollingResult.error ? (
+                            <div className="bg-neutral-800/50 border border-red-500/30 rounded-xl p-3 text-center">
+                                <p className="text-xs font-bold text-red-400">Rolling Error</p>
+                                <p className="text-[10px] text-neutral-500">{rollingResult.error}</p>
+                            </div>
+                        ) : (
+                            <>
+                                {/* Summary Header */}
+                                <div className="bg-neutral-900/60 border border-neutral-700 rounded-xl p-3">
+                                    <div className="flex justify-between items-stretch mb-2">
+                                        <div className="text-left">
+                                            <h3 className="text-sm font-bold text-white leading-none">{selectedTenure}D Rolling × {rollingResult.totalRounds}</h3>
+                                            <p className="text-[9px] text-neutral-500 uppercase mt-1">{rollingResult.issueDate} → {rollingResult.finalMaturityDate} ({rollingResult.totalDays} days)</p>
+                                        </div>
+                                        <div className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider flex items-center text-right ${rollingResult.winner === 'T-BILL' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
+                                            {rollingResult.winner} wins (+{formatCurrency(rollingResult.diffAmount)} ETB)
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {/* T-Bill Rolling Summary */}
+                                        <div className={`rounded-lg p-2 border ${rollingResult.winner === 'T-BILL' ? 'border-emerald-500/40 bg-emerald-900/10' : 'border-neutral-800 bg-neutral-800/30'}`}>
+                                            <p className="text-[10px] font-bold text-emerald-400 uppercase text-center mb-2 tracking-wider">Rolling T-Bill</p>
+                                            <div className="space-y-1">
+                                                <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase">Budget</span><span className="text-[10px] text-white font-mono">{formatCurrency(rollingResult.tbillFinalValue - rollingResult.tbillTotalProfit)}</span></div>
+                                                <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase">Final Value</span><span className={`text-[11px] font-black font-mono ${rollingResult.winner === 'T-BILL' ? 'text-emerald-400' : 'text-neutral-400'}`}>{formatCurrency(rollingResult.tbillFinalValue)}</span></div>
+                                                <div className="flex justify-between pt-1 border-t border-neutral-700/50"><span className="text-[9px] text-neutral-500 uppercase">Total Profit</span><span className={`text-[10px] font-bold font-mono ${rollingResult.tbillTotalProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>{rollingResult.tbillTotalProfit >= 0 ? '+' : ''}{formatCurrency(rollingResult.tbillTotalProfit)}</span></div>
+                                                <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase">Total ROI</span><span className={`text-[10px] font-bold font-mono ${rollingResult.tbillTotalROI >= 0 ? 'text-green-400' : 'text-red-400'}`}>{rollingResult.tbillTotalROI.toFixed(2)}%</span></div>
+                                                <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase">Ann. ROI</span><span className="text-[10px] text-emerald-400 font-black font-mono">{rollingResult.tbillAnnualizedROI.toFixed(2)}%</span></div>
+                                            </div>
+                                        </div>
+                                        {/* FX Hold Summary */}
+                                        <div className={`rounded-lg p-2 border ${rollingResult.winner === 'FX' ? 'border-emerald-500/40 bg-emerald-900/10' : 'border-neutral-800 bg-neutral-800/30'}`}>
+                                            <p className="text-[10px] font-bold text-emerald-400 uppercase text-center mb-2 tracking-wider">Hold {selectedCurrency}</p>
+                                            <div className="space-y-1">
+                                                <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase">Bought</span><span className="text-[10px] text-white font-mono">{formatCurrency(rollingResult.fxUnitsBought)} {selectedCurrency}</span></div>
+                                                <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase">End Value</span><span className={`text-[11px] font-black font-mono ${rollingResult.winner === 'FX' ? 'text-emerald-400' : 'text-neutral-400'}`}>{formatCurrency(rollingResult.fxEndValue)}</span></div>
+                                                <div className="flex flex-col gap-1 pt-1 border-t border-neutral-700/50 mt-1">
+                                                    <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase">Rate (Start)</span><span className="text-[10px] text-neutral-400 font-mono">{formatCurrency(rollingResult.fxStartRate)}</span></div>
+                                                    <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase">Rate (End)</span><span className="text-[10px] text-neutral-400 font-mono">{formatCurrency(rollingResult.fxEndRate)}</span></div>
+                                                    <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase">Multiplier</span><span className="text-[10px] text-emerald-500/80 font-bold font-mono">{(rollingResult.fxEndRate / rollingResult.fxStartRate).toFixed(4)}x</span></div>
+                                                </div>
+                                                <div className="flex justify-between pt-1 border-t border-neutral-700/50"><span className="text-[9px] text-neutral-500 uppercase">Profit</span><span className={`text-[10px] font-bold font-mono ${rollingResult.fxProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>{rollingResult.fxProfit >= 0 ? '+' : ''}{formatCurrency(rollingResult.fxProfit)}</span></div>
+                                                <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase">Total ROI</span><span className={`text-[10px] font-bold font-mono ${rollingResult.fxROI >= 0 ? 'text-green-400' : 'text-red-400'}`}>{rollingResult.fxROI.toFixed(2)}%</span></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Round-by-round breakdown */}
+                                <div className="bg-neutral-900/60 border border-neutral-700 rounded-xl overflow-hidden">
+                                    <button onClick={() => setExpandedRounds(!expandedRounds)} className="w-full flex justify-between items-center p-3 hover:bg-neutral-800/30 transition-colors">
+                                        <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Round-by-Round ({rollingResult.totalRounds} rounds)</span>
+                                        {expandedRounds ? <ChevronUp className="w-3.5 h-3.5 text-neutral-500" /> : <ChevronDown className="w-3.5 h-3.5 text-neutral-500" />}
+                                    </button>
+                                    {expandedRounds && (
+                                        <div className="border-t border-neutral-700/50 divide-y divide-neutral-800/50">
+                                            {rollingResult.rounds.map((r, i) => (
+                                                <div key={i} className="p-2 px-3 text-left">
+                                                    <div className="flex justify-between items-center mb-1">
+                                                        <span className="text-[10px] font-bold text-white">Round {i + 1} — {r.auctionNo}</span>
+                                                        <span className="text-[9px] text-neutral-500">{r.auctionDate} → {r.maturityDate}</span>
+                                                    </div>
+                                                    <div className="grid grid-cols-3 gap-x-3 gap-y-0.5 text-[9px]">
+                                                        <div className="flex justify-between"><span className="text-neutral-500">Yield</span><span className="text-emerald-400 font-mono font-bold">{r.yield.toFixed(3)}%</span></div>
+                                                        <div className="flex justify-between"><span className="text-neutral-500">Qty</span><span className="text-white font-mono">{r.quantity}</span></div>
+                                                        <div className="flex justify-between"><span className="text-neutral-500">Invested</span><span className="text-white font-mono">{formatCurrency(r.invested)}</span></div>
+                                                        <div className="flex justify-between"><span className="text-neutral-500">End Val</span><span className="text-white font-mono">{formatCurrency(r.endValue)}</span></div>
+                                                        <div className="flex justify-between"><span className="text-neutral-500">Profit</span><span className={`font-mono font-bold ${r.profit >= 0 ? 'text-green-400' : 'text-red-400'}`}>{r.profit >= 0 ? '+' : ''}{formatCurrency(r.profit)}</span></div>
+                                                        <div className="flex justify-between"><span className="text-neutral-500">Leftover</span><span className="text-amber-400/80 font-mono">{formatCurrency(r.leftover)}</span></div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </>
+                        )}
                     </div>
                 )}
             </div>
@@ -284,7 +396,7 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
                 </button>
                 <button
                     onClick={handleCalculate}
-                    className="flex-1 bg-gradient-to-r from-primary-600 to-primary-500 text-neutral-900 font-black text-base py-3 rounded-xl shadow-lg shadow-primary-900/20 active:scale-[0.98] transition-all hover:brightness-110 flex items-center justify-center gap-2 uppercase tracking-widest"
+                    className="flex-1 bg-gradient-to-r from-emerald-600 to-emerald-500 text-neutral-900 font-black text-base py-3 rounded-xl shadow-lg shadow-emerald-900/20 active:scale-[0.98] transition-all hover:brightness-110 flex items-center justify-center gap-2 uppercase tracking-widest"
                 >
                     <CalculateIcon className="w-5 h-5" />
                     Calculate
