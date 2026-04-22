@@ -18,6 +18,8 @@ import PensionCalculator from './features/pension/PensionCalculator';
 import InflationCalculator from './features/inflation/InflationCalculator';
 import RideFareCalculator from './features/transport/RideFareCalculator';
 import FxCompare from './features/fxcompare/FxCompare';
+import { Analytics } from "@vercel/analytics/react";
+
 
 const TAB_TO_SETTING = {
     tvm: 'showTVM',
@@ -170,7 +172,9 @@ function App() {
             <HistoryProvider>
                 <TransportProvider>
                     <AppContent />
+                    <Analytics />
                 </TransportProvider>
+
             </HistoryProvider>
         </SettingsProvider>
     );
