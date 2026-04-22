@@ -172,7 +172,7 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
                                             <p className="text-[9px] text-neutral-500 uppercase mt-1">Matures: {res.maturityDate}</p>
                                         </div>
                                         <div className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider flex items-center text-right ${tbillWins ? 'bg-primary-500/20 text-primary-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
-                                            Winner: {res.winner} (+{formatCurrency(res.diffAmount)} ETB | {res[tbillWins ? 'tbillROI' : 'fxROI'].toFixed(2)}% ROI)
+                                            Winner: {res.winner} (+{formatCurrency(res.diffAmount)} ETB | +{res.diffROI.toFixed(2)}% ROI)
                                         </div>
                                     </div>
 
@@ -188,6 +188,20 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
                                                 <div className="flex justify-between">
                                                     <span className="text-[9px] text-neutral-500 uppercase">End Value</span>
                                                     <span className={`text-[11px] font-black font-mono ${tbillWins ? 'text-primary-400' : 'text-neutral-400'}`}>{formatCurrency(res.tbillEndValue)}</span>
+                                                </div>
+                                                <div className="flex flex-col gap-1 pt-1 border-t border-neutral-700/50 mt-1">
+                                                    <div className="flex justify-between">
+                                                        <span className="text-[9px] text-neutral-500 uppercase">Yield (Avg)</span>
+                                                        <span className="text-[10px] text-primary-400 font-bold font-mono">{res.tbillYield.toFixed(3)}%</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span className="text-[9px] text-neutral-500 uppercase">Yield (Cut)</span>
+                                                        <span className="text-[10px] text-primary-400/80 font-mono">{res.tbillCutOffYield ? res.tbillCutOffYield.toFixed(3) + '%' : 'N/A'}</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span className="text-[9px] text-neutral-500 uppercase">Eff. Yield</span>
+                                                        <span className="text-[10px] text-primary-400 font-black font-mono">{res.tbillEffectiveYield.toFixed(3)}%</span>
+                                                    </div>
                                                 </div>
                                                 <div className="flex justify-between pt-1 border-t border-neutral-700/50">
                                                     <span className="text-[9px] text-neutral-500 uppercase">Profit</span>
@@ -208,18 +222,27 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
                                         <div className={`rounded-lg p-2 border ${fxWins ? 'border-emerald-500/40 bg-emerald-900/10' : 'border-neutral-800 bg-neutral-800/30'}`}>
                                             <p className="text-[10px] font-bold text-emerald-400 uppercase text-center mb-2 tracking-wider">Hold {selectedCurrency}</p>
                                             <div className="space-y-1">
-                                                <div className="flex justify-between group relative">
+                                                <div className="flex justify-between">
                                                     <span className="text-[9px] text-neutral-500 uppercase">Invested</span>
                                                     <span className="text-[10px] text-white font-mono">{formatCurrency(res.fxUnitsBought)} {selectedCurrency}</span>
-                                                    {/* Tooltip for rates */}
-                                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block bg-neutral-900 text-[8px] p-1 rounded whitespace-nowrap z-10 border border-neutral-700 text-neutral-300">
-                                                        Bought at: {formatCurrency(res.fxStartRate)} ETB<br/>
-                                                        Sold at: {formatCurrency(res.fxEndRate)} ETB
-                                                    </div>
                                                 </div>
                                                 <div className="flex justify-between">
                                                     <span className="text-[9px] text-neutral-500 uppercase">End Value</span>
                                                     <span className={`text-[11px] font-black font-mono ${fxWins ? 'text-emerald-400' : 'text-neutral-400'}`}>{formatCurrency(res.fxEndValue)}</span>
+                                                </div>
+                                                <div className="flex flex-col gap-1 pt-1 border-t border-neutral-700/50 mt-1">
+                                                    <div className="flex justify-between">
+                                                        <span className="text-[9px] text-neutral-500 uppercase">Rate (Start)</span>
+                                                        <span className="text-[10px] text-neutral-400 font-mono">{formatCurrency(res.fxStartRate)}</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span className="text-[9px] text-neutral-500 uppercase">Rate (End)</span>
+                                                        <span className="text-[10px] text-neutral-400 font-mono">{formatCurrency(res.fxEndRate)}</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span className="text-[9px] text-neutral-500 uppercase">Multiplier</span>
+                                                        <span className="text-[10px] text-emerald-500/80 font-bold font-mono">{(res.fxEndRate / res.fxStartRate).toFixed(4)}x</span>
+                                                    </div>
                                                 </div>
                                                 <div className="flex justify-between pt-1 border-t border-neutral-700/50">
                                                     <span className="text-[9px] text-neutral-500 uppercase">Profit</span>

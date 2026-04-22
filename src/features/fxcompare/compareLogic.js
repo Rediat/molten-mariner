@@ -66,6 +66,7 @@ export function compareReturns(budget, tbillAuction, fxDataObj, currency, broker
         const fxProfit = fxEndValue - tbillInvestment;
 
         const tbillROI = (tbillProfit / tbillInvestment) * 100;
+        const tbillEffectiveYield = (tbillProfit / tbillInvestment) * (365 / tenure) * 100;
         const fxROI = (fxProfit / tbillInvestment) * 100;
 
         results[tenure] = {
@@ -74,6 +75,11 @@ export function compareReturns(budget, tbillAuction, fxDataObj, currency, broker
             tbillEndValue,
             tbillProfit,
             tbillROI,
+            tbillEffectiveYield,
+            tbillYield: yieldAnnual,
+            tbillCutOffYield: (tbillAuction.cutOffYields && tbillAuction.cutOffYields[yieldKey]) || 
+                              (tbillAuction.cutOffYield && tbillAuction.cutOffYield[yieldKey]) || 
+                              null,
             fxStartRate,
             fxEndRate,
             fxUnitsBought,
@@ -81,7 +87,8 @@ export function compareReturns(budget, tbillAuction, fxDataObj, currency, broker
             fxProfit,
             fxROI,
             winner: fxEndValue > tbillEndValue ? 'FX' : 'T-BILL',
-            diffAmount: Math.abs(fxEndValue - tbillEndValue)
+            diffAmount: Math.abs(fxEndValue - tbillEndValue),
+            diffROI: Math.abs(tbillROI - fxROI)
         };
     });
 
