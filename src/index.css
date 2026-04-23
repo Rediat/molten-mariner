@@ -31,3 +31,8 @@ body {
   text-align: center;
   width: 100%;
 }
+
+/* Hide Vercel/Usercentrics consent banner */
+#usercentrics-root {
+  display: none !important;
+}
