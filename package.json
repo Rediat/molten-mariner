@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "sync-tbill": "node scripts/sync-tbill.js",
     "sync-fx": "node scripts/sync-fx.js",
-    "sync-inflation": "node scripts/sync-inflation.js"
+    "sync-inflation": "node scripts/sync-inflation.js",
+    "sync-all": "npm run sync-tbill && npm run sync-fx && npm run sync-inflation"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.27.1",

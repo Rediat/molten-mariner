@@ -146,6 +146,11 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                     <strong>Navigation:</strong> Use the bottom navigation bar to switch between calculators.
                     Each calculator saves your history automatically.
                 </InfoBox>
+                <InfoBox type="tip">
+                    <strong>Smart Data Entry:</strong> Click on any field's <strong>label</strong> 
+                    to instantly clear its value and start fresh. If you leave an input field empty, 
+                    it automatically resets to zero. This interaction pattern is standardized across all calculators.
+                </InfoBox>
                 <div className="pt-2">
                     <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Available Calculators:</p>
                     <ul className="space-y-1 text-xs">
@@ -210,17 +215,6 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                     <strong>TVM Formula:</strong> PV + PMT × [(1-(1+r)^-n)/r] + FV × (1+r)^-n = 0
                 </InfoBox>
 
-                <InfoBox type="tip">
-                    <strong>Advanced Mode:</strong> Click the gear icon to set different payment frequency (P/Y)
-                    and compounding frequency (C/Y) when they differ.
-                </InfoBox>
-
-                <InfoBox type="tip">
-                    <strong>Quick Clear:</strong> Click on any field's <strong>label</strong>
-                    (e.g., "PV") to instantly clear it and focus the input.
-                    The field remains blank while you are typing and only defaults to 0
-                    when you leave the field (blur) without entering a value.
-                </InfoBox>
             </HelpSection>
 
             {/* Goal Planner */}
@@ -451,6 +445,8 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                         WorldData.info
                     </a>.
                     Predictions are statistical estimates, not guarantees.
+                    <br /><br />
+                    <strong>Data Refresh (Sync):</strong> Developers can execute <code>npm run sync-inflation</code> in the project terminal. This triggers a scraper that extracts the latest inflation rates and incrementally updates the dashboard's local dataset (<code>data.json</code>), ensuring both historical queries and ARIMA forecasts reflect current market realities.
                     <br /><br />
                     <strong>Methodology Reference:</strong> The use of ARIMA models for
                     forecasting Ethiopian inflation is supported by research published
@@ -1107,6 +1103,12 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                         Click any input field's <strong>label</strong> to instantly clear it and focus the
                         input. The field stays blank while focused and only defaults to 0 when you
                         leave the field (blur) without entering data. (Note: Date and Location fields are excluded).
+                    </InfoBox>
+
+                    <InfoBox type="note">
+                        <strong>Developer Sync:</strong> To update all data sources (T-Bills, FX Rates, and Inflation) 
+                        simultaneously, run <code>npm run sync-all</code> in the terminal. This incrementally 
+                        updates the local datasets to ensure forecasts and comparisons reflect the latest market data.
                     </InfoBox>
 
                     <InfoBox type="tip">
