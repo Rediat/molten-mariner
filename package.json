@@ -9,7 +9,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "sync-tbill": "node scripts/sync-tbill.js",
-    "sync-fx": "node scripts/sync-fx.js"
+    "sync-fx": "node scripts/sync-fx.js",
+    "sync-inflation": "node scripts/sync-inflation.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.27.1",
