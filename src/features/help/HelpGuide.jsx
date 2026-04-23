@@ -1112,8 +1112,9 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                     </InfoBox>
 
                     <InfoBox type="tip">
-                        <strong>Clear Button:</strong> Use the trash icon button at the bottom to reset <strong>all</strong> fields
-                        to their default values at once.
+                        <strong>Clear Button:</strong> Use the trash icon button at the bottom to clear results. 
+                        In most tabs, this only removes the result box while preserving your inputs. 
+                        In <strong>TVM</strong> and <strong>Cash Flow</strong>, it also resets input fields (preserving rates in Cash Flow).
                     </InfoBox>
 
                     <InfoBox type="tip">
