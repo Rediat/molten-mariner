@@ -447,7 +447,7 @@ const InflationCalculator = ({ toggleHelp, toggleSettings }) => {
                                     <span className="w-14 text-right">US Rate</span>
                                     <span className="w-20 text-right">Cumulative</span>
                                 </div>
-                                <div className="max-h-48 overflow-y-auto scrollbar-hide space-y-1">
+                                <div className="max-h-[108px] overflow-y-auto space-y-1">
                                     {result.yearlyBreakdown.map(yb => (
                                         <div key={yb.year} className={`flex justify-between items-center px-2 py-1.5 rounded-lg text-xs ${yb.predicted ? 'bg-amber-900/25 border border-amber-500/20' : 'bg-neutral-900/40 border border-transparent'}`}>
                                             <span className={`font-mono font-bold w-10 text-[11px] ${yb.predicted ? 'text-amber-400' : 'text-neutral-300'}`}>
