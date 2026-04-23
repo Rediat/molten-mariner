@@ -41,30 +41,39 @@ const InflationCalculator = ({ toggleHelp, toggleSettings }) => {
     };
 
     // Auto ARIMA: selects best (p,d,q) via AIC
-    const { predictions, modelInfo } = useMemo(() => {
-        const series = INFLATION_DATA.map(d => d.rate);
-        // Auto-select best order using AIC criterion
-        const { predictions: rawPreds, model } = arimaForecast(series, FORECAST_STEPS, { auto: true, criterion: 'aic' });
+    const { predictions, modelInfo, usaModelInfo } = useMemo(() => {
+        const etSeries = INFLATION_DATA.map(d => d.rate);
+        const usaSeries = INFLATION_DATA.map(d => d.usaRate).filter(v => v !== null && v !== undefined);
+        
+        // Forecast ET
+        const { predictions: etRawPreds, model: etModel } = arimaForecast(etSeries, FORECAST_STEPS, { auto: true, criterion: 'aic' });
+        
+        // Forecast USA
+        const { predictions: usaRawPreds, model: usaModel } = arimaForecast(usaSeries, FORECAST_STEPS, { auto: true, criterion: 'aic' });
 
-        const preds = rawPreds.map((rate, i) => ({
+        const preds = etRawPreds.map((rate, i) => ({
             year: MAX_YEAR + 1 + i,
             rate: parseFloat(rate.toFixed(2)),
+            usaRate: parseFloat(usaRawPreds[i].toFixed(2)),
         }));
+
+        const getModelStats = (model) => ({
+            order: `(${model.p}, ${model.d}, ${model.q})`,
+            p: model.p,
+            d: model.d,
+            q: model.q,
+            rmse: model.rmse.toFixed(2),
+            aic: model.aic.toFixed(2),
+            bic: model.bic.toFixed(2),
+            arCoeffs: model.arCoeffs.map(c => c.toFixed(4)),
+            maCoeffs: model.maCoeffs.map(c => c.toFixed(4)),
+            topCandidates: model.topCandidates || [],
+        });
 
         return {
             predictions: preds,
-            modelInfo: {
-                order: `(${model.p}, ${model.d}, ${model.q})`,
-                p: model.p,
-                d: model.d,
-                q: model.q,
-                rmse: model.rmse.toFixed(2),
-                aic: model.aic.toFixed(2),
-                bic: model.bic.toFixed(2),
-                arCoeffs: model.arCoeffs.map(c => c.toFixed(4)),
-                maCoeffs: model.maCoeffs.map(c => c.toFixed(4)),
-                topCandidates: model.topCandidates || [],
-            },
+            modelInfo: getModelStats(etModel),
+            usaModelInfo: getModelStats(usaModel),
         };
     }, []);
 
@@ -104,7 +113,13 @@ const InflationCalculator = ({ toggleHelp, toggleSettings }) => {
             if (entry) {
                 const factor = 1 + entry.rate / 100;
                 cumulativeMultiplier *= factor;
-                yearlyBreakdown.push({ year: y, rate: entry.rate, cumulative: ((cumulativeMultiplier - 1) * 100), predicted: y > MAX_YEAR });
+                yearlyBreakdown.push({ 
+                    year: y, 
+                    rate: entry.rate, 
+                    usaRate: entry.usaRate,
+                    cumulative: ((cumulativeMultiplier - 1) * 100), 
+                    predicted: y > MAX_YEAR 
+                });
             }
         }
 
@@ -185,9 +200,9 @@ const InflationCalculator = ({ toggleHelp, toggleSettings }) => {
                 <div className="bg-gradient-to-r from-primary-900/30 to-neutral-800/50 border border-primary-500/30 rounded-xl p-3 mb-4 text-xs text-neutral-300 text-left">
                     <p className="font-bold text-primary-400 mb-1">Ethiopian Birr Inflation</p>
                     <p className="text-[11px] leading-relaxed mb-2">
-                        Historical data from 1966–{MAX_YEAR}. Future predictions ({MAX_YEAR + 1}–{FORECAST_END}) use an
-                        <strong className="text-amber-400"> ARIMA{modelInfo.order}</strong> model,
-                        auto-selected via <strong className="text-cyan-400">AIC</strong> from {modelInfo.topCandidates.length}+ candidates.
+                        Historical data from 1966–{MAX_YEAR}. Future predictions ({MAX_YEAR + 1}–{FORECAST_END}) use 
+                        <strong className="text-amber-400"> ARIMA</strong> models (ET: {modelInfo.order}, USA: {usaModelInfo.order}), 
+                        auto-selected via <strong className="text-cyan-400">AIC</strong>.
                     </p>
                     <ul className="text-[11px] leading-relaxed list-disc list-inside space-y-1">
                         <li>Average annual inflation ({MIN_YEAR}–{MAX_YEAR}): ~{avgAnnualInflation.toFixed(1)}% <span className="text-primary-500/70 ml-1 text-[9px] font-bold uppercase">(CAGR)</span></li>
@@ -240,10 +255,21 @@ const InflationCalculator = ({ toggleHelp, toggleSettings }) => {
                         <div className="grid grid-cols-5 gap-1.5">
                             {predictions.map(p => (
                                 <div key={p.year} className="bg-neutral-900/60 rounded-lg p-1.5 text-center">
-                                    <p className="text-[9px] text-neutral-500 font-bold">{p.year}</p>
-                                    <p className={`text-[11px] font-black ${p.rate >= 0 ? 'text-red-400' : 'text-emerald-400'}`}>
-                                        {p.rate.toFixed(1)}%
-                                    </p>
+                                    <p className="text-[9px] text-neutral-500 font-bold mb-1">{p.year}</p>
+                                    <div className="space-y-0.5">
+                                        <div className="flex justify-between items-center gap-1">
+                                            <span className="text-[7px] text-neutral-600 font-bold uppercase">ET</span>
+                                            <span className={`text-[10px] font-black ${p.rate >= 0 ? 'text-red-400' : 'text-emerald-400'}`}>
+                                                {p.rate.toFixed(1)}%
+                                            </span>
+                                        </div>
+                                        <div className="flex justify-between items-center gap-1 border-t border-neutral-800/50 pt-0.5">
+                                            <span className="text-[7px] text-neutral-600 font-bold uppercase">US</span>
+                                            <span className={`text-[10px] font-black ${p.usaRate >= 0 ? 'text-blue-400' : 'text-emerald-400'}`}>
+                                                {p.usaRate.toFixed(1)}%
+                                            </span>
+                                        </div>
+                                    </div>
                                 </div>
                             ))}
                         </div>
@@ -414,18 +440,27 @@ const InflationCalculator = ({ toggleHelp, toggleSettings }) => {
 
                         {result.yearlyBreakdown.length > 0 && (
                             <div className="pt-1.5 border-t border-neutral-700">
-                                <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider mb-1">Year-by-Year</p>
-                                <div className="max-h-32 overflow-y-auto scrollbar-hide space-y-0.5">
+                                <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider mb-1.5">Year-by-Year Breakdown</p>
+                                <div className="flex justify-between items-center px-2 py-1.5 text-[9px] font-bold text-neutral-400 uppercase tracking-widest border-b border-neutral-800/50 mb-1">
+                                    <span className="w-10">Year</span>
+                                    <span className="w-14 text-right">ET Rate</span>
+                                    <span className="w-14 text-right">US Rate</span>
+                                    <span className="w-20 text-right">Cumulative</span>
+                                </div>
+                                <div className="max-h-48 overflow-y-auto scrollbar-hide space-y-1">
                                     {result.yearlyBreakdown.map(yb => (
-                                        <div key={yb.year} className={`flex justify-between items-center px-2 py-0.5 rounded text-[10px] ${yb.predicted ? 'bg-amber-900/20' : 'bg-neutral-900/30'}`}>
-                                            <span className={`font-bold ${yb.predicted ? 'text-amber-400' : 'text-neutral-400'}`}>
+                                        <div key={yb.year} className={`flex justify-between items-center px-2 py-1.5 rounded-lg text-xs ${yb.predicted ? 'bg-amber-900/25 border border-amber-500/20' : 'bg-neutral-900/40 border border-transparent'}`}>
+                                            <span className={`font-mono font-bold w-10 text-[11px] ${yb.predicted ? 'text-amber-400' : 'text-neutral-300'}`}>
                                                 {yb.year}{yb.predicted ? '*' : ''}
                                             </span>
-                                            <span className={`font-black ${yb.rate >= 0 ? 'text-red-400' : 'text-emerald-400'}`}>
-                                                {yb.rate >= 0 ? '+' : ''}{yb.rate.toFixed(2)}%
+                                            <span className={`font-mono font-bold ${yb.rate >= 0 ? 'text-red-400' : 'text-emerald-400'} w-14 text-right text-[11px]`}>
+                                                {yb.rate >= 0 ? '+' : ''}{yb.rate.toFixed(1)}%
                                             </span>
-                                            <span className="text-neutral-500 font-mono">
-                                                cum: {yb.cumulative.toFixed(1)}%
+                                            <span className="text-neutral-400 font-mono font-bold text-[11px] w-14 text-right">
+                                                {yb.usaRate !== undefined && yb.usaRate !== null ? `${yb.usaRate.toFixed(1)}%` : '—'}
+                                            </span>
+                                            <span className="text-neutral-500 font-mono font-bold text-[11px] w-20 text-right">
+                                                {yb.cumulative.toFixed(1)}%
                                             </span>
                                         </div>
                                     ))}

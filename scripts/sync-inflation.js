@@ -20,15 +20,21 @@ async function syncInflationData() {
         // Select the table with historical data
         $('table.std100 tr').each((i, row) => {
             const cells = $(row).find('td');
-            if (cells.length >= 2) {
+            if (cells.length >= 4) {
                 const year = parseInt($(cells[0]).text().trim());
                 const rateText = $(cells[1]).text().trim();
+                const usaRateText = $(cells[3]).text().trim();
                 
-                // Parse rate (e.g., "16.95 %" -> 16.95)
+                // Parse rates (e.g., "16.95 %" -> 16.95)
                 const rate = parseFloat(rateText.replace('%', '').trim());
+                const usaRate = parseFloat(usaRateText.replace('%', '').trim());
 
                 if (!isNaN(year) && !isNaN(rate)) {
-                    newEntries.push({ year, rate });
+                    newEntries.push({ 
+                        year, 
+                        rate,
+                        usaRate: isNaN(usaRate) ? null : usaRate
+                    });
                 }
             }
         });
@@ -53,9 +59,17 @@ async function syncInflationData() {
             if (idx === -1) {
                 existingData.push(entry);
                 addedCount++;
-            } else if (entry.rate !== null && entry.rate !== undefined && existingData[idx].rate !== entry.rate) {
-                existingData[idx].rate = entry.rate;
-                updatedCount++;
+            } else {
+                let changed = false;
+                if (entry.rate !== null && entry.rate !== undefined && existingData[idx].rate !== entry.rate) {
+                    existingData[idx].rate = entry.rate;
+                    changed = true;
+                }
+                if (entry.usaRate !== undefined && existingData[idx].usaRate !== entry.usaRate) {
+                    existingData[idx].usaRate = entry.usaRate;
+                    changed = true;
+                }
+                if (changed) updatedCount++;
             }
         });
 

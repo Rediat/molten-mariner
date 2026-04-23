@@ -1,242 +1,302 @@
 [
   {
     "year": 1966,
-    "rate": -1.36
+    "rate": -1.36,
+    "usaRate": 3.02
   },
   {
     "year": 1967,
-    "rate": 0.81
+    "rate": 0.81,
+    "usaRate": 2.77
   },
   {
     "year": 1968,
-    "rate": 0.18
+    "rate": 0.18,
+    "usaRate": 4.27
   },
   {
     "year": 1969,
-    "rate": 1.43
+    "rate": 1.43,
+    "usaRate": 5.46
   },
   {
     "year": 1970,
-    "rate": 10.12
+    "rate": 10.12,
+    "usaRate": 5.84
   },
   {
     "year": 1971,
-    "rate": 0.54
+    "rate": 0.54,
+    "usaRate": 4.29
   },
   {
     "year": 1972,
-    "rate": -6.08
+    "rate": -6.08,
+    "usaRate": 3.27
   },
   {
     "year": 1973,
-    "rate": 8.91
+    "rate": 8.91,
+    "usaRate": 6.18
   },
   {
     "year": 1974,
-    "rate": 8.59
+    "rate": 8.59,
+    "usaRate": 11.05
   },
   {
     "year": 1975,
-    "rate": 6.55
+    "rate": 6.55,
+    "usaRate": 9.14
   },
   {
     "year": 1976,
-    "rate": 28.54
+    "rate": 28.54,
+    "usaRate": 5.74
   },
   {
     "year": 1977,
-    "rate": 16.66
+    "rate": 16.66,
+    "usaRate": 6.5
   },
   {
     "year": 1978,
-    "rate": 14.31
+    "rate": 14.31,
+    "usaRate": 7.63
   },
   {
     "year": 1979,
-    "rate": 16.03
+    "rate": 16.03,
+    "usaRate": 11.25
   },
   {
     "year": 1980,
-    "rate": 12.4
+    "rate": 12.4,
+    "usaRate": 13.5
   },
   {
     "year": 1981,
-    "rate": 1.9
+    "rate": 1.9,
+    "usaRate": 10.4
   },
   {
     "year": 1982,
-    "rate": 7.8
+    "rate": 7.8,
+    "usaRate": 6.2
   },
   {
     "year": 1983,
-    "rate": 3.6
+    "rate": 3.6,
+    "usaRate": 3.2
   },
   {
     "year": 1984,
-    "rate": -0.3
+    "rate": -0.3,
+    "usaRate": 4.4
   },
   {
     "year": 1985,
-    "rate": 18.4
+    "rate": 18.4,
+    "usaRate": 3.5
   },
   {
     "year": 1986,
-    "rate": 5.5
+    "rate": 5.5,
+    "usaRate": 1.9
   },
   {
     "year": 1987,
-    "rate": -9.1
+    "rate": -9.1,
+    "usaRate": 3.6
   },
   {
     "year": 1988,
-    "rate": 2.2
+    "rate": 2.2,
+    "usaRate": 4.1
   },
   {
     "year": 1989,
-    "rate": 9.6
+    "rate": 9.6,
+    "usaRate": 4.8
   },
   {
     "year": 1990,
-    "rate": 5.2
+    "rate": 5.2,
+    "usaRate": 5.4
   },
   {
     "year": 1991,
-    "rate": 20.9
+    "rate": 20.9,
+    "usaRate": 4.2
   },
   {
     "year": 1992,
-    "rate": 21
+    "rate": 21,
+    "usaRate": 3
   },
   {
     "year": 1993,
-    "rate": 10
+    "rate": 10,
+    "usaRate": 3
   },
   {
     "year": 1994,
-    "rate": 1.2
+    "rate": 1.2,
+    "usaRate": 2.6
   },
   {
     "year": 1995,
-    "rate": 13.4
+    "rate": 13.4,
+    "usaRate": 2.8
   },
   {
     "year": 1996,
-    "rate": 0.9
+    "rate": 0.9,
+    "usaRate": 2.9
   },
   {
     "year": 1997,
-    "rate": -6.4
+    "rate": -6.4,
+    "usaRate": 2.3
   },
   {
     "year": 1998,
-    "rate": 3.6
+    "rate": 3.6,
+    "usaRate": 1.5
   },
   {
     "year": 1999,
-    "rate": 7.9
+    "rate": 7.9,
+    "usaRate": 2.2
   },
   {
     "year": 2000,
-    "rate": 0.7
+    "rate": 0.7,
+    "usaRate": 3.4
   },
   {
     "year": 2001,
-    "rate": -8.2
+    "rate": -8.2,
+    "usaRate": 2.8
   },
   {
     "year": 2002,
-    "rate": 1.7
+    "rate": 1.7,
+    "usaRate": 1.6
   },
   {
     "year": 2003,
-    "rate": 17.8
+    "rate": 17.8,
+    "usaRate": 2.3
   },
   {
     "year": 2004,
-    "rate": 3.2
+    "rate": 3.2,
+    "usaRate": 2.7
   },
   {
     "year": 2005,
-    "rate": 11.7
+    "rate": 11.7,
+    "usaRate": 3.4
   },
   {
     "year": 2006,
-    "rate": 13.6
+    "rate": 13.6,
+    "usaRate": 3.2
   },
   {
     "year": 2007,
-    "rate": 17.2
+    "rate": 17.2,
+    "usaRate": 2.9
   },
   {
     "year": 2008,
-    "rate": 44.4
+    "rate": 44.4,
+    "usaRate": 3.8
   },
   {
     "year": 2009,
-    "rate": 8.5
+    "rate": 8.5,
+    "usaRate": -0.3
   },
   {
     "year": 2010,
-    "rate": 8.1
+    "rate": 8.1,
+    "usaRate": 1.6
   },
   {
     "year": 2011,
-    "rate": 33.2
+    "rate": 33.2,
+    "usaRate": 3.1
   },
   {
     "year": 2012,
-    "rate": 24.1
+    "rate": 24.1,
+    "usaRate": 2.1
   },
   {
     "year": 2013,
-    "rate": 8.1
+    "rate": 8.1,
+    "usaRate": 1.5
   },
   {
     "year": 2014,
-    "rate": 7.4
+    "rate": 7.4,
+    "usaRate": 1.6
   },
   {
     "year": 2015,
-    "rate": 9.6
+    "rate": 9.6,
+    "usaRate": 0.1
   },
   {
     "year": 2016,
-    "rate": 6.6
+    "rate": 6.6,
+    "usaRate": 1.3
   },
   {
     "year": 2017,
-    "rate": 16.5
+    "rate": 16.5,
+    "usaRate": 2.18
   },
   {
     "year": 2018,
-    "rate": 10.58
+    "rate": 10.58,
+    "usaRate": 1.92
   },
   {
     "year": 2019,
-    "rate": 19.52
+    "rate": 19.52,
+    "usaRate": 2.1
   },
   {
     "year": 2020,
-    "rate": 18.17
+    "rate": 18.17,
+    "usaRate": 1.56
   },
   {
     "year": 2021,
-    "rate": 35.09
+    "rate": 35.09,
+    "usaRate": 7.39
   },
   {
     "year": 2022,
-    "rate": 33.81
+    "rate": 33.81,
+    "usaRate": 6.41
   },
   {
     "year": 2023,
-    "rate": 28.72
+    "rate": 28.72,
+    "usaRate": 3.24
   },
   {
     "year": 2024,
-    "rate": 16.95
+    "rate": 16.95,
+    "usaRate": 2.73
   },
   {
     "year": 2025,
-    "rate": 9.8
+    "rate": 9.8,
+    "usaRate": 2.65
   }
 ]
