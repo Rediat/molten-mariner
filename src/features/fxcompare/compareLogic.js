@@ -13,16 +13,48 @@ export function calculateMaturityDate(issueStr, tenureDays) {
     return issue.toISOString().split('T')[0];
 }
 
+/**
+ * Finds the FX rate for a given currency and month.
+ * If data is missing, it looks back at previous months.
+ */
+function getFxRateWithFallback(fxDataObj, currency, targetMonth) {
+    const monthlyPrices = fxDataObj.monthlyPrices;
+    
+    // Sort months descending to make searching backwards easier
+    const sortedMonths = [...monthlyPrices].sort((a, b) => b.month.localeCompare(a.month));
+    
+    // Find the index of the target month or the first month before it
+    let startIndex = sortedMonths.findIndex(m => m.month <= targetMonth);
+    
+    if (startIndex === -1) return null;
+
+    // Look back up to 12 months for a valid rate
+    for (let i = startIndex; i < Math.min(startIndex + 12, sortedMonths.length); i++) {
+        const entry = sortedMonths[i];
+        if (entry.value[currency] != null) {
+            return {
+                rate: entry.value[currency],
+                monthUsed: entry.month,
+                isFallback: entry.month !== targetMonth
+            };
+        }
+    }
+    
+    return null;
+}
+
 export function compareReturns(budget, tbillAuction, fxDataObj, currency, brokerageRate = 0.1) {
     const issueDateStr = new Date(tbillAuction.timestamp).toISOString().split('T')[0];
     const startMonth = getMonthKey(issueDateStr);
     
-    // Check if start month FX data exists
-    const startFxData = fxDataObj.monthlyPrices.find(m => m.month === startMonth);
-    if (!startFxData || !startFxData.value[currency]) {
-        return { error: `No FX data for ${currency} in ${startMonth}` };
+    // Check if start month FX data exists (with fallback)
+    const startRateInfo = getFxRateWithFallback(fxDataObj, currency, startMonth);
+    if (!startRateInfo) {
+        return { error: `No FX data for ${currency} available on or before ${startMonth}` };
     }
-    const fxStartRate = startFxData.value[currency];
+    const fxStartRate = startRateInfo.rate;
+    const startMonthUsed = startRateInfo.monthUsed;
+    const startIsFallback = startRateInfo.isFallback;
 
     const results = {};
 
@@ -38,12 +70,14 @@ export function compareReturns(budget, tbillAuction, fxDataObj, currency, broker
         const maturityDate = calculateMaturityDate(issueDateStr, tenure);
         const endMonth = getMonthKey(maturityDate);
 
-        const endFxData = fxDataObj.monthlyPrices.find(m => m.month === endMonth);
-        if (!endFxData || !endFxData.value[currency]) {
-            results[tenure] = { error: `No FX data for ${currency} in ${endMonth}` };
+        const endRateInfo = getFxRateWithFallback(fxDataObj, currency, endMonth);
+        if (!endRateInfo) {
+            results[tenure] = { error: `No FX data for ${currency} available on or before ${endMonth}` };
             return;
         }
-        const fxEndRate = endFxData.value[currency];
+        const fxEndRate = endRateInfo.rate;
+        const endMonthUsed = endRateInfo.monthUsed;
+        const endIsFallback = endRateInfo.isFallback;
 
         // T-Bill Logic
         const UNIT_FV = 5000;
@@ -86,6 +120,10 @@ export function compareReturns(budget, tbillAuction, fxDataObj, currency, broker
             fxEndValue,
             fxProfit,
             fxROI,
+            startMonthUsed,
+            startIsFallback,
+            endMonthUsed,
+            endIsFallback,
             winner: fxEndValue > tbillEndValue ? 'FX' : 'T-BILL',
             diffAmount: Math.abs(fxEndValue - tbillEndValue),
             diffROI: Math.abs(tbillROI - fxROI)
@@ -120,12 +158,14 @@ export function compareRollingReturns(budget, startAuction, tbillDataAll, fxData
     const issueDateStr = new Date(startAuction.timestamp).toISOString().split('T')[0];
     const startMonth = getMonthKey(issueDateStr);
 
-    // Check start month FX data
-    const startFxData = fxDataObj.monthlyPrices.find(m => m.month === startMonth);
-    if (!startFxData || !startFxData.value[currency]) {
-        return { error: `No FX data for ${currency} in ${startMonth}` };
+    // Check start month FX data (with fallback)
+    const startRateInfo = getFxRateWithFallback(fxDataObj, currency, startMonth);
+    if (!startRateInfo) {
+        return { error: `No FX data for ${currency} available on or before ${startMonth}` };
     }
-    const fxStartRate = startFxData.value[currency];
+    const fxStartRate = startRateInfo.rate;
+    const startMonthUsed = startRateInfo.monthUsed;
+    const startIsFallback = startRateInfo.isFallback;
 
     // All available FX months for boundary checking
     const fxMonthsSet = new Set(fxDataObj.monthlyPrices.map(m => m.month));
@@ -157,8 +197,9 @@ export function compareRollingReturns(budget, startAuction, tbillDataAll, fxData
         const maturityDate = calculateMaturityDate(auctionDateStr, selectedTenure);
         const endMonth = getMonthKey(maturityDate);
 
-        // Stop if maturity month has no FX data
-        if (!fxMonthsSet.has(endMonth) || endMonth > latestFxMonth) {
+        // Stop if maturity month has no FX data available (even with lookback)
+        const checkEndRate = getFxRateWithFallback(fxDataObj, currency, endMonth);
+        if (!checkEndRate) {
             break;
         }
 
@@ -218,10 +259,13 @@ export function compareRollingReturns(budget, startAuction, tbillDataAll, fxData
     const totalDays = Math.round((endDate - startDate) / (1000 * 60 * 60 * 24));
     const tbillAnnualizedROI = totalDays > 0 ? (tbillTotalProfit / totalInvested) * (365 / totalDays) * 100 : 0;
 
-    // FX comparison: buy at start, hold till final maturity, sell
+    // FX comparison: buy at start, hold till final maturity, sell (with fallback)
     const finalMonth = getMonthKey(lastRound.maturityDate);
-    const endFxData = fxDataObj.monthlyPrices.find(m => m.month === finalMonth);
-    const fxEndRate = endFxData ? endFxData.value[currency] : fxStartRate;
+    const endRateInfo = getFxRateWithFallback(fxDataObj, currency, finalMonth);
+    
+    const fxEndRate = endRateInfo ? endRateInfo.rate : fxStartRate;
+    const endMonthUsed = endRateInfo ? endRateInfo.monthUsed : startMonthUsed;
+    const endIsFallback = endRateInfo ? endRateInfo.isFallback : false;
 
     const fxUnitsBought = totalInvested / fxStartRate;
     const fxEndValue = fxUnitsBought * fxEndRate;
@@ -248,6 +292,10 @@ export function compareRollingReturns(budget, startAuction, tbillDataAll, fxData
         fxProfit,
         fxROI,
         fxAnnualizedROI,
+        startMonthUsed,
+        startIsFallback,
+        endMonthUsed,
+        endIsFallback,
         winner: fxEndValue > tbillFinalValue ? 'FX' : 'T-BILL',
         diffAmount: Math.abs(fxEndValue - tbillFinalValue),
         diffROI: Math.abs(tbillTotalROI - fxROI)

@@ -44,6 +44,7 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
     const [rollingResult, setRollingResult] = useState(null);
     const [expandedRounds, setExpandedRounds] = useState(false);
     const [auctionSearch, setAuctionSearch] = useState('');
+    const [currencySearch, setCurrencySearch] = useState('');
     
     // Refs for input focus
     const budgetRef = useRef(null);
@@ -200,11 +201,11 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
                         {/* Quick Selection Pills for the latest 4 auctions */}
                         {!auctionSearch && validAuctions.length > 0 && (
                             <div className="flex gap-1 mb-1.5 overflow-x-auto no-scrollbar pb-0.5">
-                                {validAuctions.slice(0, 4).map((auc, idx) => (
+                                {validAuctions.slice(0, 3).map((auc, idx) => (
                                     <button
                                         key={auc.timestamp}
                                         onClick={() => setSelectedAuctionIdx(idx)}
-                                        className={`shrink-0 px-1.5 py-0.5 rounded text-[8px] font-bold transition-all ${selectedAuctionIdx === idx ? 'bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500/40' : 'bg-neutral-900 text-neutral-500 hover:text-white'}`}
+                                        className={`shrink-0 px-1.5 py-0.5 rounded text-[9px] font-bold transition-all ${selectedAuctionIdx === idx ? 'bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500/40' : 'bg-neutral-900 text-neutral-500 hover:text-white'}`}
                                     >
                                         {auc.date.split(',')[0]}
                                     </button>
@@ -259,15 +260,42 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
 
                     {/* Currency Selection */}
                     <div className="bg-neutral-800/40 rounded-xl p-2 border border-neutral-700 text-left">
-                        <label className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold block mb-1">Foreign Currency</label>
+                        <div className="flex justify-between items-center mb-1">
+                            <label className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold block">Foreign Currency</label>
+                            <input 
+                                type="text"
+                                placeholder="Search..."
+                                value={currencySearch}
+                                onChange={(e) => setCurrencySearch(e.target.value)}
+                                className="bg-neutral-900/50 border border-neutral-700 rounded px-1.5 py-0.5 text-[9px] text-white focus:outline-none focus:border-emerald-500 w-16"
+                            />
+                        </div>
+                        
+                        {/* Quick Selection Pills for common currencies */}
+                        {!currencySearch && (
+                            <div className="flex gap-1 mb-1.5 overflow-x-auto no-scrollbar pb-0.5">
+                                {['USD', 'EUR', 'GBP', 'GOLD'].map(c => (
+                                    <button
+                                        key={c}
+                                        onClick={() => setSelectedCurrency(c)}
+                                        className={`shrink-0 px-1.5 py-0.5 rounded text-[9px] font-bold transition-all ${selectedCurrency === c ? 'bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500/40' : 'bg-neutral-900 text-neutral-500 hover:text-white'}`}
+                                    >
+                                        {c}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+
                         <select
                             value={selectedCurrency}
                             onChange={(e) => setSelectedCurrency(e.target.value)}
                             className="w-full bg-neutral-900 border border-neutral-700 rounded-md text-white text-xs p-1.5 focus:outline-none focus:border-emerald-500"
                         >
-                            {currencies.map(c => (
-                                <option key={c} value={c}>{c}</option>
-                            ))}
+                            {currencies
+                                .filter(c => currencySearch === '' || c.toLowerCase().includes(currencySearch.toLowerCase()))
+                                .map(c => (
+                                    <option key={c} value={c}>{c}</option>
+                                ))}
                         </select>
                     </div>
                 </div>
@@ -302,17 +330,23 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
                 {/* Single mode results (unchanged) */}
                 {mode === 'single' && resultData && (
                     <div className="mt-2 space-y-3 pb-4">
-                        {TENURES.map(tenure => {
-                            const res = resultData.results[tenure];
-                            if (!res) return null;
-                            if (res.error) {
-                                return (
-                                    <div key={tenure} className="bg-neutral-800/50 border border-red-500/30 rounded-xl p-3 text-center">
-                                        <p className="text-xs font-bold text-red-400">{tenure} Days</p>
-                                        <p className="text-[10px] text-neutral-500">{res.error}</p>
-                                    </div>
-                                );
-                            }
+                        {resultData.error ? (
+                            <div className="bg-neutral-800/50 border border-red-500/30 rounded-xl p-3 text-center">
+                                <p className="text-xs font-bold text-red-400">Calculation Error</p>
+                                <p className="text-[10px] text-neutral-500">{resultData.error}</p>
+                            </div>
+                        ) : (
+                            TENURES.map(tenure => {
+                                const res = resultData.results[tenure];
+                                if (!res) return null;
+                                if (res.error) {
+                                    return (
+                                        <div key={tenure} className="bg-neutral-800/50 border border-red-500/30 rounded-xl p-3 text-center">
+                                            <p className="text-xs font-bold text-red-400">{tenure} Days</p>
+                                            <p className="text-[10px] text-neutral-500">{res.error}</p>
+                                        </div>
+                                    );
+                                }
                             const tbillWins = res.winner === 'T-BILL';
                             const fxWins = res.winner === 'FX';
                             return (
@@ -347,8 +381,24 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
                                                 <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase">Invested</span><span className="text-[10px] text-white font-mono">{formatCurrency(res.fxUnitsBought)} {selectedCurrency}</span></div>
                                                 <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase">End Value</span><span className={`text-[11px] font-black font-mono ${fxWins ? 'text-emerald-400' : 'text-neutral-400'}`}>{formatCurrency(res.fxEndValue)}</span></div>
                                                 <div className="flex flex-col gap-1 pt-1 border-t border-neutral-700/50 mt-1">
-                                                    <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase">Rate (Start)</span><span className="text-[10px] text-neutral-400 font-mono">{formatCurrency(res.fxStartRate)}</span></div>
-                                                    <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase">Rate (End)</span><span className="text-[10px] text-neutral-400 font-mono">{formatCurrency(res.fxEndRate)}</span></div>
+                                                    <div className="flex flex-col">
+                                                        <div className="flex justify-between">
+                                                            <span className="text-[9px] text-neutral-500 uppercase">Rate (Start)</span>
+                                                            <span className="text-[10px] text-neutral-400 font-mono">{formatCurrency(res.fxStartRate)}</span>
+                                                        </div>
+                                                        {res.startIsFallback && (
+                                                            <span className="text-[7px] text-amber-500 text-right italic font-medium leading-none -mt-0.5">Using {res.startMonthUsed} data</span>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex flex-col">
+                                                        <div className="flex justify-between">
+                                                            <span className="text-[9px] text-neutral-500 uppercase">Rate (End)</span>
+                                                            <span className="text-[10px] text-neutral-400 font-mono">{formatCurrency(res.fxEndRate)}</span>
+                                                        </div>
+                                                        {res.endIsFallback && (
+                                                            <span className="text-[7px] text-amber-500 text-right italic font-medium leading-none -mt-0.5">Using {res.endMonthUsed} data</span>
+                                                        )}
+                                                    </div>
                                                     <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase">Multiplier</span><span className="text-[10px] text-emerald-500/80 font-bold font-mono">{(res.fxEndRate / res.fxStartRate).toFixed(4)}x</span></div>
                                                 </div>
                                                 <div className="flex justify-between pt-1 border-t border-neutral-700/50"><span className="text-[9px] text-neutral-500 uppercase">Profit</span><span className={`text-[10px] font-bold font-mono ${res.fxProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>{res.fxProfit >= 0 ? '+' : ''}{formatCurrency(res.fxProfit)}</span></div>
@@ -358,7 +408,7 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
                                     </div>
                                 </div>
                             );
-                        })}
+                        }) )}
                     </div>
                 )}
 
@@ -402,8 +452,24 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
                                                 <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase">Bought</span><span className="text-[10px] text-white font-mono">{formatCurrency(rollingResult.fxUnitsBought)} {selectedCurrency}</span></div>
                                                 <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase">End Value</span><span className={`text-[11px] font-black font-mono ${rollingResult.winner === 'FX' ? 'text-emerald-400' : 'text-neutral-400'}`}>{formatCurrency(rollingResult.fxEndValue)}</span></div>
                                                 <div className="flex flex-col gap-1 pt-1 border-t border-neutral-700/50 mt-1">
-                                                    <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase">Rate (Start)</span><span className="text-[10px] text-neutral-400 font-mono">{formatCurrency(rollingResult.fxStartRate)}</span></div>
-                                                    <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase">Rate (End)</span><span className="text-[10px] text-neutral-400 font-mono">{formatCurrency(rollingResult.fxEndRate)}</span></div>
+                                                    <div className="flex flex-col">
+                                                        <div className="flex justify-between">
+                                                            <span className="text-[9px] text-neutral-500 uppercase">Rate (Start)</span>
+                                                            <span className="text-[10px] text-neutral-400 font-mono">{formatCurrency(rollingResult.fxStartRate)}</span>
+                                                        </div>
+                                                        {rollingResult.startIsFallback && (
+                                                            <span className="text-[7px] text-amber-500 text-right italic font-medium leading-none -mt-0.5">Using {rollingResult.startMonthUsed} data</span>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex flex-col">
+                                                        <div className="flex justify-between">
+                                                            <span className="text-[9px] text-neutral-500 uppercase">Rate (End)</span>
+                                                            <span className="text-[10px] text-neutral-400 font-mono">{formatCurrency(rollingResult.fxEndRate)}</span>
+                                                        </div>
+                                                        {rollingResult.endIsFallback && (
+                                                            <span className="text-[7px] text-amber-500 text-right italic font-medium leading-none -mt-0.5">Using {rollingResult.endMonthUsed} data</span>
+                                                        )}
+                                                    </div>
                                                     <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase">Multiplier</span><span className="text-[10px] text-emerald-500/80 font-bold font-mono">{(rollingResult.fxEndRate / rollingResult.fxStartRate).toFixed(4)}x</span></div>
                                                 </div>
                                                 <div className="flex justify-between pt-1 border-t border-neutral-700/50"><span className="text-[9px] text-neutral-500 uppercase">Profit</span><span className={`text-[10px] font-bold font-mono ${rollingResult.fxProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>{rollingResult.fxProfit >= 0 ? '+' : ''}{formatCurrency(rollingResult.fxProfit)}</span></div>
@@ -441,7 +507,7 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
                                     )}
                                 </div>
                             </>
-                        )}
+                        ) }
                     </div>
                 )}
             </div>
