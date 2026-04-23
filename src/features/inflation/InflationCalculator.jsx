@@ -80,8 +80,6 @@ const InflationCalculator = ({ toggleHelp, toggleSettings }) => {
     // Overall historical statistics
     const { overallIncrease, avgAnnualInflation } = useMemo(() => {
         let multiplier = 1;
-        // Scenario C: From beginning of MIN_YEAR to beginning of MAX_YEAR
-        // We exclude the very last year's rate because that would represent growth *during* that year.
         for (let i = 0; i < INFLATION_DATA.length - 1; i++) {
             multiplier *= (1 + INFLATION_DATA[i].rate / 100);
         }
@@ -100,14 +98,10 @@ const InflationCalculator = ({ toggleHelp, toggleSettings }) => {
             return;
         }
 
-        // Combine historical + predicted data
         const allData = [...INFLATION_DATA, ...predictions];
-
-        // Calculate cumulative inflation between years
         let cumulativeMultiplier = 1;
         const yearlyBreakdown = [];
 
-        // Stop at eYear - 1 to represent the value AT THE BEGINNING of eYear
         for (let y = sYear; y < eYear; y++) {
             const entry = allData.find(d => d.year === y);
             if (entry) {
@@ -129,10 +123,7 @@ const InflationCalculator = ({ toggleHelp, toggleSettings }) => {
         const avgAnnualRate = yearlyBreakdown.length > 0
             ? (Math.pow(cumulativeMultiplier, 1 / yearlyBreakdown.length) - 1) * 100
             : 0;
-
-        // Purchasing power: how much would you need today to match the amount from startYear
         const purchasingPower = amt / cumulativeMultiplier;
-
         const isPredicted = yearlyBreakdown.some(yb => yb.predicted);
 
         const res = {
@@ -164,215 +155,114 @@ const InflationCalculator = ({ toggleHelp, toggleSettings }) => {
 
     return (
         <div className="flex flex-col h-full">
-            {/* Header */}
-            <div className="flex justify-between items-start mb-2 shrink-0">
-                <div className="flex items-center gap-2 min-w-0">
-                    <TrendingUp className="w-5 h-5 text-primary-500 shrink-0" />
-                    <div className="min-w-0">
-                        <h1 className="text-xl font-bold bg-gradient-to-r from-white to-neutral-400 bg-clip-text text-transparent leading-tight">
-                            Inflation Calculator
-                        </h1>
-                        <p className="text-neutral-500 text-[10px] font-medium uppercase tracking-wider">
-                            Ethiopian Birr · 1966–{FORECAST_END}
-                        </p>
-                    </div>
-                </div>
-                <div className="flex gap-1.5">
-                    <button
-                        onClick={() => setShowPrediction(!showPrediction)}
-                        className={`flex items-center justify-center px-2 py-1 rounded-full transition-all text-[9px] font-bold uppercase tracking-wider ${showPrediction ? 'bg-amber-600/20 text-amber-400 ring-1 ring-amber-500/50' : 'bg-neutral-800 text-neutral-500 hover:bg-neutral-700'}`}
-                        title="ARIMA Forecast"
-                    >
-                        Forecast
-                    </button>
-                    <button
-                        onClick={() => setShowExplanation(!showExplanation)}
-                        className={`flex items-center justify-center p-1 rounded-full transition-all ${showExplanation ? 'bg-primary-600/20 text-primary-400 ring-1 ring-primary-500/50' : 'bg-neutral-800 text-neutral-500 hover:bg-neutral-700'}`}
-                        title="Show Info"
-                    >
-                        <Info className="w-3 h-3" />
-                    </button>
-                </div>
-            </div>
-
-            {/* Explanation Panel */}
-            {showExplanation && (
-                <div className="bg-gradient-to-r from-primary-900/30 to-neutral-800/50 border border-primary-500/30 rounded-xl p-3 mb-4 text-xs text-neutral-300 text-left">
-                    <p className="font-bold text-primary-400 mb-1">Ethiopian Birr Inflation</p>
-                    <p className="text-[11px] leading-relaxed mb-2">
-                        Historical data from 1966–{MAX_YEAR}. Future predictions ({MAX_YEAR + 1}–{FORECAST_END}) use 
-                        <strong className="text-amber-400"> ARIMA</strong> models (ET: {modelInfo.order}, USA: {usaModelInfo.order}), 
-                        auto-selected via <strong className="text-cyan-400">AIC</strong>.
-                    </p>
-                    <ul className="text-[11px] leading-relaxed list-disc list-inside space-y-1">
-                        <li>Average annual inflation ({MIN_YEAR}–{MAX_YEAR}): ~{avgAnnualInflation.toFixed(1)}% <span className="text-primary-500/70 ml-1 text-[9px] font-bold uppercase">(CAGR)</span></li>
-                        <li>Overall price increase since {MIN_YEAR}: ~{overallIncrease.toLocaleString('en-US', { maximumFractionDigits: 0 })}%</li>
-                        <li>Model RMSE: {modelInfo.rmse}%</li>
-                    </ul>
-                    <p className="text-[9px] text-neutral-500 mt-2 leading-relaxed italic">
-                        * Statistics are dynamically calculated using the geometric mean (Compound Annual Growth Rate) for financial accuracy based on verified WorldData records.
-                    </p>
-                    <div className="mt-2 bg-neutral-900/50 rounded-lg p-2">
-                        <p className="text-[9px] font-bold text-amber-400 uppercase tracking-wider mb-1">Best Model: ARIMA{modelInfo.order} (via AIC)</p>
-                        <div className="grid grid-cols-2 gap-1 text-[10px] font-mono text-neutral-400">
-                            <span>AIC: <span className="text-cyan-400 font-bold">{modelInfo.aic}</span></span>
-                            <span>BIC: <span className="text-cyan-400 font-bold">{modelInfo.bic}</span></span>
-                            <span>AR({modelInfo.arCoeffs.length}): [{modelInfo.arCoeffs.join(', ')}]</span>
-                            <span>MA({modelInfo.maCoeffs.length}): [{modelInfo.maCoeffs.join(', ')}]</span>
-                        </div>
-                        {modelInfo.topCandidates.length > 1 && (
-                            <div className="mt-1.5 pt-1.5 border-t border-neutral-700">
-                                <p className="text-[8px] font-bold text-neutral-500 uppercase tracking-wider mb-1">Top 5 Candidates by AIC</p>
-                                {modelInfo.topCandidates.slice(0, 5).map((c, i) => (
-                                    <div key={i} className={`text-[9px] font-mono flex justify-between ${i === 0 ? 'text-primary-400' : 'text-neutral-500'}`}>
-                                        <span>{i === 0 ? '►' : ' '} ({c.p},{c.d},{c.q})</span>
-                                        <span>AIC: {c.aic.toFixed(1)}</span>
-                                        <span>BIC: {c.bic.toFixed(1)}</span>
-                                        <span>RMSE: {c.rmse.toFixed(1)}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                    <p className="text-[9px] text-neutral-500 mt-2">
-                        Source: worlddata.info/africa/ethiopia/inflation-rates.php
-                    </p>
-                </div>
-            )}
-
-            {/* ARIMA Prediction Table */}
-            {showPrediction && (
-                <div className="bg-gradient-to-r from-amber-900/20 to-neutral-800/50 border border-amber-500/30 rounded-xl p-3 mb-4 text-left">
-                    <div className="flex justify-between items-center mb-2">
-                        <p className="font-bold text-amber-400 text-[10px] uppercase tracking-wider">
-                            ARIMA{modelInfo.order} Forecast
-                        </p>
-                        <span className="text-[8px] text-neutral-500 font-mono bg-neutral-900/60 px-1.5 py-0.5 rounded">
-                            RMSE: {modelInfo.rmse}%
-                        </span>
-                    </div>
-                    <div className="max-h-48 overflow-y-auto scrollbar-hide">
-                        <div className="grid grid-cols-5 gap-1.5">
-                            {predictions.map(p => (
-                                <div key={p.year} className="bg-neutral-900/60 rounded-lg p-1.5 text-center">
-                                    <p className="text-[9px] text-neutral-500 font-bold mb-1">{p.year}</p>
-                                    <div className="space-y-0.5">
-                                        <div className="flex justify-between items-center gap-1">
-                                            <span className="text-[7px] text-neutral-600 font-bold uppercase">ET</span>
-                                            <span className={`text-[10px] font-black ${p.rate >= 0 ? 'text-red-400' : 'text-emerald-400'}`}>
-                                                {p.rate.toFixed(1)}%
-                                            </span>
-                                        </div>
-                                        <div className="flex justify-between items-center gap-1 border-t border-neutral-800/50 pt-0.5">
-                                            <span className="text-[7px] text-neutral-600 font-bold uppercase">US</span>
-                                            <span className={`text-[10px] font-black ${p.usaRate >= 0 ? 'text-blue-400' : 'text-emerald-400'}`}>
-                                                {p.usaRate.toFixed(1)}%
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
+            {/* Pinned Header & Inputs */}
+            <div className="sticky top-0 z-30 bg-neutral-800 -mx-6 -mt-6 px-6 pt-5 pb-3 shrink-0">
+                {/* Header */}
+                <div className="flex justify-between items-center mb-1.5">
+                    <div className="flex items-center gap-2 min-w-0">
+                        <TrendingUp className="w-4 h-4 text-primary-500 shrink-0" />
+                        <div className="min-w-0">
+                            <h1 className="text-lg font-bold bg-gradient-to-r from-white to-neutral-400 bg-clip-text text-transparent leading-tight">
+                                Inflation Calculator
+                            </h1>
+                            <p className="text-neutral-500 text-[8px] font-medium uppercase tracking-wider text-left">
+                                ETB · 1966–{FORECAST_END}
+                            </p>
                         </div>
                     </div>
-                    <p className="text-[9px] text-neutral-500 mt-2 italic">
-                        ARIMA(p={modelInfo.arCoeffs.length}, d=1, q={modelInfo.maCoeffs.length}) · {FORECAST_STEPS}-year forecast
-                    </p>
+                    <div className="flex gap-1">
+                        <button
+                            onClick={() => setShowPrediction(!showPrediction)}
+                            className={`flex items-center justify-center px-2 py-1 rounded-full transition-all text-[8px] font-bold uppercase tracking-wider ${showPrediction ? 'bg-amber-600/20 text-amber-400 ring-1 ring-amber-500/50' : 'bg-neutral-800 text-neutral-500 hover:bg-neutral-700'}`}
+                            title="ARIMA Forecast"
+                        >
+                            Forecast
+                        </button>
+                        <button
+                            onClick={() => setShowExplanation(!showExplanation)}
+                            className={`flex items-center justify-center p-1 rounded-full transition-all ${showExplanation ? 'bg-primary-600/20 text-primary-400 ring-1 ring-primary-500/50' : 'bg-neutral-800 text-neutral-500 hover:bg-neutral-700'}`}
+                            title="Show Info"
+                        >
+                            <Info className="w-3 h-3" />
+                        </button>
+                    </div>
                 </div>
-            )}
 
-            {/* Scrollable Content: Inputs + Results */}
-            <div className="flex-1 overflow-y-auto scrollbar-hide">
-
-                {/* Input Fields */}
+                {/* Input Fields (Pinned) */}
                 <div className="space-y-1">
-                    {/* Start Year */}
-                    <div className="bg-neutral-800/40 rounded-xl p-2.5 border border-transparent hover:border-neutral-700">
-                        <div className="flex justify-between items-center gap-2 min-w-0">
-                            <div className="shrink-0">
+                    <div className="grid grid-cols-2 gap-1">
+                        {/* Start Year */}
+                        <div className="bg-neutral-800/40 rounded-lg p-2.5 border border-transparent hover:border-neutral-700">
+                            <div className="flex justify-between items-center gap-1 min-w-0">
                                 <label 
                                     onClick={() => clearYear(setStartYear, startYearRef)}
-                                    className="text-sm font-bold text-white block leading-tight text-left cursor-pointer hover:text-primary-400 transition-colors"
-                                    title="Click to Clear"
+                                    className="text-sm font-bold text-white leading-tight cursor-pointer hover:text-primary-400 whitespace-nowrap shrink-0 text-left"
                                 >
                                     Start Year
                                 </label>
-                                <span className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold text-left block">{MIN_YEAR}–{MAX_YEAR}</span>
+                                <FormattedNumberInput
+                                    ref={startYearRef}
+                                    value={startYear}
+                                    onChange={(e) => {
+                                        const val = e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0);
+                                        setStartYear(val);
+                                        setResult(null);
+                                    }}
+                                    decimals={0}
+                                    useGrouping={false}
+                                    className="bg-transparent text-right text-[15px] font-mono focus:outline-none text-white flex-1 min-w-0"
+                                    placeholder="2000"
+                                />
                             </div>
-                            <FormattedNumberInput
-                                ref={startYearRef}
-                                value={startYear}
-                                onChange={(e) => {
-                                    const val = e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0);
-                                    setStartYear(val);
-                                    setResult(null);
-                                }}
-                                decimals={0}
-                                useGrouping={false}
-                                className="bg-transparent text-right text-lg font-mono focus:outline-none text-white min-w-0 flex-1"
-                                placeholder="2000"
-                            />
                         </div>
-                    </div>
 
-                    {/* End Year */}
-                    <div className="bg-neutral-800/40 rounded-xl p-2.5 border border-transparent hover:border-neutral-700">
-                        <div className="flex justify-between items-center gap-2 min-w-0">
-                            <div className="shrink-0 flex flex-col items-start">
-                                <div className="flex items-center gap-2">
+                        {/* End Year */}
+                        <div className="bg-neutral-800/40 rounded-lg p-2.5 border border-transparent hover:border-neutral-700">
+                            <div className="flex justify-between items-center gap-1 min-w-0">
+                                <div className="flex items-center gap-1 shrink-0">
                                     <label 
                                         onClick={() => clearYear(setEndYear, endYearRef)}
-                                        className="text-sm font-bold text-white block leading-tight text-left cursor-pointer hover:text-primary-400 transition-colors"
-                                        title="Click to Clear"
+                                        className="text-sm font-bold text-white leading-tight cursor-pointer hover:text-primary-400 whitespace-nowrap text-left"
                                     >
-                                        End {endYearMode === 'YEAR' ? 'Year' : 'Duration'}
+                                        End Year
                                     </label>
                                     <button
                                         onClick={() => setEndYearMode(m => m === 'YEAR' ? 'DURATION' : 'YEAR')}
-                                        className="bg-neutral-900 border border-neutral-700 rounded px-1.5 py-0.5 text-[9px] font-bold text-neutral-400 hover:text-white uppercase tracking-wider"
+                                        className="bg-neutral-900 border border-neutral-700 rounded px-1.5 py-0.5 text-[10px] font-bold text-neutral-400 hover:text-white uppercase shrink-0 leading-none"
                                     >
-                                        {endYearMode === 'YEAR' ? 'In Years' : 'In Date'}
+                                        {endYearMode === 'YEAR' ? 'Yr' : 'Dur'}
                                     </button>
                                 </div>
-                                <span className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold text-left block">
-                                    {endYearMode === 'YEAR'
-                                        ? `${MIN_YEAR}–${FORECAST_END} (ARIMA)`
-                                        : `Years from ${new Date().getFullYear()}`
-                                    }
-                                </span>
+                                <FormattedNumberInput
+                                    ref={endYearRef}
+                                    value={endYearMode === 'YEAR' ? endYear : (endYear - new Date().getFullYear())}
+                                    onChange={(e) => {
+                                        const val = e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0);
+                                        if (endYearMode === 'YEAR') {
+                                            setEndYear(val);
+                                        } else {
+                                            setEndYear(val === null ? null : (new Date().getFullYear() + val));
+                                        }
+                                        setResult(null);
+                                    }}
+                                    decimals={0}
+                                    useGrouping={false}
+                                    className="bg-transparent text-right text-[15px] font-mono focus:outline-none text-white flex-1 min-w-0"
+                                    placeholder={endYearMode === 'YEAR' ? "2024" : "4"}
+                                />
                             </div>
-                            <FormattedNumberInput
-                                ref={endYearRef}
-                                value={endYearMode === 'YEAR' ? endYear : (endYear - new Date().getFullYear())}
-                                onChange={(e) => {
-                                    const val = e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0);
-                                    if (endYearMode === 'YEAR') {
-                                        setEndYear(val);
-                                    } else {
-                                        setEndYear(val === null ? null : (new Date().getFullYear() + val));
-                                    }
-                                    setResult(null);
-                                }}
-                                decimals={0}
-                                useGrouping={false}
-                                className="bg-transparent text-right text-lg font-mono focus:outline-none text-white min-w-0 flex-1"
-                                placeholder={endYearMode === 'YEAR' ? "2024" : "4"}
-                            />
                         </div>
                     </div>
 
                     {/* Amount in Birr */}
-                    <div className="bg-neutral-800/40 rounded-xl p-2.5 border border-primary-500/50 ring-1 ring-primary-500/10">
+                    <div className="bg-neutral-800/40 rounded-lg p-2.5 border border-primary-500/30 ring-1 ring-primary-500/5">
                         <div className="flex justify-between items-center gap-2 min-w-0">
-                            <div className="shrink-0">
-                                <label 
-                                    onClick={clearAmount}
-                                    className="text-sm font-bold text-primary-400 block leading-tight text-left cursor-pointer hover:text-white transition-colors"
-                                    title="Click to Clear"
-                                >
-                                    Amount (Birr)
-                                </label>
-                                <span className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold text-left block">Value in Start Year</span>
-                            </div>
+                            <label 
+                                onClick={clearAmount}
+                                className="text-sm font-bold text-primary-400 cursor-pointer hover:text-white shrink-0 whitespace-nowrap text-left"
+                            >
+                                Amount (ETB)
+                            </label>
                             <FormattedNumberInput
                                 ref={amountRef}
                                 value={amount}
@@ -382,16 +272,105 @@ const InflationCalculator = ({ toggleHelp, toggleSettings }) => {
                                     setResult(null);
                                 }}
                                 decimals={2}
-                                className="bg-transparent text-right text-lg font-mono focus:outline-none text-primary-400 font-black min-w-0 flex-1"
+                                className="bg-transparent text-right text-[15px] font-mono focus:outline-none text-primary-400 font-black flex-1 min-w-0"
                                 placeholder="1,000"
                             />
                         </div>
                     </div>
                 </div>
+            </div>
+
+            {/* Scrollable Content: Results + Extra Info */}
+            <div className="flex-1 overflow-y-auto scrollbar-hide pt-4 pb-2">
+                
+                {/* Explanation Panel */}
+                {showExplanation && (
+                    <div className="bg-gradient-to-r from-primary-900/30 to-neutral-800/50 border border-primary-500/30 rounded-xl p-3 mb-4 text-xs text-neutral-300 text-left">
+                        <p className="font-bold text-primary-400 mb-1">Ethiopian Birr Inflation</p>
+                        <p className="text-[11px] leading-relaxed mb-2">
+                            Historical data from 1966–{MAX_YEAR}. Future predictions ({MAX_YEAR + 1}–{FORECAST_END}) use 
+                            <strong className="text-amber-400"> ARIMA</strong> models (ET: {modelInfo.order}, USA: {usaModelInfo.order}), 
+                            auto-selected via <strong className="text-cyan-400">AIC</strong>.
+                        </p>
+                        <ul className="text-[11px] leading-relaxed list-disc list-inside space-y-1">
+                            <li>Average annual inflation ({MIN_YEAR}–{MAX_YEAR}): ~{avgAnnualInflation.toFixed(1)}% <span className="text-primary-500/70 ml-1 text-[9px] font-bold uppercase">(CAGR)</span></li>
+                            <li>Overall price increase since {MIN_YEAR}: ~{overallIncrease.toLocaleString('en-US', { maximumFractionDigits: 0 })}%</li>
+                            <li>Model RMSE: {modelInfo.rmse}%</li>
+                        </ul>
+                        <p className="text-[9px] text-neutral-500 mt-2 leading-relaxed italic">
+                            * Statistics are dynamically calculated using the geometric mean (Compound Annual Growth Rate) for financial accuracy based on verified WorldData records.
+                        </p>
+                        <div className="mt-2 bg-neutral-900/50 rounded-lg p-2">
+                            <p className="text-[9px] font-bold text-amber-400 uppercase tracking-wider mb-1">Best Model: ARIMA{modelInfo.order} (via AIC)</p>
+                            <div className="grid grid-cols-2 gap-1 text-[10px] font-mono text-neutral-400">
+                                <span>AIC: <span className="text-cyan-400 font-bold">{modelInfo.aic}</span></span>
+                                <span>BIC: <span className="text-cyan-400 font-bold">{modelInfo.bic}</span></span>
+                                <span>AR({modelInfo.arCoeffs.length}): [{modelInfo.arCoeffs.join(', ')}]</span>
+                                <span>MA({modelInfo.maCoeffs.length}): [{modelInfo.maCoeffs.join(', ')}]</span>
+                            </div>
+                            {modelInfo.topCandidates.length > 1 && (
+                                <div className="mt-1.5 pt-1.5 border-t border-neutral-700">
+                                    <p className="text-[8px] font-bold text-neutral-500 uppercase tracking-wider mb-1">Top 5 Candidates by AIC</p>
+                                    {modelInfo.topCandidates.slice(0, 5).map((c, i) => (
+                                        <div key={i} className={`text-[9px] font-mono flex justify-between ${i === 0 ? 'text-primary-400' : 'text-neutral-500'}`}>
+                                            <span>{i === 0 ? '►' : ' '} ({c.p},{c.d},{c.q})</span>
+                                            <span>AIC: {c.aic.toFixed(1)}</span>
+                                            <span>BIC: {c.bic.toFixed(1)}</span>
+                                            <span>RMSE: {c.rmse.toFixed(1)}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                        <p className="text-[9px] text-neutral-500 mt-2">
+                            Source: worlddata.info/africa/ethiopia/inflation-rates.php
+                        </p>
+                    </div>
+                )}
+
+                {/* ARIMA Prediction Table */}
+                {showPrediction && (
+                    <div className="bg-gradient-to-r from-amber-900/20 to-neutral-800/50 border border-amber-500/30 rounded-xl p-3 mb-4 text-left">
+                        <div className="flex justify-between items-center mb-2">
+                            <p className="font-bold text-amber-400 text-[10px] uppercase tracking-wider">
+                                ARIMA{modelInfo.order} Forecast
+                            </p>
+                            <span className="text-[8px] text-neutral-500 font-mono bg-neutral-900/60 px-1.5 py-0.5 rounded">
+                                RMSE: {modelInfo.rmse}%
+                            </span>
+                        </div>
+                        <div className="max-h-48 overflow-y-auto scrollbar-hide">
+                            <div className="grid grid-cols-5 gap-1.5">
+                                {predictions.map(p => (
+                                    <div key={p.year} className="bg-neutral-900/60 rounded-lg p-1.5 text-center">
+                                        <p className="text-[9px] text-neutral-500 font-bold mb-1">{p.year}</p>
+                                        <div className="space-y-0.5">
+                                            <div className="flex justify-between items-center gap-1">
+                                                <span className="text-[7px] text-neutral-600 font-bold uppercase">ET</span>
+                                                <span className={`text-[10px] font-black ${p.rate >= 0 ? 'text-red-400' : 'text-emerald-400'}`}>
+                                                    {p.rate.toFixed(1)}%
+                                                </span>
+                                            </div>
+                                            <div className="flex justify-between items-center gap-1 border-t border-neutral-800/50 pt-0.5">
+                                                <span className="text-[7px] text-neutral-600 font-bold uppercase">US</span>
+                                                <span className={`text-[10px] font-black ${p.usaRate >= 0 ? 'text-blue-400' : 'text-emerald-400'}`}>
+                                                    {p.usaRate.toFixed(1)}%
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                        <p className="text-[9px] text-neutral-500 mt-2 italic">
+                            ARIMA(p={modelInfo.arCoeffs.length}, d=1, q={modelInfo.maCoeffs.length}) · {FORECAST_STEPS}-year forecast
+                        </p>
+                    </div>
+                )}
 
                 {/* Results */}
                 {result && !result.error && (
-                    <div className="mt-1.5 bg-gradient-to-br from-primary-900/30 to-neutral-800/50 border border-primary-500/30 rounded-xl p-2.5 space-y-1.5">
+                    <div className="mt-3 bg-gradient-to-br from-primary-900/30 to-neutral-800/50 border border-primary-500/30 rounded-xl p-2 space-y-1">
                         <div className="flex justify-between items-center">
                             <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">
                                 Results {result.isPredicted && <span className="text-amber-400">(ARIMA predicted)</span>}
@@ -405,32 +384,32 @@ const InflationCalculator = ({ toggleHelp, toggleSettings }) => {
                         </div>
 
                         {/* Adjusted Value - Compact */}
-                        <div className="bg-neutral-900/80 rounded-lg p-2 border border-primary-500/30 text-center">
-                            <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">
+                        <div className="bg-neutral-900/80 rounded-lg p-1.5 border border-primary-500/30 text-center">
+                            <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider leading-tight">
                                 {formatCurrency(result.amount)} Birr on Jan 1, {result.startYear} equals
                             </p>
-                            <p className="text-xl font-black text-primary-400 leading-tight">
+                            <p className="text-xl font-black text-primary-400 leading-none py-0.5">
                                 {formatCurrency(result.adjustedValue)}
                             </p>
-                            <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">
+                            <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider leading-tight">
                                 Birr on Jan 1, {result.endYear}
                             </p>
                         </div>
 
-                        <div className="grid grid-cols-3 gap-1.5">
-                            <div className="bg-neutral-900/50 rounded-lg p-2">
+                        <div className="grid grid-cols-3 gap-1">
+                            <div className="bg-neutral-900/50 rounded-lg p-1.5">
                                 <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Cumulative</p>
                                 <p className={`text-sm font-black ${result.cumulativeRate >= 0 ? 'text-red-400' : 'text-emerald-400'}`}>
                                     {result.cumulativeRate.toFixed(2)}%
                                 </p>
                             </div>
-                            <div className="bg-neutral-900/50 rounded-lg p-2">
+                            <div className="bg-neutral-900/50 rounded-lg p-1.5">
                                 <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Avg/Year</p>
                                 <p className="text-sm font-black text-amber-400">
                                     {result.avgAnnualRate.toFixed(2)}%
                                 </p>
                             </div>
-                            <div className="bg-neutral-900/50 rounded-lg p-2">
+                            <div className="bg-neutral-900/50 rounded-lg p-1.5">
                                 <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Buy Power</p>
                                 <p className="text-sm font-black text-emerald-400">
                                     {formatCurrency(result.purchasingPower)}
@@ -439,15 +418,15 @@ const InflationCalculator = ({ toggleHelp, toggleSettings }) => {
                         </div>
 
                         {result.yearlyBreakdown.length > 0 && (
-                            <div className="pt-1.5 border-t border-neutral-700">
-                                <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider mb-1.5">Year-by-Year Breakdown</p>
+                            <div className="pt-1 border-t border-neutral-700">
+                                <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider mb-1">Year-by-Year Breakdown</p>
                                 <div className="flex justify-between items-center px-2 py-1.5 text-[9px] font-bold text-neutral-400 uppercase tracking-widest border-b border-neutral-800/50 mb-1">
                                     <span className="w-10">Year</span>
                                     <span className="w-14 text-right">ET Rate</span>
                                     <span className="w-14 text-right">US Rate</span>
                                     <span className="w-20 text-right">Cumulative</span>
                                 </div>
-                                <div className="max-h-[108px] overflow-y-auto space-y-1">
+                                <div className="max-h-[180px] overflow-y-auto space-y-1">
                                     {result.yearlyBreakdown.map(yb => (
                                         <div key={yb.year} className={`flex justify-between items-center px-2 py-1.5 rounded-lg text-xs ${yb.predicted ? 'bg-amber-900/25 border border-amber-500/20' : 'bg-neutral-900/40 border border-transparent'}`}>
                                             <span className={`font-mono font-bold w-10 text-[11px] ${yb.predicted ? 'text-amber-400' : 'text-neutral-300'}`}>
