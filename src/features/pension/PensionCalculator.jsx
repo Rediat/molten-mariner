@@ -304,7 +304,7 @@ const PensionCalculator = ({ toggleHelp, toggleSettings }) => {
                         setRetirementAge(60);
                         setResult(null);
                     }}
-                    className="w-[15%] bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-xs py-3.5 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center gap-1 uppercase tracking-wider"
+                    className="w-[15%] bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-xs py-2.5 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center gap-1 uppercase tracking-wider"
                     title="Clear all values"
                 >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -326,7 +326,7 @@ const PensionCalculator = ({ toggleHelp, toggleSettings }) => {
                 </button>
                 <button
                     onClick={handleCalculate}
-                    className="flex-1 bg-gradient-to-r from-primary-600 to-primary-500 text-neutral-900 font-black text-base py-3.5 rounded-xl shadow-lg shadow-primary-900/20 active:scale-[0.98] transition-all hover:brightness-110 flex items-center justify-center gap-2 uppercase tracking-widest"
+                    className="flex-1 bg-gradient-to-r from-primary-600 to-primary-500 text-neutral-900 font-black text-base py-2.5 rounded-xl shadow-lg shadow-primary-900/20 active:scale-[0.98] transition-all hover:brightness-110 flex items-center justify-center gap-2 uppercase tracking-widest"
                 >
                     <CalculateIcon className="w-5 h-5" />
                     Calculate
