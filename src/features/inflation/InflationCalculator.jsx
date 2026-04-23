@@ -25,11 +25,19 @@ const InflationCalculator = ({ toggleHelp, toggleSettings }) => {
 
     // Refs for input focus
     const amountRef = useRef(null);
+    const startYearRef = useRef(null);
+    const endYearRef = useRef(null);
 
     const clearAmount = () => {
         setAmount(null);
         setResult(null);
         setTimeout(() => amountRef.current?.focus(), 0);
+    };
+
+    const clearYear = (setter, ref) => {
+        setter(null);
+        setResult(null);
+        setTimeout(() => ref.current?.focus(), 0);
     };
 
     // Auto ARIMA: selects best (p,d,q) via AIC
@@ -255,12 +263,23 @@ const InflationCalculator = ({ toggleHelp, toggleSettings }) => {
                     <div className="bg-neutral-800/40 rounded-xl p-2.5 border border-transparent hover:border-neutral-700">
                         <div className="flex justify-between items-center gap-2 min-w-0">
                             <div className="shrink-0">
-                                <label className="text-sm font-bold text-white block leading-tight text-left">Start Year</label>
+                                <label 
+                                    onClick={() => clearYear(setStartYear, startYearRef)}
+                                    className="text-sm font-bold text-white block leading-tight text-left cursor-pointer hover:text-primary-400 transition-colors"
+                                    title="Click to Clear"
+                                >
+                                    Start Year
+                                </label>
                                 <span className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold text-left block">{MIN_YEAR}–{MAX_YEAR}</span>
                             </div>
                             <FormattedNumberInput
+                                ref={startYearRef}
                                 value={startYear}
-                                onChange={(e) => setStartYear(parseFloat(e.target.value.replace(/,/g, '')) || MIN_YEAR)}
+                                onChange={(e) => {
+                                    const val = e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0);
+                                    setStartYear(val);
+                                    setResult(null);
+                                }}
                                 decimals={0}
                                 useGrouping={false}
                                 className="bg-transparent text-right text-lg font-mono focus:outline-none text-white min-w-0 flex-1"
@@ -274,7 +293,13 @@ const InflationCalculator = ({ toggleHelp, toggleSettings }) => {
                         <div className="flex justify-between items-center gap-2 min-w-0">
                             <div className="shrink-0 flex flex-col items-start">
                                 <div className="flex items-center gap-2">
-                                    <label className="text-sm font-bold text-white block leading-tight text-left">End {endYearMode === 'YEAR' ? 'Year' : 'Duration'}</label>
+                                    <label 
+                                        onClick={() => clearYear(setEndYear, endYearRef)}
+                                        className="text-sm font-bold text-white block leading-tight text-left cursor-pointer hover:text-primary-400 transition-colors"
+                                        title="Click to Clear"
+                                    >
+                                        End {endYearMode === 'YEAR' ? 'Year' : 'Duration'}
+                                    </label>
                                     <button
                                         onClick={() => setEndYearMode(m => m === 'YEAR' ? 'DURATION' : 'YEAR')}
                                         className="bg-neutral-900 border border-neutral-700 rounded px-1.5 py-0.5 text-[9px] font-bold text-neutral-400 hover:text-white uppercase tracking-wider"
@@ -290,14 +315,16 @@ const InflationCalculator = ({ toggleHelp, toggleSettings }) => {
                                 </span>
                             </div>
                             <FormattedNumberInput
+                                ref={endYearRef}
                                 value={endYearMode === 'YEAR' ? endYear : (endYear - new Date().getFullYear())}
                                 onChange={(e) => {
-                                    const val = parseFloat(e.target.value.replace(/,/g, '')) || 0;
+                                    const val = e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0);
                                     if (endYearMode === 'YEAR') {
-                                        setEndYear(val || MAX_YEAR);
+                                        setEndYear(val);
                                     } else {
-                                        setEndYear(new Date().getFullYear() + val);
+                                        setEndYear(val === null ? null : (new Date().getFullYear() + val));
                                     }
+                                    setResult(null);
                                 }}
                                 decimals={0}
                                 useGrouping={false}

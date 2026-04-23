@@ -44,6 +44,12 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
     const discountRateRef = useRef(null);
     const brokerageRateRef = useRef(null);
 
+    const clearField = (setter, ref) => {
+        setter(null);
+        setResult(null);
+        setTimeout(() => ref.current?.focus(), 0);
+    };
+
     const calculateMaturityDate = (issueStr, tenureDays) => {
         const issue = new Date(issueStr);
         issue.setDate(issue.getDate() + tenureDays);
@@ -196,7 +202,9 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
                         <div className="flex justify-between items-center gap-2 min-w-0">
                             <div className="shrink-0">
                                 <label 
-                                    className="text-sm font-bold text-primary-400 block leading-tight text-left"
+                                    onClick={() => clearField(setFaceValue, faceValueRef)}
+                                    className="text-sm font-bold text-primary-400 block leading-tight text-left cursor-pointer hover:text-white transition-colors"
+                                    title="Click to Clear"
                                 >
                                     Face Value
                                 </label>
@@ -205,7 +213,11 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
                             <FormattedNumberInput
                                 ref={faceValueRef}
                                 value={faceValue}
-                                onChange={(e) => setFaceValue(e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0))}
+                                onChange={(e) => {
+                                    const val = e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0);
+                                    setFaceValue(val);
+                                    setResult(null);
+                                }}
                                 decimals={2}
                                 className="bg-transparent text-right text-lg font-mono focus:outline-none text-primary-400 font-black min-w-0 flex-1"
                                 placeholder="500,000"
@@ -217,7 +229,9 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
                         <div className="flex justify-between items-center gap-2 min-w-0">
                             <div className="shrink-0">
                                 <label 
-                                    className="text-sm font-bold text-emerald-400 block leading-tight text-left"
+                                    onClick={() => clearField(setTotalBudget, totalBudgetRef)}
+                                    className="text-sm font-bold text-emerald-400 block leading-tight text-left cursor-pointer hover:text-white transition-colors"
+                                    title="Click to Clear"
                                 >
                                     Budget
                                 </label>
@@ -226,7 +240,11 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
                             <FormattedNumberInput
                                 ref={totalBudgetRef}
                                 value={totalBudget}
-                                onChange={(e) => setTotalBudget(e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0))}
+                                onChange={(e) => {
+                                    const val = e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0);
+                                    setTotalBudget(val);
+                                    setResult(null);
+                                }}
                                 decimals={2}
                                 className="bg-transparent text-right text-lg font-mono focus:outline-none text-emerald-400 font-black min-w-0 flex-1"
                                 placeholder="490,000"
@@ -262,7 +280,9 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
                     <div className="bg-neutral-800/40 rounded-xl p-2 border border-transparent hover:border-neutral-700">
                         <div className="flex flex-col">
                             <label 
-                                className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold mb-1 text-left"
+                                onClick={() => clearField(setDiscountRate, discountRateRef)}
+                                className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold mb-1 text-left cursor-pointer hover:text-primary-400 transition-colors"
+                                title="Click to Clear"
                             >
                                 Discount Rate %
                             </label>
@@ -270,7 +290,10 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
                                 <div className="shrink-0 flex items-center">
                                     {currentPrediction && (
                                         <button
-                                            onClick={() => setDiscountRate(currentPrediction)}
+                                            onClick={() => {
+                                                setDiscountRate(currentPrediction);
+                                                setResult(null);
+                                            }}
                                             title="Apply AI Prediction"
                                             className="text-[10px] bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 font-bold uppercase tracking-wider px-2 py-1 rounded-md ring-1 ring-indigo-500/50 transition-all active:scale-95 whitespace-nowrap"
                                         >
@@ -281,7 +304,11 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
                                 <FormattedNumberInput
                                     ref={discountRateRef}
                                     value={discountRate}
-                                    onChange={(e) => setDiscountRate(e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0))}
+                                    onChange={(e) => {
+                                        const val = e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0);
+                                        setDiscountRate(val);
+                                        setResult(null);
+                                    }}
                                     decimals={2}
                                     className="bg-transparent text-right text-lg font-mono focus:outline-none w-full text-white min-w-0"
                                     placeholder="12"
@@ -292,14 +319,20 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
                     <div className="bg-neutral-800/40 rounded-xl p-2 border border-transparent hover:border-neutral-700">
                         <div className="flex flex-col">
                             <label 
-                                className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold mb-1 text-left"
+                                onClick={() => clearField(setBrokerageRate, brokerageRateRef)}
+                                className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold mb-1 text-left cursor-pointer hover:text-primary-400 transition-colors"
+                                title="Click to Clear"
                             >
                                 Brokerage %
                             </label>
                             <FormattedNumberInput
                                 ref={brokerageRateRef}
                                 value={brokerageRate}
-                                onChange={(e) => setBrokerageRate(e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0))}
+                                onChange={(e) => {
+                                    const val = e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0);
+                                    setBrokerageRate(val);
+                                    setResult(null);
+                                }}
                                 decimals={2}
                                 className="bg-transparent text-right text-lg font-mono focus:outline-none w-full text-white"
                                 placeholder="0.1"
