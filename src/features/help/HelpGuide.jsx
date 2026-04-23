@@ -19,6 +19,7 @@ const TAB_TO_SECTION = {
     fxcompare: 'fxcompare',
     transport: 'transport',
     history: 'history',
+    sync: 'sync',
     settings: 'settings'
 };
 
@@ -165,6 +166,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                         <li>• <strong>Ride</strong> - Ride Fare Calculator</li>
                         <li>• <strong>T-Bill</strong> - Treasury Bill bidding calculator</li>
                         <li>• <strong>FX-VS</strong> - FX vs T-Bill return comparison</li>
+                        <li>• <strong>Sync</strong> - Data maintenance & refresh info</li>
                         <li>• <strong>History</strong> - View past calculations</li>
                     </ul>
                 </div>
@@ -446,8 +448,6 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                     </a>.
                     Predictions are statistical estimates, not guarantees.
                     <br /><br />
-                    <strong>Data Refresh (Sync):</strong> Developers can execute <code>npm run sync-inflation</code> in the project terminal. This triggers a scraper that extracts the latest inflation rates and incrementally updates the dashboard's local dataset (<code>data.json</code>), ensuring both historical queries and ARIMA forecasts reflect current market realities.
-                    <br /><br />
                     <strong>Methodology Reference:</strong> The use of ARIMA models for
                     forecasting Ethiopian inflation is supported by research published
                     by the National Bank of Ethiopia. See <em>Birritu Magazine No. 136</em>
@@ -461,6 +461,10 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                     >
                         View Publication (PDF)
                     </a>
+                </InfoBox>
+
+                <InfoBox type="note">
+                    <strong>Data Refresh (Sync):</strong> Developers can execute <code>npm run sync-inflation</code> in the project terminal. This triggers a scraper that extracts the latest inflation rates and incrementally updates the dashboard's local dataset (<code>data.json</code>) starting from <strong>1966</strong>.
                 </InfoBox>
             </HelpSection>
 
@@ -690,7 +694,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                 </InfoBox>
 
                 <InfoBox type="note">
-                    <strong>Data Refresh (Sync):</strong> The calculator uses an offline database of historical Treasury Bill auction results from the National Bank of Ethiopia (NBE) to deliver fast, local predictions without API dependencies.
+                    <strong>Data Refresh (Sync):</strong> The calculator uses an offline database of historical Treasury Bill auction results from the National Bank of Ethiopia (NBE) starting from <strong>August 2024</strong>.
                     <br /><br />
                     <strong>How it works:</strong> Developers execute <code>npm run sync-tbill</code> in the project terminal. This command triggers a specialized scraper that accesses the NBE website, extracts raw auction tables, handles structural inconsistencies, and appends new auction records into the dashboard's dataset (<code>data.json</code>), ensuring the predictive model is aware of the current market conditions.
                 </InfoBox>
@@ -771,7 +775,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                     <FieldList fields={[
                         { name: 'Investment Budget', description: 'The total amount in ETB you are considering for investment' },
                         { name: 'Start Auction', description: 'Select the initial historical auction to begin the simulation' },
-                        { name: 'Foreign Currency', description: 'Choose the currency to compare against (USD, EUR, GBP, etc.)' },
+                        { name: 'Currency / Commodity', description: 'Choose the currency (USD, EUR, GBP) or Commodity (GOLD) to compare against' },
                         { name: 'Tenure Strategy', description: '(Rolling Mode only) Choose whether to roll 28D, 91D, 182D, or 364D bills' }
                     ]} />
                 </div>
@@ -790,13 +794,13 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                 </InfoBox>
 
                 <InfoBox type="tip">
-                    <strong>Real-Time Data:</strong> FX rates are pulled from <code>ethioblackmarket.com</code> API monthly history. Rates reflect the parallel market monthly averages.
+                    <strong>Real-Time Data:</strong> FX and Gold rates are available starting from <strong>January 2023</strong>. FX rates are pulled from <code>ethioblackmarket.com</code> monthly history (parallel market averages). Gold prices are sourced from <code>Datahub.io</code> (Monthly CSV) and converted to ETB based on that month's parallel USD rate for direct comparability.
                 </InfoBox>
 
                 <InfoBox type="note">
                     <strong>Data Refresh (Sync):</strong> Similar to the T-Bill module, this feature uses a local JSON database (<code>fxData.json</code>) to ensure maximum speed and reliability. 
                     <br /><br />
-                    <strong>How it works:</strong> Developers run <code>npm run sync-fx</code> in the terminal to update the pricing history. This script fetches the latest 40 months of parallel market data from <code>ethioblackmarket.com</code> and synchronizes it with the local dataset, ensuring the comparison tool has access to the most recent exchange rates.
+                    <strong>How it works:</strong> Developers run <code>npm run sync-fx</code> and <code>npm run sync-gold</code> in the terminal to update pricing history. The FX script fetches parallel market data from <code>ethioblackmarket.com</code>, while the Gold script pulls historical commodity prices from <code>Datahub.io</code>. Both are synchronized with the local <code>fxData.json</code> dataset.
                 </InfoBox>
 
                 <InfoBox type="note">
@@ -1036,6 +1040,38 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                 </InfoBox>
             </HelpSection>
 
+            {/* Data Synchronization */}
+            <HelpSection
+                id="sync"
+                title="Data Synchronization (Sync)"
+                icon={Activity}
+                isOpen={openSection === 'sync'}
+                onToggle={handleToggle}
+            >
+                <p>
+                    The app uses local datasets (<code>data.json</code>, <code>fxData.json</code>) to ensure maximum speed, offline capability, and precise financial modeling. These datasets are updated through developer-run synchronization scripts.
+                </p>
+                
+                <div className="pt-2">
+                    <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Sync Commands:</p>
+                    <FieldList fields={[
+                        { name: 'npm run sync-tbill', description: 'Scrapes the NBE website for latest Treasury Bill auction results (Starts from Aug 2024). Updates cut-off yields and supply/demand metrics.' },
+                        { name: 'npm run sync-fx', description: 'Fetches parallel market exchange rates (Starts from Jan 2023). Updates monthly averages for USD, EUR, GBP, and more.' },
+                        { name: 'npm run sync-gold', description: 'Updates historical Gold prices from Datahub.io (Starts from Jan 2023) and converts them to ETB using the latest parallel rates.' },
+                        { name: 'npm run sync-inflation', description: 'Updates historical Ethiopian and USA inflation rates (Starts from 1966). Re-calculates CAGR and ARIMA forecast baselines.' },
+                        { name: 'npm run sync-all', description: 'Executes all sync scripts in sequence. This is the recommended way to maintain the entire application data stack.' }
+                    ]} />
+                </div>
+
+                <InfoBox type="note">
+                    <strong>Incremental Updates:</strong> All sync scripts are designed to be "non-destructive." They merge new records into the existing local databases without deleting historical data, ensuring your comparisons can always reach back to the beginning of the available records.
+                </InfoBox>
+
+                <InfoBox type="formula">
+                    <strong>Update Frequency:</strong> T-Bill auctions occur bi-weekly, while FX and Inflation data are typically updated monthly. Run <code>sync-all</code> periodically to ensure the predictive AI models have enough data to maintain accuracy.
+                </InfoBox>
+            </HelpSection>
+
             {/* Common Concepts */}
             <HelpSection
                 id="concepts"
@@ -1106,7 +1142,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                     </InfoBox>
 
                     <InfoBox type="note">
-                        <strong>Developer Sync:</strong> To update all data sources (T-Bills, FX Rates, and Inflation) 
+                        <strong>Developer Sync:</strong> To update all data sources (T-Bills, FX Rates, Gold, and Inflation) 
                         simultaneously, run <code>npm run sync-all</code> in the terminal. This incrementally 
                         updates the local datasets to ensure forecasts and comparisons reflect the latest market data.
                     </InfoBox>
