@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef } from 'react';
-import { ArrowRightLeft, Info, HelpCircle, Settings, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowRightLeft, Info, HelpCircle, Settings, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
 import { CalculateIcon } from '../../components/Icons';
 import tbillData from '../tbill/data.json';
@@ -58,6 +58,11 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
                 if (ref.current.select) ref.current.select();
             }
         }, 0);
+    };
+
+    const handleClear = () => {
+        setResultData(null);
+        setRollingResult(null);
     };
 
     const handleCalculate = () => {
@@ -443,6 +448,13 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
 
             {/* Actions */}
             <div className="mt-2 flex gap-1.5 shrink-0 pt-1">
+                <button
+                    onClick={handleClear}
+                    className="w-[12%] bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-xs py-2.5 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center gap-1 uppercase tracking-wider"
+                    title="Clear all values"
+                >
+                    <Trash2 className="w-3.5 h-3.5" />
+                </button>
                 <button
                     onClick={toggleHelp}
                     className="bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-sm px-2 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center"

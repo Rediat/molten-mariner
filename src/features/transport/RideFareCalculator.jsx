@@ -380,15 +380,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
     };
 
     const handleClear = () => {
-        setValues(DEFAULT_VALUES);
-        setPriceToCharge(585);
         setResults(null);
-        clearTransportState();
-        setDistanceSource('manual');
-        setWaitMultiplier(2.5);
-
-        if (fromInputRef.current) fromInputRef.current.value = '';
-        if (toInputRef.current) toInputRef.current.value = '';
     };
 
     const openInGoogleMaps = () => {
@@ -773,11 +765,10 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
             <div className="mt-auto flex gap-1.5 pt-1">
                 <button
                     onClick={handleClear}
-                    className="flex-[0.25] bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-xs py-2.5 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center gap-1 uppercase tracking-wider"
+                    className="w-[12%] bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-xs py-2.5 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center gap-1 uppercase tracking-wider"
                     title="Clear all values"
                 >
                     <Trash2 className="w-3.5 h-3.5" />
-                    CLR
                 </button>
                 <button
                     onClick={toggleHelp}

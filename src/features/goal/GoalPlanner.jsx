@@ -672,20 +672,11 @@ const GoalPlanner = ({ toggleHelp, toggleSettings }) => {
             {/* Action Buttons */}
             <div className="mt-4 flex gap-1.5 shrink-0">
                 <button
-                    onClick={() => {
-                        setTargetFV(1000000);
-                        setYears(30);
-                        setRate(10);
-                        setPvRatio(0);
-                        setKnownPV(0);
-                        setKnownPMT(0);
-                        setResults(null);
-                    }}
-                    className="w-[15%] bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-xs py-2.5 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center gap-1 uppercase tracking-wider"
+                    onClick={() => setResults(null)}
+                    className="w-[12%] bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-xs py-2.5 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center gap-1 uppercase tracking-wider"
                     title="Clear all values"
                 >
                     <Trash2 className="w-3.5 h-3.5" />
-                    CLR
                 </button>
                 <button
                     onClick={toggleHelp}

@@ -1112,7 +1112,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                     </InfoBox>
 
                     <InfoBox type="tip">
-                        <strong>Clear Button:</strong> Use the CLR button at the bottom to reset <strong>all</strong> fields
+                        <strong>Clear Button:</strong> Use the trash icon button at the bottom to reset <strong>all</strong> fields
                         to their default values at once.
                     </InfoBox>
 

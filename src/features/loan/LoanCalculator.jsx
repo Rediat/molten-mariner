@@ -350,23 +350,11 @@ const LoanCalculator = ({ toggleHelp, toggleSettings }) => {
 
                         <div className="flex gap-1.5">
                             <button
-                                onClick={() => {
-                                    setValues({
-                                        amount: 0,
-                                        rate: 0,
-                                        years: 0,
-                                        frequency: 12,
-                                        paymentsMade: 0,
-                                        startDate: new Date().toISOString().split('T')[0],
-                                        futureDate: new Date().toISOString().split('T')[0]
-                                    });
-                                    setResult(null);
-                                }}
-                                className="w-[15%] bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-xs py-2.5 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center gap-1 uppercase tracking-wider"
+                                onClick={() => setResult(null)}
+                                className="w-[12%] bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-xs py-2.5 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center gap-1 uppercase tracking-wider"
                                 title="Clear all values"
                             >
                                 <Trash2 className="w-3.5 h-3.5" />
-                                CLR
                             </button>
                             <button
                                 onClick={toggleHelp}
