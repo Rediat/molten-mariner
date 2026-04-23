@@ -53,7 +53,7 @@ async function syncInflationData() {
             if (idx === -1) {
                 existingData.push(entry);
                 addedCount++;
-            } else if (existingData[idx].rate !== entry.rate) {
+            } else if (entry.rate !== null && entry.rate !== undefined && existingData[idx].rate !== entry.rate) {
                 existingData[idx].rate = entry.rate;
                 updatedCount++;
             }

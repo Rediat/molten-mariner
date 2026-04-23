@@ -15,6 +15,8 @@ async function syncFxData() {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         
+        const data = await response.json();
+        
         let existingData = { monthlyPrices: [] };
         if (fs.existsSync(DATA_FILE)) {
             try {
@@ -35,8 +37,24 @@ async function syncFxData() {
                 mergedMonthlyPrices.push(newItem);
                 addedCount++;
             } else {
-                mergedMonthlyPrices[idx] = newItem;
-                updatedCount++;
+                // Safe merge: preserve existing values if new ones are null
+                const oldItem = mergedMonthlyPrices[idx];
+                const updatedItem = { ...oldItem };
+                let hasChanges = false;
+
+                for (let key in newItem) {
+                    if (newItem[key] !== null && newItem[key] !== undefined) {
+                        if (updatedItem[key] !== newItem[key]) {
+                            updatedItem[key] = newItem[key];
+                            hasChanges = true;
+                        }
+                    }
+                }
+
+                if (hasChanges) {
+                    mergedMonthlyPrices[idx] = updatedItem;
+                    updatedCount++;
+                }
             }
         });
 

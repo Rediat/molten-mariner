@@ -160,8 +160,27 @@ async function scrapeNBE() {
             existingData.push(entry);
             appendedCount++;
         } else {
-            // Update existing with new fields/standardized date
-            existingData[existingIndex] = { ...existingData[existingIndex], ...entry };
+            // Update existing with new fields, but PRESERVE old values if new ones are null
+            const oldEntry = existingData[existingIndex];
+            const updatedEntry = { ...oldEntry };
+
+            for (let key in entry) {
+                if (entry[key] === null) continue;
+
+                if (typeof entry[key] === 'object' && entry[key] !== null) {
+                    // Merge nested objects (yields, amounts)
+                    updatedEntry[key] = { ...(oldEntry[key] || {}), ...entry[key] };
+                    // For sub-keys, also preserve old if new is null
+                    for (let subKey in entry[key]) {
+                        if (entry[key][subKey] === null && oldEntry[key] && oldEntry[key][subKey] !== undefined) {
+                            updatedEntry[key][subKey] = oldEntry[key][subKey];
+                        }
+                    }
+                } else {
+                    updatedEntry[key] = entry[key];
+                }
+            }
+            existingData[existingIndex] = updatedEntry;
         }
     }
 
