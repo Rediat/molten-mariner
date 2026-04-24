@@ -747,35 +747,46 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
             >
                 <p>
                     Compare the historical returns of investing in Ethiopian Treasury Bills versus holding foreign currencies 
-                    (e.g., USD, EUR, GBP) purchased on the parallel market. 
+                    (e.g., USD, EUR, GBP), Commodities (GOLD), or Cryptocurrency (BITCOIN) purchased on the parallel market. 
                 </p>
 
                 <div className="pt-2">
                     <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Investment Modes:</p>
                     <ul className="space-y-3 text-xs">
                         <li className="flex gap-2">
-                            <ArrowRight className="w-3 h-3 mt-1 text-emerald-400 shrink-0" />
+                            <ArrowRight className="w-3 h-3 mt-1 text-emerald-500 shrink-0" />
                             <div>
                                 <span className="font-bold text-white uppercase tracking-tight">Single Mode:</span>
-                                <p className="text-neutral-400 mt-1">Simulates a one-time T-Bill purchase. The investment is compared against holding foreign currency for exactly the same duration (e.g., 28 days or 364 days).</p>
+                                <p className="text-neutral-400 mt-1">Simulates a one-time T-Bill purchase compared against holding an asset for exactly the same duration (e.g., 28 days or 364 days).</p>
                             </div>
                         </li>
                         <li className="flex gap-2">
-                            <ArrowRight className="w-3 h-3 mt-1 text-emerald-400 shrink-0" />
+                            <ArrowRight className="w-3 h-3 mt-1 text-emerald-500 shrink-0" />
                             <div>
                                 <span className="font-bold text-white uppercase tracking-tight">Rolling Mode:</span>
-                                <p className="text-neutral-400 mt-1">Simulates a long-term reinvestment strategy. Upon each T-Bill maturity, the principal and interest are automatically reinvested into the <em>next available auction</em> of the same tenure. This continues until the most recent historical data point, comparing the compounded total against holding FX over the entire multi-round period.</p>
+                                <p className="text-neutral-400 mt-1">Simulates a long-term reinvestment strategy. Upon maturity, principal and interest are reinvested into the <em>next available auction</em>. This continues until the latest data point, comparing compounded totals against holding the asset over the entire period.</p>
                             </div>
                         </li>
                     </ul>
                 </div>
 
                 <div className="pt-2">
+                    <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">All Currency ROI Modal:</p>
+                    <p className="text-xs text-neutral-400 mb-2">Click the <strong>"ALL"</strong> button next to the currency selector to open a comprehensive market overview. This power-user tool allows you to rank all 20+ supported assets by their return on investment simultaneously.</p>
+                    <FieldList fields={[
+                        { name: 'Year + Month Picker', description: 'Select precise start and end periods using an intuitive two-step selection grid (Year → Month).' },
+                        { name: 'Quick Presets', description: 'Instantly jump to standard windows like YTD (Year-to-Date), 1 Year, 2 Years, or All historical data.' },
+                        { name: 'Expandable Cards', description: 'Click anywhere on a currency card to reveal detailed strategy insights, including ETB profit and percentage ROI.' },
+                        { name: 'Asset Search', description: 'Instantly filter the ranking list to find specific currencies or commodities.' }
+                    ]} />
+                </div>
+
+                <div className="pt-2">
                     <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Inputs:</p>
                     <FieldList fields={[
                         { name: 'Investment Budget', description: 'The total amount in ETB you are considering for investment' },
-                        { name: 'Start Auction', description: 'Select the initial historical auction to begin the simulation' },
-                        { name: 'Currency / Commodity', description: 'Choose the currency (USD, EUR, GBP), Commodity (GOLD), or Cryptocurrency (BITCOIN) to compare against' },
+                        { name: 'Start Auction', description: 'The initial auction to begin the simulation. Defaults to approximately 6 months ago for relevant analysis.' },
+                        { name: 'Currency / Asset', description: 'Choose between 20+ Foreign Currencies, GOLD (Commodity), or BITCOIN (Crypto).' },
                         { name: 'Tenure Strategy', description: '(Rolling Mode only) Choose whether to roll 28D, 91D, 182D, or 364D bills' }
                     ]} />
                 </div>
@@ -783,24 +794,22 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                 <div className="pt-2">
                     <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Results:</p>
                     <FieldList fields={[
-                        { name: 'Winner Badge', description: 'Identifies which strategy yielded higher profit over the selected horizon' },
-                        { name: 'End Value', description: 'The final ETB value received (after one round in Single, or multiple rounds in Rolling)' },
-                        { name: 'Round-by-Round', description: '(Rolling Mode only) A collapsible breakdown showing the Yield, Quantity, Profit, and Leftover Cash for every reinvestment round' }
+                        { name: 'Winner Badge', description: 'Identifies which strategy (T-Bill or Asset) yielded higher profit over the horizon' },
+                        { name: 'End Value', description: 'The final ETB value received (compounded in Rolling mode)' },
+                        { name: 'Strategy Breakdown', description: 'A detailed log showing Yield, Quantity, Profit, and Leftover Cash for every reinvestment round' }
                     ]} />
                 </div>
 
                 <InfoBox type="tip">
-                    <strong>Efficient Navigation:</strong> As the auction database grows, use the <strong>Search</strong> bar within the Auction Date selector to find specific dates. Use the <strong>Quick-Select chips</strong> for the latest 4 auctions, or browse the <strong>Grouped Dropdown</strong> (organized by Month/Year) for rapid scannability.
+                    <strong>Efficient Analysis:</strong> The dashboard defaults to a <strong>6-month lookback</strong> window to provide immediately relevant data. Use the "ALL" modal to quickly identify which assets have been outperforming T-Bills in recent months.
                 </InfoBox>
 
                 <InfoBox type="tip">
-                    <strong>Real-Time Data:</strong> FX, Gold, and Bitcoin rates are available starting from <strong>January 2023</strong>. FX rates are pulled from <code>ethioblackmarket.com</code> monthly history (parallel market averages). Gold prices are sourced from <code>Datahub.io</code> (Monthly CSV). Bitcoin (BITCOIN) prices are sourced from <code>Yahoo Finance</code> (Monthly History). Both Gold and Bitcoin are converted to ETB based on that month's parallel USD rate for direct comparability.
+                    <strong>Real-Time Data:</strong> Rates are available from <strong>January 2023</strong>. FX rates come from <code>ethioblackmarket.com</code>, Gold from <code>Datahub.io</code>, and Bitcoin from <code>Yahoo Finance</code>. All are converted to ETB based on parallel market averages for accuracy.
                 </InfoBox>
 
                 <InfoBox type="note">
-                    <strong>Data Refresh (Sync):</strong> Similar to the T-Bill module, this feature uses a local JSON database (<code>fxData.json</code>). Developers can run <code>npm run sync-fx</code>, <code>npm run sync-gold</code>, and <code>npm run sync-btc</code> to update pricing history.
-                    <br /><br />
-                    <strong>How it works:</strong> The FX script fetches parallel market data from <code>ethioblackmarket.com</code>, the Gold script pulls commodity prices from <code>Datahub.io</code>, and the Bitcoin script integrates latest prices from <code>Yahoo Finance</code>. Use <code>npm run sync-all</code> to refresh all data at once.
+                    <strong>Data Refresh (Sync):</strong> Run <code>npm run sync-all</code> in the terminal to update all FX, Gold, Bitcoin, and T-Bill data. The app uses a local <code>fxData.json</code> database for speed and offline reliability.
                 </InfoBox>
 
                 <InfoBox type="note">
