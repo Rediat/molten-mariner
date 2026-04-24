@@ -95,6 +95,13 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
     };
 
     const formatCurrency = (val) => val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const formatDate = (dateStr) => {
+        const d = new Date(dateStr);
+        const month = d.toLocaleString('en-US', { month: 'short' });
+        const day = String(d.getDate()).padStart(2, '0');
+        const year = d.getFullYear();
+        return `${month} ${day}, ${year}`;
+    };
 
     return (
         <div className="flex flex-col h-full">
@@ -354,7 +361,7 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
                                     <div className="flex justify-between items-stretch mb-3">
                                         <div className="text-left">
                                             <h3 className="text-sm font-bold text-white leading-none">{tenure} Days</h3>
-                                            <p className="text-[9px] text-neutral-500 uppercase mt-1">Matures: {res.maturityDate}</p>
+                                            <p className="text-[9px] text-neutral-500 uppercase mt-1">Matures: {formatDate(res.maturityDate)}</p>
                                         </div>
                                         <div className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider flex items-center text-right ${tbillWins ? 'bg-emerald-500/20 text-emerald-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
                                             Winner: {res.winner} (+{formatCurrency(res.diffAmount)} ETB | +{res.diffROI.toFixed(2)}% ROI)
@@ -491,7 +498,9 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
                                                 <div key={i} className="p-2 px-3 text-left">
                                                     <div className="flex justify-between items-center mb-1">
                                                         <span className="text-[10px] font-bold text-white">Round {i + 1} — {r.auctionNo}</span>
-                                                        <span className="text-[9px] text-neutral-500">{r.auctionDate} → {r.maturityDate}</span>
+                                                        <span className="text-[9px] text-neutral-500">
+                                                            {r.auctionDate} → {formatDate(r.maturityDate)}
+                                                        </span>
                                                     </div>
                                                     <div className="grid grid-cols-3 gap-x-3 gap-y-0.5 text-[9px]">
                                                         <div className="flex justify-between"><span className="text-neutral-500">Yield</span><span className="text-emerald-400 font-mono font-bold">{r.yield.toFixed(3)}%</span></div>
