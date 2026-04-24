@@ -589,13 +589,24 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
                     fxData={fxData}
                     budget={budget || 0}
                     onSelectCurrency={(c) => { setSelectedCurrency(c); setShowAllModal(false); }}
+                    onStartMonthChange={(month) => {
+                        const matchingIndices = validAuctions
+                            .map((auc, idx) => ({ month: new Date(auc.timestamp).toISOString().substring(0, 7), idx }))
+                            .filter(item => item.month === month);
+                        
+                        if (matchingIndices.length > 0) {
+                            // Find the earliest auction in that month (largest index since sorted newest-to-oldest)
+                            const earliestIdx = Math.max(...matchingIndices.map(m => m.idx));
+                            setSelectedAuctionIdx(earliestIdx);
+                        }
+                    }}
                 />
             )}
         </div>
     );
 };
 
-const AllCurrenciesModal = ({ onClose, startAuction, fxData, budget, onSelectCurrency }) => {
+const AllCurrenciesModal = ({ onClose, startAuction, fxData, budget, onSelectCurrency, onStartMonthChange }) => {
     const [search, setSearch] = useState('');
     const [expandedCurrency, setExpandedCurrency] = useState(null);
     
@@ -603,6 +614,10 @@ const AllCurrenciesModal = ({ onClose, startAuction, fxData, budget, onSelectCur
     const latestDataMonth = latestMonthEntry.month;
     
     const [modalStartMonth, setModalStartMonthRaw] = useState(() => {
+        if (startAuction) {
+            const dateStr = new Date(startAuction.timestamp).toISOString().split('T')[0];
+            return dateStr.substring(0, 7);
+        }
         const [y, m] = latestDataMonth.split('-').map(Number);
         const d = new Date(y, m - 1 - 6, 1);
         const year = d.getFullYear();
@@ -614,6 +629,7 @@ const AllCurrenciesModal = ({ onClose, startAuction, fxData, budget, onSelectCur
     // Ensure end >= start when either changes
     const setModalStartMonth = (val) => {
         setModalStartMonthRaw(val);
+        if (onStartMonthChange) onStartMonthChange(val);
         if (val > modalEndMonth) setModalEndMonthRaw(val);
     };
     const setModalEndMonth = (val) => {
