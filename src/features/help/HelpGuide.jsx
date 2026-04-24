@@ -798,9 +798,9 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                 </InfoBox>
 
                 <InfoBox type="note">
-                    <strong>Data Refresh (Sync):</strong> Similar to the T-Bill module, this feature uses a local JSON database (<code>fxData.json</code>) to ensure maximum speed and reliability. 
+                    <strong>Data Refresh (Sync):</strong> Similar to the T-Bill module, this feature uses a local JSON database (<code>fxData.json</code>). Developers can run <code>npm run sync-fx</code>, <code>npm run sync-gold</code>, and <code>npm run sync-btc</code> to update pricing history.
                     <br /><br />
-                    <strong>How it works:</strong> Developers run <code>npm run sync-fx</code> and <code>npm run sync-gold</code> in the terminal to update pricing history. The FX script fetches parallel market data from <code>ethioblackmarket.com</code>, while the Gold script pulls historical commodity prices from <code>Datahub.io</code>. Both are synchronized with the local <code>fxData.json</code> dataset.
+                    <strong>How it works:</strong> The FX script fetches parallel market data from <code>ethioblackmarket.com</code>, the Gold script pulls commodity prices from <code>Datahub.io</code>, and the Bitcoin script integrates latest prices from <code>Yahoo Finance</code>. Use <code>npm run sync-all</code> to refresh all data at once.
                 </InfoBox>
 
                 <InfoBox type="note">
@@ -1142,7 +1142,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                     </InfoBox>
 
                     <InfoBox type="note">
-                        <strong>Developer Sync:</strong> To update all data sources (T-Bills, FX Rates, Gold, and Inflation) 
+                        <strong>Developer Sync:</strong> To update all data sources (T-Bills, FX Rates, Gold, Bitcoin, and Inflation) 
                         simultaneously, run <code>npm run sync-all</code> in the terminal. This incrementally 
                         updates the local datasets to ensure forecasts and comparisons reflect the latest market data.
                     </InfoBox>
