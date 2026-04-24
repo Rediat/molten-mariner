@@ -274,7 +274,7 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
                         {/* Quick Selection Pills for common currencies */}
                         {!currencySearch && (
                             <div className="flex gap-1 mb-1.5 overflow-x-auto no-scrollbar pb-0.5">
-                                {['USD', 'EUR', 'GBP', 'GOLD', 'BITCOIN'].map(c => (
+                                {['USD', 'GOLD', 'BITCOIN'].map(c => (
                                     <button
                                         key={c}
                                         onClick={() => setSelectedCurrency(c)}
