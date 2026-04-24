@@ -1,6 +1,6 @@
 export const TENURES = [28, 91, 182, 364];
 
-function getMonthKey(date) {
+export function getMonthKey(date) {
     const d = new Date(date);
     const year = d.getFullYear();
     const month = String(d.getMonth() + 1).padStart(2, '0');
@@ -17,7 +17,7 @@ export function calculateMaturityDate(issueStr, tenureDays) {
  * Finds the FX rate for a given currency and month.
  * If data is missing, it looks back at previous months.
  */
-function getFxRateWithFallback(fxDataObj, currency, targetMonth) {
+export function getFxRateWithFallback(fxDataObj, currency, targetMonth) {
     const monthlyPrices = fxDataObj.monthlyPrices;
     
     // Sort months descending to make searching backwards easier

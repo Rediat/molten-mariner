@@ -1,10 +1,10 @@
-import React, { useState, useMemo, useRef } from 'react';
-import { ArrowRightLeft, Info, HelpCircle, Settings, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { ArrowRightLeft, Info, HelpCircle, Settings, ChevronDown, ChevronUp, Trash2, X, TrendingUp, TrendingDown, Search, Calendar } from 'lucide-react';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
 import { CalculateIcon } from '../../components/Icons';
 import tbillData from '../tbill/data.json';
 import fxData from './fxData.json';
-import { compareReturns, compareRollingReturns, TENURES } from './compareLogic';
+import { compareReturns, compareRollingReturns, TENURES, getMonthKey, getFxRateWithFallback } from './compareLogic';
 
 const TENURE_OPTIONS = [
     { days: 28, label: '28 Days', sub: '1 Month' },
@@ -37,6 +37,27 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
     const [budget, setBudget] = useState(500000);
     const [selectedCurrency, setSelectedCurrency] = useState('USD');
     const [selectedAuctionIdx, setSelectedAuctionIdx] = useState(0);
+
+    // Set default auction to ~6 months ago on initial load
+    useEffect(() => {
+        if (validAuctions.length > 0) {
+            const latestMonth = fxData.monthlyPrices[fxData.monthlyPrices.length - 1].month;
+            const [y, m] = latestMonth.split('-').map(Number);
+            const targetDate = new Date(y, m - 1 - 6, 1);
+            
+            let bestIdx = 0;
+            let minDiff = Infinity;
+            validAuctions.forEach((auc, idx) => {
+                const diff = Math.abs(auc.timestamp - targetDate.getTime());
+                if (diff < minDiff) {
+                    minDiff = diff;
+                    bestIdx = idx;
+                }
+            });
+            setSelectedAuctionIdx(bestIdx);
+        }
+    }, [validAuctions]);
+
     const [resultData, setResultData] = useState(null);
     const [showExplanation, setShowExplanation] = useState(false);
     const [mode, setMode] = useState('rolling'); // 'rolling' or 'single'
@@ -45,6 +66,7 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
     const [expandedRounds, setExpandedRounds] = useState(false);
     const [auctionSearch, setAuctionSearch] = useState('');
     const [currencySearch, setCurrencySearch] = useState('');
+    const [showAllModal, setShowAllModal] = useState(false);
     
     // Refs for input focus
     const budgetRef = useRef(null);
@@ -290,6 +312,12 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
                                         {c}
                                     </button>
                                 ))}
+                                <button
+                                    onClick={() => setShowAllModal(true)}
+                                    className={`shrink-0 px-1.5 py-0.5 rounded text-[9px] font-black transition-all bg-emerald-600/20 text-emerald-500 ring-1 ring-emerald-600/40 hover:bg-emerald-600/30 hover:text-emerald-400`}
+                                >
+                                    ALL
+                                </button>
                             </div>
                         )}
 
@@ -551,6 +579,437 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
                     <CalculateIcon className="w-5 h-5" />
                     Calculate
                 </button>
+            </div>
+
+            {/* All Currencies Comparison Modal */}
+            {showAllModal && (
+                <AllCurrenciesModal 
+                    onClose={() => setShowAllModal(false)}
+                    startAuction={validAuctions[selectedAuctionIdx]}
+                    fxData={fxData}
+                    budget={budget || 0}
+                    onSelectCurrency={(c) => { setSelectedCurrency(c); setShowAllModal(false); }}
+                />
+            )}
+        </div>
+    );
+};
+
+const AllCurrenciesModal = ({ onClose, startAuction, fxData, budget, onSelectCurrency }) => {
+    const [search, setSearch] = useState('');
+    const [expandedCurrency, setExpandedCurrency] = useState(null);
+    
+    const latestMonthEntry = fxData.monthlyPrices[fxData.monthlyPrices.length - 1];
+    const latestDataMonth = latestMonthEntry.month;
+    
+    const [modalStartMonth, setModalStartMonthRaw] = useState(() => {
+        const [y, m] = latestDataMonth.split('-').map(Number);
+        const d = new Date(y, m - 1 - 6, 1);
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        return `${year}-${month}`;
+    });
+    const [modalEndMonth, setModalEndMonthRaw] = useState(latestDataMonth);
+
+    // Ensure end >= start when either changes
+    const setModalStartMonth = (val) => {
+        setModalStartMonthRaw(val);
+        if (val > modalEndMonth) setModalEndMonthRaw(val);
+    };
+    const setModalEndMonth = (val) => {
+        setModalEndMonthRaw(val);
+        if (val < modalStartMonth) setModalStartMonthRaw(val);
+    };
+
+    // Available years from fxData
+    const availableYears = useMemo(() => {
+        const years = new Set();
+        fxData.monthlyPrices.forEach(m => {
+            years.add(m.month.split('-')[0]);
+        });
+        return Array.from(years).sort();
+    }, []);
+
+    const MONTH_LABELS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+    // Available months for a given year (from fxData)
+    const getMonthsForYear = (year) => {
+        const months = [];
+        fxData.monthlyPrices.forEach(m => {
+            if (m.month.startsWith(year)) {
+                const mo = parseInt(m.month.split('-')[1]);
+                months.push(mo);
+            }
+        });
+        return months.sort((a, b) => a - b);
+    };
+
+    // Year/month picker open state
+    const [startPickerOpen, setStartPickerOpen] = useState(false);
+    const [endPickerOpen, setEndPickerOpen] = useState(false);
+    const [startPickerYear, setStartPickerYear] = useState(() => modalStartMonth.split('-')[0]);
+    const [endPickerYear, setEndPickerYear] = useState(() => modalEndMonth.split('-')[0]);
+
+    const periodBarRef = useRef(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (periodBarRef.current && !periodBarRef.current.contains(event.target)) {
+                setStartPickerOpen(false);
+                setEndPickerOpen(false);
+            }
+        };
+        if (startPickerOpen || endPickerOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [startPickerOpen, endPickerOpen]);
+
+    const results = useMemo(() => {
+        if (!fxData || !fxData.monthlyPrices) return [];
+        
+        const currencies = Object.keys(fxData.monthlyPrices[0].value);
+        
+        return currencies.map(c => {
+            const startInfo = getFxRateWithFallback(fxData, c, modalStartMonth);
+            const endInfo = getFxRateWithFallback(fxData, c, modalEndMonth);
+            
+            if (!startInfo || !endInfo) return null;
+            
+            const roi = ((endInfo.rate / startInfo.rate) - 1) * 100;
+            const unitsBought = budget / startInfo.rate;
+            const endValue = unitsBought * endInfo.rate;
+            const profit = endValue - budget;
+            
+            return {
+                currency: c,
+                displayCode: c === 'GOLD' ? 'XAU' : c === 'BITCOIN' ? 'BTC' : c,
+                startRate: startInfo.rate,
+                endRate: endInfo.rate,
+                roi,
+                profit,
+                endValue,
+                unitsBought,
+                startMonth: startInfo.monthUsed,
+                endMonth: endInfo.monthUsed,
+                multiplier: endInfo.rate / startInfo.rate,
+                startIsFallback: startInfo.isFallback,
+                endIsFallback: endInfo.isFallback
+            };
+        }).filter(Boolean).sort((a, b) => b.roi - a.roi);
+    }, [fxData, budget, modalStartMonth, modalEndMonth]);
+
+    const filteredResults = results.filter(r => 
+        r.currency.toLowerCase().includes(search.toLowerCase()) ||
+        r.displayCode.toLowerCase().includes(search.toLowerCase())
+    );
+
+    const formatMonth = (m) => {
+        const [year, month] = m.split('-');
+        const date = new Date(year, parseInt(month) - 1);
+        return date.toLocaleString('default', { month: 'short', year: 'numeric' });
+    };
+
+    const periods = results.length > 0 ? {
+        start: formatMonth(results[0].startMonth),
+        end: formatMonth(results[0].endMonth)
+    } : null;
+
+    const formatCurrency = (val) => val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    // Inline Year+Month Picker component
+    const YearMonthPicker = ({ label, value, onChange, isOpen, setIsOpen, pickerYear, setPickerYear, accentColor = 'emerald' }) => {
+        const selectedYear = value.split('-')[0];
+        const selectedMo = parseInt(value.split('-')[1]);
+        const months = getMonthsForYear(pickerYear);
+        const colorMap = {
+            emerald: {
+                activeBg: 'bg-emerald-600/20', activeText: 'text-emerald-500', activeRing: 'ring-emerald-600/40',
+                selectedBg: 'bg-emerald-600', selectedText: 'text-white',
+                hoverBg: 'hover:bg-emerald-600/10', hoverText: 'hover:text-emerald-400',
+                borderFocus: 'border-emerald-600/50', iconColor: 'text-emerald-500',
+            }
+        };
+        const c = colorMap[accentColor] || colorMap.emerald;
+
+        return (
+            <div className="flex-1 relative">
+                <button
+                    onClick={() => { setIsOpen(!isOpen); if (!isOpen) setPickerYear(selectedYear); }}
+                    className={`w-full flex items-center justify-between gap-1 bg-neutral-900 border rounded-lg px-2 py-1.5 transition-all cursor-pointer ${isOpen ? `${c.borderFocus} ring-1 ${c.activeRing}` : 'border-neutral-700 hover:border-neutral-600'}`}
+                >
+                    <div className="flex items-center gap-1.5">
+                        <Calendar className={`w-3.5 h-3.5 ${c.iconColor}`} />
+                        <span className="text-[10px] text-neutral-500 font-bold uppercase">{label}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                        <span className="text-xs font-mono font-bold text-white">{MONTH_LABELS[selectedMo - 1]} {selectedYear}</span>
+                        <ChevronDown className={`w-3.5 h-3.5 text-neutral-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                    </div>
+                </button>
+                {isOpen && (
+                    <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-neutral-900 border border-neutral-700 rounded-xl shadow-2xl shadow-black/50 overflow-hidden animate-in slide-in-from-top-1 fade-in duration-150">
+                        {/* Year Pills */}
+                        <div className="flex items-center gap-1 p-2 border-b border-neutral-800 bg-neutral-900/80">
+                            {availableYears.map(y => (
+                                <button
+                                    key={y}
+                                    onClick={() => setPickerYear(y)}
+                                    className={`flex-1 py-1.5 rounded-md text-xs font-black transition-all ${pickerYear === y ? `${c.activeBg} ${c.activeText} ring-1 ${c.activeRing}` : 'text-neutral-500 hover:text-white hover:bg-neutral-800'}`}
+                                >
+                                    {y}
+                                </button>
+                            ))}
+                        </div>
+                        {/* Month Grid */}
+                        <div className="grid grid-cols-4 gap-1 p-2">
+                            {MONTH_LABELS.map((ml, idx) => {
+                                const mo = idx + 1;
+                                const moKey = `${pickerYear}-${String(mo).padStart(2, '0')}`;
+                                const isAvailable = months.includes(mo);
+                                const isSelected = value === moKey;
+                                return (
+                                    <button
+                                        key={mo}
+                                        disabled={!isAvailable}
+                                        onClick={() => {
+                                            if (isAvailable) {
+                                                onChange(moKey);
+                                                setIsOpen(false);
+                                            }
+                                        }}
+                                        className={`py-2 rounded-lg text-xs font-bold transition-all ${
+                                            isSelected
+                                                ? `${c.selectedBg} ${c.selectedText} shadow-md`
+                                                : isAvailable
+                                                    ? `bg-neutral-800/60 text-neutral-300 ${c.hoverBg} ${c.hoverText}`
+                                                    : 'bg-neutral-900/30 text-neutral-700 cursor-not-allowed'
+                                        }`}
+                                    >
+                                        {ml}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+    };
+
+    return (
+        <div className="absolute inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="bg-neutral-900 border border-neutral-800 w-full h-full flex flex-col scale-100 animate-in zoom-in-95 duration-200">
+                <div className="p-4 border-b border-neutral-800 bg-neutral-900/50 backdrop-blur-md shrink-0 relative z-20">
+                    <div className="flex justify-between items-start mb-3">
+                        <div className="text-left">
+                            <h2 className="text-lg font-black text-white leading-tight flex items-center gap-2">
+                                <span className="p-1.5 bg-emerald-600/20 text-emerald-500 rounded-xl">
+                                    <TrendingUp className="w-4 h-4" />
+                                </span>
+                                All Currency ROI
+                            </h2>
+                            <p className="text-[9px] uppercase tracking-widest text-neutral-500 font-bold mt-0.5">
+                                Market Performance Analysis
+                            </p>
+                        </div>
+                        <button 
+                            onClick={onClose}
+                            className="p-2 hover:bg-neutral-800 rounded-full transition-colors text-neutral-500 hover:text-white"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
+                    </div>
+
+                    {/* Year+Month Period Picker */}
+                    <div ref={periodBarRef} className="bg-neutral-800/60 rounded-xl p-2 mb-3 border border-neutral-700/50">
+                        <div className="flex items-center gap-2">
+                            <YearMonthPicker
+                                label="From"
+                                value={modalStartMonth}
+                                onChange={setModalStartMonth}
+                                isOpen={startPickerOpen}
+                                setIsOpen={(v) => { setStartPickerOpen(v); if (v) setEndPickerOpen(false); }}
+                                pickerYear={startPickerYear}
+                                setPickerYear={setStartPickerYear}
+                            />
+                            <span className="text-[9px] text-neutral-600 font-black shrink-0">→</span>
+                            <YearMonthPicker
+                                label="To"
+                                value={modalEndMonth}
+                                onChange={setModalEndMonth}
+                                isOpen={endPickerOpen}
+                                setIsOpen={(v) => { setEndPickerOpen(v); if (v) setStartPickerOpen(false); }}
+                                pickerYear={endPickerYear}
+                                setPickerYear={setEndPickerYear}
+                            />
+                        </div>
+                        {/* Quick Presets */}
+                        <div className="flex items-center gap-1 mt-1.5 justify-center">
+                            {[
+                                { label: 'YTD', start: `${new Date().getFullYear()}-01`, end: latestDataMonth },
+                                { label: '1Y', start: (() => { const d = new Date(); d.setFullYear(d.getFullYear() - 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; })(), end: latestDataMonth },
+                                { label: '2Y', start: (() => { const d = new Date(); d.setFullYear(d.getFullYear() - 2); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; })(), end: latestDataMonth },
+                                { label: 'All', start: fxData.monthlyPrices[0].month, end: latestDataMonth },
+                            ].map(preset => {
+                                const isActive = modalStartMonth === preset.start && modalEndMonth === preset.end;
+                                return (
+                                    <button
+                                        key={preset.label}
+                                        onClick={() => { setModalStartMonth(preset.start); setModalEndMonth(preset.end); }}
+                                        className={`px-3 py-1 rounded text-[10px] font-black transition-all ${isActive ? 'bg-emerald-600/20 text-emerald-500 ring-1 ring-emerald-600/40' : 'text-neutral-500 hover:text-white hover:bg-neutral-800'}`}
+                                    >
+                                        {preset.label}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-500" />
+                        <input 
+                            type="text"
+                            placeholder="Search currencies..."
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            className="w-full bg-neutral-800/50 border border-neutral-700/50 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder:text-neutral-600 focus:outline-none focus:border-emerald-600/50 transition-colors"
+                        />
+                    </div>
+                </div>
+
+
+                <div className="flex-1 overflow-y-auto p-3 custom-scrollbar relative z-10">
+                    <div className="grid grid-cols-1 gap-2">
+                        {filteredResults.map((res, idx) => {
+                            const isExpanded = expandedCurrency === res.currency;
+                            const isTop = idx === 0;
+                            const isTop3 = idx < 3;
+                            const maxRoi = filteredResults.length > 0 ? Math.max(filteredResults[0].roi, 1) : 1;
+                            const roiPercent = Math.max(0, Math.min(100, (res.roi / maxRoi) * 100));
+
+                            return (
+                                <div
+                                    key={res.currency}
+                                    onClick={() => setExpandedCurrency(isExpanded ? null : res.currency)}
+                                    className={`group rounded-2xl border transition-all overflow-hidden cursor-pointer ${isTop ? 'bg-gradient-to-r from-emerald-600/10 to-teal-900/5 border-emerald-600/30 shadow-lg shadow-emerald-600/5' : isTop3 ? 'bg-neutral-800/30 border-neutral-700/40' : 'bg-neutral-800/20 border-neutral-800/50 hover:border-neutral-700/50'}`}
+                                >
+                                    <div className="p-2.5 flex items-center justify-between gap-2">
+                                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                                            {/* Rank + Badge */}
+                                            <div className="relative shrink-0">
+                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-[10px] ${isTop ? 'bg-gradient-to-br from-emerald-700 to-emerald-600 text-white shadow-lg shadow-emerald-700/30' : isTop3 ? 'bg-neutral-700 text-neutral-200' : 'bg-neutral-800 text-neutral-400'}`}>
+                                                    {res.displayCode}
+                                                </div>
+                                                <span className={`absolute -top-1 -left-1 w-4 h-4 rounded-full flex items-center justify-center text-[7px] font-black ${isTop ? 'bg-emerald-700 text-white' : isTop3 ? 'bg-neutral-600 text-neutral-200' : 'bg-neutral-700 text-neutral-400'}`}>
+                                                    {idx + 1}
+                                                </span>
+                                            </div>
+                                            <div className="min-w-0 flex-1">
+                                                <h4 className={`font-bold truncate transition-colors text-sm text-left ${isTop ? 'text-emerald-500' : 'text-white group-hover:text-emerald-600'}`}>{res.currency}</h4>
+                                                {/* Mini ROI bar */}
+                                                <div className="flex items-center gap-2 mt-1">
+                                                    <div className="flex-1 h-1 bg-neutral-800 rounded-full overflow-hidden">
+                                                        <div 
+                                                            className={`h-full rounded-full transition-all ${res.roi >= 0 ? 'bg-gradient-to-r from-emerald-500 to-emerald-400' : 'bg-red-500'}`}
+                                                            style={{ width: `${Math.max(2, roiPercent)}%` }}
+                                                        />
+                                                    </div>
+                                                    <span className={`text-[9px] font-mono font-bold shrink-0 ${res.roi >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                                                        {res.roi >= 0 ? '+' : ''}{res.roi.toFixed(1)}%
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center gap-1.5 shrink-0">
+                                            <div className="text-right">
+                                                <div className={`font-mono font-black tabular-nums ${isTop ? 'text-sm text-emerald-300' : isTop3 ? 'text-xs text-emerald-400' : 'text-[11px] text-emerald-400/80'} ${res.roi < 0 ? '!text-red-400' : ''}`}>
+                                                    {res.profit >= 0 ? '+' : ''}{res.profit.toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                                                </div>
+                                                <span className="text-[7px] text-neutral-500 font-bold uppercase">ETB</span>
+                                            </div>
+                                            <div 
+                                                className={`p-1.5 rounded-lg transition-all ${isExpanded ? 'bg-emerald-600 text-white' : 'bg-neutral-800 text-neutral-500 group-hover:text-white'}`}
+                                            >
+                                                {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {isExpanded && (
+                                        <div 
+                                            onClick={(e) => e.stopPropagation()}
+                                            className="mx-3 mb-3 rounded-xl border border-emerald-600/10 bg-gradient-to-b from-emerald-900/10 to-black/30 overflow-hidden animate-in slide-in-from-top-2 duration-200"
+                                        >
+                                            <div className="px-3 py-2 bg-emerald-600/5 border-b border-emerald-600/10">
+                                                <h5 className="text-[9px] font-black text-emerald-500 uppercase tracking-[0.2em] text-left">Hold {res.currency}</h5>
+                                            </div>
+                                            <div className="p-3 space-y-2">
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Bought</span>
+                                                    <span className="text-xs font-mono font-bold text-white">{formatCurrency(res.unitsBought)} <span className="text-neutral-500">{res.displayCode}</span></span>
+                                                </div>
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">End Value</span>
+                                                    <span className="text-sm font-mono font-black text-emerald-400">{formatCurrency(res.endValue)}</span>
+                                                </div>
+                                                
+                                                <div className="h-px bg-neutral-800/80" />
+                                                
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Rate (Start)</span>
+                                                    <div className="text-right">
+                                                        <span className="text-[11px] font-mono text-neutral-300">{formatCurrency(res.startRate)}</span>
+                                                        {res.startIsFallback && <div className="text-[7px] text-amber-500 italic leading-none">Using {res.startMonth} data</div>}
+                                                    </div>
+                                                </div>
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Rate (End)</span>
+                                                    <div className="text-right">
+                                                        <span className="text-[11px] font-mono text-neutral-300">{formatCurrency(res.endRate)}</span>
+                                                        {res.endIsFallback && <div className="text-[7px] text-amber-500 italic leading-none">Using {res.endMonth} data</div>}
+                                                    </div>
+                                                </div>
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Multiplier</span>
+                                                    <span className="text-[11px] font-mono font-bold text-emerald-400/80">{res.multiplier.toFixed(4)}x</span>
+                                                </div>
+                                                
+                                                <div className="h-px bg-neutral-800/80" />
+                                                
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Profit</span>
+                                                    <span className={`text-sm font-mono font-black ${res.profit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{res.profit >= 0 ? '+' : ''}{formatCurrency(res.profit)}</span>
+                                                </div>
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Total ROI</span>
+                                                    <span className={`text-sm font-mono font-black ${res.roi >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{res.roi.toFixed(2)}%</span>
+                                                </div>
+                                            </div>
+
+                                            <div className="px-3 pb-3">
+                                                <button
+                                                    onClick={() => onSelectCurrency(res.currency)}
+                                                    className="w-full py-2.5 bg-gradient-to-r from-emerald-700 to-emerald-600 text-white font-black text-[9px] uppercase tracking-[0.2em] rounded-lg hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20"
+                                                >
+                                                    Select {res.displayCode} & Compare
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+
+                <div className="px-4 py-2.5 bg-neutral-900 border-t border-neutral-800 shrink-0">
+                    <p className="text-[9px] text-neutral-500 text-center">
+                        Budget: <span className="text-neutral-300 font-mono font-bold">{budget.toLocaleString()} ETB</span> · {filteredResults.length} currencies
+                    </p>
+                </div>
+
             </div>
         </div>
     );
