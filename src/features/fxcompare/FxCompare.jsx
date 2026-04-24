@@ -28,8 +28,7 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
         const fxMonths = new Set(fxData.monthlyPrices.map(m => m.month));
         
         return tbillData.filter(auction => {
-            const dateStr = new Date(auction.timestamp).toISOString().split('T')[0];
-            const startMonth = dateStr.substring(0, 7); // YYYY-MM
+            const startMonth = getMonthKey(auction.timestamp);
             return fxMonths.has(startMonth);
         }).sort((a, b) => b.timestamp - a.timestamp); // newest first
     }, []);
@@ -591,7 +590,7 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
                     onSelectCurrency={(c) => { setSelectedCurrency(c); setShowAllModal(false); }}
                     onStartMonthChange={(month) => {
                         const matchingIndices = validAuctions
-                            .map((auc, idx) => ({ month: new Date(auc.timestamp).toISOString().substring(0, 7), idx }))
+                            .map((auc, idx) => ({ month: getMonthKey(auc.timestamp), idx }))
                             .filter(item => item.month === month);
                         
                         if (matchingIndices.length > 0) {
@@ -615,8 +614,7 @@ const AllCurrenciesModal = ({ onClose, startAuction, fxData, budget, onSelectCur
     
     const [modalStartMonth, setModalStartMonthRaw] = useState(() => {
         if (startAuction) {
-            const dateStr = new Date(startAuction.timestamp).toISOString().split('T')[0];
-            return dateStr.substring(0, 7);
+            return getMonthKey(startAuction.timestamp);
         }
         const [y, m] = latestDataMonth.split('-').map(Number);
         const d = new Date(y, m - 1 - 6, 1);

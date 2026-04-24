@@ -1,5 +1,16 @@
 export const TENURES = [28, 91, 182, 364];
 
+/**
+ * Returns YYYY-MM-DD in local time
+ */
+function toLocalISO(date) {
+    const d = new Date(date);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
 export function getMonthKey(date) {
     const d = new Date(date);
     const year = d.getFullYear();
@@ -7,10 +18,17 @@ export function getMonthKey(date) {
     return `${year}-${month}`;
 }
 
-export function calculateMaturityDate(issueStr, tenureDays) {
-    const issue = new Date(issueStr);
-    issue.setDate(issue.getDate() + tenureDays);
-    return issue.toISOString().split('T')[0];
+export function calculateMaturityDate(date, tenureDays) {
+    const d = new Date(date);
+    // If input is YYYY-MM-DD string, new Date(string) is UTC.
+    // If it's a timestamp, it's UTC but d.getDate() is Local.
+    // To be safe, we always handle as local.
+    if (typeof date === 'string' && date.includes('-')) {
+        const [y, m, day] = date.split('-').map(Number);
+        d.setFullYear(y, m - 1, day);
+    }
+    d.setDate(d.getDate() + tenureDays);
+    return toLocalISO(d);
 }
 
 /**
@@ -44,8 +62,8 @@ export function getFxRateWithFallback(fxDataObj, currency, targetMonth) {
 }
 
 export function compareReturns(budget, tbillAuction, fxDataObj, currency, brokerageRate = 0.1) {
-    const issueDateStr = new Date(tbillAuction.timestamp).toISOString().split('T')[0];
-    const startMonth = getMonthKey(issueDateStr);
+    const startMonth = getMonthKey(tbillAuction.timestamp);
+    const issueDateStr = toLocalISO(tbillAuction.timestamp);
     
     // Check if start month FX data exists (with fallback)
     const startRateInfo = getFxRateWithFallback(fxDataObj, currency, startMonth);
@@ -142,21 +160,13 @@ export function compareReturns(budget, tbillAuction, fxDataObj, currency, broker
  * Rolling T-Bill reinvestment comparison.
  * Simulates reinvesting matured T-Bill proceeds into the next available auction
  * repeatedly, and compares cumulative returns vs holding FX over the full period.
- *
- * @param {number} budget - ETB amount to invest
- * @param {object} startAuction - The first auction object to participate in
- * @param {Array} tbillDataAll - All auction data (from data.json)
- * @param {object} fxDataObj - FX data (from fxData.json)
- * @param {string} currency - Currency code (e.g. 'USD')
- * @param {number} brokerageRate - Brokerage percentage (e.g. 0.1 for 0.1%)
- * @param {number} selectedTenure - Tenure in days (28, 91, 182, or 364)
  */
 export function compareRollingReturns(budget, startAuction, tbillDataAll, fxDataObj, currency, brokerageRate, selectedTenure) {
     const UNIT_FV = 5000;
     const yieldKey = `${selectedTenure}_days`;
 
-    const issueDateStr = new Date(startAuction.timestamp).toISOString().split('T')[0];
-    const startMonth = getMonthKey(issueDateStr);
+    const startMonth = getMonthKey(startAuction.timestamp);
+    const issueDateStr = toLocalISO(startAuction.timestamp);
 
     // Check start month FX data (with fallback)
     const startRateInfo = getFxRateWithFallback(fxDataObj, currency, startMonth);
@@ -167,11 +177,6 @@ export function compareRollingReturns(budget, startAuction, tbillDataAll, fxData
     const startMonthUsed = startRateInfo.monthUsed;
     const startIsFallback = startRateInfo.isFallback;
 
-    // All available FX months for boundary checking
-    const fxMonthsSet = new Set(fxDataObj.monthlyPrices.map(m => m.month));
-    const allFxMonths = fxDataObj.monthlyPrices.map(m => m.month).sort();
-    const latestFxMonth = allFxMonths[allFxMonths.length - 1];
-
     // Sort auctions chronologically
     const sortedAuctions = [...tbillDataAll].sort((a, b) => a.timestamp - b.timestamp);
 
@@ -181,7 +186,7 @@ export function compareRollingReturns(budget, startAuction, tbillDataAll, fxData
     let totalInvested = budget; // original budget
 
     while (true) {
-        const auctionDateStr = new Date(currentAuction.timestamp).toISOString().split('T')[0];
+        const auctionDateStr = toLocalISO(currentAuction.timestamp);
         const yieldAnnual = currentAuction.weightedAverageYields[yieldKey];
         const cutOffYield = (currentAuction.cutOffYields && currentAuction.cutOffYields[yieldKey]) || null;
 
@@ -236,7 +241,9 @@ export function compareRollingReturns(budget, startAuction, tbillDataAll, fxData
         currentCash = endValue + leftover;
 
         // Find next auction on or after maturity
-        const maturityTs = new Date(maturityDate).getTime();
+        // Use a 00:00:00 Local interpretation for comparison
+        const [y, m, day] = maturityDate.split('-').map(Number);
+        const maturityTs = new Date(y, m - 1, day).getTime();
         const nextAuction = sortedAuctions.find(a => a.timestamp >= maturityTs);
 
         if (!nextAuction) break;
@@ -254,8 +261,11 @@ export function compareRollingReturns(budget, startAuction, tbillDataAll, fxData
     const tbillTotalROI = (tbillTotalProfit / totalInvested) * 100;
 
     // Calculate total days for annualized ROI
-    const startDate = new Date(issueDateStr);
-    const endDate = new Date(lastRound.maturityDate);
+    // Note: use local dates for totalDays consistency
+    const [sy, sm, sd] = issueDateStr.split('-').map(Number);
+    const startDate = new Date(sy, sm - 1, sd);
+    const [ey, em, ed] = lastRound.maturityDate.split('-').map(Number);
+    const endDate = new Date(ey, em - 1, ed);
     const totalDays = Math.round((endDate - startDate) / (1000 * 60 * 60 * 24));
     const tbillAnnualizedROI = totalDays > 0 ? (tbillTotalProfit / totalInvested) * (365 / totalDays) * 100 : 0;
 
