@@ -775,7 +775,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                     <FieldList fields={[
                         { name: 'Investment Budget', description: 'The total amount in ETB you are considering for investment' },
                         { name: 'Start Auction', description: 'Select the initial historical auction to begin the simulation' },
-                        { name: 'Currency / Commodity', description: 'Choose the currency (USD, EUR, GBP) or Commodity (GOLD) to compare against' },
+                        { name: 'Currency / Commodity', description: 'Choose the currency (USD, EUR, GBP), Commodity (GOLD), or Cryptocurrency (BITCOIN) to compare against' },
                         { name: 'Tenure Strategy', description: '(Rolling Mode only) Choose whether to roll 28D, 91D, 182D, or 364D bills' }
                     ]} />
                 </div>
@@ -794,7 +794,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                 </InfoBox>
 
                 <InfoBox type="tip">
-                    <strong>Real-Time Data:</strong> FX and Gold rates are available starting from <strong>January 2023</strong>. FX rates are pulled from <code>ethioblackmarket.com</code> monthly history (parallel market averages). Gold prices are sourced from <code>Datahub.io</code> (Monthly CSV) and converted to ETB based on that month's parallel USD rate for direct comparability.
+                    <strong>Real-Time Data:</strong> FX, Gold, and Bitcoin rates are available starting from <strong>January 2023</strong>. FX rates are pulled from <code>ethioblackmarket.com</code> monthly history (parallel market averages). Gold prices are sourced from <code>Datahub.io</code> (Monthly CSV). Bitcoin (BITCOIN) prices are sourced from <code>Yahoo Finance</code> (Monthly History). Both Gold and Bitcoin are converted to ETB based on that month's parallel USD rate for direct comparability.
                 </InfoBox>
 
                 <InfoBox type="note">
