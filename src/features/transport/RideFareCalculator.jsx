@@ -324,7 +324,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
         useCurrentLocation(setFromValue, true);
     }, [useCurrentLocation, mapsReady, isActive]);
 
-    const handleCalculate = () => {
+    const calculateResults = useCallback(() => {
         const chargeMultiplier = roundTrip ? 2 : 1;
         const actualFuelMultiplier = 2; // Always estimate fuel for round-trip for true cost out of pocket
 
@@ -352,9 +352,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
             const perHead = totalToCharge / 4;
             const netGainSingle = totalToCharge - oneWayFuelCost;
             const netGainRound = totalToCharge - totalFuelCost;
-            const newResults = { totalFuelCost, reasonablePrice: basePrice, totalToCharge, waitTime, revenuePerKm, netGain, netGainPerKm, fuelPerKm, perHead, netGainSingle, netGainRound };
-            setResults(newResults);
-            addToHistory('Ride', { ...values, mode: 'forward', roundTrip }, newResults);
+            return { totalFuelCost, reasonablePrice: basePrice, totalToCharge, waitTime, revenuePerKm, netGain, netGainPerKm, fuelPerKm, perHead, netGainSingle, netGainRound };
         } else {
             const totalToCharge = chargingPrice;
             const basePrice = Math.max(0, totalToCharge - waitTime);
@@ -366,8 +364,16 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
             const serviceMultiplierValue = chargingFuelCost > 0 ? (totalToCharge - waitTime) / chargingFuelCost : 0;
             const netGainSingle = totalToCharge - oneWayFuelCost;
             const netGainRound = totalToCharge - totalFuelCost;
-            const newResults = { totalFuelCost, reasonablePrice: basePrice, totalToCharge, waitTime, revenuePerKm, netGain, netGainPerKm, fuelPerKm, perHead, serviceMultiplier: serviceMultiplierValue, netGainSingle, netGainRound };
-            setResults(newResults);
+            return { totalFuelCost, reasonablePrice: basePrice, totalToCharge, waitTime, revenuePerKm, netGain, netGainPerKm, fuelPerKm, perHead, serviceMultiplier: serviceMultiplierValue, netGainSingle, netGainRound };
+        }
+    }, [values, waitMultiplier, priceToCharge, durationValue, roundTrip, mode]);
+
+    const handleCalculate = () => {
+        const newResults = calculateResults();
+        setResults(newResults);
+        if (mode === 'forward') {
+            addToHistory('Ride', { ...values, mode: 'forward', roundTrip }, newResults);
+        } else {
             addToHistory('Ride', { ...values, priceToCharge: chargingPrice, mode: 'reverse', roundTrip }, newResults);
         }
     };
@@ -400,6 +406,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
 
     const formatNum = (val) => val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     const mapsAvailable = mapsReady && hasMapsApi();
+    const activeResults = results || calculateResults();
 
     return (
         <div className="flex flex-col h-full relative">
@@ -806,13 +813,13 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                     : 'opacity-0 pointer-events-none scale-95 -z-10'
                     }`}
             >
-                <DrivingView onClose={() => setShowMap(false)} fareData={{ ...results, ...values, waitMultiplier }} onOpenLiveTracker={() => setShowLiveTracker(true)} />
+                <DrivingView onClose={() => setShowMap(false)} fareData={{ ...activeResults, ...values, waitMultiplier }} onOpenLiveTracker={() => setShowLiveTracker(true)} />
             </div>
 
             <LiveFareTracker
                 isVisible={showLiveTracker}
                 onClose={() => setShowLiveTracker(false)}
-                fareData={{ ...results, ...values, waitMultiplier }}
+                fareData={{ ...activeResults, ...values, waitMultiplier }}
             />
         </div >
     );
