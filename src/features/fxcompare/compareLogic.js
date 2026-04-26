@@ -185,6 +185,7 @@ export function compareRollingReturns(budget, startAuction, tbillDataAll, fxData
     let currentAuction = startAuction;
     let totalInvested = budget; // original budget
 
+    /* eslint-disable-next-line no-constant-condition */
     while (true) {
         const auctionDateStr = toLocalISO(currentAuction.timestamp);
         const yieldAnnual = currentAuction.weightedAverageYields[yieldKey];
@@ -254,7 +255,7 @@ export function compareRollingReturns(budget, startAuction, tbillDataAll, fxData
         return { error: `No valid auctions found for ${selectedTenure}-day tenure with FX data coverage` };
     }
 
-    const firstRound = rounds[0];
+    // firstRound intentionally removed to fix lint warning
     const lastRound = rounds[rounds.length - 1];
     const tbillFinalValue = lastRound.endValue + lastRound.leftover;
     const tbillTotalProfit = tbillFinalValue - totalInvested;

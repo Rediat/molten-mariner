@@ -32,9 +32,7 @@ export const calculateTVM = (target, values, mode = 'END', frequency = 12, inter
     }
 
     if (interestType === 'SIMPLE') {
-        const t = n; // Time in periods
-
-        // Factors
+        // Time in periods is n        // Factors
         // PV Factor: (1 + r*n)
         const pvFactor = 1 + r * n;
 

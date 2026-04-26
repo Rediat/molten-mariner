@@ -1,6 +1,6 @@
 
 const calculateTVM_Current = (target, values, mode = 'END', frequency = 12) => {
-    let { n, i, pv, pmt, fv } = values;
+    let { n, i, pv, pmt } = values;
     const type = mode === 'BEGIN' ? 1 : 0;
     const r = (i / 100) / frequency; // Current logic: implicit P/Y = C/Y = frequency
 
@@ -15,7 +15,7 @@ const calculateTVM_Current = (target, values, mode = 'END', frequency = 12) => {
 // Correct logic for P/Y != C/Y
 // P/Y = payments per year, C/Y = compounding periods per year
 const calculateTVM_Correct = (target, values, mode = 'END', py = 12, cy = 12) => {
-    let { n, i, pv, pmt, fv } = values; // i is nominal annual rate
+    let { n, i, pv, pmt } = values; // i is nominal annual rate
     const type = mode === 'BEGIN' ? 1 : 0;
 
     // Effective rate per payment period

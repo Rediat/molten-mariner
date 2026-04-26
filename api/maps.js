@@ -22,7 +22,7 @@ export default async function handler(req, res) {
     const apiKey = process.env.GOOGLE_API_KEY;
     if (!apiKey) return res.status(500).json({ error: 'API key missing' });
 
-    const { input, sessiontoken } = req.query;
+    const { input } = req.query; // sessiontoken removed because it is unused in this scope
 
     // Option 1: Return Maps JS script URL for client-side autocomplete
     if (!input) {

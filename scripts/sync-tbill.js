@@ -148,7 +148,7 @@ async function scrapeNBE() {
     if (fs.existsSync(DATA_FILE)) {
         try {
             existingData = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
-        } catch(e) {}
+        } catch(e) { /* ignore parse error */ }
     }
 
     // Merge maintaining old data, update if exists

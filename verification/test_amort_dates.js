@@ -1,4 +1,5 @@
 
+/* eslint-env node */
 const { getAmortizationSchedule } = require('../src/utils/financial-utils');
 
 console.log("--- Testing Amortization Schedule Dates ---");
