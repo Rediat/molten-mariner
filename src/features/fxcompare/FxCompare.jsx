@@ -6,6 +6,32 @@ import tbillData from '../tbill/data.json';
 import fxData from './fxData.json';
 import { compareReturns, compareRollingReturns, TENURES, getMonthKey, getFxRateWithFallback } from './compareLogic';
 
+const CURRENCY_NAMES = {
+    'USD': 'US Dollar',
+    'EUR': 'Euro',
+    'CHF': 'Swiss Franc',
+    'CAD': 'Canadian Dollar',
+    'AUD': 'Australian Dollar',
+    'CNY': 'Chinese Yuan',
+    'GBP': 'British Pound',
+    'SEK': 'Swedish Krona',
+    'KWD': 'Kuwaiti Dinar',
+    'AED': 'UAE Dirham',
+    'SAR': 'Saudi Riyal',
+    'QAR': 'Qatari Riyal',
+    'OMR': 'Omani Rial',
+    'JOD': 'Jordanian Dinar',
+    'BHD': 'Bahraini Dinar',
+    'TRY': 'Turkish Lira',
+    'EGP': 'Egyptian Pound',
+    'YER': 'Yemeni Rial',
+    'ILS': 'New Israel Shekel',
+    'INR': 'Indian Rupee',
+    'PKR': 'Pakistani Rupee',
+    'GOLD': 'Gold',
+    'BITCOIN': 'Bitcoin'
+};
+
 const TENURE_OPTIONS = [
     { days: 28, label: '28 Days', sub: '1 Month' },
     { days: 91, label: '91 Days', sub: '3 Months' },
@@ -326,10 +352,19 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
                             className="w-full bg-neutral-900 border border-neutral-700 rounded-md text-white text-xs p-1.5 focus:outline-none focus:border-emerald-500"
                         >
                             {currencies
-                                .filter(c => currencySearch === '' || c.toLowerCase().includes(currencySearch.toLowerCase()))
-                                .map(c => (
-                                    <option key={c} value={c}>{c}</option>
-                                ))}
+                                .filter(c => {
+                                    const fullName = CURRENCY_NAMES[c] || c;
+                                    const s = currencySearch.toLowerCase();
+                                    return c.toLowerCase().includes(s) || fullName.toLowerCase().includes(s);
+                                })
+                                .map(c => {
+                                    const displayC = c === 'GOLD' ? 'XAU' : c === 'BITCOIN' ? 'BTC' : c;
+                                    return (
+                                        <option key={c} value={c}>
+                                            {displayC}{CURRENCY_NAMES[c] ? ` - ${CURRENCY_NAMES[c]}` : ''}
+                                        </option>
+                                    );
+                                })}
                         </select>
                     </div>
                 </div>
@@ -713,10 +748,13 @@ const AllCurrenciesModal = ({ onClose, startAuction, fxData, budget, onSelectCur
         }).filter(Boolean).sort((a, b) => b.roi - a.roi);
     }, [fxData, budget, modalStartMonth, modalEndMonth]);
 
-    const filteredResults = results.filter(r => 
-        r.currency.toLowerCase().includes(search.toLowerCase()) ||
-        r.displayCode.toLowerCase().includes(search.toLowerCase())
-    );
+    const filteredResults = results.filter(r => {
+        const fullName = CURRENCY_NAMES[r.currency] || r.currency;
+        const s = search.toLowerCase();
+        return r.currency.toLowerCase().includes(s) ||
+               r.displayCode.toLowerCase().includes(s) ||
+               fullName.toLowerCase().includes(s);
+    });
 
     const formatMonth = (m) => {
         const [year, month] = m.split('-');
@@ -920,7 +958,7 @@ const AllCurrenciesModal = ({ onClose, startAuction, fxData, budget, onSelectCur
                                                 </span>
                                             </div>
                                             <div className="min-w-0 flex-1">
-                                                <h4 className={`font-bold truncate transition-colors text-sm text-left ${isTop ? 'text-emerald-500' : 'text-white group-hover:text-emerald-600'}`}>{res.currency}</h4>
+                                                <h4 className={`font-bold truncate transition-colors text-sm text-left ${isTop ? 'text-emerald-500' : 'text-white group-hover:text-emerald-600'}`}>{CURRENCY_NAMES[res.currency] || res.currency}</h4>
                                                 {/* Mini ROI bar */}
                                                 <div className="flex items-center gap-2 mt-1">
                                                     <div className="flex-1 h-1 bg-neutral-800 rounded-full overflow-hidden">
