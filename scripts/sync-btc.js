@@ -75,10 +75,11 @@ async function syncBitcoin() {
         const usdRate = item.value.USD;
         if (usdRate) {
           // Convert Bitcoin price (USD) to ETB using the current month's USD rate
-          item.value.BITCOIN = bitcoinMap[item.month] * usdRate;
+          item.value.BTC = bitcoinMap[item.month] * usdRate;
+          delete item.value.BITCOIN; // Remove old key
           updatedCount++;
         } else {
-          console.warn(`Skipping BITCOIN for ${item.month} because USD rate is missing.`);
+          console.warn(`Skipping BTC for ${item.month} because USD rate is missing.`);
         }
       }
     });

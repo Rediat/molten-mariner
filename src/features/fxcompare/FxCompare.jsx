@@ -28,8 +28,8 @@ const CURRENCY_NAMES = {
     'ILS': 'New Israel Shekel',
     'INR': 'Indian Rupee',
     'PKR': 'Pakistani Rupee',
-    'GOLD': 'Gold',
-    'BITCOIN': 'Bitcoin'
+    'XAU': 'Gold',
+    'BTC': 'Bitcoin'
 };
 
 const TENURE_OPTIONS = [
@@ -328,7 +328,7 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
                         {/* Quick Selection Pills for common currencies */}
                         {!currencySearch && (
                             <div className="flex gap-1 mb-1.5 overflow-x-auto no-scrollbar pb-0.5">
-                                {['USD', 'GOLD', 'BITCOIN'].map(c => (
+                                {['USD', 'XAU', 'BTC'].map(c => (
                                     <button
                                         key={c}
                                         onClick={() => setSelectedCurrency(c)}
@@ -358,10 +358,9 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
                                     return c.toLowerCase().includes(s) || fullName.toLowerCase().includes(s);
                                 })
                                 .map(c => {
-                                    const displayC = c === 'GOLD' ? 'XAU' : c === 'BITCOIN' ? 'BTC' : c;
                                     return (
                                         <option key={c} value={c}>
-                                            {displayC}{CURRENCY_NAMES[c] ? ` - ${CURRENCY_NAMES[c]}` : ''}
+                                            {c}{CURRENCY_NAMES[c] ? ` - ${CURRENCY_NAMES[c]}` : ''}
                                         </option>
                                     );
                                 })}
@@ -732,7 +731,7 @@ const AllCurrenciesModal = ({ onClose, startAuction, fxData, budget, onSelectCur
             
             return {
                 currency: c,
-                displayCode: c === 'GOLD' ? 'XAU' : c === 'BITCOIN' ? 'BTC' : c,
+                displayCode: c,
                 startRate: startInfo.rate,
                 endRate: endInfo.rate,
                 roi,

@@ -54,12 +54,13 @@ async function syncGold() {
         const usdRate = item.value.USD;
         if (usdRate) {
           // Convert Gold price (USD/oz) to ETB/oz using the current month's USD rate
-          item.value.GOLD = goldMap[item.month] * usdRate;
-          // Remove old 'Gold' key if it exists
+          item.value.XAU = goldMap[item.month] * usdRate;
+          // Remove old 'Gold' and 'GOLD' keys if they exist
           delete item.value.Gold;
+          delete item.value.GOLD;
           updatedCount++;
         } else {
-          console.warn(`Skipping GOLD for ${item.month} because USD rate is missing.`);
+          console.warn(`Skipping XAU for ${item.month} because USD rate is missing.`);
         }
       }
     });
