@@ -103,6 +103,9 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
     
     // Refs for input focus
     const budgetRef = useRef(null);
+    const tbillRateRef = useRef(null);
+    const loanRateRef = useRef(null);
+    const loanYearsRef = useRef(null);
 
     const clearField = (setter, ref) => {
         setter(null);
@@ -561,8 +564,14 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
                 {mode === 'leverage' && (
                     <div className="bg-neutral-800/40 rounded-xl p-2 border border-neutral-700 text-left grid grid-cols-4 gap-2">
                         <div className="flex flex-col">
-                            <label className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold mb-1">T-Bill Rate (%)</label>
+                            <label 
+                                onClick={() => clearField(setCustomTbillRate, tbillRateRef)}
+                                className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold mb-1 cursor-pointer hover:text-emerald-400 transition-colors select-none"
+                            >
+                                T-Bill Rate (%)
+                            </label>
                             <FormattedNumberInput
+                                ref={tbillRateRef}
                                 value={customTbillRate}
                                 onChange={(e) => setCustomTbillRate(parseFloat(e.target.value.replace(/,/g, '')))}
                                 decimals={2}
@@ -570,23 +579,35 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
                             />
                         </div>
                         <div className="flex flex-col">
-                                <label className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold mb-1">Loan Rate (%)</label>
-                                <FormattedNumberInput
-                                    value={loanRate}
-                                    onChange={(e) => setLoanRate(parseFloat(e.target.value.replace(/,/g, '')))}
-                                    decimals={2}
-                                    className="bg-neutral-900 border border-neutral-700 rounded-md text-white text-[11px] p-1.5 focus:outline-none focus:border-emerald-500 w-full font-mono text-right"
-                                />
-                            </div>
-                            <div className="flex flex-col">
-                                <label className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold mb-1">Term (Years)</label>
-                                <FormattedNumberInput
-                                    value={loanYears}
-                                    onChange={(e) => setLoanYears(parseFloat(e.target.value.replace(/,/g, '')))}
-                                    decimals={0}
-                                    className="bg-neutral-900 border border-neutral-700 rounded-md text-white text-[11px] p-1.5 focus:outline-none focus:border-emerald-500 w-full font-mono text-right"
-                                />
-                            </div>
+                            <label 
+                                onClick={() => clearField(setLoanRate, loanRateRef)}
+                                className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold mb-1 cursor-pointer hover:text-emerald-400 transition-colors select-none"
+                            >
+                                Loan Rate (%)
+                            </label>
+                            <FormattedNumberInput
+                                ref={loanRateRef}
+                                value={loanRate}
+                                onChange={(e) => setLoanRate(parseFloat(e.target.value.replace(/,/g, '')))}
+                                decimals={2}
+                                className="bg-neutral-900 border border-neutral-700 rounded-md text-white text-[11px] p-1.5 focus:outline-none focus:border-emerald-500 w-full font-mono text-right"
+                            />
+                        </div>
+                        <div className="flex flex-col">
+                            <label 
+                                onClick={() => clearField(setLoanYears, loanYearsRef)}
+                                className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold mb-1 cursor-pointer hover:text-emerald-400 transition-colors select-none"
+                            >
+                                Term (Years)
+                            </label>
+                            <FormattedNumberInput
+                                ref={loanYearsRef}
+                                value={loanYears}
+                                onChange={(e) => setLoanYears(parseFloat(e.target.value.replace(/,/g, '')))}
+                                decimals={0}
+                                className="bg-neutral-900 border border-neutral-700 rounded-md text-white text-[11px] p-1.5 focus:outline-none focus:border-emerald-500 w-full font-mono text-right"
+                            />
+                        </div>
                             <div className="flex flex-col">
                                 <label className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold mb-1">Frequency</label>
                                 <select
@@ -830,11 +851,11 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
                                 <div className="bg-neutral-900/60 border border-neutral-700 rounded-xl p-3">
                                     <div className="flex justify-between items-stretch mb-2">
                                         <div className="text-left">
-                                            <h3 className="text-sm font-bold text-white leading-none">{loanYears} Year Arbitrage (Rolling {selectedTenure} Days)</h3>
+                                            <h3 className="text-sm font-bold text-white leading-none">{loanYears} Year (Rolling {selectedTenure} Days)</h3>
                                             <p className="text-[9px] text-neutral-500 uppercase mt-1">Total {leverageResult.totalRounds} T-Bill Rounds</p>
                                         </div>
                                         <div className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider flex items-center text-right ${leverageResult.isProfitable ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
-                                            {leverageResult.isProfitable ? 'Profitable Arbitrage' : 'Net Loss'}
+                                            {leverageResult.isProfitable ? 'Profitable' : 'Not Profitable'}
                                         </div>
                                     </div>
                                     <div className="grid grid-cols-2 gap-3">
