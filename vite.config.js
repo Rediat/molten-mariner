@@ -8,4 +8,7 @@ export default defineConfig({
         // Inject build timestamp at build time for automatic versioning
         __BUILD_TIMESTAMP__: JSON.stringify(new Date().toISOString()),
     },
+    build: {
+        chunkSizeWarningLimit: 1500,
+    },
 })
