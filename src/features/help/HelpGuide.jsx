@@ -165,7 +165,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                         <li>• <strong>Rates</strong> - Interest rate conversions</li>
                         <li>• <strong>Ride</strong> - Ride Fare Calculator</li>
                         <li>• <strong>T-Bill</strong> - Treasury Bill bidding calculator</li>
-                        <li>• <strong>FX-VS</strong> - Arbitrage Analyzer</li>
+                        <li>• <strong>FX-VS</strong> - Arbitrage</li>
                         <li>• <strong>Sync</strong> - Data maintenance & refresh info</li>
                         <li>• <strong>History</strong> - View past calculations</li>
                     </ul>
@@ -737,10 +737,10 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                 </InfoBox>
             </HelpSection>
             
-            {/* Arbitrage Analyzer */}
+            {/* Arbitrage */}
             <HelpSection
                 id="fxcompare"
-                title="Arbitrage Analyzer"
+                title="Arbitrage"
                 icon={ArrowRightLeft}
                 isOpen={openSection === 'fxcompare'}
                 onToggle={handleToggle}

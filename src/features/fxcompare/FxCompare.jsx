@@ -177,8 +177,8 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
                 <div className="flex items-center gap-2 min-w-0">
                     <ArrowRightLeft className="w-5 h-5 text-emerald-500 shrink-0" />
                     <div className="min-w-0">
-                        <h1 className="text-lg font-bold bg-gradient-to-r from-white to-neutral-400 bg-clip-text text-transparent leading-tight">
-                            Arbitrage Analyzer
+                        <h1 className="text-lg font-bold bg-gradient-to-r from-white to-neutral-400 bg-clip-text text-transparent leading-tight text-left">
+                            Arbitrage
                         </h1>
                         <p className="text-neutral-500 text-[9px] font-medium uppercase tracking-wider text-left">
                             Leverage & ROI Simulator
