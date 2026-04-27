@@ -1,3 +1,5 @@
+import { calculateLoan } from '../../utils/financial-utils';
+
 export const TENURES = [28, 91, 182, 364];
 
 /**
@@ -310,5 +312,76 @@ export function compareRollingReturns(budget, startAuction, tbillDataAll, fxData
         winner: fxEndValue > tbillFinalValue ? 'FX' : 'T-BILL',
         diffAmount: Math.abs(fxEndValue - tbillFinalValue),
         diffROI: Math.abs(tbillTotalROI - fxROI)
+    };
+}
+
+export function compareLeverageReturns(budget, loanRate, loanYears, loanFrequency, customTbillRate, brokerageRate, selectedTenure) {
+    const UNIT_FV = 5000;
+    const yieldAnnual = customTbillRate;
+
+    if (yieldAnnual == null || isNaN(yieldAnnual) || yieldAnnual <= 0) {
+        return { error: `Please provide a valid T-Bill discount rate.` };
+    }
+
+    // 1. Loan Calculation
+    const loanResult = calculateLoan(budget, loanRate, loanYears, 0, loanFrequency);
+    
+    // 2. Future Rolling T-Bill Simulation
+    // Assuming 365 days per year
+    const totalLoanDays = loanYears * 365;
+    let currentCash = budget;
+    const totalInvested = budget;
+    const rounds = [];
+    let accumulatedDays = 0;
+    
+    const unitPrice = UNIT_FV / (1 + (yieldAnnual / 100) * (selectedTenure / 365));
+    const unitPriceInclBrok = unitPrice * (1 + (brokerageRate / 100));
+
+    while (accumulatedDays + selectedTenure <= totalLoanDays) {
+        const quantity = Math.floor(currentCash / unitPriceInclBrok);
+        if (quantity === 0) break; // Can't buy any more units
+
+        const invested = quantity * unitPriceInclBrok;
+        const leftover = currentCash - invested;
+        const endValue = quantity * UNIT_FV;
+        const profit = endValue - invested;
+
+        rounds.push({
+            roundNo: rounds.length + 1,
+            yield: yieldAnnual,
+            quantity,
+            invested,
+            endValue,
+            profit,
+            leftover,
+            roi: (profit / invested) * 100
+        });
+
+        currentCash = endValue + leftover;
+        accumulatedDays += selectedTenure;
+    }
+
+    if (rounds.length === 0) {
+        return { error: `Budget too low to buy 1 unit or loan term too short.` };
+    }
+
+    const lastRound = rounds[rounds.length - 1];
+    const tbillFinalValue = lastRound.endValue + lastRound.leftover;
+    const tbillTotalProfit = tbillFinalValue - totalInvested;
+    const tbillTotalROI = (tbillTotalProfit / totalInvested) * 100;
+    
+    const netProfit = tbillFinalValue - loanResult.totalPayment;
+    const isProfitable = netProfit > 0;
+
+    return {
+        loanResult,
+        tbillFinalValue,
+        tbillTotalProfit,
+        tbillTotalROI,
+        netProfit,
+        isProfitable,
+        rounds,
+        totalRounds: rounds.length,
+        accumulatedDays
     };
 }

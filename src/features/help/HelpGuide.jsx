@@ -165,7 +165,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                         <li>• <strong>Rates</strong> - Interest rate conversions</li>
                         <li>• <strong>Ride</strong> - Ride Fare Calculator</li>
                         <li>• <strong>T-Bill</strong> - Treasury Bill bidding calculator</li>
-                        <li>• <strong>FX-VS</strong> - FX vs T-Bill return comparison</li>
+                        <li>• <strong>FX-VS</strong> - Arbitrage Analyzer</li>
                         <li>• <strong>Sync</strong> - Data maintenance & refresh info</li>
                         <li>• <strong>History</strong> - View past calculations</li>
                     </ul>
@@ -737,10 +737,10 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                 </InfoBox>
             </HelpSection>
             
-            {/* FX vs T-Bill Compare */}
+            {/* Arbitrage Analyzer */}
             <HelpSection
                 id="fxcompare"
-                title="FX vs T-Bill Compare"
+                title="Arbitrage Analyzer"
                 icon={ArrowRightLeft}
                 isOpen={openSection === 'fxcompare'}
                 onToggle={handleToggle}
@@ -767,6 +767,13 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                                 <p className="text-neutral-400 mt-1">Simulates a long-term reinvestment strategy. Upon maturity, principal and interest are reinvested into the <em>next available auction</em>. This continues until the latest data point, comparing compounded totals against holding the asset over the entire period.</p>
                             </div>
                         </li>
+                        <li className="flex gap-2">
+                            <ArrowRight className="w-3 h-3 mt-1 text-emerald-500 shrink-0" />
+                            <div>
+                                <span className="font-bold text-white uppercase tracking-tight">Leverage Mode:</span>
+                                <p className="text-neutral-400 mt-1">Analyzes the profitability of borrowing money to invest in T-Bills. Calculates compound interest on a loan over a given term and compares it against the continuous rolling returns of T-Bills based on the chosen starting auction yield.</p>
+                            </div>
+                        </li>
                     </ul>
                 </div>
 
@@ -784,10 +791,11 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                 <div className="pt-2">
                     <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Inputs:</p>
                     <FieldList fields={[
-                        { name: 'Investment Budget', description: 'The total amount in ETB you are considering for investment' },
+                        { name: 'Investment Budget', description: 'The total amount in ETB you are considering for investment (acts as Loan Amount in Leverage Mode)' },
                         { name: 'Start Auction', description: 'The initial auction to begin the simulation. Defaults to approximately 6 months ago for relevant analysis.' },
-                        { name: 'Currency / Asset', description: 'Choose between 20+ Foreign Currencies, GOLD (Commodity), or BITCOIN (Crypto).' },
-                        { name: 'Tenure Strategy', description: '(Rolling Mode only) Choose whether to roll 28D, 91D, 182D, or 364D bills' }
+                        { name: 'Currency / Asset', description: 'Choose between 20+ Foreign Currencies, GOLD (Commodity), or BITCOIN (Crypto). Hidden in Leverage Mode.' },
+                        { name: 'Tenure Strategy', description: '(Rolling & Leverage Modes) Choose whether to roll 28D, 91D, 182D, or 364D bills' },
+                        { name: 'Loan Rate & Term', description: '(Leverage Mode only) Annual interest rate and duration of the loan in years.' }
                     ]} />
                 </div>
 
