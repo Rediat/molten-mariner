@@ -1,5 +1,8 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { ArrowRightLeft, Info, HelpCircle, Settings, ChevronDown, ChevronUp, Trash2, X, TrendingUp, TrendingDown, Search, Calendar } from 'lucide-react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
+import { ArrowRightLeft, Info, HelpCircle, Settings, ChevronDown, ChevronUp, Trash2, X, TrendingUp, TrendingDown, Search, Calendar, FileSpreadsheet, FileText, Download } from 'lucide-react';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
 import { CalculateIcon } from '../../components/Icons';
 import tbillData from '../tbill/data.json';
@@ -168,6 +171,158 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
         const day = String(d.getDate()).padStart(2, '0');
         const year = d.getFullYear();
         return `${month} ${day}, ${year}`;
+    };
+
+    const isWindowsDesktop = () => {
+        return navigator.userAgent.includes('Windows NT') && !navigator.userAgent.includes('Mobile');
+    };
+
+    const downloadLeverageCSV = () => {
+        if (!leverageResult || !leverageResult.rounds) return;
+        const rows = [
+            ['Leverage Parameters'],
+            ['Budget', formatCurrency(budget)],
+            ['T-Bill Rate', `${customTbillRate}%`],
+            ['Loan Rate', `${loanRate}%`],
+            ['Term (Years)', loanYears],
+            ['Frequency', loanFrequency],
+            [],
+            ['Results Summary'],
+            ['Total Final Value', formatCurrency(leverageResult.tbillFinalValue)],
+            ['Total Profit', formatCurrency(leverageResult.tbillTotalProfit)],
+            ['Total ROI', `${leverageResult.tbillTotalROI.toFixed(2)}%`],
+            [],
+            ['Round', 'Quantity', 'Invested', 'End Value', 'Profit', 'Leftover']
+        ];
+        
+        leverageResult.rounds.forEach((r, i) => {
+            rows.push([
+                i + 1,
+                r.quantity,
+                r.invested.toFixed(2),
+                r.endValue.toFixed(2),
+                r.profit.toFixed(2),
+                r.leftover.toFixed(2)
+            ]);
+        });
+
+        const csvContent = rows.map(e => e.join(',')).join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace('T', '_').slice(0, 15);
+        const fileName = `leverage_rounds_${timestamp}.csv`;
+
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = fileName;
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        setTimeout(() => {
+            link.click();
+            document.body.removeChild(link);
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }, 100);
+    };
+
+    const downloadLeveragePDF = async () => {
+        if (!leverageResult || !leverageResult.rounds) return;
+        const doc = new jsPDF();
+        doc.setTextColor(40);
+        doc.setFontSize(18);
+        doc.text("T-Bill Leverage Analysis", 14, 22);
+        doc.setFontSize(11);
+        doc.setTextColor(100);
+        
+        doc.text(`Budget: ${formatCurrency(budget)} | T-Bill Rate: ${customTbillRate}% | Loan Rate: ${loanRate}%`, 14, 30);
+        doc.text(`Term: ${loanYears} Years | Frequency: ${loanFrequency} | ROI: ${leverageResult.tbillTotalROI.toFixed(2)}%`, 14, 36);
+
+        autoTable(doc, {
+            head: [["Round", "Quantity", "Invested", "End Value", "Profit", "Leftover"]],
+            body: leverageResult.rounds.map((r, i) => [
+                i + 1,
+                r.quantity,
+                `${formatCurrency(r.invested)}`,
+                `${formatCurrency(r.endValue)}`,
+                `${r.profit >= 0 ? '+' : ''}${formatCurrency(r.profit)}`,
+                `${formatCurrency(r.leftover)}`
+            ]),
+            startY: 44,
+            theme: 'grid',
+            headStyles: { fillColor: [66, 66, 66], textColor: 255, fontStyle: 'bold' },
+            alternateRowStyles: { fillColor: [245, 245, 245] },
+        });
+
+        const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace('T', '_').slice(0, 15);
+        const fileName = `leverage_rounds_${timestamp}.pdf`;
+        const pdfBlob = doc.output('blob');
+
+        if (!isWindowsDesktop() && navigator.share && navigator.canShare) {
+            const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
+            if (navigator.canShare({ files: [file] })) {
+                try {
+                    await navigator.share({
+                        files: [file],
+                        title: 'Leverage Rounds',
+                    });
+                    return;
+                } catch (err) {
+                    if (err.name === 'AbortError') return;
+                }
+            }
+        }
+
+        const url = URL.createObjectURL(pdfBlob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = fileName;
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        setTimeout(() => {
+            link.click();
+            document.body.removeChild(link);
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }, 100);
+    };
+
+    const downloadLeverageExcel = () => {
+        if (!leverageResult || !leverageResult.rounds) return;
+        
+        // Prepare data for XLSX
+        const data = [
+            ["Leverage Parameters"],
+            ["Budget", budget],
+            ["T-Bill Rate", `${customTbillRate}%`],
+            ["Loan Rate", `${loanRate}%`],
+            ["Term (Years)", loanYears],
+            ["Frequency", loanFrequency],
+            [],
+            ["Results Summary"],
+            ["Total Final Value", leverageResult.tbillFinalValue],
+            ["Total Profit", leverageResult.tbillTotalProfit],
+            ["Total ROI", `${leverageResult.tbillTotalROI.toFixed(2)}%`],
+            [],
+            ["Round", "Quantity", "Invested", "End Value", "Profit", "Leftover"]
+        ];
+        
+        leverageResult.rounds.forEach((r, i) => {
+            data.push([
+                i + 1,
+                r.quantity,
+                r.invested,
+                r.endValue,
+                r.profit,
+                r.leftover
+            ]);
+        });
+
+        const worksheet = XLSX.utils.aoa_to_sheet(data);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Leverage Rounds");
+
+        const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace('T', '_').slice(0, 15);
+        const fileName = `leverage_rounds_${timestamp}.xlsx`;
+        
+        XLSX.writeFile(workbook, fileName);
     };
 
     return (
@@ -724,10 +879,17 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
                                 </div>
                                 {/* Round-by-round breakdown */}
                                 <div className="bg-neutral-900/60 border border-neutral-700 rounded-xl overflow-hidden">
-                                    <button onClick={() => setExpandedRounds(!expandedRounds)} className="w-full flex justify-between items-center p-3 hover:bg-neutral-800/30 transition-colors">
-                                        <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">T-Bill Reinvestment ({leverageResult.totalRounds} rounds)</span>
-                                        {expandedRounds ? <ChevronUp className="w-3.5 h-3.5 text-neutral-500" /> : <ChevronDown className="w-3.5 h-3.5 text-neutral-500" />}
-                                    </button>
+                                    <div className="w-full flex justify-between items-center p-2 pr-3 bg-neutral-900/40">
+                                        <button onClick={() => setExpandedRounds(!expandedRounds)} className="flex-1 flex items-center gap-2 hover:opacity-80 transition-opacity">
+                                            {expandedRounds ? <ChevronUp className="w-3.5 h-3.5 text-neutral-500" /> : <ChevronDown className="w-3.5 h-3.5 text-neutral-500" />}
+                                            <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">T-Bill Reinvestment ({leverageResult.totalRounds} rounds)</span>
+                                        </button>
+                                        <div className="flex items-center gap-1">
+                                            <button onClick={downloadLeverageCSV} className="p-1.5 hover:bg-neutral-800 rounded-lg transition-colors text-neutral-400 hover:text-cyan-500" title="Export CSV"><Download size={14} /></button>
+                                            <button onClick={downloadLeverageExcel} className="p-1.5 hover:bg-neutral-800 rounded-lg transition-colors text-neutral-400 hover:text-green-500" title="Export Excel"><FileSpreadsheet size={14} /></button>
+                                            <button onClick={downloadLeveragePDF} className="p-1.5 hover:bg-neutral-800 rounded-lg transition-colors text-neutral-400 hover:text-red-500" title="Export PDF"><FileText size={14} /></button>
+                                        </div>
+                                    </div>
                                     {expandedRounds && (
                                         <div className="border-t border-neutral-700/50 divide-y divide-neutral-800/50">
                                             {leverageResult.rounds.map((r, i) => (
@@ -840,6 +1002,8 @@ const AllCurrenciesModal = ({ onClose, startAuction, fxData, budget, onSelectCur
         setModalEndMonthRaw(val);
         if (val < modalStartMonth) setModalStartMonthRaw(val);
     };
+
+
 
     // Available years from fxData
     const availableYears = useMemo(() => {

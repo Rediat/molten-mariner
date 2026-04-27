@@ -1,12 +1,13 @@
 import React, { useState, useRef } from 'react';
 import { calculateLoan, getAmortizationSchedule } from '../../utils/financial-utils';
 import { useHistory } from '../../context/HistoryContext';
-import { List, X, FileText, FileSpreadsheet, Info, HelpCircle, Trash2, Settings, History, DollarSign } from 'lucide-react';
+import { List, X, FileText, FileSpreadsheet, Info, HelpCircle, Trash2, Settings, History, DollarSign, Download } from 'lucide-react';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
 import { CalculateIcon } from '../../components/Icons';
 import HistoryOverlay from '../../components/HistoryOverlay';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 
 const FREQUENCIES = [
     { value: 1, label: 'Annually (1)' },
@@ -211,6 +212,41 @@ const LoanCalculator = ({ toggleHelp, toggleSettings }) => {
         }, 100);
     };
 
+    const downloadExcel = () => {
+        if (!schedule.length) return;
+        
+        // Prepare data for XLSX
+        const data = [
+            ["Loan Parameters"],
+            ["Loan Amount", values.amount],
+            ["Interest Rate", values.rate],
+            ["Loan Term", values.years],
+            ["Frequency", values.frequency],
+            [],
+            ["Amortization Schedule"],
+            ["Date", "Period", "Interest", "Principal", "Balance"]
+        ];
+
+        schedule.forEach(r => {
+            data.push([
+                r.date || '-',
+                r.month,
+                r.interest,
+                r.principal,
+                r.balance
+            ]);
+        });
+
+        const worksheet = XLSX.utils.aoa_to_sheet(data);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Amortization Schedule");
+
+        const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace('T', '_').slice(0, 15);
+        const fileName = `amortization_schedule_${timestamp}.xlsx`;
+        
+        XLSX.writeFile(workbook, fileName);
+    };
+
     const formatCurrency = (val) => val.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
 
     return (
@@ -380,7 +416,8 @@ const LoanCalculator = ({ toggleHelp, toggleSettings }) => {
                         <div className="p-2 border-b border-neutral-800 flex justify-between items-center bg-neutral-900">
                             <h3 className="font-bold text-xs text-white uppercase tracking-wider">Amortization</h3>
                             <div className="flex items-center gap-1">
-                                <button onClick={downloadCSV} className="p-1 hover:bg-neutral-700 rounded-lg transition-colors text-neutral-400 hover:text-green-500" title="Export CSV"><FileSpreadsheet size={16} /></button>
+                                <button onClick={downloadCSV} className="p-1 hover:bg-neutral-700 rounded-lg transition-colors text-neutral-400 hover:text-cyan-500" title="Export CSV"><Download size={16} /></button>
+                                <button onClick={downloadExcel} className="p-1 hover:bg-neutral-700 rounded-lg transition-colors text-neutral-400 hover:text-green-500" title="Export Excel"><FileSpreadsheet size={16} /></button>
                                 <button onClick={downloadPDF} className="p-1 hover:bg-neutral-700 rounded-lg transition-colors text-neutral-400 hover:text-red-500" title="Export PDF"><FileText size={16} /></button>
                                 <div className="w-px h-4 bg-neutral-700 mx-1" />
                                 <button onClick={() => setShowSchedule(false)} className="p-1 hover:bg-neutral-700 rounded-full transition-colors"><X size={16} className="text-neutral-500" /></button>
