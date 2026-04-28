@@ -754,7 +754,7 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
                                             <p className="text-[9px] text-neutral-500 uppercase mt-1">{rollingResult.issueDate} → {rollingResult.finalMaturityDate} ({rollingResult.totalDays} days)</p>
                                         </div>
                                         <div className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider flex items-center text-right ${rollingResult.winner === 'T-BILL' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
-                                            {rollingResult.winner} wins (+{formatCurrency(rollingResult.diffAmount)} ETB)
+                                            {rollingResult.winner === 'T-BILL' ? 'T-Bill Wins' : `${selectedCurrency} Wins`}
                                         </div>
                                     </div>
                                     <div className="grid grid-cols-2 gap-3">
@@ -798,6 +798,29 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
                                                 </div>
                                                 <div className="flex justify-between pt-1 border-t border-neutral-700/50"><span className="text-[9px] text-neutral-500 uppercase">Profit</span><span className={`text-[10px] font-bold font-mono ${rollingResult.fxProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>{rollingResult.fxProfit >= 0 ? '+' : ''}{formatCurrency(rollingResult.fxProfit)}</span></div>
                                                 <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase">Total ROI</span><span className={`text-[10px] font-bold font-mono ${rollingResult.fxROI >= 0 ? 'text-green-400' : 'text-red-400'}`}>{rollingResult.fxROI.toFixed(2)}%</span></div>
+                                            </div>
+                                        </div>
+                                        {/* Net Advantage */}
+                                        <div className="col-span-2 rounded-lg p-2.5 border border-emerald-500/40 bg-emerald-900/20">
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-[10px] font-bold text-white uppercase tracking-wider">
+                                                    {rollingResult.winner === 'T-BILL' ? 'T-Bill Advantage' : `${selectedCurrency} Advantage`}
+                                                </span>
+                                                <span className="text-sm font-black font-mono text-emerald-400">
+                                                    +{formatCurrency(rollingResult.diffAmount)}
+                                                </span>
+                                            </div>
+                                            <div className="flex justify-between items-center mt-1.5">
+                                                <span className="text-[9px] text-neutral-500 uppercase">ROI Edge</span>
+                                                <span className="text-[10px] font-bold font-mono text-emerald-400">
+                                                    {rollingResult.diffROI.toFixed(2)}%
+                                                </span>
+                                            </div>
+                                            <div className="flex justify-between items-center mt-1.5 pt-1.5 border-t border-neutral-700/30">
+                                                <span className="text-[9px] text-neutral-500 uppercase">Break-even {selectedCurrency} Rate</span>
+                                                <span className="text-[10px] font-bold font-mono text-amber-400">
+                                                    {formatCurrency(rollingResult.tbillFinalValue / rollingResult.fxUnitsBought)}
+                                                </span>
                                             </div>
                                         </div>
                                     </div>
