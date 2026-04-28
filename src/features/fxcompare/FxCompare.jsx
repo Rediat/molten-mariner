@@ -402,9 +402,9 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
             )}
 
             {/* Fixed Inputs Area */}
-            <div className="space-y-2 shrink-0 mb-2">
+            <div className="space-y-2 shrink-0 mb-1.5">
                 {/* Budget */}
-                <div className="bg-neutral-800/40 rounded-xl p-2 border border-neutral-700 hover:border-neutral-600">
+                <div className="bg-neutral-800/40 rounded-xl p-1.5 border border-neutral-700 hover:border-neutral-600">
                     <div className="flex justify-between items-center gap-2">
                         <div className="shrink-0 text-left">
                             <label 
@@ -429,7 +429,7 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
                 {mode !== 'leverage' && (
                 <div className="grid grid-cols-2 gap-2">
                     {/* Auction Selection */}
-                    <div className="bg-neutral-800/40 rounded-xl p-2 border border-neutral-700 text-left flex flex-col">
+                    <div className="bg-neutral-800/40 rounded-xl p-1.5 border border-neutral-700 text-left flex flex-col">
                         <div className="flex justify-between items-center mb-1">
                             <label className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold">{mode === 'rolling' ? 'Start Auction' : 'Auction Date'}</label>
                             <input 
@@ -503,7 +503,7 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
 
                     {/* Currency Selection */}
                     {mode !== 'leverage' && (
-                        <div className="bg-neutral-800/40 rounded-xl p-2 border border-neutral-700 text-left">
+                        <div className="bg-neutral-800/40 rounded-xl p-1.5 border border-neutral-700 text-left">
                         <div className="flex justify-between items-center mb-1">
                             <label className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold block">Foreign Currency</label>
                             <input 
@@ -562,7 +562,7 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
                     
                 {/* Leverage Mode Inputs */}
                 {mode === 'leverage' && (
-                    <div className="bg-neutral-800/40 rounded-xl p-2 border border-neutral-700 text-left grid grid-cols-4 gap-2">
+                    <div className="bg-neutral-800/40 rounded-xl p-1.5 border border-neutral-700 text-left grid grid-cols-4 gap-2">
                         <div className="flex flex-col">
                             <label 
                                 onClick={() => clearField(setCustomTbillRate, tbillRateRef)}
@@ -626,8 +626,8 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
 
                 {/* Tenure Selector */}
                 {(mode === 'rolling' || mode === 'leverage') && (
-                    <div className="bg-neutral-800/40 rounded-xl p-2 border border-transparent hover:border-neutral-700 text-left">
-                        <label className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold block mb-1">Tenure Strategy</label>
+                    <div className="bg-neutral-800/40 rounded-xl p-1.5 border border-transparent hover:border-neutral-700 text-left">
+                        <label className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold block mb-0.5">Tenure Strategy</label>
                         <div className="grid grid-cols-4 gap-1">
                             {TENURE_OPTIONS.map(t => (
                                 <button
@@ -653,13 +653,13 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
             <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar">
                 {/* Single mode results (unchanged) */}
                 {mode === 'single' && resultData && (
-                    <div className="mt-2 space-y-3 pb-4">
-                        {resultData.error ? (
-                            <div className="bg-neutral-800/50 border border-red-500/30 rounded-xl p-3 text-center">
-                                <p className="text-xs font-bold text-red-400">Calculation Error</p>
-                                <p className="text-[10px] text-neutral-500">{resultData.error}</p>
-                            </div>
-                        ) : (
+                        <div className="mt-1 space-y-2.5 pb-2">
+                            {resultData.error ? (
+                                <div className="bg-neutral-800/50 border border-red-500/30 rounded-xl p-3 text-center">
+                                    <p className="text-xs font-bold text-red-400">Calculation Error</p>
+                                    <p className="text-[10px] text-neutral-500">{resultData.error}</p>
+                                </div>
+                            ) : (
                             TENURES.map(tenure => {
                                 const res = resultData.results[tenure];
                                 if (!res) return null;
@@ -685,9 +685,9 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
                                         </div>
                                     </div>
                                     <div className="grid grid-cols-2 gap-3">
-                                        <div className={`rounded-lg p-2 border ${tbillWins ? 'border-emerald-500/40 bg-emerald-900/10' : 'border-neutral-800 bg-neutral-800/30'}`}>
+                                        <div className={`rounded-lg p-2.5 border ${tbillWins ? 'border-emerald-500/40 bg-emerald-900/10' : 'border-neutral-800 bg-neutral-800/30'}`}>
                                             <p className="text-[10px] font-bold text-emerald-400 uppercase text-center mb-2 tracking-wider">T-Bill Strategy</p>
-                                            <div className="space-y-1">
+                                            <div className="space-y-1.5">
                                                 <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase">Invested</span><span className="text-[10px] text-white font-mono">{formatCurrency(res.tbillInvestment)}</span></div>
                                                 <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase">End Value</span><span className={`text-[11px] font-black font-mono ${tbillWins ? 'text-emerald-400' : 'text-neutral-400'}`}>{formatCurrency(res.tbillEndValue)}</span></div>
                                                 <div className="flex flex-col gap-1 pt-1 border-t border-neutral-700/50 mt-1">
@@ -699,9 +699,9 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
                                                 <div className="flex justify-between items-center"><span className="text-[9px] text-neutral-500 uppercase">ROI</span><span className={`text-[10px] font-bold font-mono ${res.tbillROI >= 0 ? 'text-green-400' : 'text-red-400'}`}>{res.tbillROI.toFixed(2)}%</span></div>
                                             </div>
                                         </div>
-                                        <div className={`rounded-lg p-2 border ${fxWins ? 'border-emerald-500/40 bg-emerald-900/10' : 'border-neutral-800 bg-neutral-800/30'}`}>
+                                        <div className={`rounded-lg p-2.5 border ${fxWins ? 'border-emerald-500/40 bg-emerald-900/10' : 'border-neutral-800 bg-neutral-800/30'}`}>
                                             <p className="text-[10px] font-bold text-emerald-400 uppercase text-center mb-2 tracking-wider">Hold {selectedCurrency}</p>
-                                            <div className="space-y-1">
+                                            <div className="space-y-1.5">
                                                 <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase">Invested</span><span className="text-[10px] text-white font-mono">{formatCurrency(res.fxUnitsBought)} {selectedCurrency}</span></div>
                                                 <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase">End Value</span><span className={`text-[11px] font-black font-mono ${fxWins ? 'text-emerald-400' : 'text-neutral-400'}`}>{formatCurrency(res.fxEndValue)}</span></div>
                                                 <div className="flex flex-col gap-1 pt-1 border-t border-neutral-700/50 mt-1">
@@ -738,7 +738,7 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
 
                 {/* Rolling mode results */}
                 {mode === 'rolling' && rollingResult && (
-                    <div className="mt-2 space-y-3 pb-4">
+                    <div className="mt-1 space-y-2.5 pb-2">
                         {rollingResult.error ? (
                             <div className="bg-neutral-800/50 border border-red-500/30 rounded-xl p-3 text-center">
                                 <p className="text-xs font-bold text-red-400">{selectedTenure} Days</p>
@@ -759,9 +759,9 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
                                     </div>
                                     <div className="grid grid-cols-2 gap-3">
                                         {/* T-Bill Rolling Summary */}
-                                        <div className={`rounded-lg p-2 border ${rollingResult.winner === 'T-BILL' ? 'border-emerald-500/40 bg-emerald-900/10' : 'border-neutral-800 bg-neutral-800/30'}`}>
+                                        <div className={`rounded-lg p-2.5 border ${rollingResult.winner === 'T-BILL' ? 'border-emerald-500/40 bg-emerald-900/10' : 'border-neutral-800 bg-neutral-800/30'}`}>
                                             <p className="text-[10px] font-bold text-emerald-400 uppercase text-center mb-2 tracking-wider">Rolling T-Bill</p>
-                                            <div className="space-y-1">
+                                            <div className="space-y-1.5">
                                                 <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase">Budget</span><span className="text-[10px] text-white font-mono">{formatCurrency(rollingResult.tbillFinalValue - rollingResult.tbillTotalProfit)}</span></div>
                                                 <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase">Final Value</span><span className={`text-[11px] font-black font-mono ${rollingResult.winner === 'T-BILL' ? 'text-emerald-400' : 'text-neutral-400'}`}>{formatCurrency(rollingResult.tbillFinalValue)}</span></div>
                                                 <div className="flex justify-between pt-1 border-t border-neutral-700/50"><span className="text-[9px] text-neutral-500 uppercase">Total Profit</span><span className={`text-[10px] font-bold font-mono ${rollingResult.tbillTotalProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>{rollingResult.tbillTotalProfit >= 0 ? '+' : ''}{formatCurrency(rollingResult.tbillTotalProfit)}</span></div>
@@ -770,9 +770,9 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
                                             </div>
                                         </div>
                                         {/* FX Hold Summary */}
-                                        <div className={`rounded-lg p-2 border ${rollingResult.winner === 'FX' ? 'border-emerald-500/40 bg-emerald-900/10' : 'border-neutral-800 bg-neutral-800/30'}`}>
+                                        <div className={`rounded-lg p-2.5 border ${rollingResult.winner === 'FX' ? 'border-emerald-500/40 bg-emerald-900/10' : 'border-neutral-800 bg-neutral-800/30'}`}>
                                             <p className="text-[10px] font-bold text-emerald-400 uppercase text-center mb-2 tracking-wider">Hold {selectedCurrency}</p>
-                                            <div className="space-y-1">
+                                            <div className="space-y-1.5">
                                                 <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase">Bought</span><span className="text-[10px] text-white font-mono">{formatCurrency(rollingResult.fxUnitsBought)} {selectedCurrency}</span></div>
                                                 <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase">End Value</span><span className={`text-[11px] font-black font-mono ${rollingResult.winner === 'FX' ? 'text-emerald-400' : 'text-neutral-400'}`}>{formatCurrency(rollingResult.fxEndValue)}</span></div>
                                                 <div className="flex flex-col gap-1 pt-1 border-t border-neutral-700/50 mt-1">
@@ -839,7 +839,7 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
 
                 {/* Leverage mode results */}
                 {mode === 'leverage' && leverageResult && (
-                    <div className="mt-2 space-y-3 pb-4">
+                    <div className="mt-0.5 space-y-1.5 pb-2">
                         {leverageResult.error ? (
                             <div className="bg-neutral-800/50 border border-red-500/30 rounded-xl p-3 text-center">
                                 <p className="text-xs font-bold text-red-400">Leverage Calculation Error</p>
@@ -849,20 +849,20 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
                             <>
                                 {/* Summary Header */}
                                 <div className="bg-neutral-900/60 border border-neutral-700 rounded-xl p-3">
-                                    <div className="flex justify-between items-stretch mb-2">
+                                    <div className="flex justify-between items-stretch mb-2.5">
                                         <div className="text-left">
                                             <h3 className="text-sm font-bold text-white leading-none">{loanYears} Year (Rolling {selectedTenure} Days)</h3>
                                             <p className="text-[9px] text-neutral-500 uppercase mt-1">Total {leverageResult.totalRounds} T-Bill Rounds</p>
                                         </div>
-                                        <div className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider flex items-center text-right ${leverageResult.isProfitable ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
+                                        <div className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider flex items-center text-right ${leverageResult.isProfitable ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
                                             {leverageResult.isProfitable ? 'Profitable' : 'Not Profitable'}
                                         </div>
                                     </div>
-                                    <div className="grid grid-cols-2 gap-3">
+                                    <div className="grid grid-cols-2 gap-2">
                                         {/* Loan Summary */}
-                                        <div className="rounded-lg p-2 border border-neutral-800 bg-neutral-800/30">
+                                        <div className="rounded-lg p-2.5 border border-neutral-800 bg-neutral-800/30">
                                             <p className="text-[10px] font-bold text-red-400 uppercase text-center mb-2 tracking-wider">Loan Cost</p>
-                                            <div className="space-y-1">
+                                            <div className="space-y-1.5">
                                                 <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase">Borrowed</span><span className="text-[10px] text-white font-mono">{formatCurrency(budget)}</span></div>
                                                 <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase">Rate</span><span className="text-[10px] text-white font-mono">{loanRate}%</span></div>
                                                 <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase">Per Period</span><span className="text-[10px] text-neutral-400 font-mono">{formatCurrency(leverageResult.loanResult.monthlyPayment)}</span></div>
@@ -871,9 +871,9 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
                                             </div>
                                         </div>
                                         {/* T-Bill Summary */}
-                                        <div className="rounded-lg p-2 border border-emerald-500/40 bg-emerald-900/10">
+                                        <div className="rounded-lg p-2.5 border border-emerald-500/40 bg-emerald-900/10">
                                             <p className="text-[10px] font-bold text-emerald-400 uppercase text-center mb-2 tracking-wider">T-Bill Returns</p>
-                                            <div className="space-y-1">
+                                            <div className="space-y-1.5">
                                                 <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase">Invested</span><span className="text-[10px] text-white font-mono">{formatCurrency(budget)}</span></div>
                                                 <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase">Yield</span><span className="text-[10px] text-white font-mono">{leverageResult.rounds[0].yield.toFixed(3)}%</span></div>
                                                 <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase">Rounds</span><span className="text-[10px] text-neutral-400 font-mono">{leverageResult.totalRounds}</span></div>
@@ -882,20 +882,20 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
                                             </div>
                                         </div>
                                         {/* Net Result */}
-                                        <div className={`col-span-2 rounded-lg p-2 border ${leverageResult.isProfitable ? 'border-emerald-500/40 bg-emerald-900/20' : 'border-red-500/40 bg-red-900/20'}`}>
+                                        <div className={`col-span-2 rounded-lg p-2.5 border ${leverageResult.isProfitable ? 'border-emerald-500/40 bg-emerald-900/20' : 'border-red-500/40 bg-red-900/20'}`}>
                                              <div className="flex justify-between items-center">
                                                  <span className="text-[10px] font-bold text-white uppercase tracking-wider">Net Arbitrage Profit</span>
                                                  <span className={`text-sm font-black font-mono ${leverageResult.isProfitable ? 'text-emerald-400' : 'text-red-400'}`}>
                                                      {leverageResult.isProfitable ? '+' : ''}{formatCurrency(leverageResult.netProfit)}
                                                  </span>
                                              </div>
-                                             <div className="flex justify-between items-center mt-1">
+                                             <div className="flex justify-between items-center mt-1.5">
                                                  <span className="text-[9px] text-neutral-500 uppercase">Net ROI</span>
                                                  <span className={`text-[10px] font-bold font-mono ${leverageResult.isProfitable ? 'text-emerald-400' : 'text-red-400'}`}>
                                                      {((leverageResult.netProfit / budget) * 100).toFixed(2)}%
                                                  </span>
                                              </div>
-                                             <div className="flex justify-between items-center mt-1 pt-1 border-t border-neutral-700/30">
+                                             <div className="flex justify-between items-center mt-1.5 pt-1.5 border-t border-neutral-700/30">
                                                  <span className="text-[9px] text-neutral-500 uppercase">Break-even T-Bill Rate</span>
                                                  <span className="text-[10px] font-bold font-mono text-amber-400">
                                                      {leverageResult.breakEvenTbillRate.toFixed(3)}%
