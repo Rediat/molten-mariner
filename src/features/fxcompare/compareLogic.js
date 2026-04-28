@@ -315,6 +315,49 @@ export function compareRollingReturns(budget, startAuction, tbillDataAll, fxData
     };
 }
 
+function getLeverageFinalValue(budget, yieldAnnual, loanYears, brokerageRate, selectedTenure) {
+    const UNIT_FV = 5000;
+    const totalLoanDays = loanYears * 365;
+    let currentCash = budget;
+    let accumulatedDays = 0;
+    
+    const unitPrice = UNIT_FV / (1 + (yieldAnnual / 100) * (selectedTenure / 365));
+    const unitPriceInclBrok = unitPrice * (1 + (brokerageRate / 100));
+
+    while (accumulatedDays + selectedTenure <= totalLoanDays) {
+        const quantity = Math.floor(currentCash / unitPriceInclBrok);
+        if (quantity === 0) break;
+
+        const invested = quantity * unitPriceInclBrok;
+        const leftover = currentCash - invested;
+        const endValue = quantity * UNIT_FV;
+        currentCash = endValue + leftover;
+        accumulatedDays += selectedTenure;
+    }
+    return currentCash;
+}
+
+export function findBreakEvenTbillRate(budget, loanRate, loanYears, loanFrequency, brokerageRate, selectedTenure) {
+    const loanResult = calculateLoan(budget, loanRate, loanYears, 0, loanFrequency);
+    const targetValue = loanResult.totalPayment;
+    
+    let low = 0;
+    let high = 100; // 100% is a safe upper bound for T-bills
+    let breakEven = 0;
+    
+    for (let i = 0; i < 20; i++) {
+        let mid = (low + high) / 2;
+        let fv = getLeverageFinalValue(budget, mid, loanYears, brokerageRate, selectedTenure);
+        if (fv >= targetValue) {
+            breakEven = mid;
+            high = mid;
+        } else {
+            low = mid;
+        }
+    }
+    return breakEven;
+}
+
 export function compareLeverageReturns(budget, loanRate, loanYears, loanFrequency, customTbillRate, brokerageRate, selectedTenure) {
     const UNIT_FV = 5000;
     const yieldAnnual = customTbillRate;
@@ -373,6 +416,8 @@ export function compareLeverageReturns(budget, loanRate, loanYears, loanFrequenc
     const netProfit = tbillFinalValue - loanResult.totalPayment;
     const isProfitable = netProfit > 0;
 
+    const breakEvenTbillRate = findBreakEvenTbillRate(budget, loanRate, loanYears, loanFrequency, brokerageRate, selectedTenure);
+
     return {
         loanResult,
         tbillFinalValue,
@@ -382,6 +427,7 @@ export function compareLeverageReturns(budget, loanRate, loanYears, loanFrequenc
         isProfitable,
         rounds,
         totalRounds: rounds.length,
-        accumulatedDays
+        accumulatedDays,
+        breakEvenTbillRate
     };
 }

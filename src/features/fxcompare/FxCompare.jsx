@@ -883,19 +883,25 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
                                         </div>
                                         {/* Net Result */}
                                         <div className={`col-span-2 rounded-lg p-2 border ${leverageResult.isProfitable ? 'border-emerald-500/40 bg-emerald-900/20' : 'border-red-500/40 bg-red-900/20'}`}>
-                                            <div className="flex justify-between items-center">
-                                                <span className="text-[10px] font-bold text-white uppercase tracking-wider">Net Arbitrage Profit</span>
-                                                <span className={`text-sm font-black font-mono ${leverageResult.isProfitable ? 'text-emerald-400' : 'text-red-400'}`}>
-                                                    {leverageResult.isProfitable ? '+' : ''}{formatCurrency(leverageResult.netProfit)}
-                                                </span>
-                                            </div>
-                                            <div className="flex justify-between items-center mt-1">
-                                                <span className="text-[9px] text-neutral-500 uppercase">Net ROI</span>
-                                                <span className={`text-[10px] font-bold font-mono ${leverageResult.isProfitable ? 'text-emerald-400' : 'text-red-400'}`}>
-                                                    {((leverageResult.netProfit / budget) * 100).toFixed(2)}%
-                                                </span>
-                                            </div>
-                                        </div>
+                                             <div className="flex justify-between items-center">
+                                                 <span className="text-[10px] font-bold text-white uppercase tracking-wider">Net Arbitrage Profit</span>
+                                                 <span className={`text-sm font-black font-mono ${leverageResult.isProfitable ? 'text-emerald-400' : 'text-red-400'}`}>
+                                                     {leverageResult.isProfitable ? '+' : ''}{formatCurrency(leverageResult.netProfit)}
+                                                 </span>
+                                             </div>
+                                             <div className="flex justify-between items-center mt-1">
+                                                 <span className="text-[9px] text-neutral-500 uppercase">Net ROI</span>
+                                                 <span className={`text-[10px] font-bold font-mono ${leverageResult.isProfitable ? 'text-emerald-400' : 'text-red-400'}`}>
+                                                     {((leverageResult.netProfit / budget) * 100).toFixed(2)}%
+                                                 </span>
+                                             </div>
+                                             <div className="flex justify-between items-center mt-1 pt-1 border-t border-neutral-700/30">
+                                                 <span className="text-[9px] text-neutral-500 uppercase">Break-even T-Bill Rate</span>
+                                                 <span className="text-[10px] font-bold font-mono text-amber-400">
+                                                     {leverageResult.breakEvenTbillRate.toFixed(3)}%
+                                                 </span>
+                                             </div>
+                                         </div>
                                     </div>
                                 </div>
                                 {/* Round-by-round breakdown */}
