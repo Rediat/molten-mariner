@@ -240,9 +240,11 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
         doc.text(`Term: ${loanYears} Years | Frequency: ${loanFrequency} | ROI: ${leverageResult.tbillTotalROI.toFixed(2)}%`, 14, 36);
 
         autoTable(doc, {
-            head: [["Round", "Quantity", "Invested", "End Value", "Profit", "Leftover"]],
+            head: [["Round", "Auction Date", "Maturity", "Quantity", "Invested", "End Value", "Profit", "Leftover"]],
             body: leverageResult.rounds.map((r, i) => [
                 i + 1,
+                r.auctionDate,
+                r.maturityDate,
                 r.quantity,
                 `${formatCurrency(r.invested)}`,
                 `${formatCurrency(r.endValue)}`,
@@ -260,6 +262,8 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
                 3: { halign: 'right' },
                 4: { halign: 'right' },
                 5: { halign: 'right' },
+                6: { halign: 'right' },
+                7: { halign: 'right' },
             },
         });
 
@@ -954,6 +958,9 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
                                                 <div key={i} className="p-2 px-3 text-left">
                                                     <div className="flex justify-between items-center mb-1">
                                                         <span className="text-[10px] font-bold text-white">Round {i + 1}</span>
+                                                        <span className="text-[9px] text-neutral-500 font-medium">
+                                                            {formatDate(r.auctionDate)} → {formatDate(r.maturityDate)}
+                                                        </span>
                                                     </div>
                                                     <div className="grid grid-cols-3 gap-x-3 gap-y-0.5 text-[9px]">
                                                         <div className="flex justify-between"><span className="text-neutral-500">Qty</span><span className="text-white font-mono">{r.quantity}</span></div>

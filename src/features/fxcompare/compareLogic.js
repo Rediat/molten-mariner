@@ -22,15 +22,41 @@ export function getMonthKey(date) {
 
 export function calculateMaturityDate(date, tenureDays) {
     const d = new Date(date);
-    // If input is YYYY-MM-DD string, new Date(string) is UTC.
-    // If it's a timestamp, it's UTC but d.getDate() is Local.
-    // To be safe, we always handle as local.
     if (typeof date === 'string' && date.includes('-')) {
         const [y, m, day] = date.split('-').map(Number);
         d.setFullYear(y, m - 1, day);
     }
     d.setDate(d.getDate() + tenureDays);
     return toLocalISO(d);
+}
+
+// Auction Schedule Logic (Wednesday every 2 weeks)
+const AUCTION_REF_DATE = new Date(2026, 3, 1); // April 01, 2026 (Wednesday)
+const AUCTION_INTERVAL_DAYS = 14;
+
+/**
+ * Finds the next available auction date on or after fromDate.
+ * @param {Date} fromDate The starting date to search from.
+ * @param {boolean} strictlyAfter If true, the auction must be strictly after fromDate.
+ */
+function getNextAuctionDate(fromDate, strictlyAfter = false) {
+    const refTs = AUCTION_REF_DATE.getTime();
+    const fromTs = fromDate.getTime();
+    const intervalMs = AUCTION_INTERVAL_DAYS * 24 * 60 * 60 * 1000;
+    
+    // Calculate intervals since reference
+    const diff = fromTs - refTs;
+    let n = Math.ceil(diff / intervalMs);
+    if (n < 0) n = 0;
+    
+    let auctionTs = refTs + n * intervalMs;
+    
+    // Ensure it's strictly after if requested
+    if (strictlyAfter && auctionTs <= fromTs) {
+        auctionTs += intervalMs;
+    }
+    
+    return new Date(auctionTs);
 }
 
 /**
@@ -317,14 +343,31 @@ export function compareRollingReturns(budget, startAuction, tbillDataAll, fxData
 
 function getLeverageFinalValue(budget, yieldAnnual, loanYears, brokerageRate, selectedTenure) {
     const UNIT_FV = 5000;
-    const totalLoanDays = loanYears * 365;
-    let currentCash = budget;
-    let accumulatedDays = 0;
+    const startDate = new Date(2026, 3, 29); // Base simulation on current date (Apr 29, 2026)
+    const endDate = new Date(startDate);
+    endDate.setFullYear(endDate.getFullYear() + loanYears);
     
-    const unitPrice = UNIT_FV / (1 + (yieldAnnual / 100) * (selectedTenure / 365));
-    const unitPriceInclBrok = unitPrice * (1 + (brokerageRate / 100));
+    let currentCash = budget;
+    let currentRoundDate = getNextAuctionDate(startDate, false); 
 
-    while (accumulatedDays + selectedTenure <= totalLoanDays) {
+    // Skip the first auction if it's less than 1 day away from simulation start (ignoring hours)
+    const startDateClean = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+    const auctionDateClean = new Date(currentRoundDate.getFullYear(), currentRoundDate.getMonth(), currentRoundDate.getDate());
+    const firstAuctionGapDays = Math.round((auctionDateClean - startDateClean) / (1000 * 60 * 60 * 24));
+    
+    if (firstAuctionGapDays < 1) {
+        currentRoundDate = getNextAuctionDate(currentRoundDate, true);
+    }
+
+    while (true) {
+        const maturityDate = new Date(currentRoundDate);
+        maturityDate.setDate(maturityDate.getDate() + selectedTenure);
+        
+        if (maturityDate > endDate) break;
+        
+        const unitPrice = UNIT_FV / (1 + (yieldAnnual / 100) * (selectedTenure / 365));
+        const unitPriceInclBrok = unitPrice * (1 + (brokerageRate / 100));
+        
         const quantity = Math.floor(currentCash / unitPriceInclBrok);
         if (quantity === 0) break;
 
@@ -332,7 +375,9 @@ function getLeverageFinalValue(budget, yieldAnnual, loanYears, brokerageRate, se
         const leftover = currentCash - invested;
         const endValue = quantity * UNIT_FV;
         currentCash = endValue + leftover;
-        accumulatedDays += selectedTenure;
+        
+        // Find next auction strictly AFTER maturity
+        currentRoundDate = getNextAuctionDate(maturityDate, true);
     }
     return currentCash;
 }
@@ -370,17 +415,36 @@ export function compareLeverageReturns(budget, loanRate, loanYears, loanFrequenc
     const loanResult = calculateLoan(budget, loanRate, loanYears, 0, loanFrequency);
     
     // 2. Future Rolling T-Bill Simulation
-    // Assuming 365 days per year
-    const totalLoanDays = loanYears * 365;
+    const startDate = new Date(2026, 3, 29); // Base simulation on current date (Apr 29, 2026)
+    const endDate = new Date(startDate);
+    endDate.setFullYear(endDate.getFullYear() + loanYears);
+    
     let currentCash = budget;
     const totalInvested = budget;
     const rounds = [];
-    let accumulatedDays = 0;
     
-    const unitPrice = UNIT_FV / (1 + (yieldAnnual / 100) * (selectedTenure / 365));
-    const unitPriceInclBrok = unitPrice * (1 + (brokerageRate / 100));
+    // Start with the first available auction on or after simulation start
+    let currentRoundDate = getNextAuctionDate(startDate, false); 
+    
+    // Skip the first auction if it's less than 1 day away from simulation start (ignoring hours)
+    const startDateClean = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+    const auctionDateClean = new Date(currentRoundDate.getFullYear(), currentRoundDate.getMonth(), currentRoundDate.getDate());
+    const firstAuctionGapDays = Math.round((auctionDateClean - startDateClean) / (1000 * 60 * 60 * 24));
+    
+    if (firstAuctionGapDays < 1) {
+        currentRoundDate = getNextAuctionDate(currentRoundDate, true);
+    }
+    
+    while (true) {
+        const maturityDate = new Date(currentRoundDate);
+        maturityDate.setDate(maturityDate.getDate() + selectedTenure);
+        
+        // Cannot mature after loan term
+        if (maturityDate > endDate) break;
 
-    while (accumulatedDays + selectedTenure <= totalLoanDays) {
+        const unitPrice = UNIT_FV / (1 + (yieldAnnual / 100) * (selectedTenure / 365));
+        const unitPriceInclBrok = unitPrice * (1 + (brokerageRate / 100));
+
         const quantity = Math.floor(currentCash / unitPriceInclBrok);
         if (quantity === 0) break; // Can't buy any more units
 
@@ -391,6 +455,8 @@ export function compareLeverageReturns(budget, loanRate, loanYears, loanFrequenc
 
         rounds.push({
             roundNo: rounds.length + 1,
+            auctionDate: toLocalISO(currentRoundDate),
+            maturityDate: toLocalISO(maturityDate),
             yield: yieldAnnual,
             quantity,
             invested,
@@ -401,7 +467,9 @@ export function compareLeverageReturns(budget, loanRate, loanYears, loanFrequenc
         });
 
         currentCash = endValue + leftover;
-        accumulatedDays += selectedTenure;
+        
+        // Find next auction strictly AFTER maturity
+        currentRoundDate = getNextAuctionDate(maturityDate, true);
     }
 
     if (rounds.length === 0) {
@@ -418,6 +486,10 @@ export function compareLeverageReturns(budget, loanRate, loanYears, loanFrequenc
 
     const breakEvenTbillRate = findBreakEvenTbillRate(budget, loanRate, loanYears, loanFrequency, brokerageRate, selectedTenure);
 
+    // Calculate actual days from simulation start to final maturity
+    const finalMaturityDate = new Date(lastRound.maturityDate.split('-')[0], lastRound.maturityDate.split('-')[1]-1, lastRound.maturityDate.split('-')[2]);
+    const accumulatedDays = Math.round((finalMaturityDate - startDate) / (1000 * 60 * 60 * 24));
+
     return {
         loanResult,
         tbillFinalValue,
@@ -428,6 +500,8 @@ export function compareLeverageReturns(budget, loanRate, loanYears, loanFrequenc
         rounds,
         totalRounds: rounds.length,
         accumulatedDays,
-        breakEvenTbillRate
+        breakEvenTbillRate,
+        startDate: toLocalISO(startDate),
+        endDate: toLocalISO(endDate)
     };
 }
