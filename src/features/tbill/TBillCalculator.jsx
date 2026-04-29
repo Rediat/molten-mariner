@@ -103,7 +103,8 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
             // Reverse: Total Consideration → Face Value
             // Quantity = Investment amount ÷ (price + brokerage) (rounded down)
             const unitPriceInclBrok = unitPrice * (1 + (brok / 100));
-            const quantity = budget > 0 ? Math.floor(budget / unitPriceInclBrok) : 0;
+            // Add a 5 ETB epsilon buffer to handle rounding discrepancies and near-budget unit purchases
+            const quantity = budget > 0 ? Math.floor((budget + 5) / unitPriceInclBrok) : 0;
             
             const purchasePrice = quantity * unitPrice;
             const brokerage = purchasePrice * (brok / 100);
