@@ -236,7 +236,7 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
         doc.setFontSize(11);
         doc.setTextColor(100);
         
-        doc.text(`Budget: ${formatCurrency(budget)} | T-Bill Rate: ${customTbillRate}% | Loan Rate: ${loanRate}%`, 14, 30);
+        doc.text(`Budget: ${formatCurrency(budget)} | T-Bill Rate: ${customTbillRate.toFixed(2)}% | Loan Rate: ${loanRate.toFixed(2)}%`, 14, 30);
         doc.text(`Term: ${loanYears} Years | Frequency: ${loanFrequency} | ROI: ${leverageResult.tbillTotalROI.toFixed(2)}%`, 14, 36);
 
         autoTable(doc, {
@@ -251,8 +251,16 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
             ]),
             startY: 44,
             theme: 'grid',
-            headStyles: { fillColor: [66, 66, 66], textColor: 255, fontStyle: 'bold' },
+            headStyles: { fillColor: [66, 66, 66], textColor: 255, fontStyle: 'bold', halign: 'right' },
             alternateRowStyles: { fillColor: [245, 245, 245] },
+            columnStyles: {
+                0: { halign: 'right' },
+                1: { halign: 'right' },
+                2: { halign: 'right' },
+                3: { halign: 'right' },
+                4: { halign: 'right' },
+                5: { halign: 'right' },
+            },
         });
 
         const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace('T', '_').slice(0, 15);

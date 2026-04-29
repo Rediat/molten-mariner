@@ -161,18 +161,25 @@ const LoanCalculator = ({ toggleHelp, toggleSettings }) => {
         doc.text("Amortization Schedule", 14, 22);
         doc.setFontSize(11);
         doc.setTextColor(100);
-        doc.text(`Loan Amount: $${values.amount.toLocaleString()} | Rate: ${values.rate}% | Term: ${values.years} Years`, 14, 30);
+        doc.text(`Loan Amount: $${values.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} | Rate: ${values.rate.toFixed(2)}% | Term: ${values.years} Years`, 14, 30);
 
         autoTable(doc, {
             head: [["Date", "Period", "Interest", "Principal", "Balance"]],
             body: schedule.map(r => [r.date || '-', r.month,
-            `$${r.interest.toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
-            `$${r.principal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
-            `$${r.balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}`]),
+            `$${r.interest.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+            `$${r.principal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+            `$${r.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`]),
             startY: 40,
             theme: 'grid',
-            headStyles: { fillColor: [66, 66, 66], textColor: 255, fontStyle: 'bold' },
+            headStyles: { fillColor: [66, 66, 66], textColor: 255, fontStyle: 'bold', halign: 'right' },
             alternateRowStyles: { fillColor: [245, 245, 245] },
+            columnStyles: {
+                0: { halign: 'right' },
+                1: { halign: 'right' },
+                2: { halign: 'right' },
+                3: { halign: 'right' },
+                4: { halign: 'right' },
+            },
         });
 
         const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace('T', '_').slice(0, 15);

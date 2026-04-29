@@ -125,7 +125,9 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
                 discountAmount,
                 effectiveYield,
                 netReturn,
-                quantity
+                quantity,
+                budget,
+                leftover: budget - totalConsideration
             };
 
             setResult(res);
@@ -406,9 +408,19 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
                                     </p>
                                 </div>
                                 {isReverse ? (
-                                    <div className="text-right">
-                                        <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Actual Cost</p>
-                                        <p className="text-sm font-black text-white">{formatCurrency(result.totalConsideration)}</p>
+                                    <div className="text-right space-y-1">
+                                        <div>
+                                            <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Actual Cost</p>
+                                            <p className="text-sm font-black text-white">{formatCurrency(result.totalConsideration)}</p>
+                                        </div>
+                                        {result.leftover !== 0 && (
+                                            <div>
+                                                <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Leftover</p>
+                                                <p className={`text-[10px] font-black ${result.leftover > 0 ? 'text-emerald-400' : 'text-amber-500'}`}>
+                                                    {formatCurrency(result.leftover)} ETB
+                                                </p>
+                                            </div>
+                                        )}
                                     </div>
                                 ) : (
                                     <div className="text-right">
