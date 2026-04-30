@@ -1,0 +1,1 @@
+Rule: If I initiate a 'git commit' command in the terminal, automatically 'Accept' all pending AI changes in the active workspace before the command executes.
