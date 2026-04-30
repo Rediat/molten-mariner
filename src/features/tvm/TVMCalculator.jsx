@@ -279,6 +279,66 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
         { id: 'totalPMT', label: 'ΣPmt', sub: pvPmtDifferentSigns ? 'Total PMT (PMT × N)' : 'Total PMT (PV + PMT × N)', isReadOnly: true },
     ];
 
+    const renderField = (field, isHalfRow = false) => {
+        if (!field) return null;
+        return (
+            <div key={field.id} className={`group relative bg-neutral-800/40 rounded-xl p-3 transition-all duration-300 border ${field.isReadOnly ? 'border-neutral-700/50 bg-neutral-900/30' : target === field.id ? 'border-primary-500/50 ring-1 ring-primary-500/10 bg-neutral-800/60' : 'border-transparent hover:border-neutral-700'} ${isHalfRow ? 'flex-1 min-w-0' : ''}`}>
+                <div className={`flex justify-between items-center ${isHalfRow ? 'gap-2' : 'gap-4'}`}>
+                    <div className="flex flex-col items-start text-left min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                            <label 
+                                onClick={() => !field.isReadOnly && clearField(field.id)}
+                                className={`text-sm font-bold transition-colors ${field.isReadOnly ? 'text-neutral-500' : 'cursor-pointer hover:text-white'} ${!field.isReadOnly && target === field.id ? 'text-primary-400' : 'text-neutral-300'} whitespace-nowrap`}
+                                title={!field.isReadOnly ? "Click to Clear" : ""}
+                            >
+                                {field.label}
+                                {!isHalfRow && field.id === 'totalInterest' && totalInterest !== 0 && totalInterest !== null && ((values.fv || 0) || (values.pv || 0)) !== 0 && (
+                                    <span className="text-[#00ff00] ml-1 text-xs">
+                                        ({Math.abs((totalInterest / ((values.fv || 0) || (values.pv || 0))) * 100).toFixed(2)}% of {values.fv ? 'FV' : 'PV'})
+                                    </span>
+                                )}
+                            </label>
+                            {field.hasNToggle && (
+                                <button
+                                    onClick={() => setNMode(m => m === 'YEARS' ? 'PERIODS' : 'YEARS')}
+                                    className={`bg-neutral-900 border border-neutral-700 rounded px-1.5 py-0.5 font-bold text-neutral-400 hover:text-white uppercase tracking-wider ${isHalfRow ? 'text-[8px]' : 'text-[9px]'}`}
+                                >
+                                    {nMode === 'YEARS' ? (isHalfRow ? 'Years' : 'In Years') : (isHalfRow ? 'Periods' : 'In Periods')}
+                                </button>
+                            )}
+                        </div>
+                        <span className={`uppercase tracking-tighter text-neutral-500 font-bold truncate w-full ${isHalfRow ? 'text-[8px]' : 'text-[9px]'}`}>{field.sub}</span>
+                    </div>
+                    <div className="relative flex-1 flex items-center justify-end min-w-0">
+                        <div className="w-full">
+                            {field.isReadOnly ? (
+                                <span className={`block text-right font-mono text-neutral-400 w-full truncate ${isHalfRow ? 'text-base' : 'text-lg'}`}>
+                                    {getDisplayValue(field.id)?.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </span>
+                            ) : target === field.id && calculatedValue === null ? (
+                                <span className={`text-neutral-600 italic font-bold px-1 text-right block w-full ${isHalfRow ? 'text-[10px]' : 'text-xs'}`}>CALC...</span>
+                            ) : target === field.id && calculatedValue === 'INVALID_SIGN' ? (
+                                <span className="text-red-400 text-[9px] leading-tight font-bold text-right w-full block">Sign Err</span>
+                            ) : target === field.id && (calculatedValue === "Error" || (typeof calculatedValue === 'number' && isNaN(calculatedValue))) ? (
+                                <span className={`text-red-400 italic font-bold px-1 text-right block w-full ${isHalfRow ? 'text-[10px]' : 'text-xs'}`}>Error</span>
+                            ) : (
+                                <FormattedNumberInput
+                                    ref={inputRefs[field.id]}
+                                    value={getDisplayValue(field.id)}
+                                    onChange={(e) => field.id === 'totalInterest' ? handleInterestInput(e.target.value) : handleChange(field.id, e.target.value)}
+                                    decimals={field.id === 'n' ? 0 : 2}
+                                    forceFixedOnFocus={field.id === 'totalInterest'}
+                                    className={`bg-transparent text-right font-mono focus:outline-none w-full placeholder-neutral-700 transition-colors ${target === field.id ? 'text-primary-400 font-black' : 'text-white'} ${isHalfRow ? 'text-base' : 'text-lg'}`}
+                                    placeholder="0"
+                                />
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
     return (
         <div className="flex flex-col h-full">
             {/* Header */}
@@ -380,63 +440,12 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
             </div>
 
             {/* Inputs */}
-            <div className="space-y-2 flex-1">
-                {fields.map(field => (
-                    <div key={field.id} className={`group relative bg-neutral-800/40 rounded-xl p-3 transition-all duration-300 border ${field.isReadOnly ? 'border-neutral-700/50 bg-neutral-900/30' : target === field.id ? 'border-primary-500/50 ring-1 ring-primary-500/10 bg-neutral-800/60' : 'border-transparent hover:border-neutral-700'}`}>
-                        <div className="flex justify-between items-center gap-4">
-                            <div className="flex flex-col items-start text-left">
-                                <div className="flex items-center gap-2">
-                                    <label 
-                                        onClick={() => !field.isReadOnly && clearField(field.id)}
-                                        className={`text-sm font-bold transition-colors ${field.isReadOnly ? 'text-neutral-500' : 'cursor-pointer hover:text-white'} ${!field.isReadOnly && target === field.id ? 'text-primary-400' : 'text-neutral-300'}`}
-                                        title={!field.isReadOnly ? "Click to Clear" : ""}
-                                    >
-                                        {field.label}
-                                        {field.id === 'totalInterest' && totalInterest !== 0 && totalInterest !== null && ((values.fv || 0) || (values.pv || 0)) !== 0 && (
-                                            <span className="text-[#00ff00] ml-1 text-xs">
-                                                ({Math.abs((totalInterest / ((values.fv || 0) || (values.pv || 0))) * 100).toFixed(2)}% of {values.fv ? 'FV' : 'PV'})
-                                            </span>
-                                        )}
-                                    </label>
-                                    {field.hasNToggle && (
-                                        <button
-                                            onClick={() => setNMode(m => m === 'YEARS' ? 'PERIODS' : 'YEARS')}
-                                            className="bg-neutral-900 border border-neutral-700 rounded px-1.5 py-0.5 text-[9px] font-bold text-neutral-400 hover:text-white uppercase tracking-wider"
-                                        >
-                                            {nMode === 'YEARS' ? 'In Years' : 'In Periods'}
-                                        </button>
-                                    )}
-                                </div>
-                                <span className="text-[9px] uppercase tracking-tighter text-neutral-500 font-bold">{field.sub}</span>
-                            </div>
-                            <div className="relative flex-1 flex items-center justify-end gap-2">
-                                <div className="flex-1">
-                                    {field.isReadOnly ? (
-                                        <span className="block text-right text-lg font-mono text-neutral-400 w-full">
-                                            {getDisplayValue(field.id)?.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                        </span>
-                                    ) : target === field.id && calculatedValue === null ? (
-                                        <span className="text-neutral-600 italic text-xs font-bold px-2">CALC...</span>
-                                    ) : target === field.id && calculatedValue === 'INVALID_SIGN' ? (
-                                        <span className="text-red-400 text-[10px] leading-tight font-bold text-right w-full block">PV/PMT and FV can't have the same sign.</span>
-                                    ) : target === field.id && (calculatedValue === "Error" || (typeof calculatedValue === 'number' && isNaN(calculatedValue))) ? (
-                                        <span className="text-red-400 italic text-xs font-bold px-2">Error</span>
-                                    ) : (
-                                        <FormattedNumberInput
-                                            ref={inputRefs[field.id]}
-                                            value={getDisplayValue(field.id)}
-                                            onChange={(e) => field.id === 'totalInterest' ? handleInterestInput(e.target.value) : handleChange(field.id, e.target.value)}
-                                            decimals={field.id === 'n' ? 0 : 2}
-                                            forceFixedOnFocus={field.id === 'totalInterest'}
-                                            className={`bg-transparent text-right text-lg font-mono focus:outline-none w-full placeholder-neutral-700 transition-colors ${target === field.id ? 'text-primary-400 font-black' : 'text-white'}`}
-                                            placeholder="0"
-                                        />
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                ))}
+            <div className="space-y-2 flex-1 flex flex-col">
+                <div className="flex gap-2 w-full">
+                    {renderField(fields.find(f => f.id === 'n'), true)}
+                    {renderField(fields.find(f => f.id === 'i'), true)}
+                </div>
+                {fields.filter(f => f.id !== 'n' && f.id !== 'i').map(field => renderField(field, false))}
             </div>
 
             {/* View History Link */}
