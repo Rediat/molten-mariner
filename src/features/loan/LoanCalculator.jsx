@@ -383,18 +383,22 @@ const LoanCalculator = ({ toggleHelp, toggleSettings }) => {
                         </div>
 
                         {result && (
-                            <div className="bg-neutral-900/50 rounded-2xl p-4 border border-primary-900/30 mb-4 mt-4">
-                                <div className="flex justify-between items-end mb-3">
+                            <div className="bg-neutral-900/50 rounded-2xl p-4 border border-primary-900/30 mb-4 mt-4 space-y-3">
+                                <div className="flex justify-between items-center mb-1">
+                                    <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Results</span>
+                                    <button
+                                        onClick={() => setShowHistory(true)}
+                                        className="text-[9px] text-primary-500 font-bold uppercase tracking-wider flex items-center gap-1 hover:text-primary-400 transition-colors"
+                                    >
+                                        <History size={12} /> View History
+                                    </button>
+                                </div>
+
+                                <div className="flex justify-between items-end">
                                     <div className="flex flex-col">
                                         <span className="text-sm font-medium text-neutral-400">Periodic Payment</span>
                                         <button onClick={() => setShowSchedule(true)} className="text-[10px] text-primary-500 font-bold uppercase tracking-tighter flex items-center gap-1 mt-1 hover:text-primary-400">
                                             <List size={12} /> View Schedule
-                                        </button>
-                                        <button
-                                            onClick={() => setShowHistory(true)}
-                                            className="text-[10px] text-primary-500 font-bold uppercase tracking-tighter flex items-center gap-1 mt-1 hover:text-primary-400"
-                                        >
-                                            <History size={12} /> View History
                                         </button>
                                     </div>
                                     <div className="text-right">
