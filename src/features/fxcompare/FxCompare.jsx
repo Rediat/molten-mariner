@@ -236,8 +236,8 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
         doc.setFontSize(11);
         doc.setTextColor(100);
         
-        doc.text(`Budget: ${formatCurrency(budget)} | T-Bill Rate: ${customTbillRate.toFixed(2)}% | Loan Rate: ${loanRate.toFixed(2)}%`, 14, 30);
-        doc.text(`Term: ${loanYears} Years | Frequency: ${loanFrequency} | ROI: ${leverageResult.tbillTotalROI.toFixed(2)}% | Final Value: ${formatCurrency(leverageResult.tbillFinalValue)}`, 14, 36);
+        doc.text(`Loan: ${formatCurrency(budget)} | Rate: ${loanRate.toFixed(2)}% | Term: ${loanYears}y | Freq: ${loanFrequency} | Total Interest: ${formatCurrency(leverageResult.loanResult.totalInterest)}`, 14, 30);
+        doc.text(`T-Bill: ${customTbillRate.toFixed(2)}% | Tenure: ${selectedTenure}d | ROI: ${leverageResult.tbillTotalROI.toFixed(2)}% | Final: ${formatCurrency(leverageResult.tbillFinalValue)} | Net Profit: ${formatCurrency(leverageResult.netProfit)}`, 14, 36);
 
         autoTable(doc, {
             head: [["Round", "Auction Date", "Maturity", "Quantity", "Invested", "End Value", "Profit", "Leftover"]],
