@@ -37,7 +37,7 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
         }
         return formatToLocalDate(current);
     });
-    const [tenure, setTenure] = useState(28);
+    const [tenure, setTenure] = useState(182);
     const [discountRate, setDiscountRate] = useState(14);
     const [brokerageRate, setBrokerageRate] = useState(0.1);
 
