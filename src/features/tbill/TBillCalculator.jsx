@@ -389,7 +389,7 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
                         <label className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold">Issue Date</label>
                         <div className="flex gap-1">
                             <button 
-                                onClick={() => setIssueDate(new Date().toISOString().split('T')[0])}
+                                onClick={() => setIssueDate(formatToLocalDate(new Date()))}
                                 className="text-[8px] font-black bg-primary-600/20 text-primary-400 px-1.5 py-0.5 rounded hover:bg-primary-600/40 transition-colors uppercase tracking-widest"
                             >
                                 Today

@@ -62,7 +62,7 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
         }).sort((a, b) => b.timestamp - a.timestamp); // newest first
     }, []);
 
-    const [budget, setBudget] = useState(500000);
+    const [budget, setBudget] = useState(1000000);
     const [selectedCurrency, setSelectedCurrency] = useState('USD');
     const [selectedAuctionIdx, setSelectedAuctionIdx] = useState(0);
 
@@ -95,7 +95,7 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
     const [loanRate, setLoanRate] = useState(12.5);
     const [loanYears, setLoanYears] = useState(7);
     const [loanFrequency, setLoanFrequency] = useState(12);
-    const [customTbillRate, setCustomTbillRate] = useState(15.0);
+    const [customTbillRate, setCustomTbillRate] = useState(14.0);
     const [expandedRounds, setExpandedRounds] = useState(false);
     const [auctionSearch, setAuctionSearch] = useState('');
     const [currencySearch, setCurrencySearch] = useState('');

@@ -301,9 +301,11 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                 </div>
 
                 <div className="pt-2">
-                    <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Date Mode vs Manual Mode:</p>
+                    <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Date Mode & Shortcuts:</p>
                     <FieldList fields={[
                         { name: 'Date Mode', description: 'Enter start date and future date to calculate payments made and outstanding balance' },
+                        { name: 'Today Button', description: 'Instantly sets the Start Date to the current calendar date' },
+                        { name: 'Maturity Button', description: 'Instantly sets the Future Date to the loan\'s end date (Start Date + Term)' },
                         { name: 'Manual Mode', description: 'Directly enter the number of payments already made' }
                     ]} />
                 </div>
@@ -661,7 +663,10 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                         { name: 'Discount Rate', description: 'Annual discount rate used to calculate purchase price' },
                         { name: 'Predicted Yield', description: 'Dynamic forecast based on the latest NBE cut-off yields. Click the prediction badge to automatically apply it to the discount rate.' },
                         { name: 'Brokerage %', description: 'Commission percentage charged by your broker' },
-                        { name: 'Issue Date', description: 'The date when the T-Bill is issued' }
+                        { name: 'Issue Date', description: 'The date when the T-Bill is issued. Defaults to the first available upcoming auction date.' },
+                        { name: 'Today Button', description: 'Instantly sets the Issue Date to today\'s date' },
+                        { name: 'Upcoming Auctions', description: 'Reveals a floating list of the next 10 bi-weekly T-Bill auctions. Selecting a date from this list automatically updates the Issue Date and clears the results to prepare for a new calculation.' },
+                        { name: 'Brokerage %', description: 'Commission percentage charged by your broker' }
                     ]} />
                 </div>
 
