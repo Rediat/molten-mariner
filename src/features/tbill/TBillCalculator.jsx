@@ -26,7 +26,7 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
 
     const tenureKey = `${tenure}_days`;
     const predictionCache = useRef({});
-    
+
     if (!predictionCache.current[tenureKey]) {
         const pred = predictNextYield(tbillData, tenureKey);
         predictionCache.current[tenureKey] = pred ? parseFloat(pred.yield.toFixed(3)) : null;
@@ -79,7 +79,7 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
             const purchasePrice = quantity * unitPrice;
             const brokerage = purchasePrice * (brok / 100);
             const totalConsideration = purchasePrice + brokerage;
-            
+
             const discountAmount = actualFaceValue - purchasePrice;
             const netReturn = actualFaceValue - totalConsideration;
             const effectiveYield = totalConsideration > 0 ? (netReturn / totalConsideration) * (365 / tenure) * 100 : 0;
@@ -105,11 +105,11 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
             const unitPriceInclBrok = unitPrice * (1 + (brok / 100));
             // Add a 5 ETB epsilon buffer to handle rounding discrepancies and near-budget unit purchases
             const quantity = budget > 0 ? Math.floor((budget + 5) / unitPriceInclBrok) : 0;
-            
+
             const purchasePrice = quantity * unitPrice;
             const brokerage = purchasePrice * (brok / 100);
             const totalConsideration = purchasePrice + brokerage;
-            
+
             const computedFaceValue = quantity * UNIT_FV;
             const discountAmount = computedFaceValue - purchasePrice;
             const netReturn = computedFaceValue - totalConsideration;
@@ -208,7 +208,7 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
                     <div className="bg-neutral-800/40 rounded-xl p-2 border border-primary-500/50 ring-1 ring-primary-500/10">
                         <div className="flex justify-between items-center gap-2 min-w-0">
                             <div className="shrink-0">
-                                <label 
+                                <label
                                     onClick={() => clearField(setFaceValue, faceValueRef)}
                                     className="text-sm font-bold text-primary-400 block leading-tight text-left cursor-pointer hover:text-white transition-colors"
                                     title="Click to Clear"
@@ -235,7 +235,7 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
                     <div className="bg-neutral-800/40 rounded-xl p-2 border border-emerald-500/50 ring-1 ring-emerald-500/10">
                         <div className="flex justify-between items-center gap-2 min-w-0">
                             <div className="shrink-0">
-                                <label 
+                                <label
                                     onClick={() => clearField(setTotalBudget, totalBudgetRef)}
                                     className="text-sm font-bold text-emerald-400 block leading-tight text-left cursor-pointer hover:text-white transition-colors"
                                     title="Click to Clear"
@@ -286,7 +286,7 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
                 <div className="grid grid-cols-2 gap-2">
                     <div className="bg-neutral-800/40 rounded-xl p-2 border border-transparent hover:border-neutral-700">
                         <div className="flex flex-col">
-                            <label 
+                            <label
                                 onClick={() => clearField(setDiscountRate, discountRateRef)}
                                 className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold mb-1 text-left cursor-pointer hover:text-primary-400 transition-colors"
                                 title="Click to Clear"
@@ -325,7 +325,7 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
                     </div>
                     <div className="bg-neutral-800/40 rounded-xl p-2 border border-transparent hover:border-neutral-700">
                         <div className="flex flex-col">
-                            <label 
+                            <label
                                 onClick={() => clearField(setBrokerageRate, brokerageRateRef)}
                                 className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold mb-1 text-left cursor-pointer hover:text-primary-400 transition-colors"
                                 title="Click to Clear"

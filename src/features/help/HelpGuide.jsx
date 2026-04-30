@@ -633,6 +633,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                     Calculate Treasury Bill purchase prices and returns using discount pricing.
                     T-Bills in Ethiopia are issued in units of <strong>5,000 ETB</strong>; this calculator
                     automatically rounds your input down to the nearest unit to provide realistic bidding results.
+                    An <strong>epsilon buffer of 5 ETB</strong> is applied in Budget→Face mode to handle rounding discrepancies and ensure consistency when your budget is very close to a unit multiple.
                 </p>
 
                 <div className="pt-2">
@@ -663,6 +664,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                         { name: 'Brokerage', description: 'The commission amount based on the purchase price' },
                         { name: 'Total Consideration / Face Value', description: 'The primary result: total out-of-pocket cost (Forward) or the maturity value received (Reverse)' },
                         { name: 'Actual Face Value / Actual Cost', description: 'The secondary result: the exact maturity amount (Forward) or the actual amount spent (Reverse) after rounding to the nearest 5,000 unit' },
+                        { name: 'Leftover', description: '(Reverse Mode) The remaining budget after purchasing the maximum possible units. Displayed in emerald (profit) or amber (slight over-budget allowance).' },
                         { name: 'Maturity Date', description: 'The date when the T-Bill matures and you receive the face value' },
                         { name: 'Discount', description: 'The difference between face value and purchase price (gross profit)' },
                         { name: 'Net Return', description: 'Your actual profit after accounting for brokerage (Face Value − Total Consideration)' },
@@ -771,7 +773,10 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                             <ArrowRight className="w-3 h-3 mt-1 text-emerald-500 shrink-0" />
                             <div>
                                 <span className="font-bold text-white uppercase tracking-tight">Leverage Mode:</span>
-                                <p className="text-neutral-400 mt-1">Analyzes the profitability of borrowing money to invest in T-Bills. Calculates compound interest on a loan over a given term and compares it against the continuous rolling returns of T-Bills based on the chosen starting auction yield.</p>
+                                <p className="text-neutral-400 mt-1">
+                                    Analyzes the profitability of borrowing money to invest in T-Bills. Calculates compound interest on a loan over a given term and compares it against a <strong>realistic bi-weekly rolling reinvestment strategy</strong>. 
+                                    It simulates purchases on scheduled auction dates (Wednesdays every 14 days) and reinvests strictly into the next available auction after maturity.
+                                </p>
                             </div>
                         </li>
                     </ul>
@@ -804,9 +809,14 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                     <FieldList fields={[
                         { name: 'Winner Badge', description: 'Identifies which strategy (T-Bill or Asset) yielded higher profit over the horizon' },
                         { name: 'End Value', description: 'The final ETB value received (compounded in Rolling mode)' },
-                        { name: 'Strategy Breakdown', description: 'A detailed log showing Yield, Quantity, Profit, and Leftover Cash for every reinvestment round' }
+                        { name: 'Strategy Breakdown', description: 'A detailed log showing the Auction Date, Maturity, Yield, Quantity, Profit, and Leftover Cash for every reinvestment round' }
                     ]} />
                 </div>
+
+                <InfoBox type="note">
+                    <strong>Auction Schedule:</strong> Leverage simulations follow the official NBE bi-weekly schedule (Wednesdays every 14 days, referenced from April 01, 2026). 
+                    A <strong>1-day safety buffer</strong> is applied: if the simulation starts on or within 24 hours of an auction, it waits for the next scheduled date to ensure realistic participation timing.
+                </InfoBox>
 
                 <InfoBox type="tip">
                     <strong>Efficient Analysis:</strong> The dashboard defaults to a <strong>6-month lookback</strong> window to provide immediately relevant data. Use the "ALL" modal to quickly identify which assets have been outperforming T-Bills in recent months.
@@ -1183,6 +1193,10 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                     <InfoBox type="tip">
                         <strong>Decimal Precision:</strong> Results are calculated with high precision. For practical use,
                         round to appropriate decimal places (2 for currency, 2-4 for percentages).
+                    </InfoBox>
+
+                    <InfoBox type="tip">
+                        <strong>Export Alignment:</strong> PDF exports for Loan Amortization and Leverage Analysis are professionally formatted with <strong>right-justified</strong> numeric columns and headers. Financial amounts are strictly displayed with <strong>2 decimal places</strong> for consistency.
                     </InfoBox>
 
                     <InfoBox type="note">
