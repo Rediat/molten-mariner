@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useHistory } from '../../context/HistoryContext';
 import { Receipt, Info, HelpCircle, Settings, History, Trash2 } from 'lucide-react';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
@@ -60,7 +60,23 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
     const totalBudgetRef = useRef(null);
     const discountRateRef = useRef(null);
     const brokerageRateRef = useRef(null);
+    const auctionsRef = useRef(null);
     const [showAuctions, setShowAuctions] = useState(false);
+
+    // Handle click outside to close auctions
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (auctionsRef.current && !auctionsRef.current.contains(event.target)) {
+                setShowAuctions(false);
+            }
+        };
+        if (showAuctions) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [showAuctions]);
 
     // Calculate upcoming auctions
     const nextAuctions = React.useMemo(() => {
@@ -384,7 +400,7 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
                 </div>
 
                 {/* Issue Date */}
-                <div className="relative bg-neutral-800/40 rounded-xl p-2 border border-transparent hover:border-neutral-700 text-left transition-all duration-300">
+                <div ref={auctionsRef} className="relative bg-neutral-800/40 rounded-xl p-2 border border-transparent hover:border-neutral-700 text-left transition-all duration-300">
                     <div className="flex justify-between items-center mb-1">
                         <label className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold">Issue Date</label>
                         <div className="flex gap-1">
