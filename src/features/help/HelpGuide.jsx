@@ -208,6 +208,15 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                     ]} />
                 </div>
 
+                <div className="pt-2">
+                    <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Advanced Features:</p>
+                    <FieldList fields={[
+                        { name: 'Total Interest (TI) Targeting', description: 'You can explicitly set a target Total Interest amount, and the calculator will reverse-solve for PV, PMT, FV, I/Y, or N to match that exact interest amount.' },
+                        { name: 'Advanced Frequency Mode', description: 'Click the Settings icon to decouple Payment Frequency (P/Y) from Compounding Frequency (C/Y) for complex loan or investment scenarios.' },
+                        { name: 'Interest Ratio Display', description: 'When Total Interest is calculated, the label shows what percentage of your final/initial value is made up of pure interest.' }
+                    ]} />
+                </div>
+
                 <InfoBox type="note">
                     <strong>Cash Flow Sign Convention:</strong> Money going out (payments, investments) is negative.
                     Money coming in (receipts, returns) is positive. Match the signs correctly for accurate results.
