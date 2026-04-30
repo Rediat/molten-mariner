@@ -36,7 +36,7 @@ const LoanCalculator = ({ toggleHelp, toggleSettings }) => {
         frequency: 12,
         paymentsMade: 0,
         startDate: '2018-07-01',
-        futureDate: new Date().toISOString().split('T')[0]
+        futureDate: (() => { const d = new Date(); d.setFullYear(d.getFullYear() + 1); return d.toISOString().split('T')[0]; })()
     });
     const [result, setResult] = useState(null);
     const [showSchedule, setShowSchedule] = useState(false);
@@ -328,7 +328,31 @@ const LoanCalculator = ({ toggleHelp, toggleSettings }) => {
                                 <div className="grid grid-cols-2 gap-2">
                                     {[{ id: 'startDate', label: 'Start Date' }, { id: 'futureDate', label: 'Future Date' }].map(d => (
                                         <div key={d.id} className="bg-neutral-800/50 rounded-xl p-3 border border-transparent hover:border-neutral-700 transition-all text-left">
-                                            <label className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold block mb-2">{d.label}</label>
+                                            <div className="flex justify-between items-center mb-2">
+                                                <label className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold">{d.label}</label>
+                                                {d.id === 'startDate' && (
+                                                    <button 
+                                                        onClick={() => handleChange('startDate', new Date().toISOString().split('T')[0])}
+                                                        className="text-[8px] font-black bg-primary-600/20 text-primary-400 px-1.5 py-0.5 rounded hover:bg-primary-600/40 transition-colors uppercase tracking-widest"
+                                                    >
+                                                        Today
+                                                    </button>
+                                                )}
+                                                {d.id === 'futureDate' && (
+                                                    <button 
+                                                        onClick={() => {
+                                                            const start = new Date(values.startDate);
+                                                            if (!isNaN(start)) {
+                                                                start.setFullYear(start.getFullYear() + (values.years || 0));
+                                                                handleChange('futureDate', start.toISOString().split('T')[0]);
+                                                            }
+                                                        }}
+                                                        className="text-[8px] font-black bg-indigo-600/20 text-indigo-400 px-1.5 py-0.5 rounded hover:bg-indigo-600/40 transition-colors uppercase tracking-widest"
+                                                    >
+                                                        Maturity
+                                                    </button>
+                                                )}
+                                            </div>
                                             <input type="date" value={values[d.id]} onChange={(e) => handleChange(d.id, e.target.value)} className="bg-transparent text-white text-sm font-mono focus:outline-none w-full" />
                                         </div>
                                     ))}
