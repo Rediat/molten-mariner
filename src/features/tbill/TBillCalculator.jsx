@@ -19,7 +19,24 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
 
     const [faceValue, setFaceValue] = useState(500000);
     const [totalBudget, setTotalBudget] = useState(490000);
-    const [issueDate, setIssueDate] = useState(new Date().toISOString().split('T')[0]);
+
+    const formatToLocalDate = (date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
+    const [issueDate, setIssueDate] = useState(() => {
+        const lastAuction = tbillData[tbillData.length - 1];
+        const lastDate = new Date(lastAuction.date);
+        const today = new Date();
+        let current = new Date(lastDate);
+        while (current <= today) {
+            current.setDate(current.getDate() + 14);
+        }
+        return formatToLocalDate(current);
+    });
     const [tenure, setTenure] = useState(28);
     const [discountRate, setDiscountRate] = useState(12);
     const [brokerageRate, setBrokerageRate] = useState(0.1);
@@ -43,6 +60,24 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
     const totalBudgetRef = useRef(null);
     const discountRateRef = useRef(null);
     const brokerageRateRef = useRef(null);
+    const [showAuctions, setShowAuctions] = useState(false);
+
+    // Calculate upcoming auctions
+    const nextAuctions = React.useMemo(() => {
+        const lastAuction = tbillData[tbillData.length - 1];
+        const lastDate = new Date(lastAuction.date);
+        const today = new Date();
+        let current = new Date(lastDate);
+        while (current <= today) {
+            current.setDate(current.getDate() + 14);
+        }
+        const list = [];
+        for (let i = 0; i < 10; i++) {
+            list.push(new Date(current));
+            current.setDate(current.getDate() + 14);
+        }
+        return list;
+    }, []);
 
     const clearField = (setter, ref) => {
         setter(null);
@@ -349,15 +384,26 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
                 </div>
 
                 {/* Issue Date */}
-                <div className="bg-neutral-800/40 rounded-xl p-2 border border-transparent hover:border-neutral-700 text-left">
+                <div className="relative bg-neutral-800/40 rounded-xl p-2 border border-transparent hover:border-neutral-700 text-left transition-all duration-300">
                     <div className="flex justify-between items-center mb-1">
                         <label className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold">Issue Date</label>
-                        <button 
-                            onClick={() => setIssueDate(new Date().toISOString().split('T')[0])}
-                            className="text-[8px] font-black bg-primary-600/20 text-primary-400 px-1.5 py-0.5 rounded hover:bg-primary-600/40 transition-colors uppercase tracking-widest"
-                        >
-                            Today
-                        </button>
+                        <div className="flex gap-1">
+                            <button 
+                                onClick={() => setIssueDate(new Date().toISOString().split('T')[0])}
+                                className="text-[8px] font-black bg-primary-600/20 text-primary-400 px-1.5 py-0.5 rounded hover:bg-primary-600/40 transition-colors uppercase tracking-widest"
+                            >
+                                Today
+                            </button>
+                            <button 
+                                onClick={() => {
+                                    setShowAuctions(!showAuctions);
+                                    setResult(null);
+                                }}
+                                className={`text-[8px] font-black px-1.5 py-0.5 rounded transition-all uppercase tracking-widest ${showAuctions ? 'bg-primary-500 text-neutral-900' : 'bg-neutral-800 text-neutral-500 hover:text-white hover:bg-neutral-700'}`}
+                            >
+                                {showAuctions ? 'Hide' : 'Upcoming'}
+                            </button>
+                        </div>
                     </div>
                     <input
                         type="date"
@@ -365,6 +411,35 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
                         onChange={(e) => setIssueDate(e.target.value)}
                         className="bg-transparent text-white text-sm font-mono focus:outline-none w-full"
                     />
+                    
+                    {showAuctions && (
+                        <div className="absolute left-0 right-0 top-full mt-1 z-[50] bg-neutral-900 border border-neutral-700 rounded-xl p-3 shadow-2xl animate-in fade-in zoom-in-95 duration-200 ring-1 ring-white/10">
+                            <div className="flex justify-between items-center mb-2 border-b border-neutral-800 pb-1">
+                                <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Next 10 Auctions</span>
+                                <span className="text-[8px] text-primary-500 font-bold uppercase">Wednesday Schedule</span>
+                            </div>
+                            <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                                {nextAuctions.map((date, idx) => (
+                                    <button
+                                        key={idx}
+                                        onClick={() => {
+                                            setIssueDate(formatToLocalDate(date));
+                                            setShowAuctions(false);
+                                        }}
+                                        className="flex justify-between items-center py-1 px-1.5 rounded hover:bg-primary-600/20 transition-all group"
+                                    >
+                                        <span className="text-[10px] font-mono text-neutral-400 group-hover:text-primary-400">
+                                            {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                        </span>
+                                        <div className="flex items-center gap-1">
+                                            <div className="w-1 h-1 rounded-full bg-neutral-700 group-hover:bg-primary-500 transition-colors" />
+                                            <span className="text-[7px] text-neutral-600 font-black uppercase group-hover:text-primary-500/50">Wed</span>
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 
