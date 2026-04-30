@@ -204,7 +204,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                     <FieldList fields={[
                         { name: 'END/BEGIN', description: 'When payments occur - end of period (ordinary annuity) or beginning (annuity due)' },
                         { name: 'COMPOUND/SIMPLE', description: 'Type of interest calculation' },
-                        { name: 'Frequency', description: 'Number of payments per year (monthly = 12, weekly = 52, etc.)' }
+                        { name: 'Payments', description: 'Number of payments per year (monthly = 12, weekly = 52, etc.)' }
                     ]} />
                 </div>
 
@@ -212,7 +212,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                     <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Advanced Features:</p>
                     <FieldList fields={[
                         { name: 'Total Interest (TI) Targeting', description: 'You can explicitly set a target Total Interest amount, and the calculator will reverse-solve for PV, PMT, FV, I/Y, or N to match that exact interest amount.' },
-                        { name: 'Advanced Frequency Mode', description: 'Click the Settings icon to decouple Payment Frequency (P/Y) from Compounding Frequency (C/Y) for complex loan or investment scenarios.' },
+                        { name: 'Advanced Frequency Mode', description: 'Click the Settings icon to decouple Payment Frequency (Payments) from Compounding Frequency (Compounds) for complex loan or investment scenarios.' },
                         { name: 'Interest Ratio Display', description: 'When Total Interest is calculated, the label shows what percentage of your final/initial value is made up of pure interest.' }
                     ]} />
                 </div>

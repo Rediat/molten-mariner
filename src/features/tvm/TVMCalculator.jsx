@@ -388,33 +388,40 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
                         </button>
                     </div>
                     <div className="flex flex-col items-end gap-1.5">
-                        <select
-                            value={frequency}
-                            onChange={(e) => handleFrequencyChange(Number(e.target.value))}
-                            className="bg-neutral-800 border border-neutral-700 rounded-lg px-2 py-0.5 text-[10px] font-bold text-neutral-300 focus:outline-none"
-                        >
-                            {FREQUENCIES.map(f => (
-                                <option key={f.value} value={f.value}>
-                                    {showAdvanced ? `P/Y: ${f.label.split('(')[0]}` : f.label}
-                                </option>
-                            ))}
-                        </select>
-                        {showAdvanced && (
+                        <div className="flex items-center gap-2">
+                            <span className="w-14 text-right text-[8px] font-black text-primary-500/70 uppercase tracking-[0.1em]">
+                                Payments
+                            </span>
+                            <select
+                                value={frequency}
+                                onChange={(e) => handleFrequencyChange(Number(e.target.value))}
+                                className="bg-neutral-800 border border-neutral-700 rounded-lg px-2 py-0.5 text-[10px] font-bold text-neutral-300 focus:outline-none"
+                            >
+                                {FREQUENCIES.map(f => (
+                                    <option key={f.value} value={f.value}>{f.label}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className={`flex items-center gap-2 transition-all duration-200 ${showAdvanced ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+                            <span className="w-14 text-right text-[8px] font-black text-primary-500/70 uppercase tracking-[0.1em]">
+                                Compounds
+                            </span>
                             <select
                                 value={compoundingFrequency}
                                 onChange={(e) => { setCompoundingFrequency(Number(e.target.value)); setIsCompoundingManuallySet(true); }}
                                 className={`bg-neutral-800 rounded-lg px-2 py-0.5 text-[10px] font-bold focus:outline-none border ${isCompoundingManuallySet ? 'text-primary-400 border-primary-500/50' : 'text-neutral-500 border-neutral-700'}`}
                             >
                                 {FREQUENCIES.map(f => (
-                                    <option key={f.value} value={f.value}>C/Y: {f.label.split('(')[0]}</option>
+                                    <option key={f.value} value={f.value}>{f.label}</option>
                                 ))}
                             </select>
-                        )}
+                        </div>
                     </div>
                 </div>
             </div>
 
-            {/* Explanation Panel */}
+            <div className="flex-1 overflow-y-auto pr-2 -mr-2 space-y-4">
+                {/* Explanation Panel */}
             {showExplanation && (
                 <div className="bg-gradient-to-r from-primary-900/30 to-neutral-800/50 border border-primary-500/30 rounded-xl p-3 mb-4 text-xs text-neutral-300 text-left">
                     <p className="font-bold text-primary-400 mb-1">Time Value of Money (TVM)</p>
@@ -440,7 +447,7 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
             </div>
 
             {/* Inputs */}
-            <div className="space-y-2 flex-1 flex flex-col">
+            <div className="space-y-2 flex flex-col">
                 <div className="flex gap-2 w-full">
                     {renderField(fields.find(f => f.id === 'n'), true)}
                     {renderField(fields.find(f => f.id === 'i'), true)}
@@ -493,6 +500,8 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
                     Calculate
                 </button>
             </div>
+
+                </div>
 
             {/* History Overlay */}
             <HistoryOverlay
