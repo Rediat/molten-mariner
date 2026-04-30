@@ -17,8 +17,8 @@ const TENURES = [
 const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
     const { addToHistory } = useHistory();
 
-    const [faceValue, setFaceValue] = useState(500000);
-    const [totalBudget, setTotalBudget] = useState(490000);
+    const [faceValue, setFaceValue] = useState(1000000);
+    const [totalBudget, setTotalBudget] = useState(1000000);
 
     const formatToLocalDate = (date) => {
         const year = date.getFullYear();
@@ -38,7 +38,7 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
         return formatToLocalDate(current);
     });
     const [tenure, setTenure] = useState(28);
-    const [discountRate, setDiscountRate] = useState(12);
+    const [discountRate, setDiscountRate] = useState(14);
     const [brokerageRate, setBrokerageRate] = useState(0.1);
 
     const tenureKey = `${tenure}_days`;
