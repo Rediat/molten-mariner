@@ -940,8 +940,24 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                     ]} />
                 </div>
 
+                <div className="pt-2">
+                    <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Market Comparison (External Apps):</p>
+                    <p className="text-xs mb-2">Compare your calculated fare against real-time estimates from popular ride-sharing services. Appears whenever distance and time are available.</p>
+                    <FieldList fields={[
+                        { name: 'Market Comparison Toggle', description: 'Click the "Market Comparison" header at the bottom to expand/collapse detailed price breakdowns.' },
+                        { name: 'Ride App Estimate', description: 'Calculated using market standard rates: 260 ETB flag down, 24 ETB/Km, and 5 ETB/Min waiting time.' },
+                        { name: 'Feres Estimate', description: 'Calculated using value rates: 110 ETB flag down, 16 ETB/Km, 1 ETB/Min waiting time, plus a 7% booking fee on the total.' },
+                        { name: 'Savings vs [Provider]', description: 'A live indicator showing how much cheaper (or more expensive) your calculated fare is compared to each external service.' },
+                        { name: 'Compact Header', description: 'When collapsed, the header displays current totals for both providers side-by-side for quick reference.' }
+                    ]} />
+                </div>
+
                 <InfoBox type="formula">
                     <strong>Price to Charge = (Distance × Mileage × Fuel Cost) × Service Multiplier + Wait Time Charge</strong>
+                </InfoBox>
+
+                <InfoBox type="tip">
+                    <strong>Market Validation:</strong> Use the Market Comparison to ensure your custom "Service Multiplier" results in a fare that is competitive with local market apps while still covering your operating costs.
                 </InfoBox>
 
                 <InfoBox type="tip">
