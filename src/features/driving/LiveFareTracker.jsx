@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { ArrowLeft, Play, Square, RotateCcw, Navigation, Clock, Gauge, MapPin, TrendingUp, Fuel, DollarSign, Timer, Zap } from 'lucide-react';
+import { ArrowLeft, Play, Square, RotateCcw, Navigation, Clock, Gauge, MapPin, TrendingUp, Fuel, DollarSign, Timer, Zap, Car, ChevronDown, ChevronUp } from 'lucide-react';
 
 // Haversine formula – returns distance in kilometers
 const haversineDistance = (lat1, lon1, lat2, lon2) => {
@@ -29,6 +29,7 @@ const LiveFareTracker = ({ isVisible, onClose, fareData }) => {
     const [positionCount, setPositionCount] = useState(0);
     const [gpsAccuracy, setGpsAccuracy] = useState(null);
     const [lastLocationName, setLastLocationName] = useState(null);
+    const [showMarketComparison, setShowMarketComparison] = useState(false);
 
     // Refs for values that need to survive across watchPosition callbacks
     const lastPositionRef = useRef(null);
@@ -214,6 +215,20 @@ const LiveFareTracker = ({ isVisible, onClose, fareData }) => {
     const waitCharge = (totalWaitTime / 60) * waitMultiplier * 2;
     const netGain = currentFare - fuelCost;
 
+    // ---- Ride Provider Calculation (Market Comparison) ----
+    const rideFlagDown = 260;
+    const rideDistRate = 24;
+    const rideWaitRate = 5; // per minute
+    const rideFare = rideFlagDown + (totalDistance * rideDistRate) + ((totalWaitTime / 60) * rideWaitRate);
+
+    // ---- Feres Provider Calculation ----
+    const feresFlagDown = 110;
+    const feresDistRate = 16;
+    const feresWaitRate = 1; // per minute
+    const feresBookingFeeRate = 0.07;
+    const feresSubtotal = feresFlagDown + (totalDistance * feresDistRate) + ((totalWaitTime / 60) * feresWaitRate);
+    const feresFare = feresSubtotal * (1 + feresBookingFeeRate);
+
     return (
         <div className={`absolute inset-0 bg-neutral-900 flex flex-col z-[60] transition-all duration-300 ease-in-out ${isVisible
             ? 'opacity-100 pointer-events-auto translate-y-0'
@@ -350,6 +365,137 @@ const LiveFareTracker = ({ isVisible, onClose, fareData }) => {
                         </p>
                     </div>
                 </div>
+
+                {/* Ride App Comparison (Expandable) */}
+                {trackingState !== 'idle' && (
+                    <div className="mt-1">
+                        <button
+                            onClick={() => setShowMarketComparison(!showMarketComparison)}
+                            className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all ${
+                                showMarketComparison 
+                                ? 'bg-neutral-800/60 border-neutral-700/50 rounded-b-none' 
+                                : 'bg-neutral-800/30 border-neutral-700/30 hover:bg-neutral-800/50'
+                            }`}
+                        >
+                            <div className="flex items-center gap-2">
+                                <Car className={`w-4 h-4 ${showMarketComparison ? 'text-primary-400' : 'text-neutral-500'}`} />
+                                <span className="text-[10px] font-bold text-neutral-300 uppercase tracking-widest">Market Comparison</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                {!showMarketComparison && (
+                                    <div className="flex items-center gap-2">
+                                        <div className="flex flex-col items-end">
+                                            <span className="text-[7px] text-neutral-500 font-bold uppercase leading-none">Ride</span>
+                                            <span className="text-[9px] font-black text-primary-400">{formatNum(rideFare)}</span>
+                                        </div>
+                                        <div className="w-px h-4 bg-neutral-700 mx-0.5"></div>
+                                        <div className="flex flex-col items-end">
+                                            <span className="text-[7px] text-neutral-500 font-bold uppercase leading-none">Feres</span>
+                                            <span className="text-[9px] font-black text-emerald-400">{formatNum(feresFare)}</span>
+                                        </div>
+                                    </div>
+                                )}
+                                {showMarketComparison ? <ChevronUp className="w-3.5 h-3.5 text-neutral-500" /> : <ChevronDown className="w-3.5 h-3.5 text-neutral-500" />}
+                            </div>
+                        </button>
+
+                        {showMarketComparison && (
+                            <div className="bg-neutral-800/40 rounded-b-xl border-x border-b border-neutral-700/50 overflow-hidden animate-in fade-in slide-in-from-top-1 duration-200">
+                                {/* Ride Provider */}
+                                <div className="p-3 space-y-2.5">
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <p className="text-[9px] font-bold text-primary-400 uppercase tracking-widest flex items-center gap-1.5">
+                                                Ride App Estimate
+                                            </p>
+                                            <p className="text-[7px] text-neutral-500 font-bold uppercase tracking-tight">Market Leader</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-lg font-black text-white tracking-tight">
+                                                {formatNum(rideFare)}
+                                            </p>
+                                            <p className="text-[7px] text-neutral-500 font-bold uppercase">ETB Total</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="grid grid-cols-3 gap-2 py-1.5 border-t border-neutral-700/30">
+                                        <div>
+                                            <p className="text-[7px] font-bold text-neutral-500 uppercase">Flag Down</p>
+                                            <p className="text-[9px] font-black text-neutral-300">{rideFlagDown}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-[7px] font-bold text-neutral-500 uppercase">Distance</p>
+                                            <p className="text-[9px] font-black text-neutral-300">{formatNum(totalDistance * rideDistRate)}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-[7px] font-bold text-neutral-500 uppercase">Waiting</p>
+                                            <p className="text-[9px] font-black text-neutral-300">{formatNum((totalWaitTime / 60) * rideWaitRate)}</p>
+                                        </div>
+                                    </div>
+
+                                    {rideFare > 0 && currentFare > 0 && (
+                                        <div className="pt-1.5 border-t border-neutral-700/30 flex items-center justify-between">
+                                            <span className="text-[7px] font-bold text-neutral-500 uppercase">Savings vs Ride</span>
+                                            <div className="flex items-center gap-2">
+                                                <span className={`text-[9px] font-black ${rideFare - currentFare > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                    {rideFare - currentFare > 0 ? '+' : ''}{formatNum(rideFare - currentFare)} ETB
+                                                </span>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Feres Provider */}
+                                <div className="p-3 bg-neutral-900/30 border-t border-neutral-700/50 space-y-2.5">
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <p className="text-[9px] font-bold text-emerald-400 uppercase tracking-widest flex items-center gap-1.5">
+                                                Feres Estimate
+                                            </p>
+                                            <p className="text-[7px] text-neutral-500 font-bold uppercase tracking-tight">Value Option</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-lg font-black text-white tracking-tight">
+                                                {formatNum(feresFare)}
+                                            </p>
+                                            <p className="text-[7px] text-neutral-500 font-bold uppercase">ETB Total</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="grid grid-cols-4 gap-1 py-1.5 border-t border-neutral-700/30">
+                                        <div>
+                                            <p className="text-[7px] font-bold text-neutral-500 uppercase">Flag</p>
+                                            <p className="text-[9px] font-black text-neutral-300">{feresFlagDown}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-[7px] font-bold text-neutral-500 uppercase">Dist</p>
+                                            <p className="text-[9px] font-black text-neutral-300">{formatNum(totalDistance * feresDistRate)}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-[7px] font-bold text-neutral-500 uppercase">Wait</p>
+                                            <p className="text-[9px] font-black text-neutral-300">{formatNum((totalWaitTime / 60) * feresWaitRate)}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-[7px] font-bold text-neutral-500 uppercase">Book(7%)</p>
+                                            <p className="text-[9px] font-black text-neutral-300">{formatNum(feresSubtotal * feresBookingFeeRate)}</p>
+                                        </div>
+                                    </div>
+
+                                    {feresFare > 0 && currentFare > 0 && (
+                                        <div className="pt-1.5 border-t border-neutral-700/30 flex items-center justify-between">
+                                            <span className="text-[7px] font-bold text-neutral-500 uppercase">Savings vs Feres</span>
+                                            <div className="flex items-center gap-2">
+                                                <span className={`text-[9px] font-black ${feresFare - currentFare > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                    {feresFare - currentFare > 0 ? '+' : ''}{formatNum(feresFare - currentFare)} ETB
+                                                </span>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 {/* Trip Summary (shown when stopped) */}
                 {trackingState === 'stopped' && (

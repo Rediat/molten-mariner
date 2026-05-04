@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { Car, Info, HelpCircle, Trash2, Settings, History, Loader2, ArrowUpDown, Clock, Map as MapIcon, Navigation, Zap } from 'lucide-react';
+import { Car, Info, HelpCircle, Trash2, Settings, History, Loader2, ArrowUpDown, Clock, Map as MapIcon, Navigation, Zap, ChevronDown, ChevronUp } from 'lucide-react';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
 import PlacesAutocomplete from '../../components/PlacesAutocomplete';
 import { CalculateIcon } from '../../components/Icons';
@@ -46,6 +46,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
     const [distanceSource, setDistanceSource] = useState('manual');
     const [locationLoading, setLocationLoading] = useState(false);
     const [waitMultiplier, setWaitMultiplier] = useState(2.5);
+    const [showMarketComparison, setShowMarketComparison] = useState(false);
 
     const fromInputRef = useRef(null);
     const toInputRef = useRef(null);
@@ -404,9 +405,25 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
         }
     };
 
-    const formatNum = (val) => val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const formatNum = (val) => (val || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     const mapsAvailable = mapsReady && hasMapsApi();
     const activeResults = results || calculateResults();
+
+    // ---- Market Comparison Calculations ----
+    const dist = values.distance || 0;
+    const waitMin = durationValue || 0;
+    
+    const rideFlagDown = 260;
+    const rideDistRate = 24;
+    const rideWaitRate = 5;
+    const rideFare = rideFlagDown + (dist * rideDistRate) + (waitMin * rideWaitRate);
+
+    const feresFlagDown = 110;
+    const feresDistRate = 16;
+    const feresWaitRate = 1;
+    const feresBookingFeeRate = 0.07;
+    const feresSubtotal = feresFlagDown + (dist * feresDistRate) + (waitMin * feresWaitRate);
+    const feresFare = feresSubtotal * (1 + feresBookingFeeRate);
 
     return (
         <div className="flex flex-col h-full relative">
@@ -546,7 +563,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
             {/* Inputs - 2 column grid */}
             <div className="grid grid-cols-2 gap-1.5 mb-1.5">
                 {/* Distance */}
-                <div className={`rounded-xl p-2 border ${distanceSource === 'maps' ? 'bg-emerald-900/10 border-emerald-500/40' : 'bg-neutral-800/40 border-primary-500/40'}`}>
+                <div className={`rounded-xl p-1.5 border ${distanceSource === 'maps' ? 'bg-emerald-900/10 border-emerald-500/40' : 'bg-neutral-800/40 border-primary-500/40'}`}>
                     <div className="flex justify-between items-center mb-0.5">
                         <label 
                             onClick={() => clearValuesField('distance', distanceRef)}
@@ -570,107 +587,125 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                             </button>
                         </div>
                     </div>
-                    {fetchingDistance ? (
-                        <div className="flex items-center gap-1 text-primary-400 text-xs py-1">
-                            <Loader2 className="w-3 h-3 animate-spin" /> Loading...
-                        </div>
-                    ) : (
-                        <FormattedNumberInput
-                            ref={distanceRef}
-                            value={values.distance}
-                            onChange={(e) => handleChange('distance', e.target.value)}
-                            decimals={2}
-                            className={`bg-transparent text-right text-lg font-mono focus:outline-none font-black w-full ${distanceSource === 'maps' ? 'text-emerald-400' : 'text-primary-400'}`}
-                        />
-                    )}
-                    <span className="text-[8px] uppercase tracking-wider text-neutral-600 font-bold block">
-                        {distanceSource === 'maps' ? '✓ Google Maps' : 'Trip Length'}
-                    </span>
+                    <div className="flex items-end justify-between gap-1">
+                        <span className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold shrink-0 mb-1">
+                            {distanceSource === 'maps' ? '✓ Google Maps' : 'Trip Length'}
+                        </span>
+                        {fetchingDistance ? (
+                            <div className="flex items-center gap-1 text-primary-400 text-xs py-1">
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                            </div>
+                        ) : (
+                            <FormattedNumberInput
+                                ref={distanceRef}
+                                value={values.distance}
+                                onChange={(e) => handleChange('distance', e.target.value)}
+                                decimals={2}
+                                className={`bg-transparent text-right text-base font-mono focus:outline-none font-black w-full ${distanceSource === 'maps' ? 'text-emerald-400' : 'text-primary-400'}`}
+                            />
+                        )}
+                    </div>
                 </div>
 
                 {/* Fuel Cost */}
-                <div className="bg-neutral-800/40 rounded-xl p-2 border border-transparent">
-                    <label 
-                        onClick={() => clearValuesField('costPerLiter', costPerLiterRef)}
-                        className="text-[10px] uppercase tracking-wider font-bold text-white block mb-0.5 cursor-pointer hover:text-primary-400 transition-colors"
-                        title="Click to Clear"
-                    >
-                        Fuel Cost / Liter
-                    </label>
-                    <FormattedNumberInput
-                        ref={costPerLiterRef}
-                        value={values.costPerLiter}
-                        onChange={(e) => handleChange('costPerLiter', e.target.value)}
-                        decimals={2}
-                        className="bg-transparent text-right text-lg font-mono focus:outline-none text-white w-full"
-                        placeholder="145.00"
-                    />
-                    <span className="text-[8px] uppercase tracking-wider text-neutral-600 font-bold block">Current Price</span>
+                <div className="bg-neutral-800/40 rounded-xl p-1.5 border border-neutral-700/50">
+                    <div className="flex justify-between items-center mb-0.5 h-[18px]">
+                        <label 
+                            onClick={() => clearValuesField('costPerLiter', costPerLiterRef)}
+                            className="text-[10px] uppercase tracking-wider font-bold text-white block cursor-pointer hover:text-primary-400 transition-colors"
+                            title="Click to Clear"
+                        >
+                            Fuel Cost / Liter
+                        </label>
+                    </div>
+                    <div className="flex items-end justify-between gap-1">
+                        <span className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold shrink-0 mb-1">Current Price</span>
+                        <FormattedNumberInput
+                            ref={costPerLiterRef}
+                            value={values.costPerLiter}
+                            onChange={(e) => handleChange('costPerLiter', e.target.value)}
+                            decimals={2}
+                            className="bg-transparent text-right text-base font-mono focus:outline-none text-white w-full"
+                            placeholder="145.00"
+                        />
+                    </div>
                 </div>
 
                 {/* Wait Multiplier */}
-                <div className="bg-neutral-800/40 rounded-xl p-2 border border-amber-500/30">
-                    <label 
-                        onClick={clearWaitMultiplier}
-                        className="text-[10px] uppercase tracking-wider font-bold text-amber-400 block mb-0.5 cursor-pointer hover:text-white transition-colors"
-                        title="Click to Clear"
-                    >
-                        Wait Multiplier
-                    </label>
-                    <FormattedNumberInput
-                        ref={waitMultiplierRef}
-                        value={waitMultiplier}
-                        onChange={(e) => {
-                            const val = e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0);
-                            setWaitMultiplier(val);
-                            setResults(null);
-                        }}
-                        decimals={1}
-                        className="bg-transparent text-right text-lg font-mono focus:outline-none text-amber-400 font-black w-full"
-                    />
-                    <span className="text-[8px] uppercase tracking-wider text-neutral-600 font-bold block">Time Factor</span>
+                <div className="bg-neutral-800/40 rounded-xl p-1.5 border border-neutral-700/50">
+                    <div className="flex justify-between items-center mb-0.5 h-[18px]">
+                        <label 
+                            onClick={clearWaitMultiplier}
+                            className="text-[10px] uppercase tracking-wider font-bold text-amber-400 block cursor-pointer hover:text-white transition-colors"
+                            title="Click to Clear"
+                        >
+                            Wait Multiplier
+                        </label>
+                    </div>
+                    <div className="flex items-end justify-between gap-1">
+                        <span className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold shrink-0 mb-1">Time Factor</span>
+                        <FormattedNumberInput
+                            ref={waitMultiplierRef}
+                            value={waitMultiplier}
+                            onChange={(e) => {
+                                const val = e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0);
+                                setWaitMultiplier(val);
+                                setResults(null);
+                            }}
+                            decimals={1}
+                            className="bg-transparent text-right text-base font-mono focus:outline-none text-amber-400 font-black w-full"
+                        />
+                    </div>
                 </div>
 
                 {/* Service Factor or Price to Charge */}
                 {mode === 'forward' ? (
-                    <div className="bg-neutral-800/40 rounded-xl p-2 border border-transparent">
-                        <label 
-                            onClick={() => clearValuesField('serviceMultiplier', serviceMultiplierRef)}
-                            className="text-[10px] uppercase tracking-wider font-bold text-white block mb-0.5 cursor-pointer hover:text-primary-400 transition-colors"
-                            title="Click to Clear"
-                        >
-                            Service Multiplier
-                        </label>
-                        <FormattedNumberInput
-                            ref={serviceMultiplierRef}
-                            value={values.serviceMultiplier}
-                            onChange={(e) => handleChange('serviceMultiplier', e.target.value)}
-                            decimals={1}
-                            className="bg-transparent text-right text-lg font-mono focus:outline-none text-white w-full"
-                        />
-                        <span className="text-[8px] uppercase tracking-wider text-neutral-600 font-bold block">2.55 – 4.5×</span>
+                    <div className="bg-neutral-800/40 rounded-xl p-1.5 border border-neutral-700/50">
+                        <div className="flex justify-between items-center mb-0.5 h-[18px]">
+                            <label 
+                                onClick={() => clearValuesField('serviceMultiplier', serviceMultiplierRef)}
+                                className="text-[10px] uppercase tracking-wider font-bold text-white block cursor-pointer hover:text-primary-400 transition-colors"
+                                title="Click to Clear"
+                            >
+                                Service Multiplier
+                            </label>
+                        </div>
+                        <div className="flex items-end justify-between gap-1">
+                            <span className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold shrink-0 mb-1">Multiplier Range</span>
+                            <FormattedNumberInput
+                                ref={serviceMultiplierRef}
+                                value={values.serviceMultiplier}
+                                onChange={(e) => handleChange('serviceMultiplier', e.target.value)}
+                                decimals={1}
+                                className="bg-transparent text-right text-base font-mono focus:outline-none text-white w-full"
+                            />
+                        </div>
                     </div>
                 ) : (
-                    <div className="bg-neutral-800/40 rounded-xl p-2 border border-emerald-500/40">
-                        <label 
-                            onClick={clearPriceToCharge}
-                            className="text-[10px] uppercase tracking-wider font-bold text-emerald-400 block mb-0.5 cursor-pointer hover:text-white transition-colors"
-                            title="Click to Clear"
-                        >
-                            Price to Charge
-                        </label>
-                        <FormattedNumberInput
-                            ref={priceToChargeRef}
-                            value={priceToCharge}
-                            onChange={(e) => {
-                                const val = e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0);
-                                setPriceToCharge(val);
-                                setResults(null);
-                            }}
-                            decimals={2}
-                            className="bg-transparent text-right text-lg font-mono focus:outline-none text-emerald-400 font-black w-full"
-                        />
-                        <span className="text-[8px] uppercase tracking-wider text-neutral-600 font-bold block">Known Fare</span>
+                    <div className="bg-neutral-800/40 rounded-xl p-1.5 border border-emerald-500/40">
+                        <div className="flex justify-between items-center mb-0.5 h-[18px]">
+                            <label 
+                                onClick={clearPriceToCharge}
+                                className="text-[10px] uppercase tracking-wider font-bold text-emerald-400 block cursor-pointer hover:text-white transition-colors"
+                                title="Click to Clear"
+                            >
+                                Price to Charge
+                            </label>
+                        </div>
+                        <div className="flex items-end justify-between gap-1">
+                            <span className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold shrink-0 mb-1">Known Fare</span>
+                            <FormattedNumberInput
+                                ref={priceToChargeRef}
+                                value={priceToCharge}
+                                onChange={(e) => {
+                                    const val = e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0);
+                                    setPriceToCharge(val);
+                                    setResults(null);
+                                }}
+                                decimals={2}
+                                className="bg-transparent text-right text-base font-mono focus:outline-none text-emerald-400 font-black w-full"
+                            />
+                        </div>
                     </div>
                 )}
             </div>
@@ -679,7 +714,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
             {/* Results */}
             {
                 results && (
-                    <div className="bg-gradient-to-br from-primary-900/30 to-neutral-800/50 border border-primary-500/30 rounded-xl p-2.5 space-y-1.5 mb-1.5">
+                    <div className="bg-gradient-to-br from-primary-900/30 to-neutral-800/50 border border-primary-500/30 rounded-xl p-2 space-y-1 mb-1.5">
                         <div className="flex justify-between items-center">
                             <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Results</span>
                             <button
@@ -703,11 +738,11 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
 
 
                         {/* Main result row */}
-                        <div className="bg-neutral-900/80 rounded-lg p-2.5 border border-primary-500/30">
+                        <div className="bg-neutral-900/80 rounded-lg p-2 border border-primary-500/30">
                             <div className="flex justify-between items-end">
                                 <div>
                                     <p className="text-[8px] font-bold text-neutral-500 uppercase tracking-wider">Total to Charge</p>
-                                    <p className="text-2xl font-black text-primary-400">{formatNum(results.totalToCharge)}</p>
+                                    <p className="text-xl font-black text-primary-400">{formatNum(results.totalToCharge)}</p>
                                     {results.waitTime > 0 && (
                                         <p className="text-[8px] text-neutral-600">{formatNum(results.reasonablePrice)} + {formatNum(results.waitTime)}</p>
                                     )}
@@ -720,18 +755,18 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                                 )}
                                 <div className="text-right">
                                     <p className="text-[8px] font-bold text-neutral-500 uppercase tracking-wider">Per Head</p>
-                                    <p className="text-lg font-black text-primary-300">{formatNum(results.perHead)}</p>
+                                    <p className="text-base font-black text-primary-300">{formatNum(results.perHead)}</p>
                                 </div>
                             </div>
                         </div>
 
                         {/* Secondary metrics */}
                         <div className="grid grid-cols-2 gap-1.5">
-                            <div className="bg-neutral-900/50 rounded-lg p-2">
+                            <div className="bg-neutral-900/50 rounded-lg p-1.5">
                                 <p className="text-[8px] font-bold text-neutral-500 uppercase tracking-wider">Total Fuel Cost</p>
                                 <p className="text-base font-black text-amber-400">{formatNum(results.totalFuelCost)}</p>
                             </div>
-                            <div className="bg-neutral-900/50 rounded-lg p-2">
+                            <div className="bg-neutral-900/50 rounded-lg p-1.5">
                                 <p className="text-[8px] font-bold text-neutral-500 uppercase tracking-wider">Net Gain</p>
                                 <p className="text-base font-black text-emerald-400">
                                     {!roundTrip ? (
@@ -767,6 +802,121 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                     </div>
                 )
             }
+
+            {/* Market Comparison (Expandable) */}
+            {dist > 0 && (
+                <div className="mb-1.5">
+                    <button
+                        onClick={() => setShowMarketComparison(!showMarketComparison)}
+                        className={`w-full flex items-center justify-between p-2.5 rounded-xl border transition-all ${
+                            showMarketComparison 
+                            ? 'bg-neutral-800/60 border-neutral-700/50 rounded-b-none' 
+                            : 'bg-neutral-800/30 border-neutral-700/30 hover:bg-neutral-800/50'
+                        }`}
+                    >
+                        <div className="flex items-center gap-2">
+                            <Car className={`w-3.5 h-3.5 ${showMarketComparison ? 'text-primary-400' : 'text-neutral-500'}`} />
+                            <span className="text-[9px] font-bold text-neutral-300 uppercase tracking-widest">Market Comparison</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            {!showMarketComparison && (
+                                <div className="flex items-center gap-2">
+                                    <div className="flex flex-col items-end">
+                                        <span className="text-[6px] text-neutral-500 font-bold uppercase leading-none">Ride</span>
+                                        <span className="text-[8px] font-black text-primary-400">{formatNum(rideFare)}</span>
+                                    </div>
+                                    <div className="w-px h-3 bg-neutral-700 mx-0.5"></div>
+                                    <div className="flex flex-col items-end">
+                                        <span className="text-[6px] text-neutral-500 font-bold uppercase leading-none">Feres</span>
+                                        <span className="text-[8px] font-black text-emerald-400">{formatNum(feresFare)}</span>
+                                    </div>
+                                </div>
+                            )}
+                            {showMarketComparison ? <ChevronUp className="w-3.5 h-3.5 text-neutral-500" /> : <ChevronDown className="w-3.5 h-3.5 text-neutral-500" />}
+                        </div>
+                    </button>
+
+                    {showMarketComparison && (
+                        <div className="bg-neutral-800/40 rounded-b-xl border-x border-b border-neutral-700/50 overflow-hidden animate-in fade-in slide-in-from-top-1 duration-200">
+                            {/* Ride Card */}
+                            <div className="p-2.5 space-y-2">
+                                <div className="flex justify-between items-start">
+                                    <div>
+                                        <p className="text-[8px] font-bold text-primary-400 uppercase tracking-widest">Ride App</p>
+                                        <p className="text-[6px] text-neutral-500 font-bold uppercase tracking-tight">Market Standard</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-base font-black text-white">{formatNum(rideFare)}</p>
+                                        <p className="text-[6px] text-neutral-500 font-bold uppercase">ETB</p>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-3 gap-1 py-1 border-t border-neutral-700/30">
+                                    <div>
+                                        <p className="text-[6px] font-bold text-neutral-500 uppercase">Flag</p>
+                                        <p className="text-[8px] font-black text-neutral-400">260</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[6px] font-bold text-neutral-500 uppercase">Dist</p>
+                                        <p className="text-[8px] font-black text-neutral-400">{formatNum(dist * 24)}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[6px] font-bold text-neutral-500 uppercase">Wait</p>
+                                        <p className="text-[8px] font-black text-neutral-400">{formatNum(waitMin * 5)}</p>
+                                    </div>
+                                </div>
+                                {results && (
+                                    <div className="pt-1.5 border-t border-neutral-700/30 flex items-center justify-between">
+                                        <span className="text-[7px] font-bold text-neutral-500 uppercase">Savings vs Ride</span>
+                                        <span className={`text-[8px] font-black ${rideFare - results.totalToCharge > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                            {rideFare - results.totalToCharge > 0 ? '+' : ''}{formatNum(rideFare - results.totalToCharge)} ETB
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Feres Card */}
+                            <div className="p-2.5 bg-neutral-900/30 border-t border-neutral-700/50 space-y-2">
+                                <div className="flex justify-between items-start">
+                                    <div>
+                                        <p className="text-[8px] font-bold text-emerald-400 uppercase tracking-widest">Feres</p>
+                                        <p className="text-[6px] text-neutral-500 font-bold uppercase tracking-tight">Value Option</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-base font-black text-white">{formatNum(feresFare)}</p>
+                                        <p className="text-[6px] text-neutral-500 font-bold uppercase">ETB</p>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-4 gap-1 py-1 border-t border-neutral-700/30">
+                                    <div>
+                                        <p className="text-[6px] font-bold text-neutral-500 uppercase">Flag</p>
+                                        <p className="text-[8px] font-black text-neutral-400">110</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[6px] font-bold text-neutral-500 uppercase">Dist</p>
+                                        <p className="text-[8px] font-black text-neutral-400">{formatNum(dist * 16)}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[6px] font-bold text-neutral-500 uppercase">Wait</p>
+                                        <p className="text-[8px] font-black text-neutral-400">{formatNum(waitMin * 1)}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[6px] font-bold text-neutral-500 uppercase">Fee(7%)</p>
+                                        <p className="text-[8px] font-black text-neutral-400">{formatNum(feresSubtotal * 0.07)}</p>
+                                    </div>
+                                </div>
+                                {results && (
+                                    <div className="pt-1.5 border-t border-neutral-700/30 flex items-center justify-between">
+                                        <span className="text-[7px] font-bold text-neutral-500 uppercase">Savings vs Feres</span>
+                                        <span className={`text-[8px] font-black ${feresFare - results.totalToCharge > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                            {feresFare - results.totalToCharge > 0 ? '+' : ''}{formatNum(feresFare - results.totalToCharge)} ETB
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
 
             {/* Action Buttons */}
             <div className="mt-auto flex gap-1.5 pt-1">
