@@ -19,6 +19,7 @@ import InflationCalculator from './features/inflation/InflationCalculator';
 import RideFareCalculator from './features/transport/RideFareCalculator';
 import FxCompare from './features/fxcompare/FxCompare';
 import { Analytics } from "@vercel/analytics/react";
+import { initGlobalClipboard } from './utils/clipboard';
 
 
 const TAB_TO_SETTING = {
@@ -167,6 +168,10 @@ function AppContent() {
 }
 
 function App() {
+    useEffect(() => {
+        initGlobalClipboard();
+    }, []);
+
     return (
         <SettingsProvider>
             <HistoryProvider>
