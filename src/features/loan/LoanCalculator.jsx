@@ -1,4 +1,5 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
+import { useInputFocus } from '../../hooks/useInputFocus';
 import { calculateLoan, getAmortizationSchedule } from '../../utils/financial-utils';
 import { useHistory } from '../../context/HistoryContext';
 import { List, X, FileText, FileSpreadsheet, Info, HelpCircle, Trash2, Settings, History, DollarSign, Download } from 'lucide-react';
@@ -56,10 +57,20 @@ const LoanCalculator = ({ toggleHelp, toggleSettings }) => {
         paymentsMade: paymentsMadeRef
     };
 
-    const clearField = (field, ref) => {
-        setValues(prev => ({ ...prev, [field]: null }));
+    const clearResults = useCallback(() => {
         setResult(null);
-        setTimeout(() => ref.current?.focus(), 0);
+    }, []);
+
+    const focusAmount = useInputFocus((val) => setValues(prev => ({ ...prev, amount: val })), amountRef, clearResults);
+    const focusRate = useInputFocus((val) => setValues(prev => ({ ...prev, rate: val })), rateRef, clearResults);
+    const focusYears = useInputFocus((val) => setValues(prev => ({ ...prev, years: val })), yearsRef, clearResults);
+    const focusPaymentsMade = useInputFocus((val) => setValues(prev => ({ ...prev, paymentsMade: val })), paymentsMadeRef, clearResults);
+
+    const focusHandlers = {
+        amount: focusAmount,
+        rate: focusRate,
+        years: focusYears,
+        paymentsMade: focusPaymentsMade
     };
 
     const calculatePeriodsBetween = (d1, d2, freq) => {
@@ -305,7 +316,7 @@ const LoanCalculator = ({ toggleHelp, toggleSettings }) => {
                                     <div className="flex justify-between items-center gap-4">
                                         <div className="flex flex-col shrink-0 items-start text-left">
                                             <label 
-                                                onClick={() => clearField(field.id, inputRefs[field.id])}
+                                                onClick={focusHandlers[field.id]}
                                                 className="text-base font-bold text-neutral-300 cursor-pointer hover:text-primary-400 transition-colors"
                                                 title="Click to Clear"
                                             >
@@ -362,7 +373,7 @@ const LoanCalculator = ({ toggleHelp, toggleSettings }) => {
                                     <div className="flex justify-between items-center gap-4">
                                         <div className="flex flex-col shrink-0 items-start text-left">
                                             <label 
-                                                onClick={() => clearField('paymentsMade', paymentsMadeRef)}
+                                                onClick={focusPaymentsMade}
                                                 className="text-base font-bold text-neutral-300 cursor-pointer hover:text-primary-400 transition-colors"
                                                 title="Click to Clear"
                                             >

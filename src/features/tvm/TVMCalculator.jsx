@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
+import { useInputFocus } from '../../hooks/useInputFocus';
 import { calculateTVM } from '../../utils/financial-utils';
 import { useHistory } from '../../context/HistoryContext';
 import { Settings2, Info, HelpCircle, Trash2, Settings, History, X, Calculator } from 'lucide-react';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
 import { CalculateIcon } from '../../components/Icons';
 import HistoryOverlay from '../../components/HistoryOverlay';
-import { useRef } from 'react';
 
 // Constants
 const FREQUENCIES = [
@@ -75,20 +75,24 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
         totalInterest: useRef(null),
     };
 
-    const clearField = (fieldId) => {
-        if (fieldId === 'totalInterest') {
-            setTotalInterest(null);
-        } else if (fieldId === 'totalPMT') {
-            return; // Read-only
-        } else {
-            setValues(prev => ({ ...prev, [fieldId]: null }));
-        }
+    const clearResults = useCallback(() => {
         setCalculatedValue(null);
-        
-        // Focus the input
-        setTimeout(() => {
-            inputRefs[fieldId]?.current?.focus();
-        }, 0);
+    }, []);
+
+    const focusN = useInputFocus((val) => setValues(prev => ({ ...prev, n: val })), inputRefs.n, clearResults);
+    const focusI = useInputFocus((val) => setValues(prev => ({ ...prev, i: val })), inputRefs.i, clearResults);
+    const focusPV = useInputFocus((val) => setValues(prev => ({ ...prev, pv: val })), inputRefs.pv, clearResults);
+    const focusPMT = useInputFocus((val) => setValues(prev => ({ ...prev, pmt: val })), inputRefs.pmt, clearResults);
+    const focusFV = useInputFocus((val) => setValues(prev => ({ ...prev, fv: val })), inputRefs.fv, clearResults);
+    const focusTI = useInputFocus(setTotalInterest, inputRefs.totalInterest, clearResults);
+
+    const focusHandlers = {
+        n: focusN,
+        i: focusI,
+        pv: focusPV,
+        pmt: focusPMT,
+        fv: focusFV,
+        totalInterest: focusTI
     };
 
     // Determine effective sign for TI based on context
@@ -287,7 +291,7 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
                     <div className="flex flex-col items-start text-left min-w-0">
                         <div className="flex items-center gap-1.5 flex-wrap">
                             <label 
-                                onClick={() => !field.isReadOnly && clearField(field.id)}
+                                onClick={() => !field.isReadOnly && focusHandlers[field.id]?.()}
                                 className={`text-sm font-bold transition-colors ${field.isReadOnly ? 'text-neutral-500' : 'cursor-pointer hover:text-white'} ${!field.isReadOnly && target === field.id ? 'text-primary-400' : 'text-neutral-300'} whitespace-nowrap`}
                                 title={!field.isReadOnly ? "Click to Clear" : ""}
                             >

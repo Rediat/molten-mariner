@@ -33,22 +33,24 @@ const FormattedNumberInput = forwardRef(({
 
     const handleFocus = (e) => {
         setIsFocused(true);
-        if (value !== null && value !== undefined && !isNaN(value) && value !== '') {
-            setDisplayValue(forceFixedOnFocus ? parseFloat(value).toFixed(decimals) : value.toString());
-        } else {
-            // Show empty string when focused if value is null
+        // If value is null, undefined, NaN or empty, show empty string to allow new input
+        if (value === null || value === undefined || isNaN(value) || value === '') {
             setDisplayValue('');
+        } else {
+            setDisplayValue(forceFixedOnFocus ? parseFloat(value).toFixed(decimals) : value.toString());
         }
         props.onFocus?.(e);
     };
 
     const handleBlur = (e) => {
         setIsFocused(false);
-        // On blur, if the value is null/empty, notify parent to set it to 0
+        // On blur, if the value is null/empty/NaN, notify parent to set it to 0
         if (value === null || value === undefined || value === '' || isNaN(value)) {
             onChange({ target: { value: '0' } });
+            setDisplayValue(formatNumber(0));
+        } else {
+            setDisplayValue(formatNumber(value));
         }
-        setDisplayValue(formatNumber(value));
         props.onBlur?.(e);
     };
 

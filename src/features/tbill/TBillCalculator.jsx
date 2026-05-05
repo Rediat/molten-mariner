@@ -1,4 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { useInputFocus } from '../../hooks/useInputFocus';
 import { useHistory } from '../../context/HistoryContext';
 import { Receipt, Info, HelpCircle, Settings, History, Trash2 } from 'lucide-react';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
@@ -95,11 +96,14 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
         return list;
     }, []);
 
-    const clearField = (setter, ref) => {
-        setter(null);
+    const clearResults = useCallback(() => {
         setResult(null);
-        setTimeout(() => ref.current?.focus(), 0);
-    };
+    }, []);
+
+    const focusFaceValue = useInputFocus(setFaceValue, faceValueRef, clearResults);
+    const focusTotalBudget = useInputFocus(setTotalBudget, totalBudgetRef, clearResults);
+    const focusDiscountRate = useInputFocus(setDiscountRate, discountRateRef, clearResults);
+    const focusBrokerageRate = useInputFocus(setBrokerageRate, brokerageRateRef, clearResults);
 
     const handleClear = () => {
         setResult(null);
@@ -260,7 +264,7 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
                         <div className="flex justify-between items-center gap-2 min-w-0">
                             <div className="shrink-0">
                                 <label
-                                    onClick={() => clearField(setFaceValue, faceValueRef)}
+                                    onClick={focusFaceValue}
                                     className="text-sm font-bold text-primary-400 block leading-tight text-left cursor-pointer hover:text-white transition-colors"
                                     title="Click to Clear"
                                 >
@@ -287,7 +291,7 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
                         <div className="flex justify-between items-center gap-2 min-w-0">
                             <div className="shrink-0">
                                 <label
-                                    onClick={() => clearField(setTotalBudget, totalBudgetRef)}
+                                    onClick={focusTotalBudget}
                                     className="text-sm font-bold text-emerald-400 block leading-tight text-left cursor-pointer hover:text-white transition-colors"
                                     title="Click to Clear"
                                 >
@@ -338,7 +342,7 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
                     <div className="bg-neutral-800/40 rounded-xl p-2 border border-transparent hover:border-neutral-700">
                         <div className="flex flex-col">
                             <label
-                                onClick={() => clearField(setDiscountRate, discountRateRef)}
+                                onClick={focusDiscountRate}
                                 className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold mb-1 text-left cursor-pointer hover:text-primary-400 transition-colors"
                                 title="Click to Clear"
                             >
@@ -377,7 +381,7 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
                     <div className="bg-neutral-800/40 rounded-xl p-2 border border-transparent hover:border-neutral-700">
                         <div className="flex flex-col">
                             <label
-                                onClick={() => clearField(setBrokerageRate, brokerageRateRef)}
+                                onClick={focusBrokerageRate}
                                 className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold mb-1 text-left cursor-pointer hover:text-primary-400 transition-colors"
                                 title="Click to Clear"
                             >

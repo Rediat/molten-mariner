@@ -1,4 +1,5 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
+import { useInputFocus } from '../../hooks/useInputFocus';
 import { calculateEAR } from '../../utils/financial-utils';
 import { useHistory } from '../../context/HistoryContext';
 import { Info, HelpCircle, Trash2, Settings, History, Percent } from 'lucide-react';
@@ -35,11 +36,12 @@ const RateConverter = ({ toggleHelp, toggleSettings }) => {
     const nominalRef = useRef(null);
     const periodicRateRef = useRef(null);
 
-    const clearField = (setter, ref) => {
-        setter(null);
+    const clearResults = useCallback(() => {
         setResult(null);
-        setTimeout(() => ref.current?.focus(), 0);
-    };
+    }, []);
+
+    const focusNominal = useInputFocus(setNominal, nominalRef, clearResults);
+    const focusPeriodicRate = useInputFocus(setPeriodicRate, periodicRateRef, clearResults);
 
     const handleCalculate = () => {
         const nom = nominal || 0;
@@ -91,7 +93,7 @@ const RateConverter = ({ toggleHelp, toggleSettings }) => {
                 <div className="bg-neutral-800/50 rounded-xl p-2 shrink-0">
                     <div className="flex items-center gap-4 mb-2">
                         <label 
-                            onClick={() => clearField(setNominal, nominalRef)}
+                            onClick={focusNominal}
                             className="text-xs font-bold text-neutral-400 shrink-0 cursor-pointer hover:text-primary-400 transition-colors"
                             title="Click to Clear"
                         >
@@ -169,7 +171,7 @@ const RateConverter = ({ toggleHelp, toggleSettings }) => {
                                         {/* Periodic Rate Input */}
                                         <div className="flex items-center gap-2">
                                             <label 
-                                                onClick={() => clearField(setPeriodicRate, periodicRateRef)}
+                                                onClick={focusPeriodicRate}
                                                 className="text-[10px] font-bold text-neutral-500 shrink-0 cursor-pointer hover:text-primary-400 transition-colors"
                                                 title="Click to Clear"
                                             >

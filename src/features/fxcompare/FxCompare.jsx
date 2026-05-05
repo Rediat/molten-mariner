@@ -1,4 +1,5 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import { useInputFocus } from '../../hooks/useInputFocus';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
@@ -107,24 +108,16 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
     const loanRateRef = useRef(null);
     const loanYearsRef = useRef(null);
 
-    const clearField = (setter, ref) => {
-        setter(null);
+    const handleClear = useCallback(() => {
         setResultData(null);
         setRollingResult(null);
         setLeverageResult(null);
-        setTimeout(() => {
-            if (ref.current) {
-                ref.current.focus();
-                if (ref.current.select) ref.current.select();
-            }
-        }, 0);
-    };
+    }, []);
 
-    const handleClear = () => {
-        setResultData(null);
-        setRollingResult(null);
-        setLeverageResult(null);
-    };
+    const focusBudget = useInputFocus(setBudget, budgetRef, handleClear);
+    const focusTbillRate = useInputFocus(setCustomTbillRate, tbillRateRef, handleClear);
+    const focusLoanRate = useInputFocus(setLoanRate, loanRateRef, handleClear);
+    const focusLoanYears = useInputFocus(setLoanYears, loanYearsRef, handleClear);
 
     const handleCalculate = () => {
         if (!validAuctions[selectedAuctionIdx]) return;
@@ -420,7 +413,7 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
                     <div className="flex justify-between items-center gap-2">
                         <div className="shrink-0 text-left">
                             <label 
-                                onClick={() => clearField(setBudget, budgetRef)}
+                                onClick={focusBudget}
                                 className="text-sm font-bold text-white block leading-tight cursor-pointer hover:text-emerald-400 transition-colors select-none"
                             >
                                 Investment Budget
@@ -577,7 +570,7 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
                     <div className="bg-neutral-800/40 rounded-xl p-1.5 border border-neutral-700 text-left grid grid-cols-4 gap-2">
                         <div className="flex flex-col">
                             <label 
-                                onClick={() => clearField(setCustomTbillRate, tbillRateRef)}
+                                onClick={focusTbillRate}
                                 className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold mb-1 cursor-pointer hover:text-emerald-400 transition-colors select-none"
                             >
                                 T-Bill Rate (%)
@@ -592,7 +585,7 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
                         </div>
                         <div className="flex flex-col">
                             <label 
-                                onClick={() => clearField(setLoanRate, loanRateRef)}
+                                onClick={focusLoanRate}
                                 className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold mb-1 cursor-pointer hover:text-emerald-400 transition-colors select-none"
                             >
                                 Loan Rate (%)
@@ -607,7 +600,7 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
                         </div>
                         <div className="flex flex-col">
                             <label 
-                                onClick={() => clearField(setLoanYears, loanYearsRef)}
+                                onClick={focusLoanYears}
                                 className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold mb-1 cursor-pointer hover:text-emerald-400 transition-colors select-none"
                             >
                                 Term (Years)

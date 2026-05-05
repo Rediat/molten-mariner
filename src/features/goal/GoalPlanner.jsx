@@ -1,4 +1,5 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import { useInputFocus } from '../../hooks/useInputFocus';
 import { useHistory } from '../../context/HistoryContext';
 import { Target, TrendingUp, Wallet, PiggyBank, Calculator, Info, HelpCircle, Trash2, Settings, History } from 'lucide-react';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
@@ -54,11 +55,28 @@ const GoalPlanner = ({ toggleHelp, toggleSettings }) => {
     const knownPMTRef = useRef(null);
     const pvRatioRef = useRef(null);
 
-    const clearField = (setter, ref) => {
-        setter(null);
+    const clearResults = useCallback(() => {
         setResults(null);
-        setTimeout(() => ref.current?.focus(), 0);
-    };
+    }, []);
+
+    const focusTargetFV = useInputFocus(setTargetFV, targetFVRef, clearResults);
+    const focusYears = useInputFocus(setYears, yearsRef, clearResults);
+    const focusRate = useInputFocus(setRate, rateRef, clearResults);
+    const focusKnownPV = useInputFocus((val) => {
+        setKnownPV(val);
+        setKnownPMT(0);
+        setPvRatio(0);
+    }, knownPVRef, clearResults);
+    const focusKnownPMT = useInputFocus((val) => {
+        setKnownPMT(val);
+        setKnownPV(0);
+        setPvRatio(0);
+    }, knownPMTRef, clearResults);
+    const focusPvRatio = useInputFocus((val) => {
+        setPvRatio(val);
+        setKnownPV(0);
+        setKnownPMT(0);
+    }, pvRatioRef, clearResults);
 
     // Auto-scroll to bottom when results are calculated
     useEffect(() => {
@@ -322,7 +340,7 @@ const GoalPlanner = ({ toggleHelp, toggleSettings }) => {
                     <div className="flex justify-between items-center gap-4">
                         <div className="flex flex-col items-start text-left shrink-0">
                             <label 
-                                onClick={() => clearField(setTargetFV, targetFVRef)}
+                                onClick={focusTargetFV}
                                 className="text-xs font-bold text-primary-400 whitespace-nowrap cursor-pointer hover:text-white transition-colors"
                                 title="Click to Clear"
                             >
@@ -350,7 +368,7 @@ const GoalPlanner = ({ toggleHelp, toggleSettings }) => {
                     <div className="flex justify-between items-center gap-4">
                         <div className="flex flex-col items-start text-left shrink-0">
                             <label 
-                                onClick={() => clearField(setYears, yearsRef)}
+                                onClick={focusYears}
                                 className="text-xs font-bold text-neutral-300 whitespace-nowrap cursor-pointer hover:text-primary-400 transition-colors"
                                 title="Click to Clear"
                             >
@@ -378,7 +396,7 @@ const GoalPlanner = ({ toggleHelp, toggleSettings }) => {
                     <div className="flex justify-between items-center gap-4">
                         <div className="flex flex-col items-start text-left shrink-0">
                             <label 
-                                onClick={() => clearField(setRate, rateRef)}
+                                onClick={focusRate}
                                 className="text-xs font-bold text-neutral-300 whitespace-nowrap cursor-pointer hover:text-primary-400 transition-colors"
                                 title="Click to Clear"
                             >
@@ -412,7 +430,7 @@ const GoalPlanner = ({ toggleHelp, toggleSettings }) => {
                         <div className="flex justify-between items-center gap-4">
                             <div className="flex flex-col items-start text-left">
                                 <label 
-                                    onClick={() => clearField(setKnownPV, knownPVRef)}
+                                    onClick={focusKnownPV}
                                     className="text-xs font-bold text-neutral-400 cursor-pointer hover:text-white transition-colors"
                                     title="Click to Clear"
                                 >
@@ -440,7 +458,7 @@ const GoalPlanner = ({ toggleHelp, toggleSettings }) => {
                         <div className="flex justify-between items-center gap-4">
                             <div className="flex flex-col items-start text-left">
                                 <label 
-                                    onClick={() => clearField(setKnownPMT, knownPMTRef)}
+                                    onClick={focusKnownPMT}
                                     className="text-xs font-bold text-neutral-400 cursor-pointer hover:text-white transition-colors"
                                     title="Click to Clear"
                                 >
@@ -471,7 +489,7 @@ const GoalPlanner = ({ toggleHelp, toggleSettings }) => {
                                     <div className="flex flex-col">
                                         <div className="flex items-center gap-1.5">
                                             <label 
-                                                onClick={() => clearField(setPvRatio, pvRatioRef)}
+                                                onClick={focusPvRatio}
                                                 className="text-xs font-bold text-neutral-400 cursor-pointer hover:text-white transition-colors"
                                                 title="Click to Clear"
                                             >

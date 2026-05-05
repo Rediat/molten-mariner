@@ -1,4 +1,5 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
+import { useInputFocus } from '../../hooks/useInputFocus';
 import { useHistory } from '../../context/HistoryContext';
 import { Wallet, Info, HelpCircle, Trash2, Settings, History } from 'lucide-react';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
@@ -27,11 +28,13 @@ const PensionCalculator = ({ toggleHelp, toggleSettings }) => {
     const serviceRef = useRef(null);
     const ageRef = useRef(null);
 
-    const clearField = (setter, ref) => {
-        setter(null);
+    const clearResults = useCallback(() => {
         setResult(null);
-        setTimeout(() => ref.current?.focus(), 0);
-    };
+    }, []);
+
+    const focusSalary = useInputFocus(setAverageSalary, salaryRef, clearResults);
+    const focusService = useInputFocus(setYearsOfService, serviceRef, clearResults);
+    const focusAge = useInputFocus(setRetirementAge, ageRef, clearResults);
 
     const handleCalculate = () => {
         // Ethiopian Defined Benefit Pension Formula:
@@ -148,7 +151,7 @@ const PensionCalculator = ({ toggleHelp, toggleSettings }) => {
                     <div className="flex justify-between items-center gap-2 min-w-0">
                         <div className="shrink-0">
                             <label 
-                                onClick={() => clearField(setAverageSalary, salaryRef)}
+                                onClick={focusSalary}
                                 className="text-sm font-bold text-primary-400 block leading-tight text-left cursor-pointer hover:text-white transition-colors"
                                 title="Click to Clear"
                             >
@@ -176,7 +179,7 @@ const PensionCalculator = ({ toggleHelp, toggleSettings }) => {
                     <div className="flex justify-between items-center gap-2 min-w-0">
                         <div className="shrink-0">
                             <label 
-                                onClick={() => clearField(setYearsOfService, serviceRef)}
+                                onClick={focusService}
                                 className="text-sm font-bold text-white block leading-tight text-left cursor-pointer hover:text-primary-400 transition-colors"
                                 title="Click to Clear"
                             >
@@ -204,7 +207,7 @@ const PensionCalculator = ({ toggleHelp, toggleSettings }) => {
                     <div className="flex justify-between items-center gap-2 min-w-0">
                         <div className="shrink-0">
                             <label 
-                                onClick={() => clearField(setRetirementAge, ageRef)}
+                                onClick={focusAge}
                                 className="text-sm font-bold text-white block leading-tight text-left cursor-pointer hover:text-primary-400 transition-colors"
                                 title="Click to Clear"
                             >

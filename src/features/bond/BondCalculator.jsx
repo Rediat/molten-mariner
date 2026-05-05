@@ -1,4 +1,5 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
+import { useInputFocus } from '../../hooks/useInputFocus';
 import { calculateBond, calculateBondYTM, calculateBondYTC, calculateBondDuration, calculateBondConvexity } from '../../utils/financial-utils';
 import { useHistory } from '../../context/HistoryContext';
 import { Info, HelpCircle, Trash2, Settings, History, FileText } from 'lucide-react';
@@ -28,11 +29,27 @@ const BondCalculator = ({ toggleHelp, toggleSettings }) => {
         yearsToCall: useRef(null)
     };
 
-    const clearField = (field, ref) => {
-        setValues(prev => ({ ...prev, [field]: null }));
+    const clearResults = useCallback(() => {
         setResult(null);
         setMetrics(null);
-        setTimeout(() => ref.current?.focus(), 0);
+    }, []);
+
+    const focusFaceValue = useInputFocus((val) => setValues(prev => ({ ...prev, faceValue: val })), inputRefs.faceValue, clearResults);
+    const focusCouponRate = useInputFocus((val) => setValues(prev => ({ ...prev, couponRate: val })), inputRefs.couponRate, clearResults);
+    const focusYtm = useInputFocus((val) => setValues(prev => ({ ...prev, ytm: val })), inputRefs.ytm, clearResults);
+    const focusPrice = useInputFocus((val) => setValues(prev => ({ ...prev, price: val })), inputRefs.price, clearResults);
+    const focusYears = useInputFocus((val) => setValues(prev => ({ ...prev, years: val })), inputRefs.years, clearResults);
+    const focusCallPrice = useInputFocus((val) => setValues(prev => ({ ...prev, callPrice: val })), inputRefs.callPrice, clearResults);
+    const focusYearsToCall = useInputFocus((val) => setValues(prev => ({ ...prev, yearsToCall: val })), inputRefs.yearsToCall, clearResults);
+
+    const focusHandlers = {
+        faceValue: focusFaceValue,
+        couponRate: focusCouponRate,
+        ytm: focusYtm,
+        price: focusPrice,
+        years: focusYears,
+        callPrice: focusCallPrice,
+        yearsToCall: focusYearsToCall
     };
 
     const handleCalculate = () => {
@@ -134,7 +151,7 @@ const BondCalculator = ({ toggleHelp, toggleSettings }) => {
                     <div key={field.id} className="bg-neutral-800/40 rounded-lg p-1.5 flex justify-between items-center gap-4 border border-transparent hover:border-neutral-700 transition-all">
                         <div className="flex flex-col shrink-0 items-start text-left">
                             <label 
-                                onClick={() => clearField(field.id, inputRefs[field.id])}
+                                onClick={focusHandlers[field.id]}
                                 className="text-sm font-bold text-neutral-300 cursor-pointer hover:text-primary-400 transition-colors"
                                 title="Click to Clear"
                             >
