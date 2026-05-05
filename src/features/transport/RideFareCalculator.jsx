@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { useInputFocus } from '../../hooks/useInputFocus';
 import { Car, Info, HelpCircle, Trash2, Settings, History, Loader2, ArrowUpDown, Clock, Map as MapIcon, Navigation, Zap, ChevronDown, ChevronUp } from 'lucide-react';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
 import PlacesAutocomplete from '../../components/PlacesAutocomplete';
@@ -58,23 +59,15 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
     const serviceMultiplierRef = useRef(null);
     const priceToChargeRef = useRef(null);
 
-    const clearValuesField = (field, ref) => {
-        setValues(prev => ({ ...prev, [field]: null }));
+    const clearResults = useCallback(() => {
         setResults(null);
-        setTimeout(() => ref.current?.focus(), 0);
-    };
+    }, []);
 
-    const clearWaitMultiplier = () => {
-        setWaitMultiplier(null);
-        setResults(null);
-        setTimeout(() => waitMultiplierRef.current?.focus(), 0);
-    };
-
-    const clearPriceToCharge = () => {
-        setPriceToCharge(null);
-        setResults(null);
-        setTimeout(() => priceToChargeRef.current?.focus(), 0);
-    };
+    const focusDistance = useInputFocus((val) => setValues(prev => ({ ...prev, distance: val })), distanceRef, clearResults);
+    const focusCostPerLiter = useInputFocus((val) => setValues(prev => ({ ...prev, costPerLiter: val })), costPerLiterRef, clearResults);
+    const focusWaitMultiplier = useInputFocus(setWaitMultiplier, waitMultiplierRef, clearResults);
+    const focusServiceMultiplier = useInputFocus((val) => setValues(prev => ({ ...prev, serviceMultiplier: val })), serviceMultiplierRef, clearResults);
+    const focusPriceToCharge = useInputFocus(setPriceToCharge, priceToChargeRef, clearResults);
 
     const handleSwapLocations = useCallback(() => {
         const prevOrigin = origin;
@@ -566,7 +559,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                 <div className={`rounded-xl p-1.5 border ${distanceSource === 'maps' ? 'bg-emerald-900/10 border-emerald-500/40' : 'bg-neutral-800/40 border-primary-500/40'}`}>
                     <div className="flex justify-between items-center mb-0.5">
                         <label 
-                            onClick={() => clearValuesField('distance', distanceRef)}
+                            onClick={focusDistance}
                             className={`text-[10px] uppercase tracking-wider font-bold block cursor-pointer hover:text-white transition-colors ${distanceSource === 'maps' ? 'text-emerald-400' : 'text-primary-400'}`}
                             title="Click to Clear"
                         >
@@ -611,7 +604,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                 <div className="bg-neutral-800/40 rounded-xl p-1.5 border border-neutral-700/50">
                     <div className="flex justify-between items-center mb-0.5 h-[18px]">
                         <label 
-                            onClick={() => clearValuesField('costPerLiter', costPerLiterRef)}
+                            onClick={focusCostPerLiter}
                             className="text-[10px] uppercase tracking-wider font-bold text-white block cursor-pointer hover:text-primary-400 transition-colors"
                             title="Click to Clear"
                         >
@@ -635,7 +628,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                 <div className="bg-neutral-800/40 rounded-xl p-1.5 border border-neutral-700/50">
                     <div className="flex justify-between items-center mb-0.5 h-[18px]">
                         <label 
-                            onClick={clearWaitMultiplier}
+                            onClick={focusWaitMultiplier}
                             className="text-[10px] uppercase tracking-wider font-bold text-amber-400 block cursor-pointer hover:text-white transition-colors"
                             title="Click to Clear"
                         >
@@ -663,7 +656,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                     <div className="bg-neutral-800/40 rounded-xl p-1.5 border border-neutral-700/50">
                         <div className="flex justify-between items-center mb-0.5 h-[18px]">
                             <label 
-                                onClick={() => clearValuesField('serviceMultiplier', serviceMultiplierRef)}
+                                onClick={focusServiceMultiplier}
                                 className="text-[10px] uppercase tracking-wider font-bold text-white block cursor-pointer hover:text-primary-400 transition-colors"
                                 title="Click to Clear"
                             >
@@ -685,7 +678,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                     <div className="bg-neutral-800/40 rounded-xl p-1.5 border border-emerald-500/40">
                         <div className="flex justify-between items-center mb-0.5 h-[18px]">
                             <label 
-                                onClick={clearPriceToCharge}
+                                onClick={focusPriceToCharge}
                                 className="text-[10px] uppercase tracking-wider font-bold text-emerald-400 block cursor-pointer hover:text-white transition-colors"
                                 title="Click to Clear"
                             >

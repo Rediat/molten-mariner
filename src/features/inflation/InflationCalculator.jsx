@@ -1,4 +1,5 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useCallback } from 'react';
+import { useInputFocus } from '../../hooks/useInputFocus';
 import { TrendingUp, Info, HelpCircle, Trash2, Settings, History, ChevronDown, ChevronUp } from 'lucide-react';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
 import { CalculateIcon } from '../../components/Icons';
@@ -28,17 +29,19 @@ const InflationCalculator = ({ toggleHelp, toggleSettings }) => {
     const startYearRef = useRef(null);
     const endYearRef = useRef(null);
 
-    const clearAmount = () => {
-        setAmount(null);
+    const clearResults = useCallback(() => {
         setResult(null);
-        setTimeout(() => amountRef.current?.focus(), 0);
-    };
+    }, []);
 
-    const clearYear = (setter, ref) => {
-        setter(null);
-        setResult(null);
-        setTimeout(() => ref.current?.focus(), 0);
-    };
+    const focusAmount = useInputFocus(setAmount, amountRef, clearResults);
+    const focusStartYear = useInputFocus(setStartYear, startYearRef, clearResults);
+    const focusEndYear = useInputFocus((val) => {
+        if (endYearMode === 'YEAR') {
+            setEndYear(val);
+        } else {
+            setEndYear(val === null ? null : (new Date().getFullYear() + val));
+        }
+    }, endYearRef, clearResults);
 
     // Auto ARIMA: selects best (p,d,q) via AIC
     const { predictions, modelInfo, usaModelInfo } = useMemo(() => {
@@ -190,7 +193,7 @@ const InflationCalculator = ({ toggleHelp, toggleSettings }) => {
                         <div className="bg-neutral-800/40 rounded-lg p-2.5 border border-transparent hover:border-neutral-700">
                             <div className="flex justify-between items-center gap-1 min-w-0">
                                 <label 
-                                    onClick={() => clearYear(setStartYear, startYearRef)}
+                                    onClick={focusStartYear}
                                     className="text-sm font-bold text-white leading-tight cursor-pointer hover:text-primary-400 whitespace-nowrap shrink-0 text-left"
                                 >
                                     Start Year
@@ -216,7 +219,7 @@ const InflationCalculator = ({ toggleHelp, toggleSettings }) => {
                             <div className="flex justify-between items-center gap-1 min-w-0">
                                 <div className="flex items-center gap-1 shrink-0">
                                     <label 
-                                        onClick={() => clearYear(setEndYear, endYearRef)}
+                                        onClick={focusEndYear}
                                         className="text-sm font-bold text-white leading-tight cursor-pointer hover:text-primary-400 whitespace-nowrap text-left"
                                     >
                                         End Year
@@ -253,7 +256,7 @@ const InflationCalculator = ({ toggleHelp, toggleSettings }) => {
                     <div className="bg-neutral-800/40 rounded-lg p-2.5 border border-primary-500/30 ring-1 ring-primary-500/5">
                         <div className="flex justify-between items-center gap-2 min-w-0">
                             <label 
-                                onClick={clearAmount}
+                                onClick={focusAmount}
                                 className="text-sm font-bold text-primary-400 cursor-pointer hover:text-white shrink-0 whitespace-nowrap text-left"
                             >
                                 Amount (ETB)

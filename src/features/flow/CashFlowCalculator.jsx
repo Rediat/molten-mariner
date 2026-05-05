@@ -1,4 +1,5 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
+import { useInputFocus } from '../../hooks/useInputFocus';
 import { calculateNPV, calculateIRR, calculateMIRR, calculatePaybackPeriod, calculateDiscountedPaybackPeriod, calculateProfitabilityIndex } from '../../utils/financial-utils';
 import { useHistory } from '../../context/HistoryContext';
 import { Plus, Trash2, Info, HelpCircle, Settings, History, Activity } from 'lucide-react';
@@ -20,17 +21,24 @@ const CashFlowCalculator = ({ toggleHelp, toggleSettings }) => {
     const reinvestRateRef = useRef(null);
     const flowRefs = useRef([]);
 
-    const clearRate = (setter, ref) => {
-        setter(null);
+    const clearResults = useCallback(() => {
         setResult(null);
-        setTimeout(() => ref.current?.focus(), 0);
-    };
+    }, []);
 
-    const clearFlow = (index) => {
-        const newFlows = [...flows];
-        newFlows[index] = null;
-        setFlows(newFlows);
-        setResult(null);
+    const focusRate = useInputFocus(setRate, rateRef, clearResults);
+    const focusReinvestRate = useInputFocus(setReinvestRate, reinvestRateRef, clearResults);
+    
+    // For dynamic flows, we need a way to pass the index
+    const focusFlow = (index) => {
+        const setter = (val) => {
+            const newFlows = [...flows];
+            newFlows[index] = val;
+            setFlows(newFlows);
+        };
+        // We can't use the hook inside a callback, so we create a factory function or use it directly
+        // However, for simplicity and consistency with the hook's logic:
+        setter(null);
+        clearResults();
         setTimeout(() => flowRefs.current[index]?.focus(), 0);
     };
 
@@ -93,7 +101,7 @@ const CashFlowCalculator = ({ toggleHelp, toggleSettings }) => {
             <div className="bg-neutral-800/50 p-4 rounded-xl mb-4 grid grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1 items-start text-left">
                     <label 
-                        onClick={() => clearRate(setRate, rateRef)}
+                        onClick={focusRate}
                         className="font-bold text-neutral-300 text-[10px] uppercase tracking-wide cursor-pointer hover:text-primary-400 transition-colors"
                         title="Click to Clear"
                     >
@@ -113,7 +121,7 @@ const CashFlowCalculator = ({ toggleHelp, toggleSettings }) => {
                 </div>
                 <div className="flex flex-col gap-1 items-start text-left">
                     <label 
-                        onClick={() => clearRate(setReinvestRate, reinvestRateRef)}
+                        onClick={focusReinvestRate}
                         className="font-bold text-neutral-300 text-[10px] uppercase tracking-wide cursor-pointer hover:text-secondary-400 transition-colors"
                         title="Click to Clear"
                     >
@@ -137,7 +145,7 @@ const CashFlowCalculator = ({ toggleHelp, toggleSettings }) => {
                 {flows.map((flow, i) => (
                     <div key={i} className="flex items-center gap-3 bg-neutral-800/30 p-3 rounded-lg border border-transparent focus-within:border-neutral-700">
                         <span 
-                            onClick={() => clearFlow(i)}
+                            onClick={() => focusFlow(i)}
                             className="text-[10px] font-bold text-neutral-500 w-8 cursor-pointer hover:text-primary-400 transition-colors"
                             title="Click to Clear"
                         >
