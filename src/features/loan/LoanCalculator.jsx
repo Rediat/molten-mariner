@@ -8,6 +8,7 @@ import { CalculateIcon } from '../../components/Icons';
 import HistoryOverlay from '../../components/HistoryOverlay';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { createStandardPDF, addStandardFooter, STANDARD_TABLE_STYLES } from '../../utils/pdf-utils';
 import * as XLSX from 'xlsx';
 
 const FREQUENCIES = [
@@ -181,35 +182,27 @@ const LoanCalculator = ({ toggleHelp, toggleSettings }) => {
 
     const downloadPDF = async () => {
         if (!schedule.length || !result) return;
-        const doc = new jsPDF();
-        doc.setTextColor(40);
-        doc.setFontSize(18);
-        doc.text("Amortization Schedule", 14, 22);
         
         const ear = calculateEAR(values.rate || 0, values.frequency || 12);
-        doc.setFontSize(9);
-        doc.setTextColor(100);
-        
         const formatNum = (num) => (num || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         const rateStr = (values.rate || 0).toFixed(2);
         const earStr = ear.toFixed(2);
         
-        const summaryLine1 = `Loan Amount: $${formatNum(values.amount)} | Rate: ${rateStr}% | EAR: ${earStr}% | Term: ${values.years || 0} Years`;
-        const summaryLine2 = `Periodic Payment: $${formatNum(result.monthlyPayment)} | Total Interest: $${formatNum(result.totalInterest)} | Total Cost: $${formatNum(result.totalPayment)}`;
-        
-        doc.text(summaryLine1, 14, 30);
-        doc.text(summaryLine2, 14, 35);
+        const summaryLines = [
+            `Loan Amount: $${formatNum(values.amount)} | Rate: ${rateStr}% | EAR: ${earStr}% | Term: ${values.years || 0} Years`,
+            `Periodic Payment: $${formatNum(result.monthlyPayment)} | Total Interest: $${formatNum(result.totalInterest)} | Total Cost: $${formatNum(result.totalPayment)}`
+        ];
+
+        const doc = createStandardPDF("Amortization Schedule", summaryLines);
 
         autoTable(doc, {
+            ...STANDARD_TABLE_STYLES,
+            startY: 44,
             head: [["Date", "Period", "Interest", "Principal", "Balance"]],
             body: schedule.map(r => [r.date || '-', r.month,
             `$${r.interest.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
             `$${r.principal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
             `$${r.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`]),
-            startY: 42,
-            theme: 'grid',
-            headStyles: { fillColor: [66, 66, 66], textColor: 255, fontStyle: 'bold', halign: 'right' },
-            alternateRowStyles: { fillColor: [245, 245, 245] },
             columnStyles: {
                 0: { halign: 'right' },
                 1: { halign: 'right' },
@@ -219,32 +212,10 @@ const LoanCalculator = ({ toggleHelp, toggleSettings }) => {
             },
         });
 
-        // Add footers after table is drawn to ensure correct total page count
-        const totalPages = doc.internal.getNumberOfPages();
-        const dateStr = new Date().toLocaleDateString('en-US', { 
-            year: 'numeric', month: 'short', day: 'numeric',
-            hour: '2-digit', minute: '2-digit'
-        });
-
-        for (let i = 1; i <= totalPages; i++) {
-            doc.setPage(i);
-            const pageHeight = doc.internal.pageSize.height || doc.internal.pageSize.getHeight();
-            const pageWidth = doc.internal.pageSize.width || doc.internal.pageSize.getWidth();
-            
-            doc.setFontSize(8);
-            doc.setTextColor(150);
-
-            // Footer Date (Left)
-            doc.text(dateStr, 14, pageHeight - 10);
-
-            // Page Number (Right)
-            doc.text(`Page ${i} of ${totalPages}`, pageWidth - 14, pageHeight - 10, { align: 'right' });
-        }
+        addStandardFooter(doc);
 
         const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace('T', '_').slice(0, 15);
         const fileName = `amortization_schedule_${timestamp}.pdf`;
-
-        // Use the built-in save method which is the most robust way to trigger a download in jsPDF
         doc.save(fileName);
     };
 

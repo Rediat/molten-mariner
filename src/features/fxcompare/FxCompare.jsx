@@ -2,6 +2,7 @@ import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import { useInputFocus } from '../../hooks/useInputFocus';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { createStandardPDF, addStandardFooter, STANDARD_TABLE_STYLES } from '../../utils/pdf-utils';
 import * as XLSX from 'xlsx';
 import { ArrowRightLeft, Info, HelpCircle, Settings, ChevronDown, ChevronUp, Trash2, X, TrendingUp, TrendingDown, Search, Calendar, FileSpreadsheet, FileText, Download } from 'lucide-react';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
@@ -222,17 +223,17 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
 
     const downloadLeveragePDF = async () => {
         if (!leverageResult || !leverageResult.rounds) return;
-        const doc = new jsPDF();
-        doc.setTextColor(40);
-        doc.setFontSize(18);
-        doc.text("T-Bill Leverage Analysis", 14, 22);
-        doc.setFontSize(11);
-        doc.setTextColor(100);
         
-        doc.text(`Loan: ${formatCurrency(budget)} | Rate: ${loanRate.toFixed(2)}% | Term: ${loanYears}y | Freq: ${loanFrequency} | Total Interest: ${formatCurrency(leverageResult.loanResult.totalInterest)}`, 14, 30);
-        doc.text(`T-Bill: ${customTbillRate.toFixed(2)}% | Tenure: ${selectedTenure}d | ROI: ${leverageResult.tbillTotalROI.toFixed(2)}% | Final: ${formatCurrency(leverageResult.tbillFinalValue)} | Net Profit: ${formatCurrency(leverageResult.netProfit)}`, 14, 36);
+        const summaryLines = [
+            `Loan: ${formatCurrency(budget)} | Rate: ${loanRate.toFixed(2)}% | Term: ${loanYears}y | Freq: ${loanFrequency} | Total Interest: ${formatCurrency(leverageResult.loanResult.totalInterest)}`,
+            `T-Bill: ${customTbillRate.toFixed(2)}% | Tenure: ${selectedTenure}d | ROI: ${leverageResult.tbillTotalROI.toFixed(2)}% | Final: ${formatCurrency(leverageResult.tbillFinalValue)} | Net Profit: ${formatCurrency(leverageResult.netProfit)}`
+        ];
+
+        const doc = createStandardPDF("T-Bill Leverage Analysis", summaryLines);
 
         autoTable(doc, {
+            ...STANDARD_TABLE_STYLES,
+            startY: 44,
             head: [["Round", "Auction Date", "Maturity", "Quantity", "Invested", "End Value", "Profit", "Leftover"]],
             body: leverageResult.rounds.map((r, i) => [
                 i + 1,
@@ -244,10 +245,6 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
                 `${r.profit >= 0 ? '+' : ''}${formatCurrency(r.profit)}`,
                 `${formatCurrency(r.leftover)}`
             ]),
-            startY: 44,
-            theme: 'grid',
-            headStyles: { fillColor: [66, 66, 66], textColor: 255, fontStyle: 'bold', halign: 'right' },
-            alternateRowStyles: { fillColor: [245, 245, 245] },
             columnStyles: {
                 0: { halign: 'right' },
                 1: { halign: 'right' },
@@ -260,32 +257,10 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
             },
         });
         
-        // Add footers after table is drawn to ensure correct total page count
-        const totalPages = doc.internal.getNumberOfPages();
-        const dateStr = new Date().toLocaleDateString('en-US', { 
-            year: 'numeric', month: 'short', day: 'numeric',
-            hour: '2-digit', minute: '2-digit'
-        });
-
-        for (let i = 1; i <= totalPages; i++) {
-            doc.setPage(i);
-            const pageHeight = doc.internal.pageSize.height || doc.internal.pageSize.getHeight();
-            const pageWidth = doc.internal.pageSize.width || doc.internal.pageSize.getWidth();
-            
-            doc.setFontSize(8);
-            doc.setTextColor(150);
-
-            // Footer Date (Left)
-            doc.text(dateStr, 14, pageHeight - 10);
-
-            // Page Number (Right)
-            doc.text(`Page ${i} of ${totalPages}`, pageWidth - 14, pageHeight - 10, { align: 'right' });
-        }
+        addStandardFooter(doc);
 
         const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace('T', '_').slice(0, 15);
         const fileName = `leverage_rounds_${timestamp}.pdf`;
-
-        // Use the built-in save method which is the most robust way to trigger a download
         doc.save(fileName);
     };
 
