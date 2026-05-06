@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { useInputFocus } from '../../hooks/useInputFocus';
-import { calculateLoan, getAmortizationSchedule } from '../../utils/financial-utils';
+import { calculateLoan, getAmortizationSchedule, calculateEAR } from '../../utils/financial-utils';
 import { useHistory } from '../../context/HistoryContext';
 import { List, X, FileText, FileSpreadsheet, Info, HelpCircle, Trash2, Settings, History, DollarSign, Download } from 'lucide-react';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
@@ -123,10 +123,25 @@ const LoanCalculator = ({ toggleHelp, toggleSettings }) => {
     };
 
     const downloadCSV = async () => {
-        if (!schedule.length) return;
-        const headers = ['Date', 'Period', 'Interest', 'Principal', 'Balance'];
+        if (!schedule.length || !result) return;
+        
+        const ear = calculateEAR(values.rate || 0, values.frequency || 12);
+        const metadata = [
+            ['Loan Summary'],
+            ['Loan Amount', (values.amount || 0).toFixed(2)],
+            ['Nominal Rate', `${(values.rate || 0).toFixed(2)}%`],
+            ['Effective Rate (EAR)', `${ear.toFixed(2)}%`],
+            ['Term', `${values.years || 0} Years`],
+            ['Periodic Payment', (result.monthlyPayment || 0).toFixed(2)],
+            ['Total Interest', (result.totalInterest || 0).toFixed(2)],
+            ['Total Cost', (result.totalPayment || 0).toFixed(2)],
+            [],
+            ['Amortization Schedule'],
+            ['Date', 'Period', 'Interest', 'Principal', 'Balance']
+        ];
+
         const rows = schedule.map(r => [r.date || '', r.month, r.interest.toFixed(2), r.principal.toFixed(2), r.balance.toFixed(2)]);
-        const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+        const csvContent = [...metadata.map(m => m.join(',')), ...rows.map(r => r.join(','))].join('\n');
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace('T', '_').slice(0, 15);
         const fileName = `amortization_schedule_${timestamp}.csv`;
@@ -165,14 +180,25 @@ const LoanCalculator = ({ toggleHelp, toggleSettings }) => {
     };
 
     const downloadPDF = async () => {
-        if (!schedule.length) return;
+        if (!schedule.length || !result) return;
         const doc = new jsPDF();
         doc.setTextColor(40);
         doc.setFontSize(18);
         doc.text("Amortization Schedule", 14, 22);
-        doc.setFontSize(11);
+        
+        const ear = calculateEAR(values.rate || 0, values.frequency || 12);
+        doc.setFontSize(9);
         doc.setTextColor(100);
-        doc.text(`Loan Amount: $${values.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} | Rate: ${values.rate.toFixed(2)}% | Term: ${values.years} Years`, 14, 30);
+        
+        const formatNum = (num) => (num || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const rateStr = (values.rate || 0).toFixed(2);
+        const earStr = ear.toFixed(2);
+        
+        const summaryLine1 = `Loan Amount: $${formatNum(values.amount)} | Rate: ${rateStr}% | EAR: ${earStr}% | Term: ${values.years || 0} Years`;
+        const summaryLine2 = `Periodic Payment: $${formatNum(result.monthlyPayment)} | Total Interest: $${formatNum(result.totalInterest)} | Total Cost: $${formatNum(result.totalPayment)}`;
+        
+        doc.text(summaryLine1, 14, 30);
+        doc.text(summaryLine2, 14, 35);
 
         autoTable(doc, {
             head: [["Date", "Period", "Interest", "Principal", "Balance"]],
@@ -180,7 +206,7 @@ const LoanCalculator = ({ toggleHelp, toggleSettings }) => {
             `$${r.interest.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
             `$${r.principal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
             `$${r.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`]),
-            startY: 40,
+            startY: 42,
             theme: 'grid',
             headStyles: { fillColor: [66, 66, 66], textColor: 255, fontStyle: 'bold', halign: 'right' },
             alternateRowStyles: { fillColor: [245, 245, 245] },
@@ -193,53 +219,50 @@ const LoanCalculator = ({ toggleHelp, toggleSettings }) => {
             },
         });
 
-        const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace('T', '_').slice(0, 15);
-        const fileName = `amortization_schedule_${timestamp}.pdf`;
-        const pdfBlob = doc.output('blob');
+        // Add footers after table is drawn to ensure correct total page count
+        const totalPages = doc.internal.getNumberOfPages();
+        const dateStr = new Date().toLocaleDateString('en-US', { 
+            year: 'numeric', month: 'short', day: 'numeric',
+            hour: '2-digit', minute: '2-digit'
+        });
 
-        // Try Web Share API first (works on Android, but skip on Windows desktop to avoid Edge freeze)
-        if (!isWindowsDesktop() && navigator.share && navigator.canShare) {
-            const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
-            if (navigator.canShare({ files: [file] })) {
-                try {
-                    await navigator.share({
-                        files: [file],
-                        title: 'Amortization Schedule',
-                    });
-                    return;
-                } catch (err) {
-                    if (err.name === 'AbortError') return; // User cancelled
-                }
-            }
+        for (let i = 1; i <= totalPages; i++) {
+            doc.setPage(i);
+            const pageHeight = doc.internal.pageSize.height || doc.internal.pageSize.getHeight();
+            const pageWidth = doc.internal.pageSize.width || doc.internal.pageSize.getWidth();
+            
+            doc.setFontSize(8);
+            doc.setTextColor(150);
+
+            // Footer Date (Left)
+            doc.text(dateStr, 14, pageHeight - 10);
+
+            // Page Number (Right)
+            doc.text(`Page ${i} of ${totalPages}`, pageWidth - 14, pageHeight - 10, { align: 'right' });
         }
 
-        // Fallback: Create download link
-        const url = URL.createObjectURL(pdfBlob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = fileName;
-        link.style.display = 'none';
-        document.body.appendChild(link);
+        const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace('T', '_').slice(0, 15);
+        const fileName = `amortization_schedule_${timestamp}.pdf`;
 
-        // Use setTimeout to ensure the click registers on mobile
-        setTimeout(() => {
-            link.click();
-            document.body.removeChild(link);
-            // Clean up the blob URL after a delay
-            setTimeout(() => URL.revokeObjectURL(url), 1000);
-        }, 100);
+        // Use the built-in save method which is the most robust way to trigger a download in jsPDF
+        doc.save(fileName);
     };
 
     const downloadExcel = () => {
-        if (!schedule.length) return;
+        if (!schedule.length || !result) return;
         
+        const ear = calculateEAR(values.rate || 0, values.frequency || 12);
         // Prepare data for XLSX
         const data = [
-            ["Loan Parameters"],
-            ["Loan Amount", values.amount],
-            ["Interest Rate", values.rate],
-            ["Loan Term", values.years],
-            ["Frequency", values.frequency],
+            ["Loan Summary"],
+            ["Loan Amount", values.amount || 0],
+            ["Nominal Rate", `${values.rate || 0}%`],
+            ["Effective Rate (EAR)", `${ear.toFixed(2)}%`],
+            ["Loan Term", values.years || 0],
+            ["Frequency", values.frequency || 12],
+            ["Periodic Payment", result.monthlyPayment || 0],
+            ["Total Interest", result.totalInterest || 0],
+            ["Total Cost", result.totalPayment || 0],
             [],
             ["Amortization Schedule"],
             ["Date", "Period", "Interest", "Principal", "Balance"]

@@ -259,37 +259,34 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
                 7: { halign: 'right' },
             },
         });
+        
+        // Add footers after table is drawn to ensure correct total page count
+        const totalPages = doc.internal.getNumberOfPages();
+        const dateStr = new Date().toLocaleDateString('en-US', { 
+            year: 'numeric', month: 'short', day: 'numeric',
+            hour: '2-digit', minute: '2-digit'
+        });
+
+        for (let i = 1; i <= totalPages; i++) {
+            doc.setPage(i);
+            const pageHeight = doc.internal.pageSize.height || doc.internal.pageSize.getHeight();
+            const pageWidth = doc.internal.pageSize.width || doc.internal.pageSize.getWidth();
+            
+            doc.setFontSize(8);
+            doc.setTextColor(150);
+
+            // Footer Date (Left)
+            doc.text(dateStr, 14, pageHeight - 10);
+
+            // Page Number (Right)
+            doc.text(`Page ${i} of ${totalPages}`, pageWidth - 14, pageHeight - 10, { align: 'right' });
+        }
 
         const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace('T', '_').slice(0, 15);
         const fileName = `leverage_rounds_${timestamp}.pdf`;
-        const pdfBlob = doc.output('blob');
 
-        if (!isWindowsDesktop() && navigator.share && navigator.canShare) {
-            const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
-            if (navigator.canShare({ files: [file] })) {
-                try {
-                    await navigator.share({
-                        files: [file],
-                        title: 'Leverage Rounds',
-                    });
-                    return;
-                } catch (err) {
-                    if (err.name === 'AbortError') return;
-                }
-            }
-        }
-
-        const url = URL.createObjectURL(pdfBlob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = fileName;
-        link.style.display = 'none';
-        document.body.appendChild(link);
-        setTimeout(() => {
-            link.click();
-            document.body.removeChild(link);
-            setTimeout(() => URL.revokeObjectURL(url), 1000);
-        }, 100);
+        // Use the built-in save method which is the most robust way to trigger a download
+        doc.save(fileName);
     };
 
     const downloadLeverageExcel = () => {
