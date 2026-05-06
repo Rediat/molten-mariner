@@ -31,14 +31,35 @@ const INPUT_FIELDS = [
 const LoanCalculator = ({ toggleHelp, toggleSettings }) => {
     const { addToHistory } = useHistory();
     const [useDates, setUseDates] = useState(true);
-    const [values, setValues] = useState({
-        amount: 374136.48,
-        rate: 9.5,
-        years: 15,
-        frequency: 12,
-        paymentsMade: 0,
-        startDate: '2018-07-01',
-        futureDate: (() => { const d = new Date(); d.setFullYear(d.getFullYear() + 1); return d.toISOString().split('T')[0]; })()
+    const [values, setValues] = useState(() => {
+        const initialStart = '2018-07-01';
+        const initialYears = 15;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        const start = new Date(initialStart);
+        const maturity = new Date(start);
+        maturity.setFullYear(maturity.getFullYear() + initialYears);
+        
+        let target;
+        if (start < today) {
+            target = new Date(today);
+        } else {
+            target = new Date(start);
+            target.setFullYear(target.getFullYear() + 1);
+        }
+        
+        if (target > maturity) target = maturity;
+
+        return {
+            amount: 374136.48,
+            rate: 9.5,
+            years: initialYears,
+            frequency: 12,
+            paymentsMade: 0,
+            startDate: initialStart,
+            futureDate: target.toISOString().split('T')[0]
+        };
     });
     const [result, setResult] = useState(null);
     const [showSchedule, setShowSchedule] = useState(false);
@@ -110,7 +131,42 @@ const LoanCalculator = ({ toggleHelp, toggleSettings }) => {
         const isDate = field.toLowerCase().includes('date');
         const cleanVal = typeof val === 'string' ? val.replace(/,/g, '') : val;
         const numericVal = cleanVal === '' ? null : (parseFloat(cleanVal) || 0);
-        setValues(prev => ({ ...prev, [field]: isDate ? val : numericVal }));
+        
+        setValues(prev => {
+            const next = { ...prev, [field]: isDate ? val : numericVal };
+            
+            // Logic for auto-adjusting futureDate when start date or years change
+            if (field === 'startDate' || field === 'years') {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                
+                const start = new Date(next.startDate);
+                if (!isNaN(start)) {
+                    // Calculate Maturity
+                    const maturity = new Date(start);
+                    maturity.setFullYear(maturity.getFullYear() + (next.years || 0));
+                    
+                    let target;
+                    if (start < today) {
+                        // Case 1: Start date in past -> target is today
+                        target = new Date(today);
+                    } else {
+                        // Case 2: Start date today or future -> target is start + 1 year
+                        target = new Date(start);
+                        target.setFullYear(target.getFullYear() + 1);
+                    }
+                    
+                    // Maturity constraint: Target cannot exceed maturity
+                    if (target > maturity) {
+                        target = maturity;
+                    }
+                    
+                    next.futureDate = target.toISOString().split('T')[0];
+                }
+            }
+            
+            return next;
+        });
         setResult(null);
     };
 
@@ -188,9 +244,13 @@ const LoanCalculator = ({ toggleHelp, toggleSettings }) => {
         const rateStr = (values.rate || 0).toFixed(2);
         const earStr = ear.toFixed(2);
         
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const futureDateObj = new Date(values.futureDate);
+        const periodStr = isNaN(futureDateObj) ? 'N/A' : `${monthNames[futureDateObj.getMonth()]}-${futureDateObj.getFullYear()}`;
+
         const summaryLines = [
-            `Loan Amount: $${formatNum(values.amount)} | Rate: ${rateStr}% | EAR: ${earStr}% | Term: ${values.years || 0} Years`,
-            `Periodic Payment: $${formatNum(result.monthlyPayment)} | Total Interest: $${formatNum(result.totalInterest)} | Total Cost: $${formatNum(result.totalPayment)}`
+            `Amount: $${formatNum(values.amount)} | Rate: ${rateStr}% | EAR: ${earStr}% | Outstanding [${periodStr}]: $${formatNum(result.outstandingBalance)}`,
+            `Payment: $${formatNum(result.monthlyPayment)} | Term: ${values.years || 0} Years | Total Interest: $${formatNum(result.totalInterest)} | Total Cost: $${formatNum(result.totalPayment)}`
         ];
 
         const doc = createStandardPDF("Amortization Schedule", summaryLines);
