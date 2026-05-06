@@ -152,6 +152,11 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                     to instantly clear its value and start fresh. If you leave an input field empty, 
                     it automatically resets to zero. This interaction pattern is standardized across all calculators.
                 </InfoBox>
+                <InfoBox type="tip">
+                    <strong>Global Copy Utility:</strong> Double-click (Desktop) or long-press (Mobile) any input 
+                    field or result value to instantly copy it to your clipboard. A <strong>"Copied!"</strong> 
+                    badge will appear as visual confirmation.
+                </InfoBox>
                 <div className="pt-2">
                     <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Available Calculators:</p>
                     <ul className="space-y-1 text-xs">
@@ -671,6 +676,19 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                 </div>
 
                 <div className="pt-2">
+                    <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Export Features:</p>
+                    <ul className="space-y-2 text-xs">
+                        <li className="flex gap-2">
+                            <ArrowRight className="w-3 h-3 mt-1 text-emerald-500 shrink-0" />
+                            <div>
+                                <span className="font-bold text-white uppercase tracking-tight">PDF Export:</span>
+                                <p className="text-neutral-400 mt-1">Professional PDF reports include a high-density header showing the total T-Bill value, selected tenure, and simulation parameters.</p>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+
+                <div className="pt-2">
                     <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Results:</p>
                     <FieldList fields={[
                         { name: 'Quantity', description: 'The number of 5,000 ETB units being purchased' },
@@ -823,6 +841,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                     <FieldList fields={[
                         { name: 'Winner Badge', description: 'Identifies which strategy (T-Bill or Asset) yielded higher profit over the horizon' },
                         { name: 'End Value', description: 'The final ETB value received (compounded in Rolling mode)' },
+                        { name: 'Break-even Rate', description: 'The critical rate where strategies yield zero net advantage. In Rolling mode, it shows the asset price required to match T-Bills; in Leverage mode, it shows the T-Bill yield required to cover loan costs.' },
                         { name: 'Strategy Breakdown', description: 'A detailed log showing the Auction Date, Maturity, Yield, Quantity, Profit, and Leftover Cash for every reinvestment round' }
                     ]} />
                 </div>
@@ -1196,6 +1215,12 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                         Click any input field's <strong>label</strong> to instantly clear it and focus the
                         input. The field stays blank while focused and only defaults to 0 when you
                         leave the field (blur) without entering data. (Note: Date and Location fields are excluded).
+                    </InfoBox>
+
+                    <InfoBox type="tip">
+                        <strong>Double-Click / Long-Press to Copy:</strong> Every data field (input and result) 
+                        supports quick copying. Double-click on Desktop or long-press on Mobile to copy 
+                        the value. Look for the "Copied!" badge for confirmation.
                     </InfoBox>
 
                     <InfoBox type="note">
