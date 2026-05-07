@@ -1441,6 +1441,18 @@ const AllCurrenciesModal = ({ onClose, startAuction, fxData, budget, onSelectCur
                                                     <span className="text-sm font-mono font-black text-emerald-400">{formatCurrency(res.endValue)}</span>
                                                 </div>
 
+                                                {/* Pricing Unit Info */}
+                                                <div className="flex justify-between items-center py-1">
+                                                    <span className="text-[8px] font-bold text-neutral-500 uppercase tracking-wider">Pricing Unit</span>
+                                                    <span className="text-[10px] text-emerald-500/70 font-bold">
+                                                        {['XAU', 'XAG', 'XPT'].includes(res.currency) 
+                                                            ? 'Troy Ounce (31.1034768g)' 
+                                                            : ['XCU', 'XSN', 'ZNC', 'XPB', 'XNI'].includes(res.currency)
+                                                                ? 'Metric Ton'
+                                                                : `1 ${res.currency}`}
+                                                    </span>
+                                                </div>
+
                                                 <div className="py-2">
                                                     <div className="flex justify-between items-center mb-1">
                                                         <span className="text-[8px] font-black text-neutral-600 uppercase tracking-widest">Performance Trend</span>
