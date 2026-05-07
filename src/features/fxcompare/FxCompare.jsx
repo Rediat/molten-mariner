@@ -34,6 +34,13 @@ const CURRENCY_NAMES = {
     'INR': 'Indian Rupee',
     'PKR': 'Pakistani Rupee',
     'XAU': 'Gold',
+    'XAG': 'Silver',
+    'XPT': 'Platinum',
+    'XCU': 'Copper',
+    'XSN': 'Tin',
+    'ZNC': 'Zinc',
+    'XPB': 'Lead',
+    'XNI': 'Nickel',
     'BTC': 'Bitcoin'
 };
 
@@ -1003,6 +1010,64 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
     );
 };
 
+const MiniTrendChart = ({ data, color = '#10b981' }) => {
+    if (!data || data.length < 2) return null;
+
+    const min = Math.min(...data);
+    const max = Math.max(...data);
+    const range = max - min || 1;
+    const width = 200; // Increased horizontal resolution
+    const height = 40; // Increased height
+    const padding = 2;
+
+    const points = data.map((val, i) => {
+        const x = (i / (data.length - 1)) * width;
+        const y = height - ((val - min) / range) * (height - 2 * padding) - padding;
+        return `${x},${y}`;
+    }).join(' ');
+
+    const lastVal = data[data.length - 1];
+    const firstVal = data[0];
+    const isUp = lastVal >= firstVal;
+    const strokeColor = isUp ? '#10b981' : '#ef4444';
+    const gradientId = `gradient-${Math.random().toString(36).substr(2, 9)}`;
+
+    return (
+        <div className="w-full h-12 relative group/chart">
+            <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full overflow-visible" preserveAspectRatio="none">
+                <defs>
+                    <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor={strokeColor} stopOpacity="0.3" />
+                        <stop offset="100%" stopColor={strokeColor} stopOpacity="0" />
+                    </linearGradient>
+                </defs>
+                <path
+                    d={`M 0 ${height} L ${points} L ${width} ${height} Z`}
+                    fill={`url(#${gradientId})`}
+                    className="transition-all duration-500"
+                />
+                <polyline
+                    fill="none"
+                    stroke={strokeColor}
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    points={points}
+                    className="transition-all duration-500"
+                />
+                {/* Last point indicator */}
+                <circle
+                    cx={width}
+                    cy={height - ((lastVal - min) / range) * (height - 2 * padding) - padding}
+                    r="1.5"
+                    fill={strokeColor}
+                    className="animate-pulse"
+                />
+            </svg>
+        </div>
+    );
+};
+
 const AllCurrenciesModal = ({ onClose, startAuction, fxData, budget, onSelectCurrency, onStartMonthChange }) => {
     const [search, setSearch] = useState('');
     const [expandedCurrency, setExpandedCurrency] = useState(null);
@@ -1108,7 +1173,11 @@ const AllCurrenciesModal = ({ onClose, startAuction, fxData, budget, onSelectCur
                 endMonth: endInfo.monthUsed,
                 multiplier: endInfo.rate / startInfo.rate,
                 startIsFallback: startInfo.isFallback,
-                endIsFallback: endInfo.isFallback
+                endIsFallback: endInfo.isFallback,
+                history: fxData.monthlyPrices
+                    .filter(m => m.month >= modalStartMonth && m.month <= modalEndMonth)
+                    .map(m => m.value[c])
+                    .filter(v => v !== undefined && v !== null)
             };
         }).filter(Boolean).sort((a, b) => b.roi - a.roi);
     }, [fxData, budget, modalStartMonth, modalEndMonth]);
@@ -1370,6 +1439,18 @@ const AllCurrenciesModal = ({ onClose, startAuction, fxData, budget, onSelectCur
                                                 <div className="flex justify-between items-center">
                                                     <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">End Value</span>
                                                     <span className="text-sm font-mono font-black text-emerald-400">{formatCurrency(res.endValue)}</span>
+                                                </div>
+
+                                                <div className="py-2">
+                                                    <div className="flex justify-between items-center mb-1">
+                                                        <span className="text-[8px] font-black text-neutral-600 uppercase tracking-widest">Performance Trend</span>
+                                                        <span className={`text-[8px] font-bold ${res.roi >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                                                            {res.history.length} Months
+                                                        </span>
+                                                    </div>
+                                                    <div className="bg-neutral-900/50 rounded-lg py-3 px-1 border border-neutral-800/50">
+                                                        <MiniTrendChart data={res.history} />
+                                                    </div>
                                                 </div>
                                                 
                                                 <div className="h-px bg-neutral-800/80" />
