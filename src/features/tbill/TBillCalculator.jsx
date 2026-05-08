@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useInputFocus } from '../../hooks/useInputFocus';
 import { useHistory } from '../../context/HistoryContext';
-import { Receipt, Info, HelpCircle, Settings, History, Trash2, Copy } from 'lucide-react';
+import { Receipt, Info, HelpCircle, Settings, History, Trash2, Copy, Download } from 'lucide-react';
+import { generateTBillApplicationPDF } from './tbill-pdf-utils';
 import { amountToWords } from '../../utils/text-utils';
 import { copyToClipboard } from '../../utils/clipboard';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
@@ -472,12 +473,26 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
                     <div className={`mt-1.5 mb-1.5 bg-gradient-to-br ${isReverse ? 'from-emerald-900/30' : 'from-primary-900/30'} to-neutral-800/50 border ${isReverse ? 'border-emerald-500/30' : 'border-primary-500/30'} rounded-xl p-2.5 space-y-2`}>
                         <div className="flex justify-between items-center mb-1">
                             <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Results</span>
-                            <button
-                                onClick={() => setShowHistory(true)}
-                                className="text-[9px] text-primary-500 font-bold uppercase tracking-wider flex items-center gap-1 hover:text-primary-400 transition-colors"
-                            >
-                                <History size={12} /> View History
-                            </button>
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => generateTBillApplicationPDF({
+                                        faceValue: result.faceValue,
+                                        tenure: tenure,
+                                        issueDate: issueDate,
+                                        yieldRate: discountRate
+                                    })}
+                                    className="text-[9px] text-primary-500 font-bold uppercase tracking-wider flex items-center gap-1 hover:text-primary-400 transition-colors"
+                                    title="Download Application Form"
+                                >
+                                    <Download size={11} /> Application
+                                </button>
+                                <button
+                                    onClick={() => setShowHistory(true)}
+                                    className="text-[9px] text-primary-500 font-bold uppercase tracking-wider flex items-center gap-1 hover:text-primary-400 transition-colors"
+                                >
+                                    <History size={11} /> View History
+                                </button>
+                            </div>
                         </div>
 
                         <div className="flex justify-between items-center bg-neutral-900/50 rounded-lg p-2 mb-1 border border-neutral-700/50 relative group">
@@ -628,6 +643,7 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
                                 <p className="text-xs font-bold text-emerald-400">{result.effectiveYield.toFixed(2)}%</p>
                             </div>
                         </div>
+
                     </div>
                 );
             })()}
