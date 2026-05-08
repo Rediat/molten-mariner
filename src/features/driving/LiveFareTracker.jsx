@@ -266,16 +266,16 @@ const LiveFareTracker = ({ isVisible, onClose, fareData }) => {
 
             {/* Header */}
             <div className="flex flex-col border-b border-neutral-800">
-                <div className="flex items-center gap-3 p-3">
+                <div className="flex items-center gap-2.5 p-2.5">
                     <button
                         onClick={onClose}
-                        className="p-2.5 bg-neutral-800/80 border border-neutral-700/50 rounded-xl text-neutral-400 hover:text-white transition-all hover:bg-neutral-700 active:scale-95"
+                        className="p-2 bg-neutral-800/80 border border-neutral-700/50 rounded-xl text-neutral-400 hover:text-white transition-all hover:bg-neutral-700 active:scale-95"
                     >
                         <ArrowLeft className="w-4 h-4" />
                     </button>
                     <div className="flex-1 min-w-0">
-                        <h2 className="text-sm font-black text-white tracking-wide flex items-center gap-2">
-                            <Zap className="w-4 h-4 text-amber-400" />
+                        <h2 className="text-xs font-black text-white tracking-wide flex items-center gap-2">
+                            <Zap className="w-3.5 h-3.5 text-amber-400" />
                             Live Fare Tracker
                         </h2>
                         <p className="text-[9px] text-neutral-500 font-bold uppercase tracking-widest mt-0.5 text-left">
@@ -296,18 +296,18 @@ const LiveFareTracker = ({ isVisible, onClose, fareData }) => {
                 </div>
 
                 {/* Stop Selector Tabs */}
-                <div className="flex px-3 pb-2 gap-1 overflow-x-auto scrollbar-hide">
+                <div className="flex px-2 pb-1.5 gap-1 overflow-x-auto scrollbar-hide">
                     {stops.map((stop, idx) => (
                         <button
                             key={stop.id}
                             onClick={() => { setViewMode('individual'); setActiveStopIndex(idx); }}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[10px] font-bold transition-all shrink-0 ${
+                            className={`flex items-center gap-1 px-2 py-1 rounded-md border text-[9px] font-bold transition-all shrink-0 ${
                                 viewMode === 'individual' && activeStopIndex === idx
                                     ? 'bg-primary-600/20 border-primary-500 text-primary-400'
                                     : 'bg-neutral-800/40 border-neutral-700/50 text-neutral-500 hover:text-neutral-300'
                             }`}
                         >
-                            <div className={`w-1.5 h-1.5 rounded-full ${
+                            <div className={`w-1 h-1 rounded-full ${
                                 stop.status === 'tracking' ? 'bg-emerald-500 animate-pulse' : 
                                 stop.status === 'stopped' ? 'bg-amber-500' : 'bg-neutral-600'
                             }`} />
@@ -317,22 +317,22 @@ const LiveFareTracker = ({ isVisible, onClose, fareData }) => {
                     {stops.length < MAX_STOPS && !isTrackingAny && (
                         <button
                             onClick={addNextStop}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-neutral-700/50 bg-neutral-800/20 text-neutral-500 hover:text-primary-400 hover:border-primary-500/50 transition-all shrink-0"
+                            className="flex items-center gap-1 px-2 py-1 rounded-md border border-neutral-700/50 bg-neutral-800/20 text-neutral-500 hover:text-primary-400 hover:border-primary-500/50 transition-all shrink-0"
                         >
-                            <Layers className="w-3 h-3" />
+                            <Layers className="w-2.5 h-2.5" />
                             + Stop
                         </button>
                     )}
                     <button
                         onClick={() => setViewMode('total')}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[10px] font-bold transition-all shrink-0 ml-auto ${
+                        className={`flex items-center gap-1 px-2 py-1 rounded-md border text-[9px] font-bold transition-all shrink-0 ml-auto ${
                             viewMode === 'total'
                                 ? 'bg-emerald-600/20 border-emerald-500 text-emerald-400'
                                 : 'bg-neutral-800/40 border-neutral-700/50 text-neutral-500 hover:text-neutral-300'
                         }`}
                     >
-                        <TrendingUp className="w-3 h-3" />
-                        Grand Total
+                        <TrendingUp className="w-2.5 h-2.5" />
+                        Total
                     </button>
                 </div>
             </div>
@@ -340,12 +340,16 @@ const LiveFareTracker = ({ isVisible, onClose, fareData }) => {
             {/* Main Content */}
             <div className="flex-1 flex flex-col p-3 gap-2 overflow-y-auto scrollbar-hide">
 
-                {/* Elapsed Timer — Big Display */}
-                <div className="text-center py-2">
-                    <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-[0.2em] mb-1">
+                {/* Elapsed Timer — Tray Display */}
+                <div className={`rounded-xl p-2 border transition-all duration-500 text-center ${
+                    isTrackingAny && viewMode === 'individual' && activeStopIndex === trackingStopIndex
+                        ? 'bg-neutral-800/40 border-neutral-700/50 shadow-inner'
+                        : 'bg-neutral-800/20 border-neutral-700/30'
+                }`}>
+                    <p className="text-[8px] font-bold text-neutral-500 uppercase tracking-[0.2em] mb-0.5">
                         {viewMode === 'total' ? 'Total Travel Time' : 'Stop Duration'}
                     </p>
-                    <p className={`text-5xl font-black font-mono tracking-wider ${
+                    <p className={`text-5xl font-black font-mono tracking-wider leading-tight ${
                         isTrackingAny && viewMode === 'individual' && activeStopIndex === trackingStopIndex ? 'text-white' : 
                         displayData.status === 'stopped' || viewMode === 'total' ? 'text-amber-400' : 'text-neutral-600'
                     }`}>
@@ -354,9 +358,9 @@ const LiveFareTracker = ({ isVisible, onClose, fareData }) => {
                 </div>
 
                 {/* Live Fare — Hero Card */}
-                <div className={`rounded-2xl p-3 border transition-all duration-500 ${
+                <div className={`rounded-xl p-2.5 border transition-all duration-500 ${
                     isTrackingAny && viewMode === 'individual' && activeStopIndex === trackingStopIndex
-                        ? 'bg-gradient-to-br from-primary-900/40 to-primary-800/20 border-primary-500/50 shadow-[0_0_30px_rgba(14,165,233,0.15)]'
+                        ? 'bg-gradient-to-br from-primary-900/40 to-primary-800/20 border-primary-500/50 shadow-[0_0_25px_rgba(14,165,233,0.15)]'
                         : displayData.status === 'stopped' || viewMode === 'total'
                             ? 'bg-gradient-to-br from-amber-900/30 to-neutral-800/50 border-amber-500/40'
                             : 'bg-neutral-800/40 border-neutral-700/40'
@@ -366,7 +370,7 @@ const LiveFareTracker = ({ isVisible, onClose, fareData }) => {
                             <p className="text-[8px] font-bold text-neutral-500 uppercase tracking-[0.15em]">
                                 {viewMode === 'total' ? 'Combined Total Fare' : displayData.status === 'stopped' ? 'Stop Final Fare' : 'Running Fare'}
                             </p>
-                            <p className={`text-4xl font-black mt-0.5 ${
+                            <p className={`text-5xl font-black mt-0.5 leading-none ${
                                 isTrackingAny && viewMode === 'individual' && activeStopIndex === trackingStopIndex ? 'text-primary-400' : 
                                 displayData.status === 'stopped' || viewMode === 'total' ? 'text-amber-400' : 'text-neutral-600'
                             }`}>
@@ -375,7 +379,7 @@ const LiveFareTracker = ({ isVisible, onClose, fareData }) => {
                         </div>
                         <div className="text-right">
                             <p className="text-[8px] font-bold text-neutral-500 uppercase tracking-wider">Per Head</p>
-                            <p className={`text-xl font-black ${displayData.fare > 0 ? 'text-primary-300' : 'text-neutral-600'}`}>
+                            <p className={`text-2xl font-black ${displayData.fare > 0 ? 'text-primary-300' : 'text-neutral-600'}`}>
                                 {formatNum(displayData.fare / 4)}
                             </p>
                         </div>
@@ -384,90 +388,148 @@ const LiveFareTracker = ({ isVisible, onClose, fareData }) => {
 
                 {/* Speed + Distance Row */}
                 <div className="grid grid-cols-2 gap-2">
-                    <div className={`rounded-xl p-2.5 border transition-colors ${
-                        currentSpeed > 0 && isTrackingAny ? 'bg-emerald-900/20 border-emerald-500/40' : 'bg-neutral-800/40 border-neutral-700/40'
+                    <div className={`rounded-xl p-2 border transition-colors ${
+                        currentSpeed > 0 && isTrackingAny ? 'bg-emerald-900/10 border-emerald-500/40' : 'bg-neutral-800/40 border-neutral-700/40'
                     }`}>
-                        <div className="flex items-center gap-1.5 mb-1">
-                            <Gauge className={`w-3 h-3 ${currentSpeed > 0 && isTrackingAny ? 'text-emerald-400' : 'text-neutral-500'}`} />
-                            <span className="text-[8px] font-bold text-neutral-500 uppercase tracking-wider">Live Speed</span>
+                        <div className="flex justify-between items-center mb-0.5">
+                            <div className="flex items-center gap-1">
+                                <Gauge className={`w-3 h-3 ${currentSpeed > 0 && isTrackingAny ? 'text-emerald-400' : 'text-neutral-500'}`} />
+                                <label className={`text-[9px] uppercase tracking-wider font-bold ${currentSpeed > 0 && isTrackingAny ? 'text-emerald-400' : 'text-neutral-500'}`}>Live Speed</label>
+                            </div>
                         </div>
-                        <p className={`text-2xl font-black font-mono ${currentSpeed > 0 && isTrackingAny ? 'text-emerald-400' : 'text-neutral-600'}`}>
-                            {isTrackingAny ? currentSpeed : 0}
-                        </p>
-                        <p className="text-[8px] text-neutral-600 font-bold">KM/H</p>
+                        <div className="flex items-end justify-between gap-1">
+                            <span className="text-[8px] uppercase tracking-wider text-neutral-600 font-bold shrink-0 mb-1">Current KM/H</span>
+                            <p className={`text-base font-black font-mono leading-none ${currentSpeed > 0 && isTrackingAny ? 'text-emerald-400' : 'text-neutral-600'}`}>
+                                {isTrackingAny ? currentSpeed : 0}
+                            </p>
+                        </div>
                     </div>
 
-                    <div className={`rounded-xl p-2.5 border transition-colors ${displayData.distance > 0 ? 'bg-primary-900/20 border-primary-500/40' : 'bg-neutral-800/40 border-neutral-700/40'}`}>
-                        <div className="flex items-center gap-1.5 mb-1">
-                            <Navigation className={`w-3 h-3 ${displayData.distance > 0 ? 'text-primary-400' : 'text-neutral-500'}`} />
-                            <span className="text-[8px] font-bold text-neutral-500 uppercase tracking-wider">{viewMode === 'total' ? 'Total Distance' : 'Stop Distance'}</span>
+                    <div className={`rounded-xl p-2 border transition-colors ${displayData.distance > 0 ? 'bg-primary-900/10 border-primary-500/40' : 'bg-neutral-800/40 border-neutral-700/40'}`}>
+                        <div className="flex justify-between items-center mb-0.5">
+                            <div className="flex items-center gap-1">
+                                <Navigation className={`w-3 h-3 ${displayData.distance > 0 ? 'text-primary-400' : 'text-neutral-500'}`} />
+                                <label className={`text-[9px] uppercase tracking-wider font-bold ${displayData.distance > 0 ? 'text-primary-400' : 'text-neutral-500'}`}>
+                                    {viewMode === 'total' ? 'Total Dist' : 'Stop Dist'}
+                                </label>
+                            </div>
                         </div>
-                        <p className={`text-2xl font-black font-mono ${displayData.distance > 0 ? 'text-primary-400' : 'text-neutral-600'}`}>
-                            {displayData.distance.toFixed(2)}
-                        </p>
-                        <p className="text-[8px] text-neutral-600 font-bold">KM</p>
+                        <div className="flex items-end justify-between gap-1">
+                            <span className="text-[8px] uppercase tracking-wider text-neutral-600 font-bold shrink-0 mb-1">Kilometers</span>
+                            <p className={`text-base font-black font-mono leading-none ${displayData.distance > 0 ? 'text-primary-400' : 'text-neutral-600'}`}>
+                                {displayData.distance.toFixed(2)}
+                            </p>
+                        </div>
                     </div>
                 </div>
 
                 {/* Wait Time + Fuel Row */}
                 <div className="grid grid-cols-2 gap-2">
-                    <div className={`rounded-xl p-2.5 border transition-colors ${displayData.waitTime > 0 ? 'bg-amber-900/20 border-amber-500/40' : 'bg-neutral-800/40 border-neutral-700/40'}`}>
-                        <div className="flex items-center gap-1.5 mb-1">
-                            <Timer className={`w-3 h-3 ${displayData.waitTime > 0 ? 'text-amber-400' : 'text-neutral-500'}`} />
-                            <span className="text-[8px] font-bold text-neutral-500 uppercase tracking-wider">{viewMode === 'total' ? 'Total Wait' : 'Stop Wait'}</span>
+                    <div className={`rounded-xl p-2 border transition-colors ${displayData.waitTime > 0 ? 'bg-amber-900/10 border-amber-500/40' : 'bg-neutral-800/40 border-neutral-700/40'}`}>
+                        <div className="flex justify-between items-center mb-0.5">
+                            <div className="flex items-center gap-1">
+                                <Timer className={`w-3 h-3 ${displayData.waitTime > 0 ? 'text-amber-400' : 'text-neutral-500'}`} />
+                                <label className={`text-[9px] uppercase tracking-wider font-bold ${displayData.waitTime > 0 ? 'text-amber-400' : 'text-neutral-500'}`}>
+                                    {viewMode === 'total' ? 'Total Wait' : 'Stop Wait'}
+                                </label>
+                            </div>
                         </div>
-                        <p className={`text-lg font-black font-mono ${displayData.waitTime > 0 ? 'text-amber-400' : 'text-neutral-600'}`}>
-                            {formatTime(Math.round(displayData.waitTime))}
-                        </p>
-                        <p className="text-[8px] text-neutral-600 font-bold">
-                            Charge: {formatNum(currentWaitCharge)}
-                        </p>
+                        <div className="flex items-end justify-between gap-1">
+                            <span className="text-[8px] uppercase tracking-wider text-neutral-600 font-bold shrink-0 mb-1">Charge: {formatNum(currentWaitCharge)}</span>
+                            <p className={`text-base font-black font-mono leading-none ${displayData.waitTime > 0 ? 'text-amber-400' : 'text-neutral-600'}`}>
+                                {formatTime(Math.round(displayData.waitTime))}
+                            </p>
+                        </div>
                     </div>
 
-                    <div className="bg-neutral-800/40 rounded-xl p-2.5 border border-neutral-700/40">
-                        <div className="flex items-center gap-1.5 mb-1">
-                            <Fuel className="w-3 h-3 text-neutral-500" />
-                            <span className="text-[8px] font-bold text-neutral-500 uppercase tracking-wider">Fuel Cost</span>
+                    <div className="bg-neutral-800/40 rounded-xl p-2 border border-neutral-700/40">
+                        <div className="flex justify-between items-center mb-0.5">
+                            <div className="flex items-center gap-1">
+                                <Fuel className="w-3 h-3 text-neutral-500" />
+                                <label className="text-[9px] uppercase tracking-wider font-bold text-neutral-500">Fuel Cost</label>
+                            </div>
                         </div>
-                        <p className={`text-lg font-black font-mono ${currentFuelCost > 0 ? 'text-rose-400' : 'text-neutral-600'}`}>
-                            {formatNum(currentFuelCost)}
-                        </p>
-                        <p className={`text-[8px] font-bold ${currentNetGain >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                            Net: {currentNetGain >= 0 ? '+' : ''}{formatNum(currentNetGain)}
-                        </p>
+                        <div className="flex items-end justify-between gap-1">
+                            <span className={`text-[8px] font-bold shrink-0 mb-1 ${currentNetGain >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                Net: {currentNetGain >= 0 ? '+' : ''}{formatNum(currentNetGain)}
+                            </span>
+                            <p className={`text-base font-black font-mono leading-none ${currentFuelCost > 0 ? 'text-rose-400' : 'text-neutral-600'}`}>
+                                {formatNum(currentFuelCost)}
+                            </p>
+                        </div>
                     </div>
                 </div>
+                {/* Trip Summary (shown when stopped or in Grand Total) */}
+                {(displayData.status === 'stopped' || viewMode === 'total') && (
+                    <div className="bg-gradient-to-br from-amber-900/20 to-neutral-800/40 rounded-xl p-2.5 border border-amber-500/30 space-y-1.5">
+                        <p className="text-[9px] font-bold text-amber-400 uppercase tracking-[0.15em] flex items-center gap-1.5">
+                            <TrendingUp className="w-3 h-3" /> {viewMode === 'total' ? 'Session Summary' : `Stop ${displayData.id} Summary`}
+                        </p>
+                        <div className="grid grid-cols-3 gap-2">
+                            <div>
+                                <p className="text-[8px] font-bold text-neutral-500 uppercase">Distance</p>
+                                <p className="text-sm font-black text-white">{displayData.distance.toFixed(2)} km</p>
+                            </div>
+                            <div>
+                                <p className="text-[8px] font-bold text-neutral-500 uppercase">Duration</p>
+                                <p className="text-sm font-black text-white">{formatTime(displayData.elapsedTime)}</p>
+                            </div>
+                            <div>
+                                <p className="text-[8px] font-bold text-neutral-500 uppercase">Avg Speed</p>
+                                <p className="text-sm font-black text-white">
+                                    {displayData.elapsedTime > 0 ? Math.round((displayData.distance / displayData.elapsedTime) * 3600) : 0}
+                                </p>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 pt-1.5 border-t border-neutral-700/50">
+                            <div>
+                                <p className="text-[8px] font-bold text-neutral-500 uppercase">Total Fare</p>
+                                <p className="text-sm font-black text-amber-400">{formatNum(displayData.fare)}</p>
+                            </div>
+                            <div>
+                                <p className="text-[8px] font-bold text-neutral-500 uppercase">Fuel</p>
+                                <p className="text-sm font-black text-rose-400">{formatNum(currentFuelCost)}</p>
+                            </div>
+                            <div>
+                                <p className="text-[8px] font-bold text-neutral-500 uppercase">Net Gain</p>
+                                <p className={`text-sm font-black ${currentNetGain >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                    {formatNum(currentNetGain)}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Ride App Comparison (Expandable) */}
                 {displayData.fare > 0 && (
-                    <div className="mt-1">
+                    <div className="mt-0.5">
                         <button
                             onClick={() => setShowMarketComparison(!showMarketComparison)}
-                            className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all ${
+                            className={`w-full flex items-center justify-between p-2 rounded-lg border transition-all ${
                                 showMarketComparison 
                                 ? 'bg-neutral-800/60 border-neutral-700/50 rounded-b-none' 
                                 : 'bg-neutral-800/30 border-neutral-700/30 hover:bg-neutral-800/50'
                             }`}
                         >
-                            <div className="flex items-center gap-2">
-                                <Car className={`w-4 h-4 ${showMarketComparison ? 'text-primary-400' : 'text-neutral-500'}`} />
-                                <span className="text-[10px] font-bold text-neutral-300 uppercase tracking-widest">Market Comparison</span>
+                            <div className="flex items-center gap-1.5">
+                                <Car className={`w-3.5 h-3.5 ${showMarketComparison ? 'text-primary-400' : 'text-neutral-500'}`} />
+                                <span className="text-[9px] font-bold text-neutral-300 uppercase tracking-widest">Market Comparison</span>
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1.5">
                                 {!showMarketComparison && (
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-1.5">
                                         <div className="flex flex-col items-end">
-                                            <span className="text-[7px] text-neutral-500 font-bold uppercase leading-none">Ride</span>
-                                            <span className="text-[9px] font-black text-primary-400">{formatNum(rideFare)}</span>
+                                            <span className="text-[6px] text-neutral-500 font-bold uppercase leading-none">Ride</span>
+                                            <span className="text-[8px] font-black text-primary-400">{formatNum(rideFare)}</span>
                                         </div>
-                                        <div className="w-px h-4 bg-neutral-700 mx-0.5"></div>
+                                        <div className="w-px h-3 bg-neutral-700 mx-0.5"></div>
                                         <div className="flex flex-col items-end">
-                                            <span className="text-[7px] text-neutral-500 font-bold uppercase leading-none">Feres</span>
-                                            <span className="text-[9px] font-black text-emerald-400">{formatNum(feresFare)}</span>
+                                            <span className="text-[6px] text-neutral-500 font-bold uppercase leading-none">Feres</span>
+                                            <span className="text-[8px] font-black text-emerald-400">{formatNum(feresFare)}</span>
                                         </div>
                                     </div>
                                 )}
-                                {showMarketComparison ? <ChevronUp className="w-3.5 h-3.5 text-neutral-500" /> : <ChevronDown className="w-3.5 h-3.5 text-neutral-500" />}
+                                {showMarketComparison ? <ChevronUp className="w-3 h-3 text-neutral-500" /> : <ChevronDown className="w-3 h-3 text-neutral-500" />}
                             </div>
                         </button>
 
@@ -621,7 +683,6 @@ const LiveFareTracker = ({ isVisible, onClose, fareData }) => {
                 )}
 
                 {(activeStop.status === 'stopped' || viewMode === 'total') && !isTrackingAny && (
-                    <div className="flex flex-col gap-2">
                         <div className="flex gap-2">
                             {stops.length < MAX_STOPS && activeStop.status === 'stopped' && (
                                 <button
@@ -640,14 +701,6 @@ const LiveFareTracker = ({ isVisible, onClose, fareData }) => {
                                 New Session
                             </button>
                         </div>
-                        <button
-                            onClick={onClose}
-                            className="w-full bg-neutral-900 border border-neutral-700 text-white font-black text-sm py-3 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-800 flex items-center justify-center gap-2 uppercase tracking-wider"
-                        >
-                            <DollarSign className="w-4 h-4 text-emerald-400" />
-                            Finish & Close
-                        </button>
-                    </div>
                 )}
             </div>
         </div>
