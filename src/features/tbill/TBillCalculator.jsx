@@ -1,7 +1,9 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useInputFocus } from '../../hooks/useInputFocus';
 import { useHistory } from '../../context/HistoryContext';
-import { Receipt, Info, HelpCircle, Settings, History, Trash2 } from 'lucide-react';
+import { Receipt, Info, HelpCircle, Settings, History, Trash2, Copy } from 'lucide-react';
+import { amountToWords } from '../../utils/text-utils';
+import { copyToClipboard } from '../../utils/clipboard';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
 import { CalculateIcon } from '../../components/Icons';
 import HistoryOverlay from '../../components/HistoryOverlay';
@@ -484,28 +486,65 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
                         </div>
 
                         <div className="grid grid-cols-2 gap-2">
-                            <div className="bg-neutral-900/50 rounded-lg p-2">
-                                <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">
-                                    Purchase Price
-                                </p>
+                            <div className="bg-neutral-900/50 rounded-lg p-2 relative group">
+                                <div className="flex justify-between items-start">
+                                    <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">
+                                        Purchase Price
+                                    </p>
+                                    <button 
+                                        onClick={(e) => {
+                                            const words = amountToWords(result.purchasePrice);
+                                            copyToClipboard(words, e.currentTarget);
+                                        }}
+                                        className="opacity-40 hover:opacity-100 transition-opacity p-1 hover:bg-primary-500/10 rounded-md text-primary-500/70 hover:text-primary-400"
+                                        title="Copy in Words"
+                                    >
+                                        <Copy size={10} />
+                                    </button>
+                                </div>
                                 <p className="text-lg font-black text-primary-400">
                                     {formatCurrency(result.purchasePrice)}
                                 </p>
                             </div>
-                            <div className="bg-neutral-900/50 rounded-lg p-2">
-                                <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Brokerage ({brokerageRate}%)</p>
+                            <div className="bg-neutral-900/50 rounded-lg p-2 relative group">
+                                <div className="flex justify-between items-start">
+                                    <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Brokerage ({brokerageRate}%)</p>
+                                    <button 
+                                        onClick={(e) => {
+                                            const words = amountToWords(result.brokerage);
+                                            copyToClipboard(words, e.currentTarget);
+                                        }}
+                                        className="opacity-40 hover:opacity-100 transition-opacity p-1 hover:bg-amber-500/10 rounded-md text-amber-500/70 hover:text-amber-400"
+                                        title="Copy in Words"
+                                    >
+                                        <Copy size={10} />
+                                    </button>
+                                </div>
                                 <p className="text-lg font-black text-amber-400">
                                     {formatCurrency(result.brokerage)}
                                 </p>
                             </div>
                         </div>
 
-                        <div className={`bg-neutral-900/80 rounded-lg p-2 border ${isReverse ? 'border-emerald-500/30' : 'border-primary-500/30'}`}>
+                        <div className={`bg-neutral-900/80 rounded-lg p-2 border ${isReverse ? 'border-emerald-500/30' : 'border-primary-500/30'} relative group`}>
                             <div className="flex justify-between items-center">
                                 <div>
-                                    <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">
-                                        {isReverse ? 'Face Value You Get' : 'Total Consideration'}
-                                    </p>
+                                    <div className="flex items-center gap-2">
+                                        <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">
+                                            {isReverse ? 'Face Value You Get' : 'Total Consideration'}
+                                        </p>
+                                        <button 
+                                            onClick={(e) => {
+                                                const val = isReverse ? result.faceValue : result.totalConsideration;
+                                                const words = amountToWords(val);
+                                                copyToClipboard(words, e.currentTarget);
+                                            }}
+                                            className="opacity-40 hover:opacity-100 transition-opacity p-0.5 hover:bg-white/10 rounded text-neutral-500 hover:text-white"
+                                            title="Copy in Words"
+                                        >
+                                            <Copy size={9} />
+                                        </button>
+                                    </div>
                                     <p className={`text-xl font-black ${isReverse ? 'text-emerald-400' : 'text-white'}`}>
                                         {formatCurrency(isReverse ? result.faceValue : result.totalConsideration)}
                                     </p>
@@ -513,7 +552,19 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
                                 {isReverse ? (
                                     <div className="text-right space-y-1">
                                         <div>
-                                            <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Actual Cost</p>
+                                            <div className="flex items-center justify-end gap-1.5">
+                                                <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Actual Cost</p>
+                                                <button 
+                                                    onClick={(e) => {
+                                                        const words = amountToWords(result.totalConsideration);
+                                                        copyToClipboard(words, e.currentTarget);
+                                                    }}
+                                                    className="opacity-40 hover:opacity-100 transition-opacity p-0.5 hover:bg-white/10 rounded text-neutral-500 hover:text-white"
+                                                    title="Copy in Words"
+                                                >
+                                                    <Copy size={8} />
+                                                </button>
+                                            </div>
                                             <p className="text-sm font-black text-white">{formatCurrency(result.totalConsideration)}</p>
                                         </div>
                                         {result.leftover !== 0 && (
