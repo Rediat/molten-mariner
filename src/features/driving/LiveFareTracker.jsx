@@ -15,8 +15,8 @@ const haversineDistance = (lat1, lon1, lat2, lon2) => {
 };
 
 const WAIT_SPEED_THRESHOLD = 5; // km/h — below this is "waiting"
-const MIN_ACCURACY = 50; // meters — ignore inaccurate fixes
-const MIN_DISTANCE = 0.005; // km (5m) — noise filter
+const MIN_ACCURACY = 100; // meters — relaxed to capture more points in urban areas
+const MIN_DISTANCE = 0.002; // km (2m) — capture even slow movement
 const MAX_STOPS = 5;
 
 const LiveFareTracker = ({ isVisible, onClose, fareData }) => {
@@ -125,14 +125,19 @@ const LiveFareTracker = ({ isVisible, onClose, fareData }) => {
                     distance: distanceAccumulatorRef.current,
                     fare: computeFare(distanceAccumulatorRef.current, waitAccumulatorRef.current)
                 });
+                
+                // ONLY update reference position when we actually count the distance
+                lastPositionRef.current = { lat: latitude, lng: longitude };
             }
         } else {
+            // First valid point ever recorded
+            lastPositionRef.current = { lat: latitude, lng: longitude };
             if (gpsSpeed != null && gpsSpeed >= 0) {
                 setCurrentSpeed(Math.round(gpsSpeed * 3.6));
             }
         }
 
-        lastPositionRef.current = { lat: latitude, lng: longitude };
+        // Always update timestamp to keep speed calculations fresh
         lastTimestampRef.current = timestamp;
     }, [computeFare, updateActiveStop]);
 
