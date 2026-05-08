@@ -154,8 +154,9 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                 </InfoBox>
                 <InfoBox type="tip">
                     <strong>Global Copy Utility:</strong> Double-click (Desktop) or long-press (Mobile) any input 
-                    field or result value to instantly copy it to your clipboard. A <strong>"Copied!"</strong> 
-                    badge will appear as visual confirmation.
+                    field or result value to instantly copy it to your clipboard. Some calculators also provide 
+                    special <strong>Copy icons</strong> next to labels to copy amounts converted into formal 
+                    English words (e.g., "One Million Only").
                 </InfoBox>
                 <div className="pt-2">
                     <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Available Calculators:</p>
@@ -703,6 +704,14 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                         { name: 'Effective Yield', description: 'Annualized return based on net profit relative to total consideration' }
                     ]} />
                 </div>
+
+                <InfoBox type="tip">
+                    <strong>Copy in Words:</strong> Click the <strong>Copy icon</strong> next to 
+                    <em>Purchase Price</em>, <em>Brokerage</em>, or <em>Total Consideration</em> to copy the 
+                    amount converted into formal English words (e.g., "One Million Sixty-Five Thousand Only"). 
+                    This format is optimized for bank forms and official bidding documents, removing currency 
+                    codes and using standard banking terminology.
+                </InfoBox>
 
                 <InfoBox type="formula">
                     <strong>Purchase Price = Face Value / (1 + (Rate × Days / 365))</strong>
