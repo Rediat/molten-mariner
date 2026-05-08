@@ -449,6 +449,13 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                         </button>
                     </div>
                     <button
+                        onClick={() => setShowLiveTracker(true)}
+                        className={`flex items-center justify-center p-1 rounded-full transition-all ${showLiveTracker ? 'bg-amber-600/20 text-amber-400 ring-1 ring-amber-500/50' : 'bg-neutral-800 text-neutral-500 hover:bg-neutral-700'}`}
+                        title="Live Fare Tracker"
+                    >
+                        <Zap className="w-3 h-3" />
+                    </button>
+                    <button
                         onClick={() => setShowExplanation(!showExplanation)}
                         className={`flex items-center justify-center p-1 rounded-full transition-all ${showExplanation ? 'bg-primary-600/20 text-primary-400 ring-1 ring-primary-500/50' : 'bg-neutral-800 text-neutral-500 hover:bg-neutral-700'}`}
                         title="Show Info"
@@ -522,33 +529,35 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                             externalInputRef={toInputRef}
                             mapsReady={mapsReady}
                         />
-                        {origin && destination && (
-                            <div className="flex gap-1.5 mt-2 pt-2 border-t border-neutral-700/40">
-                                <button
-                                    onClick={() => setShowMap(true)}
-                                    className="flex-1 bg-primary-500/10 hover:bg-primary-500/20 text-primary-400 font-bold text-xs py-2 rounded-lg transition-colors flex items-center justify-center gap-2 border border-primary-500/30 active:scale-[0.98]"
-                                >
-                                    <MapIcon className="w-4 h-4 text-primary-400" />
-                                    Map & Routes
-                                </button>
-                                <button
-                                    onClick={openInGoogleMaps}
-                                    className="bg-neutral-800/80 hover:bg-neutral-700 text-neutral-300 hover:text-white font-bold text-xs py-2 px-3 rounded-lg transition-all flex items-center justify-center gap-1.5 border border-neutral-700/50 active:scale-[0.98] shrink-0"
-                                    title="Open in Google Maps app to compare ride prices"
-                                >
-                                    <Navigation className="w-3.5 h-3.5 text-primary-400" />
-                                    Navigate
-                                </button>
-                                <button
-                                    onClick={() => setShowLiveTracker(true)}
-                                    className="flex items-center gap-1.5 bg-gradient-to-r from-amber-600/30 to-amber-500/20 hover:from-amber-600/50 hover:to-amber-500/35 text-amber-400 font-bold text-xs py-2 px-3 rounded-lg transition-all border border-amber-500/40 active:scale-[0.97] shrink-0"
-                                    title="Live fare tracking with GPS"
-                                >
-                                    <Zap className="w-3.5 h-3.5" />
-                                    <span>Live</span>
-                                </button>
-                            </div>
-                        )}
+                        <div className="flex gap-1.5 mt-2 pt-2 border-t border-neutral-700/40">
+                            {origin && destination && (
+                                <>
+                                    <button
+                                        onClick={() => setShowMap(true)}
+                                        className="flex-1 bg-primary-500/10 hover:bg-primary-500/20 text-primary-400 font-bold text-xs py-2 rounded-lg transition-colors flex items-center justify-center gap-2 border border-primary-500/30 active:scale-[0.98]"
+                                    >
+                                        <MapIcon className="w-4 h-4 text-primary-400" />
+                                        Map & Routes
+                                    </button>
+                                    <button
+                                        onClick={openInGoogleMaps}
+                                        className="bg-neutral-800/80 hover:bg-neutral-700 text-neutral-300 hover:text-white font-bold text-xs py-2 px-3 rounded-lg transition-all flex items-center justify-center gap-1.5 border border-neutral-700/50 active:scale-[0.98] shrink-0"
+                                        title="Open in Google Maps app to compare ride prices"
+                                    >
+                                        <Navigation className="w-3.5 h-3.5 text-primary-400" />
+                                        Navigate
+                                    </button>
+                                </>
+                            )}
+                            <button
+                                onClick={() => setShowLiveTracker(true)}
+                                className={`flex items-center gap-1.5 bg-gradient-to-r from-amber-600/30 to-amber-500/20 hover:from-amber-600/50 hover:to-amber-500/35 text-amber-400 font-bold text-xs py-2 px-3 rounded-lg transition-all border border-amber-500/40 active:scale-[0.97] shrink-0 ${!origin || !destination ? 'w-full' : ''}`}
+                                title="Live fare tracking with GPS"
+                            >
+                                <Zap className="w-3.5 h-3.5" />
+                                <span>Live</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
