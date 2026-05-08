@@ -480,8 +480,21 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
                             </button>
                         </div>
 
-                        <div className="flex justify-between items-center bg-neutral-900/50 rounded-lg p-2 mb-1 border border-neutral-700/50">
-                            <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Quantity</span>
+                        <div className="flex justify-between items-center bg-neutral-900/50 rounded-lg p-2 mb-1 border border-neutral-700/50 relative group">
+                            <div className="flex items-center gap-2">
+                                <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Quantity</span>
+                                <button 
+                                    onClick={(e) => {
+                                        // Replace the default "Only" with "Units Only" for quantity context
+                                        const words = amountToWords(result.quantity).replace('Only', 'Units Only');
+                                        copyToClipboard(words, e.currentTarget);
+                                    }}
+                                    className="opacity-40 hover:opacity-100 transition-opacity p-0.5 hover:bg-primary-500/10 rounded text-primary-500/70 hover:text-primary-400"
+                                    title="Copy in Words"
+                                >
+                                    <Copy size={9} />
+                                </button>
+                            </div>
                             <span className="text-sm font-black text-primary-400">{result.quantity} UNITS</span>
                         </div>
 

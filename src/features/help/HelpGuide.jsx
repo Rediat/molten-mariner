@@ -707,10 +707,9 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
 
                 <InfoBox type="tip">
                     <strong>Copy in Words:</strong> Click the <strong>Copy icon</strong> next to 
-                    <em>Purchase Price</em>, <em>Brokerage</em>, <em>Total Consideration</em>, or <em>Actual Face Value</em> 
+                    <em>Quantity</em>, <em>Purchase Price</em>, <em>Brokerage</em>, <em>Total Consideration</em>, or <em>Actual Face Value</em> 
                     to copy the amount converted into formal English words (e.g., "One Million Sixty-Five Thousand Only"). 
-                    This format is optimized for bank forms and official bidding documents, removing currency 
-                    codes and using standard banking terminology.
+                    For Quantity, the text is formatted as "X Units Only".
                 </InfoBox>
 
                 <InfoBox type="formula">
