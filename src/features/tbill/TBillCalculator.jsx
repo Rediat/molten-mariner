@@ -578,7 +578,19 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
                                     </div>
                                 ) : (
                                     <div className="text-right">
-                                        <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Actual Face Value</p>
+                                        <div className="flex items-center justify-end gap-1.5">
+                                            <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Actual Face Value</p>
+                                            <button 
+                                                onClick={(e) => {
+                                                    const words = amountToWords(result.faceValue);
+                                                    copyToClipboard(words, e.currentTarget);
+                                                }}
+                                                className="opacity-40 hover:opacity-100 transition-opacity p-0.5 hover:bg-white/10 rounded text-neutral-500 hover:text-white"
+                                                title="Copy in Words"
+                                            >
+                                                <Copy size={8} />
+                                            </button>
+                                        </div>
                                         <p className="text-sm font-black text-white">{formatCurrency(result.faceValue)}</p>
                                     </div>
                                 )}
