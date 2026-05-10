@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useInputFocus } from '../../hooks/useInputFocus';
-import { Car, Info, HelpCircle, Trash2, Settings, History, Loader2, ArrowUpDown, Clock, Map as MapIcon, Navigation, Zap, ChevronDown, ChevronUp } from 'lucide-react';
+import { Car, Info, HelpCircle, Trash2, Settings, History, Loader2, ArrowUpDown, Clock, Map as MapIcon, Navigation, Zap, ChevronDown, ChevronUp, ClipboardList } from 'lucide-react';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
 import PlacesAutocomplete from '../../components/PlacesAutocomplete';
 import { CalculateIcon } from '../../components/Icons';
@@ -9,6 +9,7 @@ import { useTransport } from '../../context/TransportContext';
 import HistoryOverlay from '../../components/HistoryOverlay';
 import DrivingView from '../driving/DrivingView';
 import LiveFareTracker from '../driving/LiveFareTracker';
+import TripLogModal from './TripLogModal';
 
 const DEFAULT_VALUES = {
     distance: 15,
@@ -38,6 +39,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
     const [showHistory, setShowHistory] = useState(false);
     const [showMap, setShowMap] = useState(false);
     const [showLiveTracker, setShowLiveTracker] = useState(false);
+    const [showTripLog, setShowTripLog] = useState(false);
 
     const [mode, setMode] = useState('forward');
     const [priceToCharge, setPriceToCharge] = useState(585);
@@ -448,6 +450,13 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                             Price→Split
                         </button>
                     </div>
+                    <button
+                        onClick={() => setShowTripLog(true)}
+                        className={`flex items-center justify-center p-1 rounded-full transition-all ${showTripLog ? 'bg-primary-600/20 text-primary-400 ring-1 ring-primary-500/50' : 'bg-neutral-800 text-neutral-500 hover:bg-neutral-700'}`}
+                        title="Manual Trip Log"
+                    >
+                        <ClipboardList className="w-3 h-3" />
+                    </button>
                     <button
                         onClick={() => setShowLiveTracker(true)}
                         className={`flex items-center justify-center p-1 rounded-full transition-all ${showLiveTracker ? 'bg-amber-600/20 text-amber-400 ring-1 ring-amber-500/50' : 'bg-neutral-800 text-neutral-500 hover:bg-neutral-700'}`}
@@ -972,6 +981,13 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                 isVisible={showLiveTracker}
                 onClose={() => setShowLiveTracker(false)}
                 fareData={{ ...activeResults, ...values, waitMultiplier }}
+            />
+            {/* Trip Log Modal */}
+            <TripLogModal
+                isOpen={showTripLog}
+                onClose={() => setShowTripLog(false)}
+                defaultMileage={values.mileage}
+                defaultCostPerLiter={values.costPerLiter}
             />
         </div >
     );
