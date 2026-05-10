@@ -1,18 +1,44 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { X, ClipboardList, Gauge, Clock, Fuel, DollarSign, TrendingUp, Calculator, ArrowLeft } from 'lucide-react';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
+import { useInputFocus } from '../../hooks/useInputFocus';
 
 const TripLogModal = ({ isOpen, onClose, defaultMileage = 0.1, defaultCostPerLiter = 170 }) => {
     const [startOdo, setStartOdo] = useState(null);
     const [endOdo, setEndOdo] = useState(null);
+    const [totalKm, setTotalKm] = useState(null);
+    const [entryMode, setEntryMode] = useState('odo'); // 'odo' or 'total'
     const [startTime, setStartTime] = useState('');
     const [endTime, setEndTime] = useState('');
     const [fareReceived, setFareReceived] = useState(null);
 
-    const results = useMemo(() => {
-        if (startOdo === null || endOdo === null || endOdo < startOdo) return null;
+    // Refs for input focus
+    const startOdoRef = useRef(null);
+    const endOdoRef = useRef(null);
+    const totalKmRef = useRef(null);
+    const startTimeRef = useRef(null);
+    const endTimeRef = useRef(null);
+    const fareReceivedRef = useRef(null);
 
-        const distance = endOdo - startOdo;
+    // Focus handlers
+    const focusStartOdo = useInputFocus(setStartOdo, startOdoRef);
+    const focusEndOdo = useInputFocus(setEndOdo, endOdoRef);
+    const focusTotalKm = useInputFocus(setTotalKm, totalKmRef);
+    const focusStartTime = useInputFocus(setStartTime, startTimeRef);
+    const focusEndTime = useInputFocus(setEndTime, endTimeRef);
+    const focusFareReceived = useInputFocus(setFareReceived, fareReceivedRef);
+
+    const results = useMemo(() => {
+        let distance = 0;
+        
+        if (entryMode === 'odo') {
+            if (startOdo === null || endOdo === null || endOdo < startOdo) return null;
+            distance = endOdo - startOdo;
+        } else {
+            if (totalKm === null || totalKm <= 0) return null;
+            distance = totalKm;
+        }
+
         const oneWayFuelCost = distance * defaultMileage * defaultCostPerLiter;
         const roundTripFuelCost = oneWayFuelCost * 2;
         
@@ -45,7 +71,7 @@ const TripLogModal = ({ isOpen, onClose, defaultMileage = 0.1, defaultCostPerLit
             gainPerKm,
             workHours
         };
-    }, [startOdo, endOdo, fareReceived, startTime, endTime, defaultMileage, defaultCostPerLiter]);
+    }, [startOdo, endOdo, totalKm, entryMode, fareReceived, startTime, endTime, defaultMileage, defaultCostPerLiter]);
 
     if (!isOpen) return null;
 
@@ -67,64 +93,122 @@ const TripLogModal = ({ isOpen, onClose, defaultMileage = 0.1, defaultCostPerLit
                         <ClipboardList className="w-4 h-4 text-primary-400" />
                         <h3 className="font-black text-white text-xs uppercase tracking-wider leading-none">Trip Log</h3>
                     </div>
-                    <p className="text-[8px] text-neutral-500 font-bold uppercase tracking-widest mt-0.5">Manual Entry & Analysis</p>
+                    <p className="text-[8px] text-neutral-500 font-bold uppercase tracking-widest mt-0.5 whitespace-nowrap">Manual Entry & Analysis</p>
+                </div>
+
+                {/* Compact Mode Selector in Header */}
+                <div className="bg-neutral-800/50 p-0.5 rounded-lg flex border border-neutral-700/30 shrink-0">
+                    <button 
+                        onClick={() => setEntryMode('odo')}
+                        className={`px-3 py-1.5 rounded-md text-[7px] font-black uppercase tracking-widest transition-all ${entryMode === 'odo' ? 'bg-primary-500 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}
+                    >
+                        Odo
+                    </button>
+                    <button 
+                        onClick={() => setEntryMode('total')}
+                        className={`px-3 py-1.5 rounded-md text-[7px] font-black uppercase tracking-widest transition-all ${entryMode === 'total' ? 'bg-primary-500 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}
+                    >
+                        Total
+                    </button>
                 </div>
             </div>
 
             {/* Content */}
-            <div className="flex-1 flex flex-col p-3 gap-4 overflow-y-auto scrollbar-hide">
-                {/* Odometer Section */}
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                        <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider flex items-center gap-1.5">
-                            <Gauge size={12} className="text-primary-400" /> Start Odo (Km)
-                        </label>
-                        <div className="bg-neutral-800/40 border border-neutral-700/50 rounded-xl px-3 py-2.5">
-                            <FormattedNumberInput
-                                value={startOdo}
-                                onChange={(e) => setStartOdo(parseFloat(e.target.value.replace(/,/g, '')) || null)}
-                                decimals={1}
-                                className="bg-transparent text-white font-mono font-bold w-full focus:outline-none text-lg"
-                                placeholder="0.0"
-                            />
+            <div className="flex-1 flex flex-col p-3 gap-3.5 overflow-y-auto scrollbar-hide">
+                {/* Distance Section Wrapper with Fixed Height to prevent jumping */}
+                <div className="h-[92px] flex flex-col justify-end">
+                    {entryMode === 'odo' ? (
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <label 
+                                    onClick={focusStartOdo}
+                                    className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider flex items-center gap-1.5 cursor-pointer hover:text-primary-400 transition-colors"
+                                >
+                                    <Gauge size={12} className="text-primary-400" /> Start Odo (Km)
+                                </label>
+                                <div className="bg-neutral-800/40 border border-neutral-700/50 rounded-xl px-3 py-2.5">
+                                    <FormattedNumberInput
+                                        ref={startOdoRef}
+                                        value={startOdo}
+                                        onChange={(e) => setStartOdo(parseFloat(e.target.value.replace(/,/g, '')) || null)}
+                                        onBlur={() => { if (startOdo === null) setStartOdo(0); }}
+                                        decimals={1}
+                                        className="bg-transparent text-white font-mono font-bold w-full focus:outline-none text-lg"
+                                        placeholder="0.0"
+                                    />
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <label 
+                                    onClick={focusEndOdo}
+                                    className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider flex items-center gap-1.5 cursor-pointer hover:text-emerald-400 transition-colors"
+                                >
+                                    <Gauge size={12} className="text-emerald-400" /> End Odo (Km)
+                                </label>
+                                <div className="bg-neutral-800/40 border border-neutral-700/50 rounded-xl px-3 py-2.5">
+                                    <FormattedNumberInput
+                                        ref={endOdoRef}
+                                        value={endOdo}
+                                        onChange={(e) => setEndOdo(parseFloat(e.target.value.replace(/,/g, '')) || null)}
+                                        onBlur={() => { if (endOdo === null) setEndOdo(0); }}
+                                        decimals={1}
+                                        className="bg-transparent text-white font-mono font-bold w-full focus:outline-none text-lg"
+                                        placeholder="0.0"
+                                    />
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    <div className="space-y-2">
-                        <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider flex items-center gap-1.5">
-                            <Gauge size={12} className="text-emerald-400" /> End Odo (Km)
-                        </label>
-                        <div className="bg-neutral-800/40 border border-neutral-700/50 rounded-xl px-3 py-2.5">
-                            <FormattedNumberInput
-                                value={endOdo}
-                                onChange={(e) => setEndOdo(parseFloat(e.target.value.replace(/,/g, '')) || null)}
-                                decimals={1}
-                                className="bg-transparent text-white font-mono font-bold w-full focus:outline-none text-lg"
-                                placeholder="0.0"
-                            />
+                    ) : (
+                        <div className="space-y-2">
+                            <label 
+                                onClick={focusTotalKm}
+                                className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider flex items-center gap-1.5 cursor-pointer hover:text-primary-400 transition-colors"
+                            >
+                                <Gauge size={12} className="text-primary-400" /> Total Distance Travelled (Km)
+                            </label>
+                            <div className="bg-neutral-800/40 border border-primary-500/20 rounded-xl px-4 py-3.5">
+                                <FormattedNumberInput
+                                    ref={totalKmRef}
+                                    value={totalKm}
+                                    onChange={(e) => setTotalKm(parseFloat(e.target.value.replace(/,/g, '')) || null)}
+                                    onBlur={() => { if (totalKm === null) setTotalKm(0); }}
+                                    decimals={1}
+                                    className="bg-transparent text-primary-400 text-3xl font-black w-full focus:outline-none"
+                                    placeholder="0.0"
+                                />
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </div>
 
                 {/* Time Section */}
                 <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                        <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider flex items-center gap-1.5">
+                        <label 
+                            onClick={focusStartTime}
+                            className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider flex items-center gap-1.5 cursor-pointer hover:text-primary-400 transition-colors"
+                        >
                             <Clock size={12} className="text-primary-400" /> Start Time
                         </label>
                         <input
+                            ref={startTimeRef}
                             type="time"
-                            value={startTime}
+                            value={startTime || ''}
                             onChange={(e) => setStartTime(e.target.value)}
                             className="bg-neutral-800/40 border border-neutral-700/50 rounded-xl px-3 py-2.5 text-white font-mono font-bold w-full focus:outline-none focus:border-primary-500/50 transition-colors text-lg"
                         />
                     </div>
                     <div className="space-y-2">
-                        <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider flex items-center gap-1.5">
+                        <label 
+                            onClick={focusEndTime}
+                            className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider flex items-center gap-1.5 cursor-pointer hover:text-emerald-400 transition-colors"
+                        >
                             <Clock size={12} className="text-emerald-400" /> End Time
                         </label>
                         <input
+                            ref={endTimeRef}
                             type="time"
-                            value={endTime}
+                            value={endTime || ''}
                             onChange={(e) => setEndTime(e.target.value)}
                             className="bg-neutral-800/40 border border-neutral-700/50 rounded-xl px-3 py-2.5 text-white font-mono font-bold w-full focus:outline-none focus:border-emerald-500/50 transition-colors text-lg"
                         />
@@ -133,13 +217,18 @@ const TripLogModal = ({ isOpen, onClose, defaultMileage = 0.1, defaultCostPerLit
 
                 {/* Fare Section */}
                 <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider flex items-center gap-1.5">
+                    <label 
+                        onClick={focusFareReceived}
+                        className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider flex items-center gap-1.5 cursor-pointer hover:text-amber-400 transition-colors"
+                    >
                         <DollarSign size={12} className="text-amber-400" /> Total Amount Received
                     </label>
-                    <div className="bg-neutral-800/40 border border-amber-500/20 rounded-xl px-4 py-4">
+                    <div className="bg-neutral-800/40 border border-amber-500/20 rounded-xl px-4 py-3.5">
                         <FormattedNumberInput
+                            ref={fareReceivedRef}
                             value={fareReceived}
                             onChange={(e) => setFareReceived(parseFloat(e.target.value.replace(/,/g, '')) || null)}
+                            onBlur={() => { if (fareReceived === null) setFareReceived(0); }}
                             decimals={2}
                             className="bg-transparent text-amber-400 text-4xl font-black w-full focus:outline-none"
                             placeholder="0.00"
@@ -149,7 +238,7 @@ const TripLogModal = ({ isOpen, onClose, defaultMileage = 0.1, defaultCostPerLit
 
                     {/* Results Section */}
                     {results && (
-                        <div className="space-y-3 pt-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                        <div className="space-y-3 pt-1.5 animate-in fade-in slide-in-from-bottom-2 duration-300">
                             <div className="h-px bg-neutral-800 w-full" />
                             
                             <div className="grid grid-cols-3 gap-2">
@@ -169,7 +258,7 @@ const TripLogModal = ({ isOpen, onClose, defaultMileage = 0.1, defaultCostPerLit
 
                             {/* Net Gain Cards */}
                             <div className="space-y-2">
-                                <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-4">
+                                <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-3.5">
                                     <div className="flex justify-between items-center mb-1">
                                         <p className="text-[9px] font-bold text-emerald-400 uppercase tracking-widest">Net Gain (One-Way)</p>
                                         <TrendingUp size={14} className="text-emerald-500" />
@@ -179,7 +268,7 @@ const TripLogModal = ({ isOpen, onClose, defaultMileage = 0.1, defaultCostPerLit
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-2">
-                                    <div className="bg-neutral-800/50 border border-neutral-700/50 rounded-2xl p-3">
+                                    <div className="bg-neutral-800/50 border border-neutral-700/50 rounded-xl p-3">
                                         <p className="text-[8px] font-bold text-neutral-500 uppercase tracking-widest mb-1">Net Gain (RT)</p>
                                         <p className={`text-base font-black ${results.netGainRound >= 0 ? 'text-white' : 'text-rose-400'}`}>
                                             {formatNum(results.netGainRound)}
@@ -187,7 +276,7 @@ const TripLogModal = ({ isOpen, onClose, defaultMileage = 0.1, defaultCostPerLit
                                         <p className="text-[7px] text-neutral-600 font-bold uppercase mt-1 tracking-tight">Return inc.</p>
                                     </div>
 
-                                    <div className="bg-primary-500/5 border border-primary-500/20 rounded-2xl p-3 flex items-center justify-between">
+                                    <div className="bg-primary-500/5 border border-primary-500/20 rounded-xl p-3 flex items-center justify-between">
                                         <div>
                                             <p className="text-[8px] font-bold text-primary-400 uppercase tracking-widest mb-1">Gross Yield</p>
                                             <p className="text-base font-black text-white">{formatNum(results.efficiency)}</p>
