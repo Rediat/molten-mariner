@@ -295,9 +295,10 @@ const LiveFareTracker = ({ isVisible, onClose, fareData }) => {
                 <div className="flex items-center gap-2.5 p-2.5">
                     <button
                         onClick={onClose}
-                        className="p-2 bg-neutral-800/80 border border-neutral-700/50 rounded-xl text-neutral-400 hover:text-white transition-all hover:bg-neutral-700 active:scale-95"
+                        className="h-12 w-12 flex items-center justify-center bg-neutral-900/80 backdrop-blur-md border border-neutral-700/50 rounded-xl shadow-lg text-neutral-400 hover:text-white transition-all hover:bg-neutral-800 active:scale-95 shrink-0"
+                        title="Back to Calculator"
                     >
-                        <ArrowLeft className="w-4 h-4" />
+                        <ArrowLeft className="w-5 h-5" />
                     </button>
                     <div className="flex-1 min-w-0">
                         <h2 className="text-xs font-black text-white tracking-wide flex items-center gap-2">
