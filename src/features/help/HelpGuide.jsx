@@ -919,6 +919,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                         { name: 'Navigate Button', description: 'Opens your selected route directly in the Google Maps app (Android) or browser for turn-by-turn navigation.' },
                         { name: 'SMS Button', description: 'Generates a professional trip summary message (for the passenger) with fare, distance, and payment options (TeleBirr, CBE, or Cash).' },
                         { name: 'Live Button', description: 'Opens the Live Fare Tracker for real-time GPS tracking (see below).' },
+                        { name: 'Log Button', description: 'Opens the Manual Trip Log for offline entry and profitability analysis (see below).' },
                         { name: 'Turn-by-Turn Steps', description: 'An expandable bottom sheet shows step-by-step navigation directions.' },
                         { name: '← Back Button', description: 'Return to the calculator with your selected route data preserved.' }
                     ]} />
@@ -933,6 +934,18 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                         { name: 'Running Fare', description: 'A large, live display of the fare, updated every second based on distance and wait time.' },
                         { name: 'GPS Accuracy', description: 'A real-time indicator (± meters) shows the reliability of your GPS fix.' },
                         { name: 'Trip Summary', description: 'When stopped, view a complete breakdown of distance, duration, avg speed, and net gain.' }
+                    ]} />
+                </div>
+
+                <div className="pt-2">
+                    <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Trip Log (Manual Entry):</p>
+                    <p className="text-xs mb-2">Record past trips or estimate costs without GPS. Supports two distinct entry modes for maximum flexibility.</p>
+                    <FieldList fields={[
+                        { name: 'Odo Entry', description: 'Enter specific Start and End Odometer readings to calculate distance. Best for formal vehicle logbooks.' },
+                        { name: 'Total Distance', description: 'Enter the total kilometers traveled directly. Useful when readings or specific times are unknown.' },
+                        { name: 'Header Toggle', description: 'Quickly switch between Odo and Total modes using the compact toggle in the modal header.' },
+                        { name: 'Fixed Layout', description: 'The "Total Amount Received" and results sections remain stationary across both modes for a stable, jump-free experience.' },
+                        { name: 'Analytics', description: 'Calculates Fuel Cost, Net Gain (One-Way and Round-Trip), and Gross Yield (ETB/Km) based on your inputs.' }
                     ]} />
                 </div>
 
