@@ -43,8 +43,23 @@ const LiveFareTracker = ({ isVisible, onClose, fareData }) => {
     const startTimeRef = useRef(null);
     const elapsedAtPauseRef = useRef(0);
     const isWaitingRef = useRef(true); // start as waiting until first GPS movement detected
+    const trackingStopIndexRef = useRef(null);
 
-    // Fare parameters from parent (with defaults)
+    // Refs for fare parameters to avoid stale closures in callbacks
+    const mileageRef = useRef(fareData?.mileage ?? 0.10);
+    const costPerLiterRef = useRef(fareData?.costPerLiter ?? 145);
+    const serviceMultiplierRef = useRef(fareData?.serviceMultiplier ?? 3);
+    const waitMultiplierRef = useRef(fareData?.waitMultiplier ?? 2.5);
+
+    // Update Refs when props change
+    useEffect(() => {
+        mileageRef.current = fareData?.mileage ?? 0.10;
+        costPerLiterRef.current = fareData?.costPerLiter ?? 145;
+        serviceMultiplierRef.current = fareData?.serviceMultiplier ?? 3;
+        waitMultiplierRef.current = fareData?.waitMultiplier ?? 2.5;
+    }, [fareData]);
+
+    // Fare parameters from parent (with defaults) for rendering
     const mileage = fareData?.mileage ?? 0.10; // L/km
     const costPerLiter = fareData?.costPerLiter ?? 145;
     const serviceMultiplier = fareData?.serviceMultiplier ?? 3;
@@ -52,20 +67,23 @@ const LiveFareTracker = ({ isVisible, onClose, fareData }) => {
 
     // ---- Fare calculation ----
     const computeFare = useCallback((dist, waitSecs) => {
-        const fuelCost = dist * mileage * costPerLiter;
-        const baseFare = fuelCost * serviceMultiplier * 2; // round-trip fuel estimate
-        const waitCharge = (waitSecs / 60) * waitMultiplier * 2;
+        const fuelCost = dist * mileageRef.current * costPerLiterRef.current;
+        const baseFare = fuelCost * serviceMultiplierRef.current * 2; // round-trip fuel estimate
+        const waitCharge = (waitSecs / 60) * waitMultiplierRef.current * 2;
         return baseFare + waitCharge;
-    }, [mileage, costPerLiter, serviceMultiplier, waitMultiplier]);
+    }, []);
 
     // ---- Update active stop in state ----
     const updateActiveStop = useCallback((data) => {
+        const index = trackingStopIndexRef.current;
+        if (index === null) return;
+        
         setStops(prev => {
             const newStops = [...prev];
-            newStops[trackingStopIndex] = { ...newStops[trackingStopIndex], ...data };
+            newStops[index] = { ...newStops[index], ...data };
             return newStops;
         });
-    }, [trackingStopIndex]);
+    }, []);
 
     // ---- Elapsed time ticker ----
     useEffect(() => {
@@ -147,6 +165,7 @@ const LiveFareTracker = ({ isVisible, onClose, fareData }) => {
 
         const index = activeStopIndex;
         setTrackingStopIndex(index);
+        trackingStopIndexRef.current = index;
         setStops(prev => {
             const next = [...prev];
             next[index].status = 'tracking';
@@ -186,6 +205,7 @@ const LiveFareTracker = ({ isVisible, onClose, fareData }) => {
             return next;
         });
         setTrackingStopIndex(null);
+        trackingStopIndexRef.current = null;
     }, [trackingStopIndex]);
 
     // ---- Add Next Stop ----
@@ -212,6 +232,7 @@ const LiveFareTracker = ({ isVisible, onClose, fareData }) => {
         setStops([{ id: 1, distance: 0, waitTime: 0, elapsedTime: 0, fare: 0, status: 'idle' }]);
         setActiveStopIndex(0);
         setTrackingStopIndex(null);
+        trackingStopIndexRef.current = null;
         setViewMode('individual');
         setCurrentSpeed(0);
         setGpsAccuracy(null);

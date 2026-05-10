@@ -368,7 +368,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
         if (mode === 'forward') {
             addToHistory('Ride', { ...values, mode: 'forward', roundTrip }, newResults);
         } else {
-            addToHistory('Ride', { ...values, priceToCharge: chargingPrice, mode: 'reverse', roundTrip }, newResults);
+            addToHistory('Ride', { ...values, priceToCharge: priceToCharge, mode: 'reverse', roundTrip }, newResults);
         }
     };
 
