@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+﻿import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useInputFocus } from '../../hooks/useInputFocus';
 import { Car, Info, HelpCircle, Trash2, Settings, History, Loader2, ArrowUpDown, Clock, Map as MapIcon, Navigation, Zap, ChevronDown, ChevronUp, ClipboardList } from 'lucide-react';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
@@ -451,20 +451,6 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                         </button>
                     </div>
                     <button
-                        onClick={() => setShowTripLog(true)}
-                        className={`flex items-center justify-center p-1 rounded-full transition-all ${showTripLog ? 'bg-primary-600/20 text-primary-400 ring-1 ring-primary-500/50' : 'bg-neutral-800 text-neutral-500 hover:bg-neutral-700'}`}
-                        title="Manual Trip Log"
-                    >
-                        <ClipboardList className="w-3 h-3" />
-                    </button>
-                    <button
-                        onClick={() => setShowLiveTracker(true)}
-                        className={`flex items-center justify-center p-1 rounded-full transition-all ${showLiveTracker ? 'bg-amber-600/20 text-amber-400 ring-1 ring-amber-500/50' : 'bg-neutral-800 text-neutral-500 hover:bg-neutral-700'}`}
-                        title="Live Fare Tracker"
-                    >
-                        <Zap className="w-3 h-3" />
-                    </button>
-                    <button
                         onClick={() => setShowExplanation(!showExplanation)}
                         className={`flex items-center justify-center p-1 rounded-full transition-all ${showExplanation ? 'bg-primary-600/20 text-primary-400 ring-1 ring-primary-500/50' : 'bg-neutral-800 text-neutral-500 hover:bg-neutral-700'}`}
                         title="Show Info"
@@ -483,18 +469,18 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                     )}
                     <p>
                         {mode === 'forward'
-                            ? `📐 Enter distance, fuel price, and service multiplier to calculate the recommended fare. Formula: Price = (Distance × Mileage × Fuel Cost × ${roundTrip ? '2' : '1'}) × Service Multiplier + Wait Time Charge.`
+                            ? `📍 Enter distance, fuel price, and service multiplier to calculate the recommended fare. Formula: Price = (Distance × Mileage × Fuel Cost × ${roundTrip ? '2' : '1'}) × Service Multiplier + Wait Time Charge.`
                             : `🔄 Enter a known fare to reverse-calculate fuel cost breakdown, net gain, and the implied service multiplier.`}
                     </p>
-                    <p>⛽ <strong className="text-white">Mileage:</strong> Fixed at 0.10 L/Km — the baseline fuel consumption rate used in all calculations.</p>
-                    <p>🔄 <strong className="text-white">Round Trip (1× / 2×):</strong> {roundTrip ? 'Enabled (2x fuel cost)' : 'Disabled (1x fuel cost)'} – applies a 2x factor to fuel costs when calculating total fare.</p>
+                    <p>⛽ <strong className="text-white">Mileage:</strong> Fixed at 0.10 L/Km — the baseline fuel consumption rate used in all calculations.</p>
+                    <p>🔄 <strong className="text-white">Round Trip (1× / 2×):</strong> {roundTrip ? 'Enabled (2x fuel cost)' : 'Disabled (1x fuel cost)'} — applies a 2x factor to fuel costs when calculating total fare.</p>
                     <p>⏱️ <strong className="text-white">Wait Time:</strong> Estimated travel time + 10% buffer, multiplied by a configurable factor (default 2.5) to estimate total charge for wait time.</p>
                     <p>👥 <strong className="text-white">Per Head:</strong> Total fare split by 4 passengers for cost-sharing.</p>
                     {mapsAvailable && (
                         <>
-                            <p className="font-bold text-primary-400 text-xs pt-1">Map & Routes</p>
-                            <p>🗺️ <strong className="text-white">View Map:</strong> When both From and To are set, tap "Map & Routes" for a full-screen interactive map with traffic-colored polylines (blue = normal, yellow = slow, red = jam).</p>
-                            <p>🔀 <strong className="text-white">Alternate Routes:</strong> Grey lines on the map show alternative routes — tap one to switch. The selected route's distance and time sync back to the calculator automatically.</p>
+                            <p className="font-bold text-primary-400 text-xs pt-1">Map</p>
+                            <p>🗺️ <strong className="text-white">View Map:</strong> When both From and To are set, tap "Map" for a full-screen interactive map with traffic-colored polylines (blue = normal, yellow = slow, red = jam).</p>
+                            <p>🔀 <strong className="text-white">Alternate Routes:</strong> Grey lines on the map show alternative Routes — tap one to switch. The selected route's distance and time sync back to the calculator automatically.</p>
                             <p>🧭 <strong className="text-white">Turn-by-Turn:</strong> Expand the bottom sheet on the map view for step-by-step navigation directions.</p>
                             <p>⇅ <strong className="text-white">Swap:</strong> Use the swap button between From/To to instantly reverse your route.</p>
                         </>
@@ -546,12 +532,12 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                                         className="flex-1 bg-primary-500/10 hover:bg-primary-500/20 text-primary-400 font-bold text-xs py-2 rounded-lg transition-colors flex items-center justify-center gap-2 border border-primary-500/30 active:scale-[0.98]"
                                     >
                                         <MapIcon className="w-4 h-4 text-primary-400" />
-                                        Map & Routes
+                                        Map
                                     </button>
                                     <button
                                         onClick={openInGoogleMaps}
                                         className="bg-neutral-800/80 hover:bg-neutral-700 text-neutral-300 hover:text-white font-bold text-xs py-2 px-3 rounded-lg transition-all flex items-center justify-center gap-1.5 border border-neutral-700/50 active:scale-[0.98] shrink-0"
-                                        title="Open in Google Maps app to compare ride prices"
+                                        title="Open in Google Maps app"
                                     >
                                         <Navigation className="w-3.5 h-3.5 text-primary-400" />
                                         Navigate
@@ -560,11 +546,19 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                             )}
                             <button
                                 onClick={() => setShowLiveTracker(true)}
-                                className={`flex items-center gap-1.5 bg-gradient-to-r from-amber-600/30 to-amber-500/20 hover:from-amber-600/50 hover:to-amber-500/35 text-amber-400 font-bold text-xs py-2 px-3 rounded-lg transition-all border border-amber-500/40 active:scale-[0.97] shrink-0 ${!origin || !destination ? 'w-full' : ''}`}
-                                title="Live fare tracking with GPS"
+                                className={`flex items-center gap-1.5 bg-gradient-to-r from-amber-600/30 to-amber-500/20 hover:from-amber-600/50 hover:to-amber-500/35 text-amber-400 font-bold text-xs py-2 px-3 rounded-lg transition-all border border-amber-500/40 active:scale-[0.97] shrink-0 ${!origin || !destination ? 'flex-1' : ''}`}
+                                title="Live fare tracking"
                             >
                                 <Zap className="w-3.5 h-3.5" />
                                 <span>Live</span>
+                            </button>
+                            <button
+                                onClick={() => setShowTripLog(true)}
+                                className={`flex items-center gap-1.5 bg-neutral-800 hover:bg-neutral-700 text-primary-400 font-bold text-xs py-2 px-3 rounded-lg transition-all border border-neutral-700/50 active:scale-[0.97] shrink-0 ${!origin || !destination ? 'flex-1' : ''}`}
+                                title="Manual trip logging"
+                            >
+                                <ClipboardList className="w-3.5 h-3.5" />
+                                <span>Log</span>
                             </button>
                         </div>
                     </div>

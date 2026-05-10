@@ -158,7 +158,7 @@ const TripLogModal = ({ isOpen, onClose, defaultMileage = 0.1, defaultCostPerLit
                                     <p className="text-xs font-black text-white">{results.distance.toFixed(1)}</p>
                                 </div>
                                 <div className="bg-neutral-800/50 rounded-xl p-2 border border-neutral-700/50">
-                                    <p className="text-[7px] font-bold text-neutral-500 uppercase tracking-widest mb-1">Time (Hrs)</p>
+                                    <p className="text-[7px] font-bold text-neutral-500 uppercase tracking-widest mb-1">Work Hours</p>
                                     <p className="text-xs font-black text-emerald-400">{results.workHours.toFixed(1)}</p>
                                 </div>
                                 <div className="bg-neutral-800/50 rounded-xl p-2 border border-neutral-700/50">
