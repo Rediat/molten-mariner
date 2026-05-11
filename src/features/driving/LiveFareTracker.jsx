@@ -45,6 +45,70 @@ const LiveFareTracker = ({ isVisible, onClose, fareData }) => {
     const isWaitingRef = useRef(true); // start as waiting until first GPS movement detected
     const trackingStopIndexRef = useRef(null);
 
+    const STORAGE_KEY = 'molten_mariner_fare_tracker_state';
+
+    // ---- Persistence: Hydrate state on mount ----
+    useEffect(() => {
+        const savedState = localStorage.getItem(STORAGE_KEY);
+        if (savedState) {
+            try {
+                const parsed = JSON.parse(savedState);
+                setStops(parsed.stops);
+                
+                // If we were tracking when it closed, we need to recover
+                if (parsed.trackingStopIndex !== null) {
+                    const index = parsed.trackingStopIndex;
+                    setActiveStopIndex(index);
+                    
+                    // Note: We don't automatically startTracking here to avoid 
+                    // accidental GPS activation, but we could if the user wants 
+                    // "seamless" recovery.
+                }
+            } catch (e) {
+                console.error("Failed to restore fare state", e);
+            }
+        }
+    }, []);
+
+    // ---- Persistence: Save state on changes ----
+    useEffect(() => {
+        const stateToSave = {
+            stops,
+            trackingStopIndex,
+            lastUpdated: Date.now()
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
+    }, [stops, trackingStopIndex]);
+
+    // ---- Native Bridge: Interface for Android Foreground Service ----
+    // This allows the Android app to call window.updateFareFromNative(dist, wait) 
+    // to push background updates into the React state.
+    useEffect(() => {
+        window.updateFareFromNative = (addedDistance, addedWaitSeconds) => {
+            if (trackingStopIndexRef.current === null) return;
+            
+            setStops(prev => {
+                const next = [...prev];
+                const idx = trackingStopIndexRef.current;
+                const stop = next[idx];
+                
+                const newDist = stop.distance + addedDistance;
+                const newWait = stop.waitTime + addedWaitSeconds;
+                
+                next[idx] = {
+                    ...stop,
+                    distance: newDist,
+                    waitTime: newWait,
+                    elapsedTime: stop.elapsedTime + addedWaitSeconds, // assuming background time is active
+                    fare: computeFare(newDist, newWait)
+                };
+                return next;
+            });
+        };
+
+        return () => { delete window.updateFareFromNative; };
+    }, [computeFare]);
+
     // Refs for fare parameters to avoid stale closures in callbacks
     const mileageRef = useRef(fareData?.mileage ?? 0.10);
     const costPerLiterRef = useRef(fareData?.costPerLiter ?? 145);
@@ -240,6 +304,7 @@ const LiveFareTracker = ({ isVisible, onClose, fareData }) => {
         lastTimestampRef.current = null;
         distanceAccumulatorRef.current = 0;
         waitAccumulatorRef.current = 0;
+        localStorage.removeItem(STORAGE_KEY);
     }, []);
 
     // ---- Helpers ----
