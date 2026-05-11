@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { ArrowLeft, Play, Square, RotateCcw, Navigation, Clock, Gauge, MapPin, TrendingUp, Fuel, DollarSign, Timer, Zap, Car, ChevronDown, ChevronUp, Layers } from 'lucide-react';
+import { ArrowLeft, Play, Square, RotateCcw, Navigation, Clock, Gauge, MapPin, TrendingUp, Fuel, DollarSign, Timer, Zap, Car, ChevronDown, ChevronUp, Layers, Map } from 'lucide-react';
 
 // Haversine formula – returns distance in kilometers
 const haversineDistance = (lat1, lon1, lat2, lon2) => {
@@ -19,7 +19,7 @@ const MIN_ACCURACY = 100; // meters — relaxed to capture more points in urban 
 const MIN_DISTANCE = 0.002; // km (2m) — capture even slow movement
 const MAX_STOPS = 5;
 
-const LiveFareTracker = ({ isVisible, onClose, fareData }) => {
+const LiveFareTracker = ({ isVisible, onClose, fareData, initialMapState, mapsReady }) => {
     // ---- Multi-Stop State ----
     const [stops, setStops] = useState([
         { id: 1, distance: 0, waitTime: 0, elapsedTime: 0, fare: 0, status: 'idle' }
@@ -32,11 +32,17 @@ const LiveFareTracker = ({ isVisible, onClose, fareData }) => {
     const [positionCount, setPositionCount] = useState(0);
     const [gpsAccuracy, setGpsAccuracy] = useState(null);
     const [showMarketComparison, setShowMarketComparison] = useState(false);
+    const [showMap, setShowMap] = useState(initialMapState || false);
 
     // Refs for values that need to survive across watchPosition callbacks
     const lastPositionRef = useRef(null);
     const lastTimestampRef = useRef(null);
     const watchIdRef = useRef(null);
+    const mapContainerRef = useRef(null);
+    const mapInstanceRef = useRef(null);
+    const markerRef = useRef(null);
+    const polylineRef = useRef(null);
+    const pathRef = useRef([]);
     const timerIdRef = useRef(null);
     const waitAccumulatorRef = useRef(0);
     const distanceAccumulatorRef = useRef(0);
@@ -103,9 +109,89 @@ const LiveFareTracker = ({ isVisible, onClose, fareData }) => {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
     }, [stops, trackingStopIndex]);
 
+    // ---- Map Management ----
+    useEffect(() => {
+        if (showMap && mapsReady && mapContainerRef.current && !mapInstanceRef.current) {
+            const mapOptions = {
+                center: lastPositionRef.current ? 
+                    { lat: lastPositionRef.current.lat, lng: lastPositionRef.current.lng } : 
+                    { lat: 9.0333, lng: 38.7500 }, // Addis Ababa default
+                zoom: 17,
+                disableDefaultUI: true,
+                styles: [
+                    { elementType: 'geometry', stylers: [{ color: '#242f3e' }] },
+                    { elementType: 'labels.text.stroke', stylers: [{ color: '#242f3e' }] },
+                    { elementType: 'labels.text.fill', stylers: [{ color: '#746855' }] },
+                    { featureType: 'administrative.locality', elementType: 'labels.text.fill', stylers: [{ color: '#d59563' }] },
+                    { featureType: 'poi', elementType: 'labels.text.fill', stylers: [{ color: '#d59563' }] },
+                    { featureType: 'poi.park', elementType: 'geometry', stylers: [{ color: '#263c3f' }] },
+                    { featureType: 'poi.park', elementType: 'labels.text.fill', stylers: [{ color: '#6b9a76' }] },
+                    { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#38414e' }] },
+                    { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#212a37' }] },
+                    { featureType: 'road', elementType: 'labels.text.fill', stylers: [{ color: '#9ca5b3' }] },
+                    { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#746855' }] },
+                    { featureType: 'road.highway', elementType: 'geometry.stroke', stylers: [{ color: '#1f2835' }] },
+                    { featureType: 'road.highway', elementType: 'labels.text.fill', stylers: [{ color: '#f3d19c' }] },
+                    { featureType: 'transit', elementType: 'geometry', stylers: [{ color: '#2f3948' }] },
+                    { featureType: 'transit.station', elementType: 'labels.text.fill', stylers: [{ color: '#d59563' }] },
+                    { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#17263c' }] },
+                    { featureType: 'water', elementType: 'labels.text.fill', stylers: [{ color: '#515c6d' }] },
+                    { featureType: 'water', elementType: 'labels.text.stroke', stylers: [{ color: '#17263c' }] },
+                ]
+            };
+
+            const map = new window.google.maps.Map(mapContainerRef.current, mapOptions);
+            mapInstanceRef.current = map;
+
+            // Add Traffic Layer
+            const trafficLayer = new window.google.maps.TrafficLayer();
+            trafficLayer.setMap(map);
+
+            // Create Marker
+            markerRef.current = new window.google.maps.Marker({
+                position: mapOptions.center,
+                map: map,
+                icon: {
+                    path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+                    scale: 6,
+                    fillColor: '#0ea5e9',
+                    fillOpacity: 1,
+                    strokeColor: '#ffffff',
+                    strokeWeight: 2,
+                }
+            });
+
+            // Create Polyline
+            polylineRef.current = new window.google.maps.Polyline({
+                path: pathRef.current,
+                geodesic: true,
+                strokeColor: '#0ea5e9',
+                strokeOpacity: 0.8,
+                strokeWeight: 4,
+                map: map
+            });
+        }
+    }, [showMap, mapsReady]);
+
+    const updateMap = useCallback((lat, lng) => {
+        const newPos = { lat, lng };
+        
+        // Add to history
+        pathRef.current = [...pathRef.current, newPos].slice(-500); // Keep last 500 points
+        
+        if (mapInstanceRef.current && markerRef.current) {
+            mapInstanceRef.current.panTo(newPos);
+            markerRef.current.setPosition(newPos);
+            
+            if (polylineRef.current) {
+                polylineRef.current.setPath(pathRef.current);
+            }
+        }
+    }, []);
+
     // ---- Native Bridge: Interface for Android Foreground Service ----
     useEffect(() => {
-        window.updateFareFromNative = (addedDistance, addedWaitSeconds) => {
+        window.updateFareFromNative = (addedDistance, addedWaitSeconds, lat, lng) => {
             const idx = trackingStopIndexRef.current;
             if (idx === null || idx === undefined) return;
             
@@ -126,10 +212,17 @@ const LiveFareTracker = ({ isVisible, onClose, fareData }) => {
                 };
                 return next;
             });
+
+            if (lat && lng) {
+                const newPos = { lat, lng };
+                lastPositionRef.current = newPos;
+                updateMap(lat, lng);
+            }
         };
 
         return () => { delete window.updateFareFromNative; };
-    }, [computeFare]);
+    }, [computeFare, updateMap]);
+
 
     // ---- Update active stop in state ----
     const updateActiveStop = useCallback((data) => {
@@ -205,9 +298,15 @@ const LiveFareTracker = ({ isVisible, onClose, fareData }) => {
                 // ONLY update reference position when we actually count the distance
                 lastPositionRef.current = { lat: latitude, lng: longitude };
             }
+
+            // Always update map position even if distance is small (for smooth panning)
+            updateMap(latitude, longitude);
         } else {
             // First valid point ever recorded
-            lastPositionRef.current = { lat: latitude, lng: longitude };
+            const newPos = { lat: latitude, lng: longitude };
+            lastPositionRef.current = newPos;
+            updateMap(latitude, longitude);
+            
             if (gpsSpeed != null && gpsSpeed >= 0) {
                 setCurrentSpeed(Math.round(gpsSpeed * 3.6));
             }
@@ -215,7 +314,7 @@ const LiveFareTracker = ({ isVisible, onClose, fareData }) => {
 
         // Always update timestamp to keep speed calculations fresh
         lastTimestampRef.current = timestamp;
-    }, [computeFare, updateActiveStop]);
+    }, [computeFare, updateActiveStop, updateMap]);
 
     // ---- Start tracking ----
     const startTracking = useCallback(() => {
@@ -351,38 +450,53 @@ const LiveFareTracker = ({ isVisible, onClose, fareData }) => {
 
             {/* Header */}
             <div className="flex flex-col border-b border-neutral-800">
-                <div className="flex items-center gap-2.5 p-2.5">
+                <div className="flex items-center gap-2 p-2">
                     <button
                         onClick={onClose}
-                        className="h-12 w-12 flex items-center justify-center bg-neutral-900/80 backdrop-blur-md border border-neutral-700/50 rounded-xl shadow-lg text-neutral-400 hover:text-white transition-all hover:bg-neutral-800 active:scale-95 shrink-0"
+                        className="h-10 w-10 flex items-center justify-center bg-neutral-900/80 backdrop-blur-md border border-neutral-700/50 rounded-xl shadow-lg text-neutral-400 hover:text-white transition-all hover:bg-neutral-800 active:scale-95 shrink-0"
                         title="Back to Calculator"
                     >
-                        <ArrowLeft className="w-5 h-5" />
+                        <ArrowLeft className="w-4 h-4" />
                     </button>
                     <div className="flex-1 min-w-0">
-                        <h2 className="text-xs font-black text-white tracking-wide flex items-center gap-2">
-                            <Zap className="w-3.5 h-3.5 text-amber-400" />
-                            Live Fare Tracker
-                        </h2>
-                        <p className="text-[9px] text-neutral-500 font-bold uppercase tracking-widest mt-0.5 text-left">
-                            {viewMode === 'total' ? 'Full Session Summary' : `Stop ${activeStop.id} Tracking`}
+                        <div className="flex items-center gap-1.5">
+                            <h2 className="text-[10px] font-black text-white tracking-wide uppercase">Live Fare</h2>
+                            {isTrackingAny && <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_5px_rgba(16,185,129,0.5)]" />}
+                            {gpsAccuracy != null && isTrackingAny && (
+                                <span className={`text-[7px] font-bold px-1 rounded-sm bg-neutral-800/60 border border-neutral-700/50 ${gpsAccuracy <= 15 ? 'text-emerald-400' : gpsAccuracy <= 30 ? 'text-amber-400' : 'text-rose-400'}`}>
+                                    ±{gpsAccuracy}m
+                                </span>
+                            )}
+                        </div>
+                        <p className="text-[8px] text-neutral-500 font-bold uppercase tracking-widest mt-0.5">
+                            {viewMode === 'total' ? 'Full Session' : `Stop ${activeStop.id}`}
                         </p>
                     </div>
-                    {isTrackingAny && (
-                        <div className="flex items-center gap-1.5">
-                            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
-                            <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">Live</span>
-                        </div>
-                    )}
-                    {gpsAccuracy != null && isTrackingAny && (
-                        <div className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${gpsAccuracy <= 15 ? 'bg-emerald-500/20 text-emerald-400' : gpsAccuracy <= 30 ? 'bg-amber-500/20 text-amber-400' : 'bg-rose-500/20 text-rose-400'}`}>
-                            ±{gpsAccuracy}m
-                        </div>
-                    )}
+
+                    <div className="flex items-center gap-1.5">
+                        <button
+                            onClick={() => mapsReady && setShowMap(!showMap)}
+                            className={`h-10 w-10 flex items-center justify-center border rounded-xl transition-all active:scale-95 ${
+                                !mapsReady ? 'bg-neutral-800/20 border-neutral-800 text-neutral-600 blur-[0.5px] cursor-not-allowed opacity-50' :
+                                showMap ? 'bg-primary-600 border-primary-500 text-white' : 'bg-neutral-800/40 border-neutral-700/50 text-neutral-400 hover:text-primary-400'
+                            }`}
+                            title={mapsReady ? "View Map Overlay" : "Map service unavailable"}
+                            disabled={!mapsReady}
+                        >
+                            <Map className="w-4 h-4" />
+                        </button>
+                        <button
+                            onClick={resetAll}
+                            className="h-10 px-3 flex items-center justify-center gap-2 bg-neutral-800/40 border border-neutral-700/50 rounded-xl text-[9px] font-bold text-neutral-400 hover:text-rose-400 transition-all active:scale-95 uppercase tracking-wider"
+                        >
+                            <RotateCcw className="w-3 h-3" />
+                            Reset
+                        </button>
+                    </div>
                 </div>
 
-                {/* Stop Selector Tabs */}
-                <div className="flex px-2 pb-1.5 gap-1 overflow-x-auto scrollbar-hide">
+                <div className="flex items-center justify-between px-2.5 pb-2">
+                    <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide flex-1 mr-2">
                     {stops.map((stop, idx) => (
                         <button
                             key={stop.id}
@@ -409,9 +523,10 @@ const LiveFareTracker = ({ isVisible, onClose, fareData }) => {
                             + Stop
                         </button>
                     )}
+                    </div>
                     <button
                         onClick={() => setViewMode('total')}
-                        className={`flex items-center gap-1 px-2 py-1 rounded-md border text-[9px] font-bold transition-all shrink-0 ml-auto ${
+                        className={`flex items-center gap-1 px-2 py-1 rounded-md border text-[9px] font-bold transition-all shrink-0 ${
                             viewMode === 'total'
                                 ? 'bg-emerald-600/20 border-emerald-500 text-emerald-400'
                                 : 'bg-neutral-800/40 border-neutral-700/50 text-neutral-500 hover:text-neutral-300'
@@ -769,26 +884,142 @@ const LiveFareTracker = ({ isVisible, onClose, fareData }) => {
                 )}
 
                 {(activeStop.status === 'stopped' || viewMode === 'total') && !isTrackingAny && (
-                        <div className="flex gap-2">
-                            {stops.length < MAX_STOPS && activeStop.status === 'stopped' && (
-                                <button
-                                    onClick={addNextStop}
-                                    className="flex-1 bg-gradient-to-r from-primary-600 to-primary-500 text-neutral-900 font-black text-sm py-3 rounded-xl shadow-lg shadow-primary-900/20 active:scale-[0.98] transition-all hover:brightness-110 flex items-center justify-center gap-2 uppercase tracking-wider"
-                                >
-                                    <Layers className="w-4 h-4" />
-                                    Next Stop
-                                </button>
-                            )}
+                    <div className="flex gap-2">
+                        {stops.length < MAX_STOPS && activeStop.status === 'stopped' && (
                             <button
-                                onClick={resetAll}
-                                className="flex-1 bg-neutral-800 border border-neutral-700 text-neutral-300 font-bold text-sm py-3 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 flex items-center justify-center gap-2 uppercase tracking-wider"
+                                onClick={addNextStop}
+                                className="w-full bg-gradient-to-r from-primary-600 to-primary-500 text-neutral-900 font-black text-sm py-3 rounded-xl shadow-lg shadow-primary-900/20 active:scale-[0.98] transition-all hover:brightness-110 flex items-center justify-center gap-2 uppercase tracking-wider"
                             >
-                                <RotateCcw className="w-4 h-4" />
-                                New Session
+                                <Layers className="w-4 h-4" />
+                                Next Stop
                             </button>
-                        </div>
+                        )}
+                    </div>
                 )}
             </div>
+
+            {/* Map Overlay View */}
+            {showMap && (
+                <div className="absolute inset-0 bg-neutral-950 z-[70] flex flex-col animate-in fade-in duration-300">
+                    {/* Minimal Header */}
+                    <div className="flex items-center justify-between p-4 bg-neutral-900/50 backdrop-blur-md border-b border-neutral-800">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-primary-600/20 border border-primary-500/50 flex items-center justify-center">
+                                <Navigation className="w-5 h-5 text-primary-400 animate-pulse" />
+                            </div>
+                            <div>
+                                <h3 className="text-xs font-black text-white uppercase tracking-wider">Navigation Mode</h3>
+                                <div className="flex items-center gap-1.5">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                    <span className="text-[9px] text-emerald-400 font-bold uppercase tracking-widest">Active Tracking</span>
+                                </div>
+                            </div>
+                        </div>
+                        <button 
+                            onClick={() => setShowMap(false)}
+                            className="h-10 w-10 flex items-center justify-center bg-neutral-800 border border-neutral-700 rounded-xl text-neutral-400 hover:text-white"
+                        >
+                            <ArrowLeft className="w-5 h-5" />
+                        </button>
+                    </div>
+
+                    {/* Navigation View Area */}
+                    <div className="flex-1 relative overflow-hidden bg-neutral-900 flex items-center justify-center">
+                        {/* Blueprint Grid Background (Premium Look) */}
+                        <div className="absolute inset-0 bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:20px_20px] opacity-40" />
+                        
+                        {/* Real Google Map Container (Transparently layered) */}
+                        <div 
+                            ref={mapContainerRef} 
+                            className={`absolute inset-0 transition-opacity duration-700 ${mapsReady ? 'opacity-30' : 'opacity-0'}`} 
+                        />
+                        
+                        {/* Radar Pulse Effects */}
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <div className="w-[400px] h-[400px] border border-primary-500/10 rounded-full animate-ping opacity-20" />
+                            <div className="w-[200px] h-[200px] border border-primary-500/20 rounded-full animate-pulse opacity-40" />
+                            <div className="w-[2px] h-full bg-primary-500/5 absolute" />
+                            <div className="w-full h-[2px] bg-primary-500/5 absolute" />
+                        </div>
+
+                        {/* Initialising Overlay */}
+                        {!mapsReady && (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center bg-neutral-900/40 backdrop-blur-[2px] z-10">
+                                <div className="w-10 h-10 border-2 border-primary-500/20 border-t-primary-500 rounded-full animate-spin mb-3" />
+                                <p className="text-[8px] font-black text-primary-400 uppercase tracking-[0.3em] animate-pulse">Syncing GPS...</p>
+                            </div>
+                        )}
+
+                        {/* High-Accuracy Center Marker */}
+                        <div className="relative z-20 flex flex-col items-center">
+                            <div className="w-4 h-4 bg-primary-500 rounded-full shadow-[0_0_20px_rgba(14,165,233,0.8)] border-2 border-white animate-bounce" />
+                            <div className="mt-2 px-3 py-1 bg-neutral-900/90 border border-neutral-700 rounded-lg backdrop-blur-md">
+                                <p className="text-[10px] font-black text-white uppercase whitespace-nowrap">Auto-Center</p>
+                            </div>
+                        </div>
+
+                        {/* Top Left Stats Overlay */}
+                        <div className="absolute top-4 left-4 flex flex-col gap-2 z-30">
+                            <div className="bg-neutral-900/90 backdrop-blur-xl border border-neutral-700/50 rounded-xl p-3 shadow-[0_10px_30px_rgba(0,0,0,0.5)] min-w-[120px]">
+                                <p className="text-[8px] font-black text-primary-500 uppercase tracking-widest mb-1">Live Speed</p>
+                                <div className="flex items-baseline gap-1">
+                                    <span className="text-3xl font-black text-white font-mono">{currentSpeed}</span>
+                                    <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">km/h</span>
+                                </div>
+                            </div>
+                            <div className="bg-neutral-900/90 backdrop-blur-xl border border-neutral-700/50 rounded-xl p-3 shadow-[0_10px_30px_rgba(0,0,0,0.5)] min-w-[120px]">
+                                <p className="text-[8px] font-black text-neutral-500 uppercase tracking-widest mb-1">Trip Distance</p>
+                                <div className="flex items-baseline gap-1">
+                                    <span className="text-2xl font-black text-white font-mono">{displayData.distance.toFixed(2)}</span>
+                                    <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">km</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Bottom Floating Stats */}
+                        <div className="absolute bottom-6 left-6 right-6 flex flex-col gap-3 z-30">
+                            <div className="bg-neutral-900/95 backdrop-blur-2xl border border-primary-500/30 rounded-2xl p-5 shadow-[0_20px_50px_rgba(0,0,0,0.6)] flex items-center justify-between overflow-hidden relative">
+                                <div className="absolute top-0 left-0 w-1 h-full bg-primary-500" />
+                                <div className="flex flex-col">
+                                    <p className="text-[10px] font-black text-primary-400 uppercase tracking-[0.2em] mb-1">Running Fare</p>
+                                    <div className="flex items-baseline gap-2">
+                                        <span className="text-4xl font-black text-white leading-none tracking-tight">{formatNum(displayData.fare)}</span>
+                                        <span className="text-xs font-bold text-neutral-500 uppercase">ETB</span>
+                                    </div>
+                                </div>
+                                <div className="flex flex-col items-end">
+                                    <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest mb-1">Wait Time</p>
+                                    <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+                                        <Timer className="w-3.5 h-3.5 text-amber-400" />
+                                        <span className="text-base font-black text-amber-400 font-mono leading-none">{formatTime(Math.round(displayData.waitTime))}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button 
+                                onClick={isTrackingAny ? stopTracking : startTracking}
+                                className={`w-full py-4 rounded-2xl font-black text-sm uppercase tracking-[0.2em] shadow-2xl transition-all active:scale-[0.98] flex items-center justify-center gap-3 ${
+                                    isTrackingAny 
+                                    ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-rose-900/30' 
+                                    : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-900/30'
+                                }`}
+                            >
+                                {isTrackingAny ? (
+                                    <>
+                                        <Square className="w-5 h-5" fill="currentColor" />
+                                        Stop Tracking
+                                    </>
+                                ) : (
+                                    <>
+                                        <Play className="w-5 h-5" fill="currentColor" />
+                                        Start Tracking
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

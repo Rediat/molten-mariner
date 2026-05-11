@@ -1,4 +1,4 @@
-﻿import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useInputFocus } from '../../hooks/useInputFocus';
 import { Car, Info, HelpCircle, Trash2, Settings, History, Loader2, ArrowUpDown, Clock, Map as MapIcon, Navigation, Zap, ChevronDown, ChevronUp, ClipboardList } from 'lucide-react';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
@@ -975,6 +975,8 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                 isVisible={showLiveTracker}
                 onClose={() => setShowLiveTracker(false)}
                 fareData={{ ...activeResults, ...values, waitMultiplier }}
+                initialMapState={showMap}
+                mapsReady={mapsReady}
             />
             {/* Trip Log Modal */}
             <TripLogModal
