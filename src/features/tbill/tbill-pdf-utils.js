@@ -95,15 +95,17 @@ export const generateTBillApplicationPDF = (data, clientDetails = {}) => {
     const labelX = 25;
     const valueX = 82; // Reduced gap between label and value
 
-    const addField = (label, value) => {
+    const addField = (label, value, showLine = true) => {
         doc.setFont('helvetica', 'normal');
         doc.text(`${label}:`, labelX, y);
         doc.setFont('helvetica', 'bold');
         doc.text(value, valueX, y);
         // Draw dotted line
-        doc.setLineDash([0.5, 0.5]);
-        doc.line(valueX, y + 1, 185, y + 1);
-        doc.setLineDash([]);
+        if (showLine) {
+            doc.setLineDash([0.5, 0.5]);
+            doc.line(valueX, y + 1, 185, y + 1);
+            doc.setLineDash([]);
+        }
         y += lineSpacing;
     };
 
@@ -130,9 +132,9 @@ export const generateTBillApplicationPDF = (data, clientDetails = {}) => {
     // Add extra spacing to prevent signature headroom from covering the bank field
     y += 5; 
     
-    addField('Client 1 Signature', '');
+    addField('Client 1 Signature', '', false);
     const sigY = y - lineSpacing; // Capture current y before next field
-    addField('Client 2 Signature', '');
+    addField('Client 2 Signature', '', false);
     
     // Signature Overlay
     if (LOGOS.signature) {
