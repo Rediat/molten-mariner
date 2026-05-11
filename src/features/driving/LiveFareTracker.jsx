@@ -171,6 +171,14 @@ const LiveFareTracker = ({ isVisible, onClose, fareData, initialMapState, mapsRe
                 map: map
             });
         }
+
+        return () => {
+            if (mapInstanceRef.current) {
+                mapInstanceRef.current = null;
+                markerRef.current = null;
+                polylineRef.current = null;
+            }
+        };
     }, [showMap, mapsReady]);
 
     const updateMap = useCallback((lat, lng) => {
@@ -520,7 +528,7 @@ const LiveFareTracker = ({ isVisible, onClose, fareData, initialMapState, mapsRe
                             className="flex items-center gap-1 px-2 py-1 rounded-md border border-neutral-700/50 bg-neutral-800/20 text-neutral-500 hover:text-primary-400 hover:border-primary-500/50 transition-all shrink-0"
                         >
                             <Layers className="w-2.5 h-2.5" />
-                            + Stop
+                            +
                         </button>
                     )}
                     </div>
@@ -891,7 +899,7 @@ const LiveFareTracker = ({ isVisible, onClose, fareData, initialMapState, mapsRe
                                 className="w-full bg-gradient-to-r from-primary-600 to-primary-500 text-neutral-900 font-black text-sm py-3 rounded-xl shadow-lg shadow-primary-900/20 active:scale-[0.98] transition-all hover:brightness-110 flex items-center justify-center gap-2 uppercase tracking-wider"
                             >
                                 <Layers className="w-4 h-4" />
-                                Next Stop
+                                Next
                             </button>
                         )}
                     </div>
@@ -903,39 +911,46 @@ const LiveFareTracker = ({ isVisible, onClose, fareData, initialMapState, mapsRe
                 <div className="absolute inset-0 bg-neutral-950 z-[70] flex flex-col animate-in fade-in duration-300">
                     {/* Minimal Header */}
                     <div className="flex items-center justify-between p-4 bg-neutral-900/50 backdrop-blur-md border-b border-neutral-800">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-primary-600/20 border border-primary-500/50 flex items-center justify-center">
-                                <Navigation className="w-5 h-5 text-primary-400 animate-pulse" />
-                            </div>
-                            <div>
+                        <div className="flex items-center gap-4">
+                            <button 
+                                onClick={() => setShowMap(false)}
+                                className="h-10 w-10 flex items-center justify-center bg-neutral-800 border border-neutral-700 rounded-xl text-neutral-400 hover:text-white transition-all active:scale-95"
+                            >
+                                <ArrowLeft className="w-5 h-5" />
+                            </button>
+                            <div className="flex flex-col items-start text-left">
                                 <h3 className="text-xs font-black text-white uppercase tracking-wider">Navigation Mode</h3>
-                                <div className="flex items-center gap-1.5">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                    <span className="text-[9px] text-emerald-400 font-bold uppercase tracking-widest">Active Tracking</span>
+                                <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-1.5">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                        <span className="text-[9px] text-emerald-400 font-bold uppercase tracking-widest">Active Tracking</span>
+                                    </div>
+                                    <div className="w-px h-3 bg-neutral-700 opacity-50" />
+                                    <div className="flex items-center gap-1.5">
+                                        <span className="text-[9px] text-primary-400 font-bold uppercase tracking-widest">Auto-Center</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                        <button 
-                            onClick={() => setShowMap(false)}
-                            className="h-10 w-10 flex items-center justify-center bg-neutral-800 border border-neutral-700 rounded-xl text-neutral-400 hover:text-white"
-                        >
-                            <ArrowLeft className="w-5 h-5" />
-                        </button>
+
+                        <div className="w-10 h-10 rounded-full bg-primary-600/20 border border-primary-500/50 flex items-center justify-center">
+                            <Navigation className="w-5 h-5 text-primary-400" />
+                        </div>
                     </div>
 
                     {/* Navigation View Area */}
                     <div className="flex-1 relative overflow-hidden bg-neutral-900 flex items-center justify-center">
-                        {/* Blueprint Grid Background (Premium Look) */}
-                        <div className="absolute inset-0 bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:20px_20px] opacity-40" />
-                        
-                        {/* Real Google Map Container (Transparently layered) */}
+                        {/* Real Google Map Container (Base Layer) */}
                         <div 
                             ref={mapContainerRef} 
-                            className={`absolute inset-0 transition-opacity duration-700 ${mapsReady ? 'opacity-30' : 'opacity-0'}`} 
+                            className={`absolute inset-0 transition-opacity duration-700 ${mapsReady ? 'opacity-100' : 'opacity-50'} bg-neutral-900 [&_.gm-style-cc]:!hidden [&_button[title^="Keyboard"]]:!hidden [&_a]:!hidden`} 
                         />
+
+                        {/* Blueprint Grid Overlay (Premium Design Layer) */}
+                        <div className="absolute inset-0 bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:20px_20px] opacity-20 pointer-events-none z-[5]" />
                         
                         {/* Radar Pulse Effects */}
-                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
                             <div className="w-[400px] h-[400px] border border-primary-500/10 rounded-full animate-ping opacity-20" />
                             <div className="w-[200px] h-[200px] border border-primary-500/20 rounded-full animate-pulse opacity-40" />
                             <div className="w-[2px] h-full bg-primary-500/5 absolute" />
@@ -950,12 +965,9 @@ const LiveFareTracker = ({ isVisible, onClose, fareData, initialMapState, mapsRe
                             </div>
                         )}
 
-                        {/* High-Accuracy Center Marker */}
+                        {/* Center Focus Marker (Pin only) */}
                         <div className="relative z-20 flex flex-col items-center">
                             <div className="w-4 h-4 bg-primary-500 rounded-full shadow-[0_0_20px_rgba(14,165,233,0.8)] border-2 border-white animate-bounce" />
-                            <div className="mt-2 px-3 py-1 bg-neutral-900/90 border border-neutral-700 rounded-lg backdrop-blur-md">
-                                <p className="text-[10px] font-black text-white uppercase whitespace-nowrap">Auto-Center</p>
-                            </div>
                         </div>
 
                         {/* Top Left Stats Overlay */}
