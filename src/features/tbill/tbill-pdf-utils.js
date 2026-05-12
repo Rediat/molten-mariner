@@ -52,7 +52,7 @@ export const generateTBillApplicationPDF = (data, clientDetails = {}) => {
     const defaults = {
         fullName: 'REDIAT BEKELE ASFAW',
         accountNo: 'ET81WEGC00141021',
-        bankName: 'Wegagen Bank Account Number: 0886426630101',
+        bankName: '',
         tenderNo: calculateTenderNo(issueDate)
     };
     
