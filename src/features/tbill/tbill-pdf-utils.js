@@ -99,7 +99,36 @@ export const generateTBillApplicationPDF = (data, clientDetails = {}) => {
         doc.setFont('helvetica', 'normal');
         doc.text(`${label}:`, labelX, y);
         doc.setFont('helvetica', 'bold');
-        doc.text(value, valueX, y);
+        
+        if (label === 'Tender No') {
+            // Regex to find ordinal pattern: digits + (st|nd|rd|th) + rest
+            const match = value.match(/^(\d+)(st|nd|rd|th)(\/.*)$/);
+            if (match) {
+                const [_, num, suffix, rest] = match;
+                let currentX = valueX;
+                
+                // 1. Draw number
+                doc.text(num, currentX, y);
+                currentX += doc.getTextWidth(num);
+                
+                // 2. Draw suffix as superscript
+                const originalSize = doc.getFontSize();
+                const superSize = originalSize * 0.65; // Slightly smaller for better aesthetic
+                doc.setFontSize(superSize);
+                doc.text(suffix, currentX, y - 1.2);
+                
+                // 3. Draw rest of the string
+                const suffixWidth = doc.getTextWidth(suffix);
+                doc.setFontSize(originalSize);
+                currentX += suffixWidth;
+                doc.text(rest, currentX, y);
+            } else {
+                doc.text(value, valueX, y);
+            }
+        } else {
+            doc.text(value, valueX, y);
+        }
+
         // Draw dotted line
         if (showLine) {
             doc.setLineDash([0.5, 0.5]);
