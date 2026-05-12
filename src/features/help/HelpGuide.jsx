@@ -927,13 +927,27 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
 
                 <div className="pt-2">
                     <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Live Fare Tracker (GPS):</p>
-                    <p className="text-xs mb-2">Track your trip in real-time using your device's GPS. Perfect for verifying distances and calculating fares on the go.</p>
+                    <p className="text-xs mb-2">Track your trip in real-time using your device's GPS. Perfect for verifying distances and calculating fares on the go. Supports up to 5 individual stops per session.</p>
                     <FieldList fields={[
-                        { name: 'Start Tracking', description: 'Begins recording distance and wait time. Your location must be enabled.' },
+                        { name: 'Multi-Stop Support', description: 'Add up to 5 distinct journey legs. Each stop tracks its own distance, wait time, and fare independently.' },
+                        { name: 'Total View', description: 'Switch to "Total" mode to see a combined summary of all stops, total session duration, and grand total fare.' },
+                        { name: 'Unified Action Button', description: 'The "Start Tracking" button is always in the same spot at the bottom. It says "START TRACKING" in Total view and "Start Stop X" in individual view.' },
                         { name: 'Wait Time Detection', description: 'Automatically detects when the vehicle is moving below 5 km/h to accumulate wait time charges.' },
                         { name: 'Running Fare', description: 'A large, live display of the fare, updated every second based on distance and wait time.' },
-                        { name: 'GPS Accuracy', description: 'A real-time indicator (± meters) shows the reliability of your GPS fix.' },
-                        { name: 'Trip Summary', description: 'When stopped, view a complete breakdown of distance, duration, avg speed, and net gain.' }
+                        { name: 'GPS Accuracy', description: 'A real-time indicator (± meters) shows the reliability of your GPS fix.' }
+                    ]} />
+                </div>
+
+                <div className="pt-2">
+                    <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Navigation Mode (Mission Control):</p>
+                    <p className="text-xs mb-2">An immersive "Heads-Up Display" for the driver. Access it by clicking the Map icon in the Live Fare header.</p>
+                    <FieldList fields={[
+                        { name: 'System AUTO', description: 'Indicates the map is automatically centering and rotating (Heading-Up) based on your movement.' },
+                        { name: 'Manual CONTROL', description: 'Appears in amber when you manually pan or zoom. Disables auto-follow to allow free-look exploration.' },
+                        { name: 'Recenter Map', description: 'A button in the top-right corner that snaps the view back to your position and re-enables System AUTO mode.' },
+                        { name: 'Pulsing Green Ball', description: 'In Auto mode, your position is marked by a center-locked pulsing ball. In Manual mode, it switches to a map-anchored marker.' },
+                        { name: 'Immersive View', description: 'Stats are moved to the extreme edges and bottom to maximize the visible map area for safer driving.' },
+                        { name: 'Status Dots', description: 'Visual indicators in the navigation menu show at a glance which features (Center/Rotate) are active.' }
                     ]} />
                 </div>
 
