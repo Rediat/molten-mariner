@@ -100,13 +100,13 @@ const TripLogModal = ({ isOpen, onClose, defaultMileage = 0.1, defaultCostPerLit
                 <div className="bg-neutral-800/50 p-0.5 rounded-lg flex border border-neutral-700/30 shrink-0">
                     <button 
                         onClick={() => setEntryMode('odo')}
-                        className={`px-3 py-1.5 rounded-md text-[7px] font-black uppercase tracking-widest transition-all ${entryMode === 'odo' ? 'bg-primary-500 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}
+                        className={`px-3 py-1.5 rounded-md text-[7px] font-black uppercase tracking-widest transition-all ${entryMode === 'odo' ? 'bg-emerald-600/25 text-emerald-400 ring-1 ring-emerald-500/40' : 'text-neutral-500 hover:text-neutral-300'}`}
                     >
                         Odo
                     </button>
                     <button 
                         onClick={() => setEntryMode('total')}
-                        className={`px-3 py-1.5 rounded-md text-[7px] font-black uppercase tracking-widest transition-all ${entryMode === 'total' ? 'bg-primary-500 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}
+                        className={`px-3 py-1.5 rounded-md text-[7px] font-black uppercase tracking-widest transition-all ${entryMode === 'total' ? 'bg-emerald-600/25 text-emerald-400 ring-1 ring-emerald-500/40' : 'text-neutral-500 hover:text-neutral-300'}`}
                     >
                         Total
                     </button>

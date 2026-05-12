@@ -1158,7 +1158,7 @@ const LiveFareTracker = ({ isVisible, onClose, fareData, initialMapState, mapsRe
                                         mapInstanceRef.current.panTo(lastPositionRef.current);
                                     }
                                 }}
-                                className="absolute top-4 right-4 z-40 bg-primary-500 text-white px-4 py-2 rounded-full font-black text-[10px] uppercase tracking-widest shadow-[0_10px_20px_rgba(14,165,233,0.4)] animate-in slide-in-from-right-4"
+                                className="absolute top-4 right-4 z-40 bg-emerald-600/25 text-emerald-400 ring-1 ring-emerald-500/40 px-4 py-2 rounded-full font-black text-[10px] uppercase tracking-widest shadow-[0_10px_20px_rgba(0,0,0,0.3)] animate-in slide-in-from-right-4"
                             >
                                 Recenter Map
                             </button>

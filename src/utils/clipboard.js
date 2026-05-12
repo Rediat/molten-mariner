@@ -9,18 +9,18 @@ const showCopyFeedback = (element) => {
     badge.innerText = 'Copied!';
     badge.style.position = 'fixed';
     badge.style.zIndex = '10000';
-    badge.style.background = 'rgba(16, 185, 129, 0.95)'; // emerald-500 with slight alpha
-    badge.style.backdropFilter = 'blur(4px)';
-    badge.style.color = 'white';
-    badge.style.padding = '5px 10px';
-    badge.style.borderRadius = '8px';
-    badge.style.fontSize = '11px';
+    badge.style.background = 'rgba(6, 78, 59, 0.95)'; // emerald-900 with high opacity
+    badge.style.backdropFilter = 'blur(12px)';
+    badge.style.color = '#ecfdf5'; // emerald-50 (almost white) for max contrast
+    badge.style.padding = '6px 12px';
+    badge.style.borderRadius = '10px';
+    badge.style.fontSize = '10px';
     badge.style.fontWeight = '900';
     badge.style.textTransform = 'uppercase';
     badge.style.letterSpacing = '1px';
     badge.style.pointerEvents = 'none';
     badge.style.transition = 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
-    badge.style.boxShadow = '0 10px 25px -5px rgba(16, 185, 129, 0.5), 0 8px 10px -6px rgba(16, 185, 129, 0.5)';
+    badge.style.boxShadow = '0 0 0 1px rgba(16, 185, 129, 0.3), 0 10px 25px -5px rgba(0, 0, 0, 0.4)';
     badge.style.opacity = '0';
     badge.style.transform = 'translateX(-50%) translateY(15px) scale(0.8)';
 
