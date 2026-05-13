@@ -44,6 +44,34 @@ const calculateTenderNo = (dateStr) => {
     return `${auctionNo}${getSuffix(auctionNo)}/2026, to be held on ${formattedIssueDate}`;
 };
 
+/**
+ * Calculates the ESX Symbol and ISO 6166 ISIN for a T-Bill.
+ */
+const calculateSecurityInfo = (tenure, maturityDate) => {
+    const [y, m, d] = maturityDate.split('-');
+    const datePart = `${y.slice(2)}${m}${d}`;
+    const symbol = `TBL${tenure}D${datePart}`;
+    
+    // ISIN Logic (ISO 6166)
+    const base = `ETTBL${datePart}`;
+    const charToDigits = (c) => {
+        const code = c.charCodeAt(0);
+        return (code >= 48 && code <= 57) ? c : (code - 55).toString();
+    };
+    const digitsStr = base.split('').map(charToDigits).join('');
+    let sum = 0;
+    for (let i = 0; i < digitsStr.length; i++) {
+        let v = parseInt(digitsStr[digitsStr.length - 1 - i]);
+        if (i % 2 === 0) {
+            v *= 2;
+            if (v > 9) v = Math.floor(v / 10) + (v % 10);
+        }
+        sum += v;
+    }
+    const checkDigit = (10 - (sum % 10)) % 10;
+    return { symbol, isin: base + checkDigit };
+};
+
 export const generateTBillApplicationPDF = (data, clientDetails = {}) => {
     const doc = new jsPDF();
     const { faceValue, tenure, issueDate, yieldRate } = data;
@@ -140,7 +168,14 @@ export const generateTBillApplicationPDF = (data, clientDetails = {}) => {
 
     addField('Tender No', client.tenderNo);
     addField('Treasury Bill Tenor', `${tenure} Days`);
-    addField('ISIN', '');
+    const maturityStr = data.maturityDate || (() => {
+        const d = new Date(data.issueDate);
+        // Maturity is calculated from the settlement date (Auction Date + 1)
+        d.setDate(d.getDate() + tenure + 1);
+        return d.toISOString().split('T')[0];
+    })();
+    const { isin } = calculateSecurityInfo(tenure, maturityStr);
+    addField('ISIN', isin);
     
     const faceValueWords = amountToWords(faceValue);
     addField('Face Value', `${faceValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${faceValueWords})`);

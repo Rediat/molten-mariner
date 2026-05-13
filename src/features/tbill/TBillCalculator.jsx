@@ -120,7 +120,8 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
 
     const calculateMaturityDate = (issueStr, tenureDays) => {
         const issue = new Date(issueStr);
-        issue.setDate(issue.getDate() + tenureDays);
+        // Maturity is calculated from the settlement date (Auction Date + 1)
+        issue.setDate(issue.getDate() + tenureDays + 1);
         return issue.toISOString().split('T')[0];
     };
 
@@ -454,16 +455,66 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
                                 </div>
                             </div>
                             <div className="flex gap-3">
-                                <button onClick={() => { const bankInfo = { WEGAGEN: { name: 'Wegagen Capital Investment Bank (WCIB)', account: 'ET81WEGC00141021' }, GADAA: { name: 'Gadaa Securities Dealer S.C', account: 'ET57GADS00110312' }, CBE: { name: 'CBE Capital Investment Bank', account: 'ET49CBEC00140965' } }[bankSource]; generateTBillApplicationPDF({ faceValue: result.faceValue, tenure: tenure, issueDate: issueDate, yieldRate: discountRate }, { accountNo: bankInfo.account, bankName: '' }); }} className={`text-[9px] font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all ${bankSource === 'WEGAGEN' ? 'text-primary-400 hover:text-primary-300' : bankSource === 'GADAA' ? 'text-emerald-400 hover:text-emerald-300' : 'text-violet-400 hover:text-violet-300'}`} title="Download Application Form"><Download size={11} /> Application</button>
+                                <button onClick={() => { const bankInfo = { WEGAGEN: { name: 'Wegagen Capital Investment Bank (WCIB)', account: 'ET81WEGC00141021' }, GADAA: { name: 'Gadaa Securities Dealer S.C', account: 'ET57GADS00110312' }, CBE: { name: 'CBE Capital Investment Bank', account: 'ET49CBEC00140965' } }[bankSource]; generateTBillApplicationPDF({ faceValue: result.faceValue, tenure: tenure, issueDate: issueDate, yieldRate: discountRate, maturityDate: result.maturityDate }, { accountNo: bankInfo.account, bankName: '' }); }} className={`text-[9px] font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all ${bankSource === 'WEGAGEN' ? 'text-primary-400 hover:text-primary-300' : bankSource === 'GADAA' ? 'text-emerald-400 hover:text-emerald-300' : 'text-violet-400 hover:text-violet-300'}`} title="Download Application Form"><Download size={11} /> Application</button>
                                 <button onClick={() => setShowHistory(true)} className="text-[9px] text-primary-500 font-bold uppercase tracking-wider flex items-center gap-1 hover:text-primary-400 transition-colors"><History size={11} /> View History</button>
                             </div>
                         </div>
-                        <div className="flex justify-between items-center bg-neutral-900/50 rounded-lg p-2 mb-1 border border-neutral-700/50 relative group">
-                            <div className="flex items-center gap-2">
-                                <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Quantity</span>
-                                <button onClick={(e) => { const words = amountToWords(result.quantity).replace('Only', 'Units Only'); copyToClipboard(words, e.currentTarget); }} className="opacity-40 hover:opacity-100 transition-opacity p-0.5 hover:bg-primary-500/10 rounded text-primary-500/70 hover:text-primary-400" title="Copy in Words"><Copy size={9} /></button>
+                        <div className="grid grid-cols-2 gap-2 mb-1">
+                            {/* Column 1: Identifiers */}
+                            <div className="bg-neutral-900/50 rounded-lg p-2 border border-neutral-700/50 relative group">
+                                <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider mb-1 text-left">Security IDs</p>
+                                {result.maturityDate && (() => {
+                                    const [y, m, d] = result.maturityDate.split('-');
+                                    const datePart = `${y.slice(2)}${m}${d}`;
+                                    const symbol = `TBL${tenure}D${datePart}`;
+                                    
+                                    // Calculate ISIN with Luhn Algorithm (ISO 6166)
+                                    const base = `ETTBL${datePart}`;
+                                    const charToDigits = (c) => {
+                                        const code = c.charCodeAt(0);
+                                        return (code >= 48 && code <= 57) ? c : (code - 55).toString();
+                                    };
+                                    const digitsStr = base.split('').map(charToDigits).join('');
+                                    let sum = 0;
+                                    for (let i = 0; i < digitsStr.length; i++) {
+                                        let v = parseInt(digitsStr[digitsStr.length - 1 - i]);
+                                        if (i % 2 === 0) {
+                                            v *= 2;
+                                            if (v > 9) v = Math.floor(v / 10) + (v % 10);
+                                        }
+                                        sum += v;
+                                    }
+                                    const checkDigit = (10 - (sum % 10)) % 10;
+                                    const isin = base + checkDigit;
+
+                                    return (
+                                        <div className="flex flex-col gap-0.5">
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="text-[8px] font-bold text-neutral-500 uppercase tracking-tight">SYM:</span>
+                                                <span className="text-[9px] font-mono font-bold text-primary-500/80 tracking-wider">{symbol}</span>
+                                                <button onClick={(e) => copyToClipboard(symbol, e.currentTarget)} className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-primary-500/10 rounded text-primary-500/70" title="Copy Symbol"><Copy size={8} /></button>
+                                            </div>
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="text-[8px] font-bold text-neutral-500 uppercase tracking-tight">ISIN:</span>
+                                                <span className="text-[9px] font-mono font-bold text-emerald-500/80 tracking-tight">{isin}</span>
+                                                <button onClick={(e) => copyToClipboard(isin, e.currentTarget)} className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-emerald-500/10 rounded text-emerald-500/70" title="Copy ISIN"><Copy size={8} /></button>
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
                             </div>
-                            <span className="text-sm font-bold text-primary-400">{result.quantity.toLocaleString()} UNITS</span>
+                            
+                            {/* Column 2: Quantity */}
+                            <div className="bg-neutral-900/50 rounded-lg p-2 border border-neutral-700/50 relative group flex flex-col justify-between">
+                                <div className="flex justify-between items-start">
+                                    <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider">Quantity</p>
+                                    <button onClick={(e) => { const words = amountToWords(result.quantity).replace('Only', 'Units Only'); copyToClipboard(words, e.currentTarget); }} className="opacity-40 hover:opacity-100 transition-opacity p-1 hover:bg-primary-500/10 rounded text-primary-500/70 hover:text-primary-400" title="Copy in Words"><Copy size={10} /></button>
+                                </div>
+                                <p className="text-lg font-bold text-primary-400 leading-none mb-0.5">
+                                    {result.quantity.toLocaleString()}
+                                    <span className="text-[10px] text-primary-500/60 ml-1 font-bold">UNITS</span>
+                                </p>
+                            </div>
                         </div>
                         <div className="grid grid-cols-2 gap-2">
                             <div className="bg-neutral-900/50 rounded-lg p-2 relative group">
