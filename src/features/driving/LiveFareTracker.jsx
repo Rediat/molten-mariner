@@ -68,8 +68,8 @@ const LiveFareTracker = ({ isVisible, onClose, fareData, initialMapState, mapsRe
     const elapsedAtPauseRef = useRef(0);
     const isWaitingRef = useRef(true); // start as waiting until first GPS movement detected
     const trackingStopIndexRef = useRef(null);
-    const isAutoCenterRef = useRef(true);
-    const isRotationEnabledRef = useRef(true);
+    const isAutoCenterRef = useRef(isAutoCenter);
+    const isRotationEnabledRef = useRef(isRotationEnabled);
 
     const STORAGE_KEY = 'molten_mariner_fare_tracker_state';
 
@@ -139,6 +139,8 @@ const LiveFareTracker = ({ isVisible, onClose, fareData, initialMapState, mapsRe
                 zoom: 18,
                 tilt: 45,
                 heading: 0,
+                mapId: 'molten_mariner_map', // Required for Vector Maps/Rotation
+                renderingType: 'VECTOR', // Force vector rendering for rotation support
                 mapTypeId: 'roadmap',
                 disableDefaultUI: true,
                 styles: [
@@ -314,6 +316,26 @@ const LiveFareTracker = ({ isVisible, onClose, fareData, initialMapState, mapsRe
 
         return () => { delete window.updateFareFromNative; };
     }, [computeFare, updateMap]);
+
+    // ---- Sync Settings to Refs and Trigger Map Updates ----
+    useEffect(() => {
+        isAutoCenterRef.current = isAutoCenter;
+    }, [isAutoCenter]);
+
+    useEffect(() => {
+        isRotationEnabledRef.current = isRotationEnabled;
+    }, [isRotationEnabled]);
+
+    useEffect(() => {
+        if (mapInstanceRef.current && lastPositionRef.current) {
+            // Force an immediate map update when settings change
+            updateMap(
+                lastPositionRef.current.lat, 
+                lastPositionRef.current.lng, 
+                lastHeadingRef.current
+            );
+        }
+    }, [isAutoCenter, isRotationEnabled, updateMap]);
 
 
     // ---- Update active stop in state ----
@@ -1070,14 +1092,7 @@ const LiveFareTracker = ({ isVisible, onClose, fareData, initialMapState, mapsRe
                                     <div className="space-y-1">
                                         <button 
                                             onClick={() => { 
-                                                setIsAutoCenter(prev => {
-                                                    const next = !prev;
-                                                    isAutoCenterRef.current = next;
-                                                    // Immediate visibility sync
-                                                    if (markerRef.current) markerRef.current.setVisible(!next);
-                                                    if (pulseRef.current) pulseRef.current.setVisible(!next);
-                                                    return next;
-                                                }); 
+                                                setIsAutoCenter(prev => !prev); 
                                                 setShowNavMenu(false); 
                                             }}
                                             className={`w-full flex items-center justify-between p-3 rounded-xl transition-all ${isAutoCenter ? 'bg-primary-600/20 text-primary-400' : 'text-neutral-400 hover:bg-neutral-800'}`}
@@ -1091,11 +1106,7 @@ const LiveFareTracker = ({ isVisible, onClose, fareData, initialMapState, mapsRe
 
                                         <button 
                                             onClick={() => { 
-                                                setIsRotationEnabled(prev => {
-                                                    const next = !prev;
-                                                    isRotationEnabledRef.current = next;
-                                                    return next;
-                                                }); 
+                                                setIsRotationEnabled(prev => !prev); 
                                                 setShowNavMenu(false); 
                                             }}
                                             className={`w-full flex items-center justify-between p-3 rounded-xl transition-all ${isRotationEnabled ? 'bg-primary-600/20 text-primary-400' : 'text-neutral-400 hover:bg-neutral-800'}`}
