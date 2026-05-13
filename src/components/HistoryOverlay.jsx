@@ -70,16 +70,26 @@ const HistoryOverlay = ({ isOpen, onClose, module, title }) => {
                             </div>
                             <div className="mb-2">
                                 <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[11px] text-neutral-400">
-                                    {Object.entries(item.inputs).map(([k, v]) => (
-                                        <div key={k} className="flex justify-between gap-2">
-                                            <span className="shrink-0">{k}:</span>
-                                            <span className="text-neutral-300 text-right truncate">
-                                                {typeof v === 'object' && v !== null
-                                                    ? Object.entries(v).map(([subK, subV]) => `${subV}${subK[0]}`).join(' ')
-                                                    : (typeof v === 'number' ? formatNum(v, getDecimalsForField(k)) : v)}
-                                            </span>
-                                        </div>
-                                    ))}
+                                    {Object.entries(item.inputs).map(([k, v]) => {
+                                        let label = k;
+                                        if (k === 'auctionDate') label = 'Auction Date';
+                                        if (k === 'discountRate') label = 'Yield (%)';
+                                        if (k === 'brokerageRate') label = 'Brokerage (%)';
+                                        if (k === 'faceValue') label = 'Face Value';
+                                        if (k === 'totalBudget') label = 'Budget';
+                                        if (k === 'tenure') label = 'Tenor (Days)';
+                                        
+                                        return (
+                                            <div key={k} className="flex justify-between gap-2">
+                                                <span className="shrink-0 capitalize">{label}:</span>
+                                                <span className="text-neutral-300 text-right truncate">
+                                                    {typeof v === 'object' && v !== null
+                                                        ? Object.entries(v).map(([subK, subV]) => `${subV}${subK[0]}`).join(' ')
+                                                        : (typeof v === 'number' ? formatNum(v, getDecimalsForField(k)) : v)}
+                                                </span>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             </div>
                             <div className="mt-2 pt-2 border-t border-neutral-700 flex justify-between items-center">

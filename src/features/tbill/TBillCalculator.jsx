@@ -31,7 +31,7 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
         return `${year}-${month}-${day}`;
     };
 
-    const [issueDate, setIssueDate] = useState(() => {
+    const [auctionDate, setAuctionDate] = useState(() => {
         const lastAuction = tbillData[tbillData.length - 1];
         const lastDate = new Date(lastAuction.date);
         const today = new Date();
@@ -126,7 +126,7 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
     };
 
     const handleCalculate = () => {
-        const maturityDate = calculateMaturityDate(issueDate, tenure);
+        const maturityDate = calculateMaturityDate(auctionDate, tenure);
         const fv = faceValue || 0;
         const budget = totalBudget || 0;
         const disc = discountRate || 0;
@@ -160,7 +160,7 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
                 leftover: fv - actualFaceValue
             };
             setResult(res);
-            addToHistory('T-BILL', { faceValue: actualFaceValue, issueDate, tenure, discountRate: disc, brokerageRate: brok, mode: 'forward' }, res);
+            addToHistory('T-BILL', { faceValue: actualFaceValue, auctionDate, tenure, discountRate: disc, brokerageRate: brok, mode: 'forward' }, res);
         } else {
             const unitPriceInclBrok = unitPrice * (1 + (brok / 100));
             const quantity = budget > 0 ? Math.floor((budget + 5) / unitPriceInclBrok) : 0;
@@ -187,7 +187,7 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
                 leftover: budget - totalConsideration
             };
             setResult(res);
-            addToHistory('T-BILL', { totalBudget: budget, issueDate, tenure, discountRate: disc, brokerageRate: brok, mode: 'reverse' }, res);
+            addToHistory('T-BILL', { totalBudget: budget, auctionDate, tenure, discountRate: disc, brokerageRate: brok, mode: 'reverse' }, res);
         }
     };
 
@@ -351,10 +351,10 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
                 </div>
 
                 <div ref={auctionsRef} className="relative bg-neutral-800/40 rounded-xl px-3 py-1.5 border border-transparent hover:border-neutral-700 transition-all flex justify-between items-center">
-                    <label className="text-[11px] uppercase tracking-wider text-neutral-500 font-bold text-left">Issue Date</label>
+                    <label className="text-[11px] uppercase tracking-wider text-neutral-500 font-bold text-left">Auction Date</label>
                     <div className="flex items-center gap-3">
                         <button onClick={() => { setShowAuctions(!showAuctions); setResult(null); }} className={`text-[10px] font-bold px-2 py-1 rounded transition-all uppercase tracking-wider ${showAuctions ? 'bg-primary-500 text-neutral-900 shadow-lg shadow-primary-900/40' : 'bg-neutral-800 text-neutral-500 hover:text-white'}`}>{showAuctions ? 'Close' : 'Upcoming'}</button>
-                        <input type="date" value={issueDate} onChange={(e) => setIssueDate(e.target.value)} className="bg-transparent text-white text-sm font-mono focus:outline-none w-32 text-right font-bold" />
+                        <input type="date" value={auctionDate} onChange={(e) => setAuctionDate(e.target.value)} className="bg-transparent text-white text-sm font-mono focus:outline-none w-32 text-right font-bold" />
                     </div>
                     {showAuctions && (
                         <div className="absolute left-0 right-0 top-full mt-1 z-[50] bg-neutral-900 border border-neutral-700 rounded-xl p-3 shadow-2xl animate-in fade-in zoom-in-95 duration-200 ring-1 ring-white/10">
@@ -363,7 +363,7 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
                             </div>
                             <div className="grid grid-cols-2 gap-x-4 gap-y-1">
                                 {nextAuctions.map((date, idx) => (
-                                    <button key={idx} onClick={() => { setIssueDate(formatToLocalDate(date)); setShowAuctions(false); }} className="flex justify-between items-center py-1 px-1.5 rounded hover:bg-primary-600/20 transition-all group">
+                                    <button key={idx} onClick={() => { setAuctionDate(formatToLocalDate(date)); setShowAuctions(false); }} className="flex justify-between items-center py-1 px-1.5 rounded hover:bg-primary-600/20 transition-all group">
                                         <span className="text-[10px] font-mono text-neutral-400 group-hover:text-primary-400">{date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                                         <span className="text-[7px] text-neutral-600 font-bold uppercase group-hover:text-primary-500/50">Wed</span>
                                     </button>
@@ -455,7 +455,7 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
                                 </div>
                             </div>
                             <div className="flex gap-3">
-                                <button onClick={() => { const bankInfo = { WEGAGEN: { name: 'Wegagen Capital Investment Bank (WCIB)', account: 'ET81WEGC00141021' }, GADAA: { name: 'Gadaa Securities Dealer S.C', account: 'ET57GADS00110312' }, CBE: { name: 'CBE Capital Investment Bank', account: 'ET49CBEC00140965' } }[bankSource]; generateTBillApplicationPDF({ faceValue: result.faceValue, tenure: tenure, issueDate: issueDate, yieldRate: discountRate, maturityDate: result.maturityDate }, { accountNo: bankInfo.account, bankName: '' }); }} className={`text-[9px] font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all ${bankSource === 'WEGAGEN' ? 'text-primary-400 hover:text-primary-300' : bankSource === 'GADAA' ? 'text-emerald-400 hover:text-emerald-300' : 'text-violet-400 hover:text-violet-300'}`} title="Download Application Form"><Download size={11} /> Application</button>
+                                <button onClick={() => { const bankInfo = { WEGAGEN: { name: 'Wegagen Capital Investment Bank (WCIB)', account: 'ET81WEGC00141021' }, GADAA: { name: 'Gadaa Securities Dealer S.C', account: 'ET57GADS00110312' }, CBE: { name: 'CBE Capital Investment Bank', account: 'ET49CBEC00140965' } }[bankSource]; generateTBillApplicationPDF({ faceValue: result.faceValue, tenure: tenure, issueDate: auctionDate, yieldRate: discountRate, maturityDate: result.maturityDate }, { accountNo: bankInfo.account, bankName: '' }); }} className={`text-[9px] font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all ${bankSource === 'WEGAGEN' ? 'text-primary-400 hover:text-primary-300' : bankSource === 'GADAA' ? 'text-emerald-400 hover:text-emerald-300' : 'text-violet-400 hover:text-violet-300'}`} title="Download Application Form"><Download size={11} /> Application</button>
                                 <button onClick={() => setShowHistory(true)} className="text-[9px] text-primary-500 font-bold uppercase tracking-wider flex items-center gap-1 hover:text-primary-400 transition-colors"><History size={11} /> View History</button>
                             </div>
                         </div>

@@ -168,14 +168,12 @@ export const generateTBillApplicationPDF = (data, clientDetails = {}) => {
 
     addField('Tender No', client.tenderNo);
     addField('Treasury Bill Tenor', `${tenure} Days`);
-    const maturityStr = data.maturityDate || (() => {
-        const d = new Date(data.issueDate);
-        // Maturity is calculated from the settlement date (Auction Date + 1)
-        d.setDate(d.getDate() + tenure + 1);
-        return d.toISOString().split('T')[0];
-    })();
-    const { isin } = calculateSecurityInfo(tenure, maturityStr);
-    addField('ISIN', isin);
+    const [matY, matM, matD] = data.maturityDate ? data.maturityDate.split('-') : (issueDate ? (() => {
+        const d = new Date(issueDate);
+        d.setDate(d.getDate() + tenure);
+        return d.toISOString().split('T')[0].split('-');
+    })() : ['', '', '']);
+    addField('ISIN', '');
     
     const faceValueWords = amountToWords(faceValue);
     addField('Face Value', `${faceValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${faceValueWords})`);
