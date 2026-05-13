@@ -669,9 +669,9 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                         { name: 'Discount Rate', description: 'Annual discount rate used to calculate purchase price' },
                         { name: 'Predicted Yield', description: 'Dynamic forecast based on the latest NBE cut-off yields. Click the prediction badge to automatically apply it to the discount rate.' },
                         { name: 'Brokerage %', description: 'Commission percentage charged by your broker' },
-                        { name: 'Issue Date', description: 'The date when the T-Bill is issued. Defaults to the first available upcoming auction date.' },
-                        { name: 'Today Button', description: 'Instantly sets the Issue Date to today\'s date' },
-                        { name: 'Upcoming Auctions', description: 'Reveals a floating list of the next 10 bi-weekly T-Bill auctions. Selecting a date from this list automatically updates the Issue Date and clears the results to prepare for a new calculation.' },
+                        { name: 'Auction Date', description: 'The date when the T-Bill auction occurs. The system uses this date + 1 (Settlement Date) to anchor the maturity calculation.' },
+                        { name: 'Today Button', description: 'Instantly sets the Auction Date to today\'s date' },
+                        { name: 'Upcoming Auctions', description: 'Reveals a floating list of the next 10 bi-weekly T-Bill auctions. Selecting a date from this list automatically updates the Auction Date and clears the results to prepare for a new calculation.' },
                         { name: 'Brokerage %', description: 'Commission percentage charged by your broker' }
                     ]} />
                 </div>
@@ -683,7 +683,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                             <ArrowRight className="w-3 h-3 mt-1 text-emerald-500 shrink-0" />
                             <div>
                                 <span className="font-bold text-white uppercase tracking-tight">PDF Export:</span>
-                                <p className="text-neutral-400 mt-1">Professional PDF reports include a high-density header showing the total T-Bill value, selected tenure, and simulation parameters.</p>
+                                <p className="text-neutral-400 mt-1">Professional PDF reports include a high-density header with total T-Bill value and simulation parameters. The <strong>ISIN field is left blank</strong> for manual entry to comply with official submission requirements.</p>
                             </div>
                         </li>
                     </ul>
@@ -692,13 +692,14 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                 <div className="pt-2">
                     <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Results:</p>
                     <FieldList fields={[
+                        { name: 'Security IDs', description: 'Displays the official ESX Symbol (TBL...) and the formal ISO 6166 ISIN (ETTBL...) with a mathematically calculated check digit.' },
                         { name: 'Quantity', description: 'The number of 5,000 ETB units being purchased' },
                         { name: 'Purchase Price', description: 'The discounted amount to pay for the T-Bill (before brokerage)' },
                         { name: 'Brokerage', description: 'The commission amount based on the purchase price' },
                         { name: 'Total Consideration / Face Value', description: 'The primary result: total out-of-pocket cost (Forward) or the maturity value received (Reverse)' },
                         { name: 'Actual Face Value / Actual Cost', description: 'The secondary result: the exact maturity amount (Forward) or the actual amount spent (Reverse) after rounding to the nearest 5,000 unit' },
                         { name: 'Leftover', description: '(Reverse Mode) The remaining budget after purchasing the maximum possible units. Displayed in emerald (profit) or amber (slight over-budget allowance).' },
-                        { name: 'Maturity Date', description: 'The date when the T-Bill matures and you receive the face value' },
+                        { name: 'Maturity Date', description: 'The date when the T-Bill matures, calculated as: Auction Date + 1 (Settlement) + Tenure.' },
                         { name: 'Discount', description: 'The difference between face value and purchase price (gross profit)' },
                         { name: 'Net Return', description: 'Your actual profit after accounting for brokerage (Face Value − Total Consideration)' },
                         { name: 'Effective Yield', description: 'Annualized return based on net profit relative to total consideration' }
