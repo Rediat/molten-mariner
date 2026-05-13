@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useInputFocus } from '../../hooks/useInputFocus';
 import { useHistory } from '../../context/HistoryContext';
-import { Receipt, Info, HelpCircle, Settings, History, Trash2, Copy, Download } from 'lucide-react';
+import { Receipt, Info, HelpCircle, Settings, History, Trash2, Copy, Download, ChevronDown } from 'lucide-react';
 import { generateTBillApplicationPDF } from './tbill-pdf-utils';
 import { amountToWords } from '../../utils/text-utils';
 import { copyToClipboard } from '../../utils/clipboard';
@@ -58,6 +58,7 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
     const [result, setResult] = useState(null);
     const [showExplanation, setShowExplanation] = useState(false);
     const [showHistory, setShowHistory] = useState(false);
+    const [bankSource, setBankSource] = useState('WEGAGEN'); // 'WEGAGEN' | 'GADAA' | 'CBE'
 
     // Refs for input focus
     const faceValueRef = useRef(null);
@@ -66,6 +67,8 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
     const brokerageRateRef = useRef(null);
     const auctionsRef = useRef(null);
     const [showAuctions, setShowAuctions] = useState(false);
+    const bankSelectorRef = useRef(null);
+    const [showBankSelector, setShowBankSelector] = useState(false);
 
     // Handle click outside to close auctions
     useEffect(() => {
@@ -73,14 +76,17 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
             if (auctionsRef.current && !auctionsRef.current.contains(event.target)) {
                 setShowAuctions(false);
             }
+            if (bankSelectorRef.current && !bankSelectorRef.current.contains(event.target)) {
+                setShowBankSelector(false);
+            }
         };
-        if (showAuctions) {
+        if (showAuctions || showBankSelector) {
             document.addEventListener('mousedown', handleClickOutside);
         }
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
-    }, [showAuctions]);
+    }, [showAuctions, showBankSelector]);
 
     // Calculate upcoming auctions
     const nextAuctions = React.useMemo(() => {
@@ -130,14 +136,11 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
         const unitPrice = UNIT_FV / (1 + (disc / 100) * (tenure / 365));
 
         if (mode === 'forward') {
-            // Forward: Face Value → Total Consideration
             const quantity = fv > 0 ? Math.floor(fv / UNIT_FV) : 0;
             const actualFaceValue = quantity * UNIT_FV;
-
             const purchasePrice = quantity * unitPrice;
             const brokerage = purchasePrice * (brok / 100);
             const totalConsideration = purchasePrice + brokerage;
-
             const discountAmount = actualFaceValue - purchasePrice;
             const netReturn = actualFaceValue - totalConsideration;
             const effectiveYield = totalConsideration > 0 ? (netReturn / totalConsideration) * (365 / tenure) * 100 : 0;
@@ -152,22 +155,17 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
                 discountAmount,
                 effectiveYield,
                 netReturn,
-                quantity
+                quantity,
+                leftover: fv - actualFaceValue
             };
-
             setResult(res);
             addToHistory('T-BILL', { faceValue: actualFaceValue, issueDate, tenure, discountRate: disc, brokerageRate: brok, mode: 'forward' }, res);
         } else {
-            // Reverse: Total Consideration → Face Value
-            // Quantity = Investment amount ÷ (price + brokerage) (rounded down)
             const unitPriceInclBrok = unitPrice * (1 + (brok / 100));
-            // Add a 5 ETB epsilon buffer to handle rounding discrepancies and near-budget unit purchases
             const quantity = budget > 0 ? Math.floor((budget + 5) / unitPriceInclBrok) : 0;
-
             const purchasePrice = quantity * unitPrice;
             const brokerage = purchasePrice * (brok / 100);
             const totalConsideration = purchasePrice + brokerage;
-
             const computedFaceValue = quantity * UNIT_FV;
             const discountAmount = computedFaceValue - purchasePrice;
             const netReturn = computedFaceValue - totalConsideration;
@@ -187,7 +185,6 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
                 budget,
                 leftover: budget - totalConsideration
             };
-
             setResult(res);
             addToHistory('T-BILL', { totalBudget: budget, issueDate, tenure, discountRate: disc, brokerageRate: brok, mode: 'reverse' }, res);
         }
@@ -253,27 +250,17 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
                     <p className="text-[11px] leading-relaxed mt-1 text-indigo-300">
                         <span className="font-bold text-indigo-400">AI Yield:</span> Predicts the cut-off yield using historical NBE patterns based on your tenure.
                     </p>
-                    <p className="text-[11px] leading-relaxed mt-1 text-neutral-500 italic">
-                        Yield = (Net Return / Total Cost) × (365 / Days) × 100
-                    </p>
                 </div>
             )}
 
             {/* Input Fields */}
-            <div className="space-y-1 flex-1 overflow-y-auto pr-1 scrollbar-hide">
-                {/* Primary Input — swaps based on mode */}
+            <div className="space-y-1 flex-1 overflow-y-auto pr-1 scrollbar-hide mt-2.5">
                 {mode === 'forward' ? (
-                    <div className="bg-neutral-800/40 rounded-xl p-2 border border-primary-500/50 ring-1 ring-primary-500/10">
-                        <div className="flex justify-between items-center gap-2 min-w-0">
-                            <div className="shrink-0">
-                                <label
-                                    onClick={focusFaceValue}
-                                    className="text-sm font-bold text-primary-400 block leading-tight text-left cursor-pointer hover:text-white transition-colors"
-                                    title="Click to Clear"
-                                >
-                                    Face Value
-                                </label>
-                                <span className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold">Amount at Maturity</span>
+                    <div className="bg-neutral-800/40 rounded-2xl px-4 py-2 border border-emerald-500/30 ring-1 ring-emerald-500/5 transition-all">
+                        <div className="flex justify-between items-center gap-4">
+                            <div className="text-left shrink-0">
+                                <label onClick={focusFaceValue} className="text-sm font-bold text-neutral-300 cursor-pointer hover:text-emerald-400 transition-colors block leading-none mb-1 whitespace-nowrap">Face Value</label>
+                                <span className="text-[8px] font-medium text-neutral-500 uppercase tracking-[0.15em] block whitespace-nowrap">Amount at Maturity</span>
                             </div>
                             <FormattedNumberInput
                                 ref={faceValueRef}
@@ -284,23 +271,17 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
                                     setResult(null);
                                 }}
                                 decimals={2}
-                                className="bg-transparent text-right text-lg font-mono focus:outline-none text-primary-400 font-black min-w-0 flex-1"
-                                placeholder="500,000"
+                                className="bg-transparent text-right text-lg font-mono focus:outline-none text-white font-bold flex-1 min-w-0"
+                                placeholder="1,000,000.00"
                             />
                         </div>
                     </div>
                 ) : (
-                    <div className="bg-neutral-800/40 rounded-xl p-2 border border-emerald-500/50 ring-1 ring-emerald-500/10">
-                        <div className="flex justify-between items-center gap-2 min-w-0">
-                            <div className="shrink-0">
-                                <label
-                                    onClick={focusTotalBudget}
-                                    className="text-sm font-bold text-emerald-400 block leading-tight text-left cursor-pointer hover:text-white transition-colors"
-                                    title="Click to Clear"
-                                >
-                                    Budget
-                                </label>
-                                <span className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold">Total Consideration</span>
+                    <div className="bg-neutral-800/40 rounded-2xl px-4 py-2 border border-emerald-500/30 ring-1 ring-emerald-500/5 transition-all">
+                        <div className="flex justify-between items-center gap-4">
+                            <div className="text-left shrink-0">
+                                <label onClick={focusTotalBudget} className="text-sm font-bold text-neutral-300 cursor-pointer hover:text-emerald-400 transition-colors block leading-none mb-1 whitespace-nowrap">Budget</label>
+                                <span className="text-[8px] font-medium text-neutral-500 uppercase tracking-[0.15em] block whitespace-nowrap">Total Investment</span>
                             </div>
                             <FormattedNumberInput
                                 ref={totalBudgetRef}
@@ -311,382 +292,257 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
                                     setResult(null);
                                 }}
                                 decimals={2}
-                                className="bg-transparent text-right text-lg font-mono focus:outline-none text-emerald-400 font-black min-w-0 flex-1"
-                                placeholder="490,000"
+                                className="bg-transparent text-right text-lg font-mono focus:outline-none text-white font-bold flex-1 min-w-0"
+                                placeholder="1,000,000.00"
                             />
                         </div>
                     </div>
                 )}
 
-                {/* Tenure Selector */}
-                <div className="bg-neutral-800/40 rounded-xl p-2 border border-transparent hover:border-neutral-700">
-                    <label className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold block mb-1">Tenure (Days)</label>
-                    <div className="grid grid-cols-4 gap-1">
+                <div className="bg-neutral-800/40 rounded-xl px-3 py-1.5 border border-transparent hover:border-neutral-700 transition-all flex justify-between items-center">
+                    <label className="text-[11px] uppercase tracking-wider text-neutral-500 font-bold text-left">Tenure</label>
+                    <div className="flex bg-neutral-900/50 rounded-lg p-0.5 ring-1 ring-neutral-800">
                         {TENURES.map(t => (
                             <button
                                 key={t.days}
                                 onClick={() => setTenure(t.days)}
-                                className={`py-1.5 px-1 rounded-lg transition-all flex flex-col items-center justify-center gap-0.5 ${tenure === t.days
-                                    ? 'bg-primary-600/20 text-primary-400 ring-1 ring-primary-500/50'
-                                    : 'bg-neutral-900/50 text-neutral-500 hover:bg-neutral-900'
-                                    }`}
+                                className={`px-3 py-1 text-[11px] font-bold rounded-md transition-all ${tenure === t.days ? 'bg-primary-600 text-neutral-900 shadow-lg shadow-primary-900/20' : 'text-neutral-500 hover:text-neutral-300'}`}
                             >
-                                <span className="text-sm font-black leading-none">{t.days}</span>
-                                <span className={`text-[8px] font-bold uppercase tracking-tight ${tenure === t.days ? 'text-primary-400/80' : 'text-neutral-500'}`}>
-                                    {t.sub}
-                                </span>
+                                {t.days}D
                             </button>
                         ))}
                     </div>
                 </div>
 
-                {/* Discount Rate & Brokerage Row */}
                 <div className="grid grid-cols-2 gap-2">
-                    <div className="bg-neutral-800/40 rounded-xl p-2 border border-transparent hover:border-neutral-700">
-                        <div className="flex flex-col">
-                            <label
-                                onClick={focusDiscountRate}
-                                className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold mb-1 text-left cursor-pointer hover:text-primary-400 transition-colors"
-                                title="Click to Clear"
-                            >
-                                Discount Rate %
-                            </label>
-                            <div className="flex items-center justify-between gap-2">
-                                <div className="shrink-0 flex items-center">
-                                    {currentPrediction && (
-                                        <button
-                                            onClick={() => {
-                                                setDiscountRate(currentPrediction);
-                                                setResult(null);
-                                            }}
-                                            title="Apply AI Prediction"
-                                            className="text-[10px] bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 font-bold uppercase tracking-wider px-2 py-1 rounded-md ring-1 ring-indigo-500/50 transition-all active:scale-95 whitespace-nowrap"
-                                        >
-                                            AI: {currentPrediction}%
-                                        </button>
-                                    )}
-                                </div>
-                                <FormattedNumberInput
-                                    ref={discountRateRef}
-                                    value={discountRate}
-                                    onChange={(e) => {
-                                        const val = e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0);
-                                        setDiscountRate(val);
-                                        setResult(null);
-                                    }}
-                                    decimals={2}
-                                    className="bg-transparent text-right text-lg font-mono focus:outline-none w-full text-white min-w-0"
-                                    placeholder="12"
-                                />
-                            </div>
+                    <div className="bg-neutral-800/40 rounded-xl px-3 py-1.5 border border-transparent hover:border-neutral-700 transition-all">
+                        <label onClick={focusDiscountRate} className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold block mb-1 cursor-pointer hover:text-indigo-400 transition-colors text-left">Discount Rate %</label>
+                        <div className="flex items-center justify-between gap-2">
+                            {currentPrediction && (
+                                <button 
+                                    onClick={() => { setDiscountRate(currentPrediction); setResult(null); }} 
+                                    className="text-[9px] bg-indigo-600/25 text-indigo-400 font-bold px-2 py-1 rounded-md border border-indigo-500/30 whitespace-nowrap hover:bg-indigo-600/40 transition-all shadow-sm"
+                                >
+                                    AI: {currentPrediction}%
+                                </button>
+                            )}
+                            <FormattedNumberInput 
+                                ref={discountRateRef} 
+                                value={discountRate} 
+                                onChange={(e) => { setDiscountRate(e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0)); setResult(null); }} 
+                                decimals={2} 
+                                className="bg-transparent text-right text-sm font-mono focus:outline-none w-full text-white font-bold" 
+                            />
                         </div>
                     </div>
-                    <div className="bg-neutral-800/40 rounded-xl p-2 border border-transparent hover:border-neutral-700">
-                        <div className="flex flex-col">
-                            <label
-                                onClick={focusBrokerageRate}
-                                className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold mb-1 text-left cursor-pointer hover:text-primary-400 transition-colors"
-                                title="Click to Clear"
-                            >
-                                Brokerage %
-                            </label>
-                            <FormattedNumberInput
-                                ref={brokerageRateRef}
-                                value={brokerageRate}
-                                onChange={(e) => {
-                                    const val = e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0);
-                                    setBrokerageRate(val);
-                                    setResult(null);
-                                }}
-                                decimals={2}
-                                className="bg-transparent text-right text-lg font-mono focus:outline-none w-full text-white"
-                                placeholder="0.1"
+                    <div className="bg-neutral-800/40 rounded-xl px-3 py-1.5 border border-transparent hover:border-neutral-700 transition-all">
+                        <label onClick={focusBrokerageRate} className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold block mb-1 cursor-pointer hover:text-emerald-400 transition-colors text-left">Brokerage %</label>
+                        <div className="flex items-center justify-end">
+                            <FormattedNumberInput 
+                                ref={brokerageRateRef} 
+                                value={brokerageRate} 
+                                onChange={(e) => { setBrokerageRate(e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0)); setResult(null); }} 
+                                decimals={2} 
+                                className="bg-transparent text-right text-sm font-mono focus:outline-none w-full text-white font-bold" 
                             />
                         </div>
                     </div>
                 </div>
 
-                {/* Issue Date */}
-                <div ref={auctionsRef} className="relative bg-neutral-800/40 rounded-xl p-2 border border-transparent hover:border-neutral-700 text-left transition-all duration-300">
-                    <div className="flex justify-between items-center mb-1">
-                        <label className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold">Issue Date</label>
-                        <div className="flex gap-1">
-                            <button 
-                                onClick={() => setIssueDate(formatToLocalDate(new Date()))}
-                                className="text-[8px] font-black bg-primary-600/20 text-primary-400 px-1.5 py-0.5 rounded hover:bg-primary-600/40 transition-colors uppercase tracking-widest"
-                            >
-                                Today
-                            </button>
-                            <button 
-                                onClick={() => {
-                                    setShowAuctions(!showAuctions);
-                                    setResult(null);
-                                }}
-                                className={`text-[8px] font-black px-1.5 py-0.5 rounded transition-all uppercase tracking-widest ${showAuctions ? 'bg-primary-500 text-neutral-900' : 'bg-neutral-800 text-neutral-500 hover:text-white hover:bg-neutral-700'}`}
-                            >
-                                {showAuctions ? 'Hide' : 'Upcoming'}
-                            </button>
-                        </div>
+                <div ref={auctionsRef} className="relative bg-neutral-800/40 rounded-xl px-3 py-1.5 border border-transparent hover:border-neutral-700 transition-all flex justify-between items-center">
+                    <label className="text-[11px] uppercase tracking-wider text-neutral-500 font-bold text-left">Issue Date</label>
+                    <div className="flex items-center gap-3">
+                        <button onClick={() => { setShowAuctions(!showAuctions); setResult(null); }} className={`text-[10px] font-bold px-2 py-1 rounded transition-all uppercase tracking-wider ${showAuctions ? 'bg-primary-500 text-neutral-900 shadow-lg shadow-primary-900/40' : 'bg-neutral-800 text-neutral-500 hover:text-white'}`}>{showAuctions ? 'Close' : 'Upcoming'}</button>
+                        <input type="date" value={issueDate} onChange={(e) => setIssueDate(e.target.value)} className="bg-transparent text-white text-sm font-mono focus:outline-none w-32 text-right font-bold" />
                     </div>
-                    <input
-                        type="date"
-                        value={issueDate}
-                        onChange={(e) => setIssueDate(e.target.value)}
-                        className="bg-transparent text-white text-sm font-mono focus:outline-none w-full"
-                    />
-                    
                     {showAuctions && (
                         <div className="absolute left-0 right-0 top-full mt-1 z-[50] bg-neutral-900 border border-neutral-700 rounded-xl p-3 shadow-2xl animate-in fade-in zoom-in-95 duration-200 ring-1 ring-white/10">
                             <div className="flex justify-between items-center mb-2 border-b border-neutral-800 pb-1">
-                                <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Next 10 Auctions</span>
-                                <span className="text-[8px] text-primary-500 font-bold uppercase">Wednesday Schedule</span>
+                                <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Next 10 Auctions</span>
                             </div>
                             <div className="grid grid-cols-2 gap-x-4 gap-y-1">
                                 {nextAuctions.map((date, idx) => (
-                                    <button
-                                        key={idx}
-                                        onClick={() => {
-                                            setIssueDate(formatToLocalDate(date));
-                                            setShowAuctions(false);
-                                        }}
-                                        className="flex justify-between items-center py-1 px-1.5 rounded hover:bg-primary-600/20 transition-all group"
-                                    >
-                                        <span className="text-[10px] font-mono text-neutral-400 group-hover:text-primary-400">
-                                            {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                                        </span>
-                                        <div className="flex items-center gap-1">
-                                            <div className="w-1 h-1 rounded-full bg-neutral-700 group-hover:bg-primary-500 transition-colors" />
-                                            <span className="text-[7px] text-neutral-600 font-black uppercase group-hover:text-primary-500/50">Wed</span>
-                                        </div>
+                                    <button key={idx} onClick={() => { setIssueDate(formatToLocalDate(date)); setShowAuctions(false); }} className="flex justify-between items-center py-1 px-1.5 rounded hover:bg-primary-600/20 transition-all group">
+                                        <span className="text-[10px] font-mono text-neutral-400 group-hover:text-primary-400">{date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                                        <span className="text-[7px] text-neutral-600 font-bold uppercase group-hover:text-primary-500/50">Wed</span>
                                     </button>
                                 ))}
                             </div>
                         </div>
                     )}
                 </div>
+
+                <div 
+                    ref={bankSelectorRef} 
+                    onClick={() => setShowBankSelector(!showBankSelector)}
+                    className="relative bg-neutral-800/40 rounded-xl px-3 py-1.5 border border-transparent hover:border-neutral-700 transition-all duration-300 cursor-pointer group"
+                >
+                    <div className="flex justify-between items-center">
+                        <div className="text-left">
+                            <label className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold block mb-0.5 group-hover:text-neutral-400 transition-colors text-left">CSD Custodian (Bank)</label>
+                            <div className="flex items-center gap-1.5">
+                                <div className={`w-1.5 h-1.5 rounded-full ${bankSource === 'WEGAGEN' ? 'bg-primary-500 shadow-[0_0_8px_rgba(14,165,233,0.8)]' : bankSource === 'GADAA' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]' : 'bg-violet-500 shadow-[0_0_8px_rgba(139,92,246,0.8)]'}`} />
+                                <span className={`text-[11px] font-semibold uppercase tracking-wider ${bankSource === 'WEGAGEN' ? 'text-primary-400' : bankSource === 'GADAA' ? 'text-emerald-400' : 'text-violet-400'}`}>
+                                    {bankSource === 'WEGAGEN' ? 'Wegagen Capital Investment Bank (WCIB)' : bankSource === 'GADAA' ? 'Gadaa Securities Dealer S.C' : 'CBE Capital Investment Bank'}
+                                </span>
+                            </div>
+                        </div>
+                        <ChevronDown 
+                            size={12} 
+                            className={`transition-all duration-300 ${showBankSelector ? 'rotate-180 text-primary-400' : 'text-neutral-600 group-hover:text-neutral-400'}`} 
+                        />
+                    </div>
+
+                    {showBankSelector && (
+                        <div className="absolute left-0 right-0 bottom-full mb-1 z-[50] bg-neutral-900 border border-neutral-700 rounded-xl p-2 shadow-2xl animate-in fade-in slide-in-from-bottom-1 duration-200 ring-1 ring-white/10">
+                            <div className="grid grid-cols-1 gap-1">
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); setBankSource('WEGAGEN'); setShowBankSelector(false); }}
+                                    className={`flex items-center justify-between p-2 rounded-lg transition-all ${bankSource === 'WEGAGEN' ? 'bg-primary-600/20 border border-primary-500/50' : 'hover:bg-neutral-800 border border-transparent'}`}
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <div className={`w-2 h-2 rounded-full ${bankSource === 'WEGAGEN' ? 'bg-primary-500' : 'bg-neutral-700'}`} />
+                                        <div className="text-left">
+                                            <p className={`text-[11px] font-bold uppercase tracking-wider ${bankSource === 'WEGAGEN' ? 'text-primary-400' : 'text-neutral-400'}`}>Wegagen Capital Investment Bank (WCIB)</p>
+                                            <p className="text-[8px] font-bold text-neutral-500 tracking-tighter">ET81WEGC00141021</p>
+                                        </div>
+                                    </div>
+                                    {bankSource === 'WEGAGEN' && <div className="w-1 h-4 bg-primary-500 rounded-full" />}
+                                </button>
+                                <button
+                                    onClick={() => { setBankSource('GADAA'); setShowBankSelector(false); }}
+                                    className={`flex items-center justify-between p-2 rounded-lg transition-all ${bankSource === 'GADAA' ? 'bg-emerald-600/20 border border-emerald-500/50' : 'hover:bg-neutral-800 border border-transparent'}`}
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <div className={`w-2 h-2 rounded-full ${bankSource === 'GADAA' ? 'bg-emerald-500' : 'bg-neutral-700'}`} />
+                                        <div className="text-left">
+                                            <p className={`text-[11px] font-bold uppercase tracking-wider ${bankSource === 'GADAA' ? 'text-emerald-400' : 'text-neutral-400'}`}>Gadaa Securities Dealer S.C</p>
+                                            <p className="text-[8px] font-bold text-neutral-500 tracking-tighter">ET57GADS00110312</p>
+                                        </div>
+                                    </div>
+                                    {bankSource === 'GADAA' && <div className="w-1 h-4 bg-emerald-500 rounded-full" />}
+                                </button>
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); setBankSource('CBE'); setShowBankSelector(false); }}
+                                    className={`flex items-center justify-between p-2 rounded-lg transition-all ${bankSource === 'CBE' ? 'bg-violet-600/20 border border-violet-500/50' : 'hover:bg-neutral-800 border border-transparent'}`}
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <div className={`w-2 h-2 rounded-full ${bankSource === 'CBE' ? 'bg-violet-500' : 'bg-neutral-700'}`} />
+                                        <div className="text-left">
+                                            <p className={`text-[11px] font-bold uppercase tracking-wider ${bankSource === 'CBE' ? 'text-violet-400' : 'text-neutral-400'}`}>CBE Capital Investment Bank</p>
+                                            <p className="text-[8px] font-bold text-neutral-500 tracking-tighter">ET49CBEC00140965</p>
+                                        </div>
+                                    </div>
+                                    {bankSource === 'CBE' && <div className="w-1 h-4 bg-violet-500 rounded-full" />}
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
             </div>
 
-            {/* Results */}
             {result && (() => {
                 const isReverse = result.mode === 'reverse';
                 return (
                     <div className={`mt-1.5 mb-1.5 bg-gradient-to-br ${isReverse ? 'from-emerald-900/30' : 'from-primary-900/30'} to-neutral-800/50 border ${isReverse ? 'border-emerald-500/30' : 'border-primary-500/30'} rounded-xl p-2.5 space-y-2`}>
                         <div className="flex justify-between items-center mb-1">
-                            <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Results</span>
+                            <div className="flex items-center gap-2">
+                                <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Results</span>
+                                <div className={`flex items-center gap-1.5 text-[8px] font-bold uppercase tracking-tight ${bankSource === 'WEGAGEN' ? 'text-primary-400' : bankSource === 'GADAA' ? 'text-emerald-400' : 'text-violet-400'}`}>
+                                    <div className={`w-1 h-1 rounded-full ${bankSource === 'WEGAGEN' ? 'bg-primary-500' : bankSource === 'GADAA' ? 'bg-emerald-500' : 'bg-violet-500'}`} />
+                                    {bankSource === 'CBE' ? 'CBE Capital' : bankSource} Account
+                                </div>
+                            </div>
                             <div className="flex gap-3">
-                                <button
-                                    onClick={() => generateTBillApplicationPDF({
-                                        faceValue: result.faceValue,
-                                        tenure: tenure,
-                                        issueDate: issueDate,
-                                        yieldRate: discountRate
-                                    })}
-                                    className="text-[9px] text-primary-500 font-bold uppercase tracking-wider flex items-center gap-1 hover:text-primary-400 transition-colors"
-                                    title="Download Application Form"
-                                >
-                                    <Download size={11} /> Application
-                                </button>
-                                <button
-                                    onClick={() => setShowHistory(true)}
-                                    className="text-[9px] text-primary-500 font-bold uppercase tracking-wider flex items-center gap-1 hover:text-primary-400 transition-colors"
-                                >
-                                    <History size={11} /> View History
-                                </button>
+                                <button onClick={() => { const bankInfo = { WEGAGEN: { name: 'Wegagen Capital Investment Bank (WCIB)', account: 'ET81WEGC00141021' }, GADAA: { name: 'Gadaa Securities Dealer S.C', account: 'ET57GADS00110312' }, CBE: { name: 'CBE Capital Investment Bank', account: 'ET49CBEC00140965' } }[bankSource]; generateTBillApplicationPDF({ faceValue: result.faceValue, tenure: tenure, issueDate: issueDate, yieldRate: discountRate }, { accountNo: bankInfo.account, bankName: '' }); }} className={`text-[9px] font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all ${bankSource === 'WEGAGEN' ? 'text-primary-400 hover:text-primary-300' : bankSource === 'GADAA' ? 'text-emerald-400 hover:text-emerald-300' : 'text-violet-400 hover:text-violet-300'}`} title="Download Application Form"><Download size={11} /> Application</button>
+                                <button onClick={() => setShowHistory(true)} className="text-[9px] text-primary-500 font-bold uppercase tracking-wider flex items-center gap-1 hover:text-primary-400 transition-colors"><History size={11} /> View History</button>
                             </div>
                         </div>
-
                         <div className="flex justify-between items-center bg-neutral-900/50 rounded-lg p-2 mb-1 border border-neutral-700/50 relative group">
                             <div className="flex items-center gap-2">
                                 <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Quantity</span>
-                                <button 
-                                    onClick={(e) => {
-                                        // Replace the default "Only" with "Units Only" for quantity context
-                                        const words = amountToWords(result.quantity).replace('Only', 'Units Only');
-                                        copyToClipboard(words, e.currentTarget);
-                                    }}
-                                    className="opacity-40 hover:opacity-100 transition-opacity p-0.5 hover:bg-primary-500/10 rounded text-primary-500/70 hover:text-primary-400"
-                                    title="Copy in Words"
-                                >
-                                    <Copy size={9} />
-                                </button>
+                                <button onClick={(e) => { const words = amountToWords(result.quantity).replace('Only', 'Units Only'); copyToClipboard(words, e.currentTarget); }} className="opacity-40 hover:opacity-100 transition-opacity p-0.5 hover:bg-primary-500/10 rounded text-primary-500/70 hover:text-primary-400" title="Copy in Words"><Copy size={9} /></button>
                             </div>
-                            <span className="text-sm font-black text-primary-400">{result.quantity} UNITS</span>
+                            <span className="text-sm font-bold text-primary-400">{result.quantity.toLocaleString()} UNITS</span>
                         </div>
-
                         <div className="grid grid-cols-2 gap-2">
                             <div className="bg-neutral-900/50 rounded-lg p-2 relative group">
                                 <div className="flex justify-between items-start">
-                                    <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">
-                                        Purchase Price
-                                    </p>
-                                    <button 
-                                        onClick={(e) => {
-                                            const words = amountToWords(result.purchasePrice);
-                                            copyToClipboard(words, e.currentTarget);
-                                        }}
-                                        className="opacity-40 hover:opacity-100 transition-opacity p-1 hover:bg-primary-500/10 rounded-md text-primary-500/70 hover:text-primary-400"
-                                        title="Copy in Words"
-                                    >
-                                        <Copy size={10} />
-                                    </button>
+                                    <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Purchase Price</p>
+                                    <button onClick={(e) => { const words = amountToWords(result.purchasePrice); copyToClipboard(words, e.currentTarget); }} className="opacity-40 hover:opacity-100 transition-opacity p-1 hover:bg-primary-500/10 rounded-md text-primary-500/70 hover:text-primary-400" title="Copy in Words"><Copy size={10} /></button>
                                 </div>
-                                <p className="text-lg font-black text-primary-400">
-                                    {formatCurrency(result.purchasePrice)}
-                                </p>
+                                <p className="text-lg font-bold text-primary-400">{formatCurrency(result.purchasePrice)}</p>
                             </div>
                             <div className="bg-neutral-900/50 rounded-lg p-2 relative group">
                                 <div className="flex justify-between items-start">
                                     <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Brokerage ({brokerageRate}%)</p>
-                                    <button 
-                                        onClick={(e) => {
-                                            const words = amountToWords(result.brokerage);
-                                            copyToClipboard(words, e.currentTarget);
-                                        }}
-                                        className="opacity-40 hover:opacity-100 transition-opacity p-1 hover:bg-amber-500/10 rounded-md text-amber-500/70 hover:text-amber-400"
-                                        title="Copy in Words"
-                                    >
-                                        <Copy size={10} />
-                                    </button>
+                                    <button onClick={(e) => { const words = amountToWords(result.brokerage); copyToClipboard(words, e.currentTarget); }} className="opacity-40 hover:opacity-100 transition-opacity p-1 hover:bg-amber-500/10 rounded-md text-amber-500/70 hover:text-amber-400" title="Copy in Words"><Copy size={10} /></button>
                                 </div>
-                                <p className="text-lg font-black text-amber-400">
-                                    {formatCurrency(result.brokerage)}
-                                </p>
+                                <p className="text-lg font-bold text-amber-400">{formatCurrency(result.brokerage)}</p>
                             </div>
                         </div>
-
                         <div className={`bg-neutral-900/80 rounded-lg p-2 border ${isReverse ? 'border-emerald-500/30' : 'border-primary-500/30'} relative group`}>
                             <div className="flex justify-between items-center">
                                 <div>
                                     <div className="flex items-center gap-2">
-                                        <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">
-                                            {isReverse ? 'Face Value You Get' : 'Total Consideration'}
-                                        </p>
-                                        <button 
-                                            onClick={(e) => {
-                                                const val = isReverse ? result.faceValue : result.totalConsideration;
-                                                const words = amountToWords(val);
-                                                copyToClipboard(words, e.currentTarget);
-                                            }}
-                                            className="opacity-40 hover:opacity-100 transition-opacity p-0.5 hover:bg-white/10 rounded text-neutral-500 hover:text-white"
-                                            title="Copy in Words"
-                                        >
-                                            <Copy size={9} />
-                                        </button>
+                                        <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">{isReverse ? 'Face Value You Get' : 'Total Consideration'}</p>
+                                        <button onClick={(e) => { const val = isReverse ? result.faceValue : result.totalConsideration; const words = amountToWords(val); copyToClipboard(words, e.currentTarget); }} className="opacity-40 hover:opacity-100 transition-opacity p-0.5 hover:bg-white/10 rounded text-neutral-500 hover:text-white" title="Copy in Words"><Copy size={9} /></button>
                                     </div>
-                                    <p className={`text-xl font-black ${isReverse ? 'text-emerald-400' : 'text-white'}`}>
-                                        {formatCurrency(isReverse ? result.faceValue : result.totalConsideration)}
-                                    </p>
+                                    <p className={`text-xl font-bold ${isReverse ? 'text-emerald-400' : 'text-white'}`}>{formatCurrency(isReverse ? result.faceValue : result.totalConsideration)}</p>
                                 </div>
                                 {isReverse ? (
                                     <div className="text-right space-y-1">
                                         <div>
                                             <div className="flex items-center justify-end gap-1.5">
                                                 <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Actual Cost</p>
-                                                <button 
-                                                    onClick={(e) => {
-                                                        const words = amountToWords(result.totalConsideration);
-                                                        copyToClipboard(words, e.currentTarget);
-                                                    }}
-                                                    className="opacity-40 hover:opacity-100 transition-opacity p-0.5 hover:bg-white/10 rounded text-neutral-500 hover:text-white"
-                                                    title="Copy in Words"
-                                                >
-                                                    <Copy size={8} />
-                                                </button>
+                                                <button onClick={(e) => { const words = amountToWords(result.totalConsideration); copyToClipboard(words, e.currentTarget); }} className="opacity-40 hover:opacity-100 transition-opacity p-0.5 hover:bg-white/10 rounded text-neutral-500 hover:text-white" title="Copy in Words"><Copy size={8} /></button>
                                             </div>
-                                            <p className="text-sm font-black text-white">{formatCurrency(result.totalConsideration)}</p>
+                                            <p className="text-sm font-bold text-white">{formatCurrency(result.totalConsideration)}</p>
                                         </div>
                                         {result.leftover !== 0 && (
                                             <div>
                                                 <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Leftover</p>
-                                                <p className={`text-[10px] font-black ${result.leftover > 0 ? 'text-emerald-400' : 'text-amber-500'}`}>
-                                                    {formatCurrency(result.leftover)} ETB
-                                                </p>
+                                                <p className={`text-[10px] font-bold ${result.leftover > 0 ? 'text-emerald-400' : 'text-amber-500'}`}>{formatCurrency(result.leftover)}</p>
                                             </div>
                                         )}
                                     </div>
                                 ) : (
-                                    <div className="text-right">
-                                        <div className="flex items-center justify-end gap-1.5">
-                                            <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Actual Face Value</p>
-                                            <button 
-                                                onClick={(e) => {
-                                                    const words = amountToWords(result.faceValue);
-                                                    copyToClipboard(words, e.currentTarget);
-                                                }}
-                                                className="opacity-40 hover:opacity-100 transition-opacity p-0.5 hover:bg-white/10 rounded text-neutral-500 hover:text-white"
-                                                title="Copy in Words"
-                                            >
-                                                <Copy size={8} />
-                                            </button>
+                                    <div className="text-right space-y-1">
+                                        <div>
+                                            <div className="flex items-center justify-end gap-1.5">
+                                                <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Actual Face Value</p>
+                                                <button onClick={(e) => { const words = amountToWords(result.faceValue); copyToClipboard(words, e.currentTarget); }} className="opacity-40 hover:opacity-100 transition-opacity p-0.5 hover:bg-white/10 rounded text-neutral-500 hover:text-white" title="Copy in Words"><Copy size={8} /></button>
+                                            </div>
+                                            <p className="text-sm font-bold text-white">{formatCurrency(result.faceValue)}</p>
                                         </div>
-                                        <p className="text-sm font-black text-white">{formatCurrency(result.faceValue)}</p>
+                                        {result.leftover !== 0 && (
+                                            <div>
+                                                <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Leftover (FV)</p>
+                                                <p className="text-[10px] font-bold text-amber-500">{formatCurrency(result.leftover)}</p>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                             </div>
                         </div>
-
                         <div className="grid grid-cols-4 gap-2 pt-2 border-t border-neutral-700 mt-1">
-                            <div>
-                                <p className="text-[9px] font-bold text-neutral-500 uppercase">Maturity</p>
-                                <p className="text-xs font-bold text-white">{result.maturityDate}</p>
-                            </div>
-                            <div>
-                                <p className="text-[9px] font-bold text-neutral-500 uppercase">Discount</p>
-                                <p className="text-xs font-bold text-emerald-400">{formatCurrency(result.discountAmount)}</p>
-                            </div>
-                            <div>
-                                <p className="text-[9px] font-bold text-neutral-500 uppercase">Net Return</p>
-                                <p className="text-xs font-bold text-emerald-400">{formatCurrency(result.netReturn)}</p>
-                            </div>
-                            <div>
-                                <p className="text-[9px] font-bold text-neutral-500 uppercase">Eff. Yield</p>
-                                <p className="text-xs font-bold text-emerald-400">{result.effectiveYield.toFixed(2)}%</p>
-                            </div>
+                            <div><p className="text-[9px] font-bold text-neutral-500 uppercase">Maturity</p><p className="text-xs font-bold text-white">{result.maturityDate}</p></div>
+                            <div><p className="text-[9px] font-bold text-neutral-500 uppercase">Discount</p><p className="text-xs font-bold text-emerald-400">{formatCurrency(result.discountAmount)}</p></div>
+                            <div><p className="text-[9px] font-bold text-neutral-500 uppercase">Net Return</p><p className="text-xs font-bold text-emerald-400">{formatCurrency(result.netReturn)}</p></div>
+                            <div><p className="text-[9px] font-bold text-neutral-500 uppercase">Eff. Yield</p><p className="text-xs font-bold text-emerald-400">{result.effectiveYield.toFixed(2)}%</p></div>
                         </div>
-
                     </div>
                 );
             })()}
 
-            {/* Action Buttons */}
             <div className="mt-1.5 flex gap-1.5">
-                <button
-                    onClick={handleClear}
-                    className="w-[12%] bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-xs py-2.5 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center gap-1 uppercase tracking-wider"
-                    title="Clear all values"
-                >
-                    <Trash2 className="w-3.5 h-3.5" />
-                </button>
-                <button
-                    onClick={toggleHelp}
-                    className="bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-sm px-2 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center"
-                    title="Help Guide"
-                >
-                    <HelpCircle className="w-4 h-4" />
-                </button>
-                <button
-                    onClick={toggleSettings}
-                    className="bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-sm px-2 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center"
-                    title="Settings"
-                >
-                    <Settings className="w-4 h-4" />
-                </button>
-                <button
-                    onClick={handleCalculate}
-                    className="flex-1 bg-gradient-to-r from-primary-600 to-primary-500 text-neutral-900 font-black text-base py-2.5 rounded-xl shadow-lg shadow-primary-900/20 active:scale-[0.98] transition-all hover:brightness-110 flex items-center justify-center gap-2 uppercase tracking-widest"
-                >
-                    <CalculateIcon className="w-5 h-5" />
-                    Calculate
-                </button>
+                <button onClick={handleClear} className="w-[12%] bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-xs py-2.5 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center gap-1 uppercase tracking-wider" title="Clear all values"><Trash2 className="w-3.5 h-3.5" /></button>
+                <button onClick={toggleHelp} className="bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-sm px-2 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center" title="Help Guide"><HelpCircle className="w-4 h-4" /></button>
+                <button onClick={toggleSettings} className="bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-sm px-2 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center" title="Settings"><Settings className="w-4 h-4" /></button>
+                <button onClick={handleCalculate} className="flex-1 bg-gradient-to-r from-primary-600 to-primary-500 text-neutral-900 font-bold text-base py-2.5 rounded-xl shadow-lg shadow-primary-900/20 active:scale-[0.98] transition-all hover:brightness-110 flex items-center justify-center gap-2 uppercase tracking-wider"><CalculateIcon className="w-5 h-5" />Calculate</button>
             </div>
 
-            {/* History Overlay */}
-            <HistoryOverlay
-                isOpen={showHistory}
-                onClose={() => setShowHistory(false)}
-                module="T-Bill"
-                title="T-Bill"
-            />
+            <HistoryOverlay isOpen={showHistory} onClose={() => setShowHistory(false)} module="T-Bill" title="T-Bill" />
         </div>
     );
 };
