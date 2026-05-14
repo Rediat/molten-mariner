@@ -226,6 +226,12 @@ const LiveFareTracker = ({ isVisible, onClose, fareData, initialMapState, mapsRe
                 strokeWeight: 4,
                 map: map
             });
+
+            // Handle manual drag: Disable auto-center when user interacts with map
+            map.addListener('dragstart', () => {
+                setIsAutoCenter(false);
+                isAutoCenterRef.current = false;
+            });
         }
 
         return () => {
@@ -283,14 +289,14 @@ const LiveFareTracker = ({ isVisible, onClose, fareData, initialMapState, mapsRe
                     if (pulseRef.current) pulseRef.current.setPosition(newPos);
                 }
 
-                // Sync Marker Visibility: Hide map markers if we are using the central CSS ball
-                if (markerRef.current) markerRef.current.setVisible(!isAutoCenterRef.current);
-                if (pulseRef.current) pulseRef.current.setVisible(!isAutoCenterRef.current);
-
                 if (isAutoCenterRef.current) {
                     mapInstanceRef.current.panTo(newPos);
                 }
             }
+
+            // Sync Marker Visibility (Always sync even if newPos is null)
+            if (markerRef.current) markerRef.current.setVisible(!isAutoCenterRef.current);
+            if (pulseRef.current) pulseRef.current.setVisible(!isAutoCenterRef.current);
             
             // Handle Rotation/Tilt (Always try to apply if available, even if position is null)
             if (isRotationEnabledRef.current) {
@@ -407,6 +413,26 @@ const LiveFareTracker = ({ isVisible, onClose, fareData, initialMapState, mapsRe
             mapInstanceRef.current.setMapTypeId(mapTheme === 'night' ? 'night_mode' : 'day_mode');
         }
     }, [mapTheme]);
+
+    // ---- Initial GPS Fix (Before Tracking) ----
+    useEffect(() => {
+        if (showMap && mapsReady && !lastPositionRef.current && navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const { latitude, longitude } = position.coords;
+                    const pos = { lat: latitude, lng: longitude };
+                    lastPositionRef.current = pos;
+                    smoothedPositionRef.current = pos;
+                    if (mapInstanceRef.current) {
+                        mapInstanceRef.current.setCenter(pos);
+                        updateMap(latitude, longitude, 0);
+                    }
+                },
+                (error) => console.warn('Initial GPS fix failed:', error.message),
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+            );
+        }
+    }, [showMap, mapsReady, updateMap]);
 
 
     // ---- Update active stop in state ----
