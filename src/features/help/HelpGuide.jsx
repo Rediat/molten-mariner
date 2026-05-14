@@ -778,6 +778,9 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                         <p><strong>Recalculated fresh every load:</strong> The app doesn't store "old" predictions. Every single time you open the page or hit refresh, the computer re-runs all its calculations from scratch using the most recent data it just scraped. You are always getting the most current math possible.</p>
                     </div>
                 </InfoBox>
+                <InfoBox type="note">
+                    <strong>ISIN Accuracy:</strong> The ISIN number provided in the results is a mathematical prediction and may not always match official records. However, the <strong>ESX Symbol is always correct</strong>. For official ISIN verification, please visit <a href="https://csdtsega.nbe.gov.et" target="_blank" rel="noopener noreferrer" className="text-primary-400 underline hover:text-primary-300">csdtsega.nbe.gov.et</a> and filter the data using the ESX Symbol provided by this app.
+                </InfoBox>
             </HelpSection>
             
             {/* Arbitrage */}
