@@ -691,19 +691,19 @@ const LiveFareTracker = ({ isVisible, onClose, fareData, initialMapState, mapsRe
                     >
                         <ArrowLeft className="w-4 h-4" />
                     </button>
-                    <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5">
-                            <h2 className="text-[10px] font-black text-white tracking-wide uppercase">Live Fare</h2>
-                            {isTrackingAny && <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_5px_rgba(16,185,129,0.5)]" />}
+                    <div className="flex-1 min-w-0 text-left">
+                        <h2 className="text-xs font-black text-white uppercase tracking-wider">Live Fare Tracker</h2>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                            <div className={`w-1.5 h-1.5 rounded-full ${isTrackingAny ? 'bg-emerald-500 animate-pulse' : 'bg-neutral-600'}`} />
+                            <span className={`text-[9px] font-bold uppercase tracking-widest ${isTrackingAny ? 'text-emerald-400' : 'text-neutral-500'}`}>
+                                {isTrackingAny ? 'Active' : 'Paused'} • {viewMode === 'total' ? 'Full Session' : `Stop ${activeStop.id}`}
+                            </span>
                             {gpsAccuracy != null && isTrackingAny && (
                                 <span className={`text-[7px] font-bold px-1 rounded-sm bg-neutral-800/60 border border-neutral-700/50 ${gpsAccuracy <= 15 ? 'text-emerald-400' : gpsAccuracy <= 30 ? 'text-amber-400' : 'text-rose-400'}`}>
                                     ±{gpsAccuracy}m
                                 </span>
                             )}
                         </div>
-                        <p className="text-[8px] text-neutral-500 font-bold uppercase tracking-widest mt-0.5">
-                            {viewMode === 'total' ? 'Full Session' : `Stop ${activeStop.id}`}
-                        </p>
                     </div>
 
                     <div className="flex items-center gap-1.5">
@@ -937,131 +937,131 @@ const LiveFareTracker = ({ isVisible, onClose, fareData, initialMapState, mapsRe
                 {/* Ride App Comparison (Expandable) */}
                 {displayData.fare > 0 && (
                     <div className="mt-0.5">
-                        <button
-                            onClick={() => setShowMarketComparison(!showMarketComparison)}
-                            className={`w-full flex items-center justify-between p-2 rounded-lg border transition-all ${
-                                showMarketComparison 
-                                ? 'bg-neutral-800/60 border-neutral-700/50 rounded-b-none' 
-                                : 'bg-neutral-800/30 border-neutral-700/30 hover:bg-neutral-800/50'
-                            }`}
-                        >
-                            <div className="flex items-center gap-1.5">
-                                <Car className={`w-3.5 h-3.5 ${showMarketComparison ? 'text-primary-400' : 'text-neutral-500'}`} />
-                                <span className="text-[9px] font-bold text-neutral-300 uppercase tracking-widest">Market Comparison</span>
-                            </div>
-                            <div className="flex items-center gap-1.5">
-                                {!showMarketComparison && (
-                                    <div className="flex items-center gap-1.5">
-                                        <div className="flex flex-col items-end">
-                                            <span className="text-[6px] text-neutral-500 font-bold uppercase leading-none">Ride</span>
-                                            <span className="text-[8px] font-black text-primary-400">{formatNum(rideFare)}</span>
-                                        </div>
-                                        <div className="w-px h-3 bg-neutral-700 mx-0.5"></div>
-                                        <div className="flex flex-col items-end">
-                                            <span className="text-[6px] text-neutral-500 font-bold uppercase leading-none">Feres</span>
-                                            <span className="text-[8px] font-black text-emerald-400">{formatNum(feresFare)}</span>
-                                        </div>
-                                    </div>
-                                )}
-                                {showMarketComparison ? <ChevronUp className="w-3 h-3 text-neutral-500" /> : <ChevronDown className="w-3 h-3 text-neutral-500" />}
-                            </div>
-                        </button>
-
-                        {showMarketComparison && (
-                            <div className="bg-neutral-800/40 rounded-b-xl border-x border-b border-neutral-700/50 overflow-hidden animate-in fade-in slide-in-from-top-1 duration-200">
-                                {/* Ride Provider */}
-                                <div className="p-3 space-y-2.5">
-                                    <div className="flex justify-between items-start">
-                                        <div>
-                                            <p className="text-[9px] font-bold text-primary-400 uppercase tracking-widest flex items-center gap-1.5">
-                                                Ride App Estimate
-                                            </p>
-                                            <p className="text-[7px] text-neutral-500 font-bold uppercase tracking-tight">Market Leader</p>
-                                        </div>
-                                        <div className="text-right">
-                                            <p className="text-lg font-black text-white tracking-tight">
-                                                {formatNum(rideFare)}
-                                            </p>
-                                            <p className="text-[7px] text-neutral-500 font-bold uppercase">ETB Total</p>
-                                        </div>
-                                    </div>
-                                    
-                                    <div className="grid grid-cols-3 gap-2 py-1.5 border-t border-neutral-700/30">
-                                        <div>
-                                            <p className="text-[7px] font-bold text-neutral-500 uppercase">Flag Down</p>
-                                            <p className="text-[9px] font-black text-neutral-300">{rideFlagDown}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-[7px] font-bold text-neutral-500 uppercase">Distance</p>
-                                            <p className="text-[9px] font-black text-neutral-300">{formatNum(displayData.distance * rideDistRate)}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-[7px] font-bold text-neutral-500 uppercase">Waiting</p>
-                                            <p className="text-[9px] font-black text-neutral-300">{formatNum((displayData.waitTime / 60) * rideWaitRate)}</p>
-                                        </div>
-                                    </div>
-
-                                    {rideFare > 0 && displayData.fare > 0 && (
-                                        <div className="pt-1.5 border-t border-neutral-700/30 flex items-center justify-between">
-                                            <span className="text-[7px] font-bold text-neutral-500 uppercase">Savings vs Ride</span>
-                                            <div className="flex items-center gap-2">
-                                                <span className={`text-[9px] font-black ${rideFare - displayData.fare > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                                    {rideFare - displayData.fare > 0 ? '+' : ''}{formatNum(rideFare - displayData.fare)} ETB
-                                                </span>
+                        <div className="bg-neutral-800/20 rounded-xl border border-neutral-700/30 overflow-hidden">
+                            <button
+                                onClick={() => setShowMarketComparison(!showMarketComparison)}
+                                className={`w-full flex items-center justify-between p-2.5 hover:bg-neutral-800/40 transition-colors ${
+                                    showMarketComparison ? 'bg-neutral-800/60 border-b border-neutral-700/50' : ''
+                                }`}
+                            >
+                                <div className="flex items-center gap-2">
+                                    <TrendingUp className="w-3.5 h-3.5 text-neutral-500" />
+                                    <span className="text-[9px] font-bold text-neutral-300 uppercase tracking-widest">Market Comparison</span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                    {!showMarketComparison && (
+                                        <div className="flex items-center gap-1.5">
+                                            <div className="flex flex-col items-end">
+                                                <span className="text-[6px] text-neutral-500 font-bold uppercase leading-none">Ride</span>
+                                                <span className="text-[8px] font-black text-primary-400">{formatNum(rideFare)}</span>
+                                            </div>
+                                            <div className="w-px h-3 bg-neutral-700 mx-0.5"></div>
+                                            <div className="flex flex-col items-end">
+                                                <span className="text-[6px] text-neutral-500 font-bold uppercase leading-none">Feres</span>
+                                                <span className="text-[8px] font-black text-emerald-400">{formatNum(feresFare)}</span>
                                             </div>
                                         </div>
                                     )}
+                                    {showMarketComparison ? <ChevronUp className="w-3 h-3 text-neutral-500" /> : <ChevronDown className="w-3 h-3 text-neutral-500" />}
                                 </div>
+                            </button>
 
-                                {/* Feres Provider */}
-                                <div className="p-3 bg-neutral-900/30 border-t border-neutral-700/50 space-y-2.5">
-                                    <div className="flex justify-between items-start">
-                                        <div>
-                                            <p className="text-[9px] font-bold text-emerald-400 uppercase tracking-widest flex items-center gap-1.5">
-                                                Feres Estimate
-                                            </p>
-                                            <p className="text-[7px] text-neutral-500 font-bold uppercase tracking-tight">Value Option</p>
-                                        </div>
-                                        <div className="text-right">
-                                            <p className="text-lg font-black text-white tracking-tight">
-                                                {formatNum(feresFare)}
-                                            </p>
-                                            <p className="text-[7px] text-neutral-500 font-bold uppercase">ETB Total</p>
-                                        </div>
-                                    </div>
-                                    
-                                    <div className="grid grid-cols-4 gap-1 py-1.5 border-t border-neutral-700/30">
-                                        <div>
-                                            <p className="text-[7px] font-bold text-neutral-500 uppercase">Flag</p>
-                                            <p className="text-[9px] font-black text-neutral-300">{feresFlagDown}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-[7px] font-bold text-neutral-500 uppercase">Dist</p>
-                                            <p className="text-[9px] font-black text-neutral-300">{formatNum(displayData.distance * feresDistRate)}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-[7px] font-bold text-neutral-500 uppercase">Wait</p>
-                                            <p className="text-[9px] font-black text-neutral-300">{formatNum((displayData.waitTime / 60) * feresWaitRate)}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-[7px] font-bold text-neutral-500 uppercase">Book(7%)</p>
-                                            <p className="text-[9px] font-black text-neutral-300">{formatNum(feresSubtotal * feresBookingFeeRate)}</p>
-                                        </div>
-                                    </div>
-
-                                    {feresFare > 0 && displayData.fare > 0 && (
-                                        <div className="pt-1.5 border-t border-neutral-700/30 flex items-center justify-between">
-                                            <span className="text-[7px] font-bold text-neutral-500 uppercase">Savings vs Feres</span>
-                                            <div className="flex items-center gap-2">
-                                                <span className={`text-[9px] font-black ${feresFare - displayData.fare > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                                    {feresFare - displayData.fare > 0 ? '+' : ''}{formatNum(feresFare - displayData.fare)} ETB
-                                                </span>
+                            {showMarketComparison && (
+                                <div className="bg-neutral-800/40 rounded-b-xl border-x border-b border-neutral-700/50 overflow-hidden animate-in fade-in slide-in-from-top-1 duration-200">
+                                    {/* Ride Provider */}
+                                    <div className="p-3 space-y-2.5">
+                                        <div className="flex justify-between items-start">
+                                            <div>
+                                                <p className="text-[9px] font-bold text-primary-400 uppercase tracking-widest flex items-center gap-1.5">
+                                                    Ride App Estimate
+                                                </p>
+                                                <p className="text-[7px] text-neutral-500 font-bold uppercase tracking-tight">Market Leader</p>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-lg font-black text-white tracking-tight">
+                                                    {formatNum(rideFare)}
+                                                </p>
+                                                <p className="text-[7px] text-neutral-500 font-bold uppercase">ETB Total</p>
                                             </div>
                                         </div>
-                                    )}
+                                        
+                                        <div className="grid grid-cols-3 gap-2 py-1.5 border-t border-neutral-700/30">
+                                            <div>
+                                                <p className="text-[7px] font-bold text-neutral-500 uppercase">Flag Down</p>
+                                                <p className="text-[9px] font-black text-neutral-300">{rideFlagDown}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-[7px] font-bold text-neutral-500 uppercase">Distance</p>
+                                                <p className="text-[9px] font-black text-neutral-300">{formatNum(displayData.distance * rideDistRate)}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-[7px] font-bold text-neutral-500 uppercase">Waiting</p>
+                                                <p className="text-[9px] font-black text-neutral-300">{formatNum((displayData.waitTime / 60) * rideWaitRate)}</p>
+                                            </div>
+                                        </div>
+
+                                        {rideFare > 0 && displayData.fare > 0 && (
+                                            <div className="pt-1.5 border-t border-neutral-700/30 flex items-center justify-between">
+                                                <span className="text-[7px] font-bold text-neutral-500 uppercase">Savings vs Ride</span>
+                                                <div className="flex items-center gap-2">
+                                                    <span className={`text-[9px] font-black ${rideFare - displayData.fare > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                        {rideFare - displayData.fare > 0 ? '+' : ''}{formatNum(rideFare - displayData.fare)} ETB
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Feres Provider */}
+                                    <div className="p-3 border-t border-neutral-700/50 space-y-2.5 bg-emerald-900/5">
+                                        <div className="flex justify-between items-start">
+                                            <div>
+                                                <p className="text-[9px] font-bold text-emerald-400 uppercase tracking-widest flex items-center gap-1.5">
+                                                    Feres Estimate
+                                                </p>
+                                                <p className="text-[7px] text-neutral-500 font-bold uppercase tracking-tight">Value Choice</p>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-lg font-black text-white tracking-tight">
+                                                    {formatNum(feresFare)}
+                                                </p>
+                                                <p className="text-[7px] text-neutral-500 font-bold uppercase">ETB Total</p>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="grid grid-cols-4 gap-1 py-1.5 border-t border-neutral-700/30">
+                                            <div>
+                                                <p className="text-[7px] font-bold text-neutral-500 uppercase">Flag</p>
+                                                <p className="text-[9px] font-black text-neutral-300">{feresFlagDown}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-[7px] font-bold text-neutral-500 uppercase">Dist</p>
+                                                <p className="text-[9px] font-black text-neutral-300">{formatNum(displayData.distance * feresDistRate)}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-[7px] font-bold text-neutral-500 uppercase">Wait</p>
+                                                <p className="text-[9px] font-black text-neutral-300">{formatNum((displayData.waitTime / 60) * feresWaitRate)}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-[7px] font-bold text-neutral-500 uppercase">Book(7%)</p>
+                                                <p className="text-[9px] font-black text-neutral-300">{formatNum(feresSubtotal * feresBookingFeeRate)}</p>
+                                            </div>
+                                        </div>
+
+                                        {feresFare > 0 && displayData.fare > 0 && (
+                                            <div className="pt-1.5 border-t border-neutral-700/30 flex items-center justify-between">
+                                                <span className="text-[7px] font-bold text-neutral-500 uppercase">Savings vs Feres</span>
+                                                <div className="flex items-center gap-2">
+                                                    <span className={`text-[9px] font-black ${feresFare - displayData.fare > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                        {feresFare - displayData.fare > 0 ? '+' : ''}{formatNum(feresFare - displayData.fare)} ETB
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
-                        )}
+                            )}
+                        </div>
                     </div>
                 )}
 
