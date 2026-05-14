@@ -1272,15 +1272,31 @@ const LiveFareTracker = ({ isVisible, onClose, fareData, initialMapState, mapsRe
 
                         {/* Bottom Floating Stats */}
                         <div className="absolute bottom-2 left-3 right-3 flex flex-col gap-1.5 z-30">
-                            <div className="bg-neutral-900/95 backdrop-blur-2xl border border-primary-500/30 rounded-xl p-3 shadow-[0_20px_50px_rgba(0,0,0,0.6)] flex items-center justify-between overflow-hidden relative">
-                                <div className="absolute top-0 left-0 w-1 h-full bg-primary-500" />
-                                <div className="flex flex-col">
-                                    <p className="text-[8px] font-black text-primary-400 uppercase tracking-[0.2em] mb-0.5">Running Fare</p>
-                                    <div className="flex items-baseline gap-1.5">
-                                        <span className="text-3xl font-black text-white leading-none tracking-tight">{formatNum(displayData.fare)}</span>
-                                        <span className="text-[10px] font-bold text-neutral-500 uppercase">ETB</span>
+                            <div className="bg-neutral-900/95 backdrop-blur-2xl border border-neutral-700/50 rounded-xl p-2.5 shadow-[0_20px_50px_rgba(0,0,0,0.6)] flex items-center justify-between overflow-hidden relative">
+                                <div className={`absolute top-0 left-0 w-1 h-full transition-colors duration-500 ${isTrackingAny ? 'bg-emerald-500' : 'bg-neutral-700'}`} />
+                                
+                                <div className="flex items-center gap-3">
+                                    {/* Integrated Tracking Button */}
+                                    <button 
+                                        onClick={isTrackingAny ? stopTracking : startTracking}
+                                        className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all active:scale-90 shadow-lg ${
+                                            isTrackingAny 
+                                            ? 'bg-rose-600/20 text-rose-500 shadow-rose-900/20' 
+                                            : 'bg-emerald-600/20 text-emerald-500 shadow-emerald-900/20'
+                                        }`}
+                                    >
+                                        {isTrackingAny ? <Square className="w-4 h-4" fill="currentColor" /> : <Play className="w-4 h-4 ml-0.5" fill="currentColor" />}
+                                    </button>
+
+                                    <div className="flex flex-col">
+                                        <p className="text-[8px] font-black text-neutral-500 uppercase tracking-[0.2em] mb-0.5">Running Fare</p>
+                                        <div className="flex items-baseline gap-1.5">
+                                            <span className="text-2xl font-black text-white leading-none tracking-tight">{formatNum(displayData.fare)}</span>
+                                            <span className="text-[10px] font-bold text-neutral-500 uppercase">ETB</span>
+                                        </div>
                                     </div>
                                 </div>
+
                                 <div className="flex flex-col items-end">
                                     <p className="text-[8px] font-bold text-neutral-500 uppercase tracking-widest mb-0.5">Wait Time</p>
                                     <div className="flex items-center gap-1.5 px-2 py-1 bg-amber-500/10 border border-amber-500/20 rounded-lg">
@@ -1289,27 +1305,6 @@ const LiveFareTracker = ({ isVisible, onClose, fareData, initialMapState, mapsRe
                                     </div>
                                 </div>
                             </div>
-
-                            <button 
-                                onClick={isTrackingAny ? stopTracking : startTracking}
-                                className={`w-full py-3 rounded-xl font-black text-[11px] uppercase tracking-[0.2em] shadow-2xl transition-all active:scale-[0.98] flex items-center justify-center gap-2 ${
-                                    isTrackingAny 
-                                    ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-rose-900/30' 
-                                    : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-900/30'
-                                }`}
-                            >
-                                {isTrackingAny ? (
-                                    <>
-                                        <Square className="w-4 h-4" fill="currentColor" />
-                                        Stop Tracking
-                                    </>
-                                ) : (
-                                    <>
-                                        <Play className="w-4 h-4" fill="currentColor" />
-                                        Start Tracking
-                                    </>
-                                )}
-                            </button>
                         </div>
                     </div>
                 </div>
