@@ -932,7 +932,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                     <FieldList fields={[
                         { name: 'Multi-Stop Support', description: 'Add up to 5 distinct journey legs. Each stop tracks its own distance, wait time, and fare independently.' },
                         { name: 'Total View', description: 'Switch to "Total" mode to see a combined summary of all stops, total session duration, and grand total fare.' },
-                        { name: 'Unified Action Button', description: 'The "Start Tracking" button is always in the same spot at the bottom. It says "START TRACKING" in Total view and "Start Stop X" in individual view.' },
+                        { name: 'Integrated Tracking Control', description: 'The "Start/Stop Tracking" button is integrated directly into the Fare Card. Click the Play/Square icon to control your session.' },
                         { name: 'Wait Time Detection', description: 'Automatically detects when the vehicle is moving below 5 km/h to accumulate wait time charges.' },
                         { name: 'Running Fare', description: 'A large, live display of the fare, updated every second based on distance and wait time.' },
                         { name: 'GPS Accuracy', description: 'A real-time indicator (± meters) shows the reliability of your GPS fix.' }
@@ -943,12 +943,12 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                     <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Navigation Mode (Mission Control):</p>
                     <p className="text-xs mb-2">An immersive "Heads-Up Display" for the driver. Access it by clicking the Map icon in the Live Fare header.</p>
                     <FieldList fields={[
-                        { name: 'System AUTO', description: 'Indicates the map is automatically centering and rotating (Heading-Up) based on your movement.' },
-                        { name: 'Manual CONTROL', description: 'Appears in amber when you manually pan or zoom. Disables auto-follow to allow free-look exploration.' },
-                        { name: 'Recenter Map', description: 'A button in the top-right corner that snaps the view back to your position and re-enables System AUTO mode.' },
-                        { name: 'Pulsing Green Ball', description: 'In Auto mode, your position is marked by a center-locked pulsing ball. In Manual mode, it switches to a map-anchored marker.' },
-                        { name: 'Immersive View', description: 'Stats are moved to the extreme edges and bottom to maximize the visible map area for safer driving.' },
-                        { name: 'Status Dots', description: 'Visual indicators in the navigation menu show at a glance which features (Center/Rotate) are active.' }
+                        { name: 'Direct Header Controls', description: 'Quick-access buttons for Auto-Center, Rotation, and Map Theme are available directly in the top header.' },
+                        { name: 'Recenter Map', description: 'The Target icon snaps the view back to your position and re-enables Auto-Follow mode.' },
+                        { name: 'Rotation Lock', description: 'Toggle the Compass icon to switch between Heading-Up (Follow) and North-Up (Locked) map orientation.' },
+                        { name: 'Day/Night Mode', description: 'The Sun/Moon icon allows manual switching between light and dark map themes for better visibility.' },
+                        { name: 'Immersive View', description: 'Stats are moved to the extreme edges and buttons are integrated into cards to maximize the visible map area for safer driving.' },
+                        { name: 'Pulsing Marker', description: 'Your position is marked by a center-locked pulsing ball that changes state based on whether tracking is active.' }
                     ]} />
                 </div>
 
