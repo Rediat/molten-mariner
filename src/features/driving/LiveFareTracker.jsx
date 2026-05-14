@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { ArrowLeft, Play, Square, RotateCcw, Navigation, Clock, Gauge, MapPin, TrendingUp, Fuel, DollarSign, Timer, Zap, Car, ChevronDown, ChevronUp, Layers, Map } from 'lucide-react';
+import { ArrowLeft, Play, Square, RotateCcw, Navigation, Clock, Gauge, MapPin, TrendingUp, Fuel, DollarSign, Timer, Zap, Car, ChevronDown, ChevronUp, Layers, Map, Sun, Moon } from 'lucide-react';
 
 // Haversine formula – returns distance in kilometers
 const haversineDistance = (lat1, lon1, lat2, lon2) => {
@@ -27,10 +27,60 @@ const calculateHeading = (lat1, lon1, lat2, lon2) => {
     return (brng + 360) % 360;
 };
 
-const WAIT_SPEED_THRESHOLD = 5; // km/h — below this is "waiting"
-const MIN_ACCURACY = 100; // meters — relaxed to capture more points in urban areas
-const MIN_DISTANCE = 0.002; // km (2m) — capture even slow movement
+const WAIT_SPEED_THRESHOLD = 4; // km/h — below this is "waiting"
+const MIN_ACCURACY = 40; // meters — tightened to reduce jitter
+const MIN_DISTANCE = 0.002; // km (2m) — capture distance increments
+const MIN_DISTANCE_PATH = 0.008; // km (8m) — reduced zigzag by plotting fewer points
+const HEADING_SMOOTHING = 0.3; // smoothing factor for rotation
 const MAX_STOPS = 5;
+
+const nightStyles = [
+    { elementType: 'geometry', stylers: [{ color: '#242f3e' }] },
+    { elementType: 'labels.text.stroke', stylers: [{ color: '#242f3e' }] },
+    { elementType: 'labels.text.fill', stylers: [{ color: '#746855' }] },
+    { featureType: 'administrative.locality', elementType: 'labels.text.fill', stylers: [{ color: '#d59563' }] },
+    { featureType: 'poi', elementType: 'labels.text.fill', stylers: [{ color: '#d59563' }] },
+    { featureType: 'poi.park', elementType: 'geometry', stylers: [{ color: '#263c3f' }] },
+    { featureType: 'poi.park', elementType: 'labels.text.fill', stylers: [{ color: '#6b9a76' }] },
+    { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#38414e' }] },
+    { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#212a37' }] },
+    { featureType: 'road', elementType: 'labels.text.fill', stylers: [{ color: '#9ca5b3' }] },
+    { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#746855' }] },
+    { featureType: 'road.highway', elementType: 'geometry.stroke', stylers: [{ color: '#1f2835' }] },
+    { featureType: 'road.highway', elementType: 'labels.text.fill', stylers: [{ color: '#f3d19c' }] },
+    { featureType: 'transit', elementType: 'geometry', stylers: [{ color: '#2f3948' }] },
+    { featureType: 'transit.station', elementType: 'labels.text.fill', stylers: [{ color: '#d59563' }] },
+    { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#17263c' }] },
+    { featureType: 'water', elementType: 'labels.text.fill', stylers: [{ color: '#515c6d' }] },
+    { featureType: 'water', elementType: 'labels.text.stroke', stylers: [{ color: '#17263c' }] }
+];
+
+const dayStyles = [
+    { elementType: 'geometry', stylers: [{ color: '#ebe3cd' }] },
+    { elementType: 'labels.text.fill', stylers: [{ color: '#523735' }] },
+    { elementType: 'labels.text.stroke', stylers: [{ color: '#f5f1e6' }] },
+    { featureType: 'administrative', elementType: 'geometry.stroke', stylers: [{ color: '#c9b2a6' }] },
+    { featureType: 'administrative.land_parcel', elementType: 'geometry.stroke', stylers: [{ color: '#dcd2be' }] },
+    { featureType: 'administrative.land_parcel', elementType: 'labels.text.fill', stylers: [{ color: '#ae9e90' }] },
+    { featureType: 'landscape.natural', elementType: 'geometry', stylers: [{ color: '#dfd2ae' }] },
+    { featureType: 'poi', elementType: 'geometry', stylers: [{ color: '#dfd2ae' }] },
+    { featureType: 'poi', elementType: 'labels.text.fill', stylers: [{ color: '#93817a' }] },
+    { featureType: 'poi.park', elementType: 'geometry.fill', stylers: [{ color: '#a5b076' }] },
+    { featureType: 'poi.park', elementType: 'labels.text.fill', stylers: [{ color: '#447530' }] },
+    { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#f5f1e6' }] },
+    { featureType: 'road.arterial', elementType: 'geometry', stylers: [{ color: '#fdfcf8' }] },
+    { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#f8c967' }] },
+    { featureType: 'road.highway', elementType: 'geometry.stroke', stylers: [{ color: '#e9bc62' }] },
+    { featureType: 'road.highway.controlled_access', elementType: 'geometry', stylers: [{ color: '#e98d58' }] },
+    { featureType: 'road.highway.controlled_access', elementType: 'geometry.stroke', stylers: [{ color: '#db8555' }] },
+    { featureType: 'road.local', elementType: 'labels.text.fill', stylers: [{ color: '#806b63' }] },
+    { featureType: 'transit.line', elementType: 'geometry', stylers: [{ color: '#dfd2ae' }] },
+    { featureType: 'transit.line', elementType: 'labels.text.fill', stylers: [{ color: '#8f7d77' }] },
+    { featureType: 'transit.line', elementType: 'labels.text.stroke', stylers: [{ color: '#ebe3cd' }] },
+    { featureType: 'transit.station', elementType: 'geometry', stylers: [{ color: '#dfd2ae' }] },
+    { featureType: 'water', elementType: 'geometry.fill', stylers: [{ color: '#b9d3c2' }] },
+    { featureType: 'water', elementType: 'labels.text.fill', stylers: [{ color: '#92998d' }] }
+];
 
 const LiveFareTracker = ({ isVisible, onClose, fareData, initialMapState, mapsReady }) => {
     // ---- Multi-Stop State ----
@@ -48,7 +98,13 @@ const LiveFareTracker = ({ isVisible, onClose, fareData, initialMapState, mapsRe
     const [showMap, setShowMap] = useState(initialMapState || false);
     const [isAutoCenter, setIsAutoCenter] = useState(true);
     const [isRotationEnabled, setIsRotationEnabled] = useState(true);
-    const [showNavMenu, setShowNavMenu] = useState(false);
+    
+    // Day/Night Mode Logic
+    const isNightTime = () => {
+        const hour = new Date().getHours();
+        return hour >= 18 || hour < 6;
+    };
+    const [mapTheme, setMapTheme] = useState(isNightTime() ? 'night' : 'day');
 
     // Refs for values that need to survive across watchPosition callbacks
     const lastPositionRef = useRef(null);
@@ -70,6 +126,8 @@ const LiveFareTracker = ({ isVisible, onClose, fareData, initialMapState, mapsRe
     const trackingStopIndexRef = useRef(null);
     const isAutoCenterRef = useRef(isAutoCenter);
     const isRotationEnabledRef = useRef(isRotationEnabled);
+    const smoothedPositionRef = useRef(null);
+    const lastPathPointRef = useRef(null);
 
     const STORAGE_KEY = 'molten_mariner_fare_tracker_state';
 
@@ -139,34 +197,21 @@ const LiveFareTracker = ({ isVisible, onClose, fareData, initialMapState, mapsRe
                 zoom: 18,
                 tilt: 45,
                 heading: 0,
-                mapId: 'molten_mariner_map', // Required for Vector Maps/Rotation
-                renderingType: 'VECTOR', // Force vector rendering for rotation support
+                mapId: undefined,
                 mapTypeId: 'roadmap',
                 disableDefaultUI: true,
-                styles: [
-                    { elementType: 'geometry', stylers: [{ color: '#242f3e' }] },
-                    { elementType: 'labels.text.stroke', stylers: [{ color: '#242f3e' }] },
-                    { elementType: 'labels.text.fill', stylers: [{ color: '#746855' }] },
-                    { featureType: 'administrative.locality', elementType: 'labels.text.fill', stylers: [{ color: '#d59563' }] },
-                    { featureType: 'poi', elementType: 'labels.text.fill', stylers: [{ color: '#d59563' }] },
-                    { featureType: 'poi.park', elementType: 'geometry', stylers: [{ color: '#263c3f' }] },
-                    { featureType: 'poi.park', elementType: 'labels.text.fill', stylers: [{ color: '#6b9a76' }] },
-                    { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#38414e' }] },
-                    { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#212a37' }] },
-                    { featureType: 'road', elementType: 'labels.text.fill', stylers: [{ color: '#9ca5b3' }] },
-                    { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#746855' }] },
-                    { featureType: 'road.highway', elementType: 'geometry.stroke', stylers: [{ color: '#1f2835' }] },
-                    { featureType: 'road.highway', elementType: 'labels.text.fill', stylers: [{ color: '#f3d19c' }] },
-                    { featureType: 'transit', elementType: 'geometry', stylers: [{ color: '#2f3948' }] },
-                    { featureType: 'transit.station', elementType: 'labels.text.fill', stylers: [{ color: '#d59563' }] },
-                    { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#17263c' }] },
-                    { featureType: 'water', elementType: 'labels.text.fill', stylers: [{ color: '#515c6d' }] },
-                    { featureType: 'water', elementType: 'labels.text.stroke', stylers: [{ color: '#17263c' }] },
-                ]
+                clickableIcons: false,
             };
 
             const map = new window.google.maps.Map(mapContainerRef.current, mapOptions);
             mapInstanceRef.current = map;
+
+            // Register custom styled map types for day/night toggling
+            const nightStyledMap = new window.google.maps.StyledMapType(nightStyles, { name: 'Night' });
+            const dayStyledMap = new window.google.maps.StyledMapType(dayStyles, { name: 'Day' });
+            map.mapTypes.set('night_mode', nightStyledMap);
+            map.mapTypes.set('day_mode', dayStyledMap);
+            map.setMapTypeId(mapTheme === 'night' ? 'night_mode' : 'day_mode');
 
             // Add Traffic Layer
             const trafficLayer = new window.google.maps.TrafficLayer();
@@ -193,9 +238,6 @@ const LiveFareTracker = ({ isVisible, onClose, fareData, initialMapState, mapsRe
 
     const updateMap = useCallback((lat, lng, heading = null) => {
         const newPos = { lat, lng };
-        
-        // Add to history
-        pathRef.current = [...pathRef.current, newPos].slice(-500); // Keep last 500 points
         
         if (mapInstanceRef.current && window.google) {
             // Update or Create Main Position Marker
@@ -296,21 +338,41 @@ const LiveFareTracker = ({ isVisible, onClose, fareData, initialMapState, mapsRe
             });
 
             if (lat && lng) {
-                const newPos = { lat, lng };
-                let heading = lastHeadingRef.current;
+                const lastSmoothed = smoothedPositionRef.current;
                 
+                // 1. Smooth the Position
+                let smoothedLat = lat;
+                let smoothedLng = lng;
+                if (lastSmoothed) {
+                    const factor = 0.4; // native points are usually pre-filtered but we add extra layer
+                    smoothedLat = lastSmoothed.lat + factor * (lat - lastSmoothed.lat);
+                    smoothedLng = lastSmoothed.lng + factor * (lng - lastSmoothed.lng);
+                }
+                const smoothedPos = { lat: smoothedLat, lng: smoothedLng };
+                smoothedPositionRef.current = smoothedPos;
+
+                // 2. Smooth the Heading
+                let heading = lastHeadingRef.current;
                 if (lastPositionRef.current) {
-                    heading = calculateHeading(
-                        lastPositionRef.current.lat, 
-                        lastPositionRef.current.lng, 
-                        lat, 
-                        lng
-                    );
+                    const h = calculateHeading(lastPositionRef.current.lat, lastPositionRef.current.lng, lat, lng);
+                    const diff = ((h - lastHeadingRef.current + 540) % 360) - 180;
+                    heading = (lastHeadingRef.current + diff * HEADING_SMOOTHING + 360) % 360;
                     lastHeadingRef.current = heading;
                 }
                 
-                lastPositionRef.current = newPos;
-                updateMap(lat, lng, heading);
+                lastPositionRef.current = { lat, lng };
+
+                // 3. Path Decimation
+                const distFromLastPath = lastPathPointRef.current ? 
+                    haversineDistance(lastPathPointRef.current.lat, lastPathPointRef.current.lng, smoothedLat, smoothedLng) : 
+                    Infinity;
+
+                if (distFromLastPath >= MIN_DISTANCE_PATH || !lastPathPointRef.current) {
+                    pathRef.current = [...pathRef.current, smoothedPos].slice(-500);
+                    lastPathPointRef.current = smoothedPos;
+                }
+
+                updateMap(smoothedLat, smoothedLng, heading);
             }
         };
 
@@ -328,7 +390,6 @@ const LiveFareTracker = ({ isVisible, onClose, fareData, initialMapState, mapsRe
 
     useEffect(() => {
         if (mapInstanceRef.current && lastPositionRef.current) {
-            // Force an immediate map update when settings change
             updateMap(
                 lastPositionRef.current.lat, 
                 lastPositionRef.current.lng, 
@@ -336,6 +397,13 @@ const LiveFareTracker = ({ isVisible, onClose, fareData, initialMapState, mapsRe
             );
         }
     }, [isAutoCenter, isRotationEnabled, updateMap]);
+
+    // ---- Toggle Map Theme ----
+    useEffect(() => {
+        if (mapInstanceRef.current) {
+            mapInstanceRef.current.setMapTypeId(mapTheme === 'night' ? 'night_mode' : 'day_mode');
+        }
+    }, [mapTheme]);
 
 
     // ---- Update active stop in state ----
@@ -386,7 +454,21 @@ const LiveFareTracker = ({ isVisible, onClose, fareData, initialMapState, mapsRe
         if (accuracy > MIN_ACCURACY) return;
 
         const lastPos = lastPositionRef.current;
+        const lastSmoothed = smoothedPositionRef.current;
         const lastTime = lastTimestampRef.current;
+
+        // 1. Smooth the Position (Low-Pass Filter)
+        let smoothedLat = latitude;
+        let smoothedLng = longitude;
+        
+        if (lastSmoothed) {
+            // Stronger smoothing when stationary or low accuracy
+            const factor = accuracy > 20 ? 0.2 : 0.4;
+            smoothedLat = lastSmoothed.lat + factor * (latitude - lastSmoothed.lat);
+            smoothedLng = lastSmoothed.lng + factor * (longitude - lastSmoothed.lng);
+        }
+        const smoothedPos = { lat: smoothedLat, lng: smoothedLng };
+        smoothedPositionRef.current = smoothedPos;
 
         if (lastPos && lastTime) {
             const dist = haversineDistance(lastPos.lat, lastPos.lng, latitude, longitude);
@@ -398,36 +480,59 @@ const LiveFareTracker = ({ isVisible, onClose, fareData, initialMapState, mapsRe
             } else if (timeDelta > 0) {
                 speedKmh = (dist / timeDelta) * 3600;
             }
-            setCurrentSpeed(Math.round(speedKmh));
+            
+            // Apply simple speed smoothing to avoid sudden jumps
+            setCurrentSpeed(prev => Math.round(prev * 0.7 + speedKmh * 0.3));
 
             isWaitingRef.current = speedKmh < WAIT_SPEED_THRESHOLD;
 
+            // Update distance accumulation based on raw points for accuracy
             if (dist >= MIN_DISTANCE) {
                 distanceAccumulatorRef.current += dist;
                 updateActiveStop({ 
                     distance: distanceAccumulatorRef.current,
                     fare: computeFare(distanceAccumulatorRef.current, waitAccumulatorRef.current)
                 });
-                
-                let heading = gpsHeading;
-                if (heading === null || heading === undefined || isNaN(heading)) {
-                    heading = calculateHeading(lastPos.lat, lastPos.lng, latitude, longitude);
-                }
-                lastHeadingRef.current = heading;
-
-                // ONLY update reference position when we actually count the distance
                 lastPositionRef.current = { lat: latitude, lng: longitude };
-                
-                updateMap(latitude, longitude, heading);
-            } else {
-                // Always update map position even if distance is small (for smooth panning)
-                // but use last known heading
-                updateMap(latitude, longitude, lastHeadingRef.current);
             }
+
+            // 2. Smooth the Heading
+            let heading = gpsHeading;
+            if (heading === null || heading === undefined || isNaN(heading)) {
+                if (dist > 0.003) { // Only calculate heading if moved at least 3m
+                    heading = calculateHeading(lastSmoothed.lat, lastSmoothed.lng, smoothedLat, smoothedLng);
+                } else {
+                    heading = lastHeadingRef.current;
+                }
+            }
+
+            // Only update rotation if moving significantly to avoid "wobble"
+            if (speedKmh > 5) {
+                const diff = ((heading - lastHeadingRef.current + 540) % 360) - 180;
+                heading = (lastHeadingRef.current + diff * HEADING_SMOOTHING + 360) % 360;
+                lastHeadingRef.current = heading;
+            } else {
+                heading = lastHeadingRef.current;
+            }
+
+            // 3. Path Decimation (Reduces ZigZag)
+            const distFromLastPath = lastPathPointRef.current ? 
+                haversineDistance(lastPathPointRef.current.lat, lastPathPointRef.current.lng, smoothedLat, smoothedLng) : 
+                Infinity;
+
+            if (distFromLastPath >= MIN_DISTANCE_PATH || !lastPathPointRef.current) {
+                pathRef.current = [...pathRef.current, smoothedPos].slice(-500);
+                lastPathPointRef.current = smoothedPos;
+            }
+
+            updateMap(smoothedLat, smoothedLng, heading);
         } else {
             // First valid point ever recorded
-            const newPos = { lat: latitude, lng: longitude };
-            lastPositionRef.current = newPos;
+            const initialPos = { lat: latitude, lng: longitude };
+            lastPositionRef.current = initialPos;
+            smoothedPositionRef.current = initialPos;
+            lastPathPointRef.current = initialPos;
+            pathRef.current = [initialPos];
             
             const heading = gpsHeading || 0;
             lastHeadingRef.current = heading;
@@ -438,7 +543,6 @@ const LiveFareTracker = ({ isVisible, onClose, fareData, initialMapState, mapsRe
             }
         }
 
-        // Always update timestamp to keep speed calculations fresh
         lastTimestampRef.current = timestamp;
     }, [computeFare, updateActiveStop, updateMap]);
 
@@ -520,6 +624,9 @@ const LiveFareTracker = ({ isVisible, onClose, fareData, initialMapState, mapsRe
         setCurrentSpeed(0);
         setGpsAccuracy(null);
         lastPositionRef.current = null;
+        smoothedPositionRef.current = null;
+        lastPathPointRef.current = null;
+        pathRef.current = [];
         lastTimestampRef.current = null;
         distanceAccumulatorRef.current = 0;
         waitAccumulatorRef.current = 0;
@@ -1050,87 +1157,47 @@ const LiveFareTracker = ({ isVisible, onClose, fareData, initialMapState, mapsRe
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-3">
-                            <div className="hidden sm:flex flex-col items-end gap-1 mr-1">
-                                <div className="text-right">
-                                    <p className="text-[10px] font-black tracking-[0.1em] leading-none whitespace-nowrap">
-                                        <span className={(isAutoCenter && isRotationEnabled) ? 'text-primary-400' : 'text-amber-500'}>
-                                            {(isAutoCenter && isRotationEnabled) ? 'SYSTEM' : 'MANUAL'}
-                                        </span>
-                                        <span className="text-white ml-1.5">
-                                            {(isAutoCenter && isRotationEnabled) ? 'AUTO' : 'CONTROL'}
-                                        </span>
-                                    </p>
-                                </div>
-                                <div className="flex items-center gap-3 opacity-80 mt-0.5">
-                                    <div className="flex items-center gap-1.5">
-                                        <div className={`w-1.5 h-1.5 rounded-full ${isAutoCenter ? 'bg-primary-400 shadow-[0_0_5px_rgba(14,165,233,0.5)]' : 'bg-neutral-700'}`} />
-                                        <span className={`text-[8px] font-black uppercase tracking-wider ${isAutoCenter ? 'text-neutral-300' : 'text-neutral-500'}`}>Center</span>
-                                    </div>
-                                    <div className="flex items-center gap-1.5">
-                                        <div className={`w-1.5 h-1.5 rounded-full ${isRotationEnabled ? 'bg-primary-400 shadow-[0_0_5px_rgba(14,165,233,0.5)]' : 'bg-neutral-700'}`} />
-                                        <span className={`text-[8px] font-black uppercase tracking-wider ${isRotationEnabled ? 'text-neutral-300' : 'text-neutral-500'}`}>Rotate</span>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div className="relative">
-                                <button 
-                                    onClick={() => setShowNavMenu(!showNavMenu)}
-                                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-all active:scale-95 ${
-                                        showNavMenu 
-                                        ? 'bg-primary-500 text-white shadow-[0_0_15px_rgba(14,165,233,0.5)]' 
-                                        : 'bg-primary-600/20 border border-primary-500/50 text-primary-400 hover:bg-primary-600/30'
-                                    }`}
-                                >
-                                    <Navigation className={`w-5 h-5 ${isAutoCenter && isRotationEnabled ? 'animate-pulse' : 'opacity-70'}`} />
-                                </button>
+                        <div className="flex items-center gap-1 opacity-70">
+                            {/* Auto Center Toggle */}
+                            <button 
+                                onClick={() => setIsAutoCenter(prev => !prev)}
+                                className={`w-8 h-8 flex items-center justify-center transition-all active:scale-90 ${
+                                    isAutoCenter 
+                                    ? 'text-primary-400/90 drop-shadow-[0_0_3px_rgba(14,165,233,0.4)]' 
+                                    : 'text-neutral-500/60 hover:text-neutral-400'
+                                }`}
+                                title="Auto-Center Map"
+                            >
+                                <Zap className={`w-4 h-4 ${isAutoCenter ? 'fill-current' : ''}`} />
+                            </button>
 
-                            {/* Navigation Mode Menu */}
-                            {showNavMenu && (
-                                <div className="absolute top-12 right-0 w-48 bg-neutral-900/95 backdrop-blur-2xl border border-neutral-700/50 rounded-2xl p-2 shadow-[0_20px_50px_rgba(0,0,0,0.6)] z-[100] animate-in fade-in slide-in-from-top-2 duration-200">
-                                    <div className="space-y-1">
-                                        <button 
-                                            onClick={() => { 
-                                                setIsAutoCenter(prev => !prev); 
-                                                setShowNavMenu(false); 
-                                            }}
-                                            className={`w-full flex items-center justify-between p-3 rounded-xl transition-all ${isAutoCenter ? 'bg-primary-600/20 text-primary-400' : 'text-neutral-400 hover:bg-neutral-800'}`}
-                                        >
-                                            <div className="flex items-center gap-3">
-                                                <div className={`w-1.5 h-1.5 rounded-full ${isAutoCenter ? 'bg-primary-400 shadow-[0_0_8px_rgba(14,165,233,0.8)]' : 'bg-neutral-600'}`} />
-                                                <span className="text-[10px] font-black uppercase tracking-wider">Auto-Center</span>
-                                            </div>
-                                            {isAutoCenter && <Zap className="w-3 h-3 fill-current" />}
-                                        </button>
+                            {/* Rotation Toggle */}
+                            <button 
+                                onClick={() => setIsRotationEnabled(prev => !prev)}
+                                className={`w-8 h-8 flex items-center justify-center transition-all active:scale-90 ${
+                                    isRotationEnabled 
+                                    ? 'text-primary-400/90 drop-shadow-[0_0_3px_rgba(14,165,233,0.4)]' 
+                                    : 'text-neutral-500/60 hover:text-neutral-400'
+                                }`}
+                                title="Map Rotation"
+                            >
+                                <RotateCcw className="w-4 h-4" />
+                            </button>
 
-                                        <button 
-                                            onClick={() => { 
-                                                setIsRotationEnabled(prev => !prev); 
-                                                setShowNavMenu(false); 
-                                            }}
-                                            className={`w-full flex items-center justify-between p-3 rounded-xl transition-all ${isRotationEnabled ? 'bg-primary-600/20 text-primary-400' : 'text-neutral-400 hover:bg-neutral-800'}`}
-                                        >
-                                            <div className="flex items-center gap-3">
-                                                <div className={`w-1.5 h-1.5 rounded-full ${isRotationEnabled ? 'bg-primary-400 shadow-[0_0_8px_rgba(14,165,233,0.8)]' : 'bg-neutral-600'}`} />
-                                                <span className="text-[10px] font-black uppercase tracking-wider">Map Rotation</span>
-                                            </div>
-                                            {isRotationEnabled && <RotateCcw className="w-3 h-3" />}
-                                        </button>
-                                        
-                                        <div className="h-px bg-neutral-800/50 mx-2 my-1" />
-                                        
-                                        <div className="px-3 py-2">
-                                            <p className="text-[8px] text-neutral-500 font-bold uppercase tracking-widest leading-tight">
-                                                {isAutoCenter ? 'Map will follow your position' : 'Manual pan enabled'}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
+                            {/* Day/Night Toggle */}
+                            <button 
+                                onClick={() => setMapTheme(prev => prev === 'night' ? 'day' : 'night')}
+                                className={`w-8 h-8 flex items-center justify-center transition-all active:scale-90 ${
+                                    mapTheme === 'day'
+                                    ? 'text-amber-400/90 drop-shadow-[0_0_3px_rgba(251,191,36,0.4)]'
+                                    : 'text-indigo-400/90 drop-shadow-[0_0_3px_rgba(129,140,248,0.4)]'
+                                }`}
+                                title={`Switch to ${mapTheme === 'night' ? 'Day' : 'Night'} Mode`}
+                            >
+                                {mapTheme === 'night' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+                            </button>
                         </div>
                     </div>
-                </div>
 
                 {/* Navigation View Area */}
                     <div className="flex-1 relative overflow-hidden bg-neutral-900 flex items-center justify-center">

@@ -1,6 +1,54 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MapPin, Navigation, Info, Loader2, ArrowLeft, ExternalLink, MessageSquare, Zap } from 'lucide-react';
+import { MapPin, Navigation, Info, Loader2, ArrowLeft, ExternalLink, MessageSquare, Zap, Sun, Moon } from 'lucide-react';
 import { useTransport } from '../../context/TransportContext';
+
+const nightStyles = [
+    { elementType: 'geometry', stylers: [{ color: '#242f3e' }] },
+    { elementType: 'labels.text.stroke', stylers: [{ color: '#242f3e' }] },
+    { elementType: 'labels.text.fill', stylers: [{ color: '#746855' }] },
+    { featureType: 'administrative.locality', elementType: 'labels.text.fill', stylers: [{ color: '#d59563' }] },
+    { featureType: 'poi', elementType: 'labels.text.fill', stylers: [{ color: '#d59563' }] },
+    { featureType: 'poi.park', elementType: 'geometry', stylers: [{ color: '#263c3f' }] },
+    { featureType: 'poi.park', elementType: 'labels.text.fill', stylers: [{ color: '#6b9a76' }] },
+    { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#38414e' }] },
+    { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#212a37' }] },
+    { featureType: 'road', elementType: 'labels.text.fill', stylers: [{ color: '#9ca5b3' }] },
+    { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#746855' }] },
+    { featureType: 'road.highway', elementType: 'geometry.stroke', stylers: [{ color: '#1f2835' }] },
+    { featureType: 'road.highway', elementType: 'labels.text.fill', stylers: [{ color: '#f3d19c' }] },
+    { featureType: 'transit', elementType: 'geometry', stylers: [{ color: '#2f3948' }] },
+    { featureType: 'transit.station', elementType: 'labels.text.fill', stylers: [{ color: '#d59563' }] },
+    { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#17263c' }] },
+    { featureType: 'water', elementType: 'labels.text.fill', stylers: [{ color: '#515c6d' }] },
+    { featureType: 'water', elementType: 'labels.text.stroke', stylers: [{ color: '#17263c' }] }
+];
+
+const dayStyles = [
+    { elementType: 'geometry', stylers: [{ color: '#ebe3cd' }] },
+    { elementType: 'labels.text.fill', stylers: [{ color: '#523735' }] },
+    { elementType: 'labels.text.stroke', stylers: [{ color: '#f5f1e6' }] },
+    { featureType: 'administrative', elementType: 'geometry.stroke', stylers: [{ color: '#c9b2a6' }] },
+    { featureType: 'administrative.land_parcel', elementType: 'geometry.stroke', stylers: [{ color: '#dcd2be' }] },
+    { featureType: 'administrative.land_parcel', elementType: 'labels.text.fill', stylers: [{ color: '#ae9e90' }] },
+    { featureType: 'landscape.natural', elementType: 'geometry', stylers: [{ color: '#dfd2ae' }] },
+    { featureType: 'poi', elementType: 'geometry', stylers: [{ color: '#dfd2ae' }] },
+    { featureType: 'poi', elementType: 'labels.text.fill', stylers: [{ color: '#93817a' }] },
+    { featureType: 'poi.park', elementType: 'geometry.fill', stylers: [{ color: '#a5b076' }] },
+    { featureType: 'poi.park', elementType: 'labels.text.fill', stylers: [{ color: '#447530' }] },
+    { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#f5f1e6' }] },
+    { featureType: 'road.arterial', elementType: 'geometry', stylers: [{ color: '#fdfcf8' }] },
+    { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#f8c967' }] },
+    { featureType: 'road.highway', elementType: 'geometry.stroke', stylers: [{ color: '#e9bc62' }] },
+    { featureType: 'road.highway.controlled_access', elementType: 'geometry', stylers: [{ color: '#e98d58' }] },
+    { featureType: 'road.highway.controlled_access', elementType: 'geometry.stroke', stylers: [{ color: '#db8555' }] },
+    { featureType: 'road.local', elementType: 'labels.text.fill', stylers: [{ color: '#806b63' }] },
+    { featureType: 'transit.line', elementType: 'geometry', stylers: [{ color: '#dfd2ae' }] },
+    { featureType: 'transit.line', elementType: 'labels.text.fill', stylers: [{ color: '#8f7d77' }] },
+    { featureType: 'transit.line', elementType: 'labels.text.stroke', stylers: [{ color: '#ebe3cd' }] },
+    { featureType: 'transit.station', elementType: 'geometry', stylers: [{ color: '#dfd2ae' }] },
+    { featureType: 'water', elementType: 'geometry.fill', stylers: [{ color: '#b9d3c2' }] },
+    { featureType: 'water', elementType: 'labels.text.fill', stylers: [{ color: '#92998d' }] }
+];
 
 const DrivingView = ({ onClose, fareData, onOpenLiveTracker }) => {
     const {
@@ -18,6 +66,13 @@ const DrivingView = ({ onClose, fareData, onOpenLiveTracker }) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [showSteps, setShowSteps] = useState(false);
+    
+    // Day/Night Mode Logic
+    const isNightTime = () => {
+        const hour = new Date().getHours();
+        return hour >= 18 || hour < 6;
+    };
+    const [mapTheme, setMapTheme] = useState(isNightTime() ? 'night' : 'day');
 
     // Initialize Map and DirectionsRenderer
     useEffect(() => {
@@ -26,85 +81,33 @@ const DrivingView = ({ onClose, fareData, onOpenLiveTracker }) => {
         const map = new window.google.maps.Map(mapRef.current, {
             center: { lat: 9.03, lng: 38.74 }, // Addis Ababa default
             zoom: 12,
-            mapId: import.meta.env.VITE_GOOGLE_MAPS_MAP_ID || 'DEMO_MAP_ID', // Required for AdvancedMarkerElement
-            disableDefaultUI: true, // cleaner interface
+            disableDefaultUI: true,
             zoomControl: false,
             mapTypeControl: false,
             scaleControl: true,
             streetViewControl: false,
-            rotateControl: false, // User can enable tilt/rotation via Cloud Console on their MapId if desired
+            rotateControl: false,
             fullscreenControl: false,
-            clickableIcons: false, // Disables the default InfoWindow popups on Points of Interest (POIs)
-            styles: [
-                {
-                    featureType: "all",
-                    elementType: "labels.text.fill",
-                    stylers: [{ color: "#ffffff" }]
-                },
-                {
-                    featureType: "all",
-                    elementType: "labels.text.stroke",
-                    stylers: [{ color: "#000000" }, { lightness: 13 }]
-                },
-                {
-                    featureType: "administrative",
-                    elementType: "geometry.fill",
-                    stylers: [{ color: "#000000" }]
-                },
-                {
-                    featureType: "administrative",
-                    elementType: "geometry.stroke",
-                    stylers: [{ color: "#144b53" }, { lightness: 14 }, { weight: 1.4 }]
-                },
-                {
-                    featureType: "landscape",
-                    elementType: "all",
-                    stylers: [{ color: "#08304b" }]
-                },
-                {
-                    featureType: "poi",
-                    elementType: "geometry",
-                    stylers: [{ color: "#0c4152" }, { lightness: 5 }]
-                },
-                {
-                    featureType: "road.highway",
-                    elementType: "geometry.fill",
-                    stylers: [{ color: "#000000" }]
-                },
-                {
-                    featureType: "road.highway",
-                    elementType: "geometry.stroke",
-                    stylers: [{ color: "#0b434f" }, { lightness: 25 }]
-                },
-                {
-                    featureType: "road.arterial",
-                    elementType: "geometry.fill",
-                    stylers: [{ color: "#000000" }]
-                },
-                {
-                    featureType: "road.arterial",
-                    elementType: "geometry.stroke",
-                    stylers: [{ color: "#0b3d51" }, { lightness: 16 }]
-                },
-                {
-                    featureType: "road.local",
-                    elementType: "geometry",
-                    stylers: [{ color: "#000000" }]
-                },
-                {
-                    featureType: "transit",
-                    elementType: "all",
-                    stylers: [{ color: "#146474" }]
-                },
-                {
-                    featureType: "water",
-                    elementType: "all",
-                    stylers: [{ color: "#021019" }]
-                }
-            ]
+            clickableIcons: false,
         });
+
+        // Register custom styled map types for day/night toggling
+        // This approach works even when mapId is set (cloud styles)
+        const nightStyledMap = new window.google.maps.StyledMapType(nightStyles, { name: 'Night' });
+        const dayStyledMap = new window.google.maps.StyledMapType(dayStyles, { name: 'Day' });
+        map.mapTypes.set('night_mode', nightStyledMap);
+        map.mapTypes.set('day_mode', dayStyledMap);
+        map.setMapTypeId(mapTheme === 'night' ? 'night_mode' : 'day_mode');
+
         setMapInstance(map);
     }, [mapInstance, origin, destination]);
+
+    // Toggle Map Theme when mapTheme state changes
+    useEffect(() => {
+        if (mapInstance) {
+            mapInstance.setMapTypeId(mapTheme === 'night' ? 'night_mode' : 'day_mode');
+        }
+    }, [mapTheme, mapInstance]);
 
     // Fetch Directions when Origin or Destination changes
     useEffect(() => {
@@ -220,26 +223,29 @@ const DrivingView = ({ onClose, fareData, onOpenLiveTracker }) => {
 
         const bounds = new window.google.maps.LatLngBounds();
 
-        // --- Add Origin Marker (Custom DOM Element: Green Circle) ---
-        const originPin = document.createElement('div');
-        originPin.innerHTML = `
-            <div style="width: 14px; height: 14px; background-color: #10b981; border-radius: 50%; border: 2px solid #047857; box-shadow: 0 0 10px rgba(16,185,129,0.5);"></div>
-        `;
-        const originMarker = new window.google.maps.marker.AdvancedMarkerElement({
+        // --- Add Origin Marker (Green Circle via SVG icon) ---
+        const originMarker = new window.google.maps.Marker({
             position: { lat: origin.lat, lng: origin.lng },
             map: mapInstance,
-            content: originPin,
             title: origin.name || 'Origin',
-            zIndex: 20
+            zIndex: 20,
+            icon: {
+                path: window.google.maps.SymbolPath.CIRCLE,
+                scale: 7,
+                fillColor: '#10b981',
+                fillOpacity: 1,
+                strokeColor: '#047857',
+                strokeWeight: 2,
+            }
         });
         markersRef.current.push(originMarker);
 
-        // --- Add Destination Marker (Default Google Red Pin via AdvancedMarkerElement) ---
-        const destMarker = new window.google.maps.marker.AdvancedMarkerElement({
+        // --- Add Destination Marker (Red Pin) ---
+        const destMarker = new window.google.maps.Marker({
             position: { lat: destination.lat, lng: destination.lng },
             map: mapInstance,
             title: destination.name || 'Destination',
-            zIndex: 20
+            zIndex: 20,
         });
         markersRef.current.push(destMarker);
 
@@ -388,6 +394,13 @@ const DrivingView = ({ onClose, fareData, onOpenLiveTracker }) => {
                                  <span className="text-[10px] font-bold text-neutral-400 truncate group-hover:text-white transition-colors">{destination?.name || 'Destination'}</span>
                              </div>
                         </div>
+                        <button
+                            onClick={() => setMapTheme(prev => prev === 'night' ? 'day' : 'night')}
+                            className="h-12 w-12 flex items-center justify-center bg-neutral-900/80 backdrop-blur-md border border-neutral-700/50 rounded-xl shadow-lg text-amber-400 hover:text-amber-300 transition-all hover:bg-neutral-800 shrink-0"
+                            title={`Switch to ${mapTheme === 'night' ? 'Day' : 'Night'} Mode`}
+                        >
+                            {mapTheme === 'night' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5 text-amber-500" />}
+                        </button>
                     </div>
                 </div>
             )}
@@ -417,7 +430,7 @@ const DrivingView = ({ onClose, fareData, onOpenLiveTracker }) => {
                     
                     {/* Route Cards */}
                     {!showSteps && cachedRoutesData.length > 0 && (
-                        <div className="flex gap-2 pt-4 px-3 pb-2">
+                        <div className="flex gap-1.5 pt-2 px-3 pb-1.5">
                             {cachedRoutesData.map((route, index) => {
                                 const isActive = index === cachedActiveRouteIndex;
                                 const durationSecs = parseInt(route.duration) || 0;
@@ -452,20 +465,19 @@ const DrivingView = ({ onClose, fareData, onOpenLiveTracker }) => {
                                     <div 
                                         key={index}
                                         onClick={() => setCachedActiveRouteIndex(index)}
-                                        className={`flex-1 min-w-0 p-2 rounded-xl flex flex-col items-center justify-center border-2 cursor-pointer transition-all ${
+                                        className={`flex-1 min-w-0 p-1.5 rounded-lg flex flex-col items-center justify-center border-2 cursor-pointer transition-all ${
                                             isActive 
-                                            ? 'border-primary-500 bg-primary-500/10 scale-100 shadow-[0_0_15px_rgba(14,165,233,0.15)] z-10' 
-                                            : 'border-transparent bg-neutral-800/80 hover:bg-neutral-800 scale-95 opacity-80'
+                                            ? 'border-primary-500 bg-primary-500/10 scale-100 shadow-[0_0_10px_rgba(14,165,233,0.1)] z-10' 
+                                            : 'border-transparent bg-neutral-800/80 hover:bg-neutral-800 scale-[0.98] opacity-80'
                                         }`}
                                     >
-                                        <div className={`text-lg font-black flex items-end tracking-tight ${isActive ? 'text-primary-500' : 'text-white'}`}>
-                                            {durationMins}<span className="text-[10px] font-bold ml-0.5 mb-1">min</span>
+                                        <div className={`text-base font-black flex items-end tracking-tight leading-none ${isActive ? 'text-primary-500' : 'text-white'}`}>
+                                            {durationMins}<span className="text-[8px] font-bold ml-0.5">min</span>
                                         </div>
-                                        <div className="text-[10px] text-neutral-400 font-bold mt-0.5">
-                                            {distanceKms} km
-                                        </div>
-                                        <div className="text-[9px] font-bold text-neutral-500 mt-1 uppercase tracking-wider whitespace-nowrap overflow-hidden text-ellipsis w-full text-center">
-                                            {labelText}
+                                        <div className="flex items-center gap-1.5 mt-0.5">
+                                            <span className="text-[9px] text-neutral-400 font-bold leading-none">{distanceKms}km</span>
+                                            <span className="w-1 h-1 rounded-full bg-neutral-700" />
+                                            <span className="text-[8px] font-bold text-neutral-500 uppercase tracking-tight truncate max-w-[50px]">{labelText}</span>
                                         </div>
                                     </div>
                                 );
