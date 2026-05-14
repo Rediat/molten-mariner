@@ -197,7 +197,7 @@ const LiveFareTracker = ({ isVisible, onClose, fareData, initialMapState, mapsRe
                 zoom: 18,
                 tilt: 45,
                 heading: 0,
-                mapId: undefined,
+                mapId: import.meta.env.VITE_GOOGLE_MAPS_MAP_ID || 'DEMO_MAP_ID',
                 mapTypeId: 'roadmap',
                 disableDefaultUI: true,
                 clickableIcons: false,
@@ -1180,7 +1180,6 @@ const LiveFareTracker = ({ isVisible, onClose, fareData, initialMapState, mapsRe
                                 <Zap className={`w-4 h-4 ${isAutoCenter ? 'fill-current' : ''}`} />
                             </button>
 
-                            {/* Rotation Toggle */}
                             <button 
                                 onClick={() => {
                                     const next = !isRotationEnabled;
@@ -1194,7 +1193,7 @@ const LiveFareTracker = ({ isVisible, onClose, fareData, initialMapState, mapsRe
                                 }`}
                                 title={isRotationEnabled ? "Disable Heading-Up Rotation" : "Enable Heading-Up Rotation"}
                             >
-                                <Compass className={`w-4 h-4 ${isRotationEnabled ? 'animate-pulse' : ''}`} />
+                                <Compass className="w-4 h-4" />
                             </button>
 
                             {/* Day/Night Toggle */}
