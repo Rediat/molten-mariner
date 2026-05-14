@@ -682,7 +682,7 @@ const LiveFareTracker = ({ isVisible, onClose, fareData, initialMapState, mapsRe
             }`}>
 
             {/* Header */}
-            <div className="flex flex-col border-b border-neutral-800">
+            <div className="flex flex-col border-b border-neutral-800 shrink-0 min-h-[92px]">
                 <div className="flex items-center gap-2 p-2">
                     <button
                         onClick={onClose}
@@ -734,7 +734,7 @@ const LiveFareTracker = ({ isVisible, onClose, fareData, initialMapState, mapsRe
                         <button
                             key={stop.id}
                             onClick={() => { setViewMode('individual'); setActiveStopIndex(idx); }}
-                            className={`flex items-center gap-1 px-2 py-1 rounded-md border text-[9px] font-bold transition-all shrink-0 ${
+                            className={`flex items-center gap-1 px-2 h-[24px] min-w-[55px] justify-center rounded-md border text-[9px] font-bold transition-all shrink-0 ${
                                 viewMode === 'individual' && activeStopIndex === idx
                                     ? 'bg-primary-600/20 border-primary-500 text-primary-400'
                                     : 'bg-neutral-800/40 border-neutral-700/50 text-neutral-500 hover:text-neutral-300'
@@ -747,10 +747,12 @@ const LiveFareTracker = ({ isVisible, onClose, fareData, initialMapState, mapsRe
                             Stop {stop.id}
                         </button>
                     ))}
-                    {stops.length < MAX_STOPS && !isTrackingAny && (
+                    {stops.length < MAX_STOPS && (
                         <button
                             onClick={addNextStop}
-                            className="flex items-center gap-1 px-2 py-1 rounded-md border border-neutral-700/50 bg-neutral-800/20 text-neutral-500 hover:text-primary-400 hover:border-primary-500/50 transition-all shrink-0"
+                            className={`flex items-center gap-1 px-2 h-[24px] min-w-[55px] justify-center rounded-md border border-neutral-700/50 bg-neutral-800/20 text-neutral-500 hover:text-primary-400 hover:border-primary-500/50 transition-all shrink-0 ${
+                                isTrackingAny ? 'opacity-0 pointer-events-none' : 'opacity-100'
+                            }`}
                         >
                             <Layers className="w-2.5 h-2.5" />
                             +
@@ -759,7 +761,7 @@ const LiveFareTracker = ({ isVisible, onClose, fareData, initialMapState, mapsRe
                     </div>
                     <button
                         onClick={() => setViewMode('total')}
-                        className={`flex items-center gap-1 px-2 py-1 rounded-md border text-[9px] font-bold transition-all shrink-0 ${
+                        className={`flex items-center gap-1 px-2 h-[24px] min-w-[55px] justify-center rounded-md border text-[9px] font-bold transition-all shrink-0 ${
                             viewMode === 'total'
                                 ? 'bg-emerald-600/20 border-emerald-500 text-emerald-400'
                                 : 'bg-neutral-800/40 border-neutral-700/50 text-neutral-500 hover:text-neutral-300'
@@ -775,7 +777,7 @@ const LiveFareTracker = ({ isVisible, onClose, fareData, initialMapState, mapsRe
             <div className="flex-1 flex flex-col p-3 gap-2 overflow-y-auto scrollbar-hide">
 
                 {/* Elapsed Timer — Tray Display */}
-                <div className={`rounded-xl p-2 border transition-all duration-500 text-center ${
+                <div className={`rounded-xl p-2 border transition-all duration-500 text-center shrink-0 ${
                     isTrackingAny && viewMode === 'individual' && activeStopIndex === trackingStopIndex
                         ? 'bg-neutral-800/40 border-neutral-700/50 shadow-inner'
                         : 'bg-neutral-800/20 border-neutral-700/30'
@@ -792,7 +794,7 @@ const LiveFareTracker = ({ isVisible, onClose, fareData, initialMapState, mapsRe
                 </div>
 
                 {/* Live Fare — Hero Card */}
-                <div className={`rounded-xl p-2.5 border transition-all duration-500 ${
+                <div className={`rounded-xl p-2.5 border transition-all duration-500 shrink-0 ${
                     isTrackingAny && viewMode === 'individual' && activeStopIndex === trackingStopIndex
                         ? 'bg-gradient-to-br from-primary-900/40 to-primary-800/20 border-primary-500/50 shadow-[0_0_25px_rgba(14,165,233,0.15)]'
                         : displayData.status === 'stopped' || viewMode === 'total'
@@ -821,7 +823,7 @@ const LiveFareTracker = ({ isVisible, onClose, fareData, initialMapState, mapsRe
                 </div>
 
                 {/* Speed + Distance Row */}
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-2 shrink-0">
                     <div className={`rounded-xl p-2 border transition-colors ${
                         currentSpeed > 0 && isTrackingAny ? 'bg-emerald-900/10 border-emerald-500/40' : 'bg-neutral-800/40 border-neutral-700/40'
                     }`}>
@@ -858,7 +860,7 @@ const LiveFareTracker = ({ isVisible, onClose, fareData, initialMapState, mapsRe
                 </div>
 
                 {/* Wait Time + Fuel Row */}
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-2 shrink-0">
                     <div className={`rounded-xl p-2 border transition-colors ${displayData.waitTime > 0 ? 'bg-amber-900/10 border-amber-500/40' : 'bg-neutral-800/40 border-neutral-700/40'}`}>
                         <div className="flex justify-between items-center mb-0.5">
                             <div className="flex items-center gap-1">
@@ -1095,7 +1097,7 @@ const LiveFareTracker = ({ isVisible, onClose, fareData, initialMapState, mapsRe
             </div>
 
             {/* Bottom Controls */}
-            <div className="p-3 border-t border-neutral-800 space-y-2">
+            <div className="p-3 border-t border-neutral-800 space-y-2 shrink-0">
                 {/* Unified Start Button */}
                 {((viewMode === 'individual' && activeStop.status === 'idle') || (viewMode === 'total' && !isTrackingAny && stops.some(s => s.status === 'idle'))) && !isTrackingAny && (
                     <button
