@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { ArrowLeft, Play, Square, RotateCcw, Navigation, Clock, Gauge, MapPin, TrendingUp, Fuel, DollarSign, Timer, Zap, Car, ChevronDown, ChevronUp, Layers, Map, Sun, Moon } from 'lucide-react';
+import { ArrowLeft, Play, Square, RotateCcw, Navigation, Clock, Gauge, MapPin, TrendingUp, Fuel, DollarSign, Timer, Zap, Car, ChevronDown, ChevronUp, Layers, Map, Sun, Moon, Compass } from 'lucide-react';
 
 // Haversine formula – returns distance in kilometers
 const haversineDistance = (lat1, lon1, lat2, lon2) => {
@@ -237,77 +237,80 @@ const LiveFareTracker = ({ isVisible, onClose, fareData, initialMapState, mapsRe
     }, [showMap, mapsReady]);
 
     const updateMap = useCallback((lat, lng, heading = null) => {
-        const newPos = { lat, lng };
-        
         if (mapInstanceRef.current && window.google) {
+            const newPos = (lat !== null && lng !== null) ? { lat, lng } : null;
+            
             // Update or Create Main Position Marker
-            if (!markerRef.current && window.google) {
-                const svgIcon = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
-                    <svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="10" cy="10" r="8" fill="#10b981" stroke="white" stroke-width="2" />
-                    </svg>
-                `)}`;
+            if (newPos) {
+                if (!markerRef.current && window.google) {
+                    const svgIcon = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
+                        <svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="10" cy="10" r="8" fill="#10b981" stroke="white" stroke-width="2" />
+                        </svg>
+                    `)}`;
 
-                const auraIcon = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
-                    <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="20" cy="20" r="18" fill="#10b981" opacity="0.2" stroke="#10b981" stroke-width="1" opacity="0.5" />
-                    </svg>
-                `)}`;
+                    const auraIcon = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
+                        <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="20" cy="20" r="18" fill="#10b981" opacity="0.2" stroke="#10b981" stroke-width="1" opacity="0.5" />
+                        </svg>
+                    `)}`;
 
-                markerRef.current = new window.google.maps.Marker({
-                    position: newPos,
-                    map: mapInstanceRef.current,
-                    optimized: false,
-                    zIndex: 1000,
-                    icon: {
-                        url: svgIcon,
-                        scaledSize: new window.google.maps.Size(20, 20),
-                        anchor: new window.google.maps.Point(10, 10)
-                    }
-                });
+                    markerRef.current = new window.google.maps.Marker({
+                        position: newPos,
+                        map: mapInstanceRef.current,
+                        optimized: false,
+                        zIndex: 1000,
+                        icon: {
+                            url: svgIcon,
+                            scaledSize: new window.google.maps.Size(20, 20),
+                            anchor: new window.google.maps.Point(10, 10)
+                        }
+                    });
 
-                pulseRef.current = new window.google.maps.Marker({
-                    position: newPos,
-                    map: mapInstanceRef.current,
-                    optimized: false,
-                    zIndex: 999,
-                    icon: {
-                        url: auraIcon,
-                        scaledSize: new window.google.maps.Size(40, 40),
-                        anchor: new window.google.maps.Point(20, 20)
-                    }
-                });
-            } else if (markerRef.current) {
-                markerRef.current.setPosition(newPos);
-                if (pulseRef.current) pulseRef.current.setPosition(newPos);
-            }
+                    pulseRef.current = new window.google.maps.Marker({
+                        position: newPos,
+                        map: mapInstanceRef.current,
+                        optimized: false,
+                        zIndex: 999,
+                        icon: {
+                            url: auraIcon,
+                            scaledSize: new window.google.maps.Size(40, 40),
+                            anchor: new window.google.maps.Point(20, 20)
+                        }
+                    });
+                } else if (markerRef.current) {
+                    markerRef.current.setPosition(newPos);
+                    if (pulseRef.current) pulseRef.current.setPosition(newPos);
+                }
 
-            // Sync Marker Visibility: Hide map markers if we are using the central CSS ball
-            if (markerRef.current) markerRef.current.setVisible(!isAutoCenterRef.current);
-            if (pulseRef.current) pulseRef.current.setVisible(!isAutoCenterRef.current);
+                // Sync Marker Visibility: Hide map markers if we are using the central CSS ball
+                if (markerRef.current) markerRef.current.setVisible(!isAutoCenterRef.current);
+                if (pulseRef.current) pulseRef.current.setVisible(!isAutoCenterRef.current);
 
-            if (isAutoCenterRef.current) {
-                mapInstanceRef.current.panTo(newPos);
+                if (isAutoCenterRef.current) {
+                    mapInstanceRef.current.panTo(newPos);
+                }
             }
             
-            // Handle Rotation/Tilt
-            if (isRotationEnabledRef.current && heading !== null) {
+            // Handle Rotation/Tilt (Always try to apply if available, even if position is null)
+            if (isRotationEnabledRef.current) {
+                const finalHeading = heading !== null ? heading : lastHeadingRef.current;
                 if (typeof mapInstanceRef.current.setHeading === 'function') {
-                    mapInstanceRef.current.setHeading(heading);
+                    mapInstanceRef.current.setHeading(finalHeading);
                 }
                 if (typeof mapInstanceRef.current.setTilt === 'function') {
                     mapInstanceRef.current.setTilt(45);
                 }
-            } else if (!isRotationEnabledRef.current) {
-                if (typeof mapInstanceRef.current.setHeading === 'function' && mapInstanceRef.current.getHeading() !== 0) {
+            } else {
+                if (typeof mapInstanceRef.current.setHeading === 'function') {
                     mapInstanceRef.current.setHeading(0);
                 }
-                if (typeof mapInstanceRef.current.setTilt === 'function' && mapInstanceRef.current.getTilt() !== 0) {
+                if (typeof mapInstanceRef.current.setTilt === 'function') {
                     mapInstanceRef.current.setTilt(0);
                 }
             }
             
-            if (polylineRef.current) {
+            if (polylineRef.current && pathRef.current.length > 0) {
                 polylineRef.current.setPath(pathRef.current);
             }
         }
@@ -389,14 +392,14 @@ const LiveFareTracker = ({ isVisible, onClose, fareData, initialMapState, mapsRe
     }, [isRotationEnabled]);
 
     useEffect(() => {
-        if (mapInstanceRef.current && lastPositionRef.current) {
+        if (mapInstanceRef.current) {
             updateMap(
-                lastPositionRef.current.lat, 
-                lastPositionRef.current.lng, 
+                lastPositionRef.current ? lastPositionRef.current.lat : null, 
+                lastPositionRef.current ? lastPositionRef.current.lng : null, 
                 lastHeadingRef.current
             );
         }
-    }, [isAutoCenter, isRotationEnabled, updateMap]);
+    }, [isAutoCenter, isRotationEnabled, updateMap, mapsReady, showMap]);
 
     // ---- Toggle Map Theme ----
     useEffect(() => {
@@ -1138,7 +1141,7 @@ const LiveFareTracker = ({ isVisible, onClose, fareData, initialMapState, mapsRe
             {showMap && (
                 <div className="absolute inset-0 bg-neutral-950 z-[70] flex flex-col animate-in fade-in duration-300">
                     {/* Minimal Header */}
-                    <div className="flex items-center justify-between p-4 bg-neutral-900/50 backdrop-blur-md border-b border-neutral-800 relative z-20">
+                    <div className="flex items-center justify-between p-4 bg-neutral-900/50 backdrop-blur-md border-b border-neutral-800 relative z-50">
                         <div className="flex items-center gap-4">
                             <button 
                                 onClick={() => setShowMap(false)}
@@ -1162,7 +1165,11 @@ const LiveFareTracker = ({ isVisible, onClose, fareData, initialMapState, mapsRe
                         <div className="flex items-center gap-1 opacity-70">
                             {/* Auto Center Toggle */}
                             <button 
-                                onClick={() => setIsAutoCenter(prev => !prev)}
+                                onClick={() => {
+                                    const next = !isAutoCenter;
+                                    setIsAutoCenter(next);
+                                    isAutoCenterRef.current = next;
+                                }}
                                 className={`w-8 h-8 flex items-center justify-center transition-all active:scale-90 ${
                                     isAutoCenter 
                                     ? 'text-primary-400/90 drop-shadow-[0_0_3px_rgba(14,165,233,0.4)]' 
@@ -1175,15 +1182,19 @@ const LiveFareTracker = ({ isVisible, onClose, fareData, initialMapState, mapsRe
 
                             {/* Rotation Toggle */}
                             <button 
-                                onClick={() => setIsRotationEnabled(prev => !prev)}
+                                onClick={() => {
+                                    const next = !isRotationEnabled;
+                                    setIsRotationEnabled(next);
+                                    isRotationEnabledRef.current = next;
+                                }}
                                 className={`w-8 h-8 flex items-center justify-center transition-all active:scale-90 ${
                                     isRotationEnabled 
                                     ? 'text-primary-400/90 drop-shadow-[0_0_3px_rgba(14,165,233,0.4)]' 
                                     : 'text-neutral-500/60 hover:text-neutral-400'
                                 }`}
-                                title="Map Rotation"
+                                title={isRotationEnabled ? "Disable Heading-Up Rotation" : "Enable Heading-Up Rotation"}
                             >
-                                <RotateCcw className="w-4 h-4" />
+                                <Compass className={`w-4 h-4 ${isRotationEnabled ? 'animate-pulse' : ''}`} />
                             </button>
 
                             {/* Day/Night Toggle */}
