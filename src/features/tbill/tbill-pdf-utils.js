@@ -35,10 +35,10 @@ const calculateTenderNo = (dateStr) => {
         }
     };
 
-    const formattedIssueDate = new Date(dateStr).toLocaleDateString('en-US', { 
-        day: 'numeric', 
-        month: 'long', 
-        year: 'numeric' 
+    const formattedIssueDate = new Date(dateStr).toLocaleDateString('en-US', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
     });
 
     return `${auctionNo}${getSuffix(auctionNo)}/2026, to be held on ${formattedIssueDate}`;
@@ -51,7 +51,7 @@ const calculateSecurityInfo = (tenure, maturityDate) => {
     const [y, m, d] = maturityDate.split('-');
     const datePart = `${y.slice(2)}${m}${d}`;
     const symbol = `TBL${tenure}D${datePart}`;
-    
+
     // ISIN Logic (ISO 6166)
     const base = `ETTBL${datePart}`;
     const charToDigits = (c) => {
@@ -75,7 +75,7 @@ const calculateSecurityInfo = (tenure, maturityDate) => {
 export const generateTBillApplicationPDF = (data, clientDetails = {}) => {
     const doc = new jsPDF();
     const { faceValue, tenure, issueDate, yieldRate } = data;
-    
+
     // Default Client Details from image
     const defaults = {
         fullName: 'REDIAT BEKELE ASFAW',
@@ -83,22 +83,22 @@ export const generateTBillApplicationPDF = (data, clientDetails = {}) => {
         bankName: '',
         tenderNo: calculateTenderNo(issueDate)
     };
-    
+
     const client = { ...defaults, ...clientDetails };
     const formattedDate = new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
 
     // --- Header ---
     // NBE Logo (Left)
     if (LOGOS.nbe_logo) {
-        // Aspect ratio: 1046x423 (2.47). Height 25mm -> Width 61.75mm
-        doc.addImage(LOGOS.nbe_logo, 'PNG', 25, 10, 62, 25);
+        // Aspect ratio: 817x312 (2.62). Height 18mm -> Width 47.1mm
+        doc.addImage(LOGOS.nbe_logo, 'PNG', 25, 10, 47.1, 18);
     }
-    
+
     // CSD Logo (Right)
     if (LOGOS.csd_logo) {
-        // Aspect ratio: 381x226 (1.68). Height 25mm -> Width 42.15mm
-        // Positioned at the right margin (185 - 42 = 143)
-        doc.addImage(LOGOS.csd_logo, 'PNG', 143, 10, 42, 25);
+        // Aspect ratio: 1150x308 (3.73). Height 15mm -> Width 56mm
+        // Positioned at the right margin (185 - 56 = 129)
+        doc.addImage(LOGOS.csd_logo, 'PNG', 129, 10, 56, 15);
     }
 
     doc.setFontSize(10);
@@ -113,12 +113,12 @@ export const generateTBillApplicationPDF = (data, clientDetails = {}) => {
 
     // --- Section A: Treasury Bill Details ---
     doc.setFontSize(11);
-    doc.text('A. Treasury Bill Details', 25, 75);
-    
+    doc.text('A. Treasury Bill Details', 25, 80);
+
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
-    
-    let y = 85;
+
+    let y = 90;
     const lineSpacing = 10;
     const labelX = 25;
     const valueX = 82; // Reduced gap between label and value
@@ -127,24 +127,24 @@ export const generateTBillApplicationPDF = (data, clientDetails = {}) => {
         doc.setFont('helvetica', 'normal');
         doc.text(`${label}:`, labelX, y);
         doc.setFont('helvetica', 'bold');
-        
+
         if (label === 'Tender No') {
             // Regex to find ordinal pattern: digits + (st|nd|rd|th) + rest
             const match = value.match(/^(\d+)(st|nd|rd|th)(\/.*)$/);
             if (match) {
                 const [_, num, suffix, rest] = match;
                 let currentX = valueX;
-                
+
                 // 1. Draw number
                 doc.text(num, currentX, y);
                 currentX += doc.getTextWidth(num);
-                
+
                 // 2. Draw suffix as superscript
                 const originalSize = doc.getFontSize();
                 const superSize = originalSize * 0.65; // Slightly smaller for better aesthetic
                 doc.setFontSize(superSize);
                 doc.text(suffix, currentX, y - 1.2);
-                
+
                 // 3. Draw rest of the string
                 const suffixWidth = doc.getTextWidth(suffix);
                 doc.setFontSize(originalSize);
@@ -174,7 +174,7 @@ export const generateTBillApplicationPDF = (data, clientDetails = {}) => {
         return d.toISOString().split('T')[0].split('-');
     })() : ['', '', '']);
     addField('ISIN', '');
-    
+
     const faceValueWords = amountToWords(faceValue);
     addField('Face Value', `${faceValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${faceValueWords})`);
     addField('Yield Rate', `${yieldRate}%`);
@@ -190,14 +190,14 @@ export const generateTBillApplicationPDF = (data, clientDetails = {}) => {
     addField('Client Full Name', client.fullName);
     addField('CSD Client Securities Account No', client.accountNo);
     addField('Clients CSD Custodian/Bank', client.bankName);
-    
+
     // Add extra spacing to prevent signature headroom from covering the bank field
-    y += 5; 
-    
+    y += 5;
+
     addField('Client 1 Signature', '', false);
     const sigY = y - lineSpacing; // Capture current y before next field
     addField('Client 2 Signature', '', false);
-    
+
     // Signature Overlay
     if (LOGOS.signature) {
         // Latest high-res signature (1523x1032px): y1=344, y2=596 (diff=252px).
