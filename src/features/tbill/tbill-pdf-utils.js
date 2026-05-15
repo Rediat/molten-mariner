@@ -120,12 +120,12 @@ export const generateTBillApplicationPDF = (data, clientDetails = {}) => {
 
     let y = 90;
     const lineSpacing = 10;
-    const labelX = 25;
-    const valueX = 82; // Reduced gap between label and value
+    let currentLabelX = 25; // Reverted to 25 to align with headers and Section B
+    let currentValueX = 60; // Moved further left to minimize the gap in Section A without overlapping labels
 
     const addField = (label, value, showLine = true) => {
         doc.setFont('helvetica', 'normal');
-        doc.text(`${label}:`, labelX, y);
+        doc.text(`${label}:`, currentLabelX, y);
         doc.setFont('helvetica', 'bold');
 
         if (label === 'Tender No') {
@@ -133,7 +133,7 @@ export const generateTBillApplicationPDF = (data, clientDetails = {}) => {
             const match = value.match(/^(\d+)(st|nd|rd|th)(\/.*)$/);
             if (match) {
                 const [_, num, suffix, rest] = match;
-                let currentX = valueX;
+                let currentX = currentValueX;
 
                 // 1. Draw number
                 doc.text(num, currentX, y);
@@ -151,16 +151,16 @@ export const generateTBillApplicationPDF = (data, clientDetails = {}) => {
                 currentX += suffixWidth;
                 doc.text(rest, currentX, y);
             } else {
-                doc.text(value, valueX, y);
+                doc.text(value, currentValueX, y);
             }
         } else {
-            doc.text(value, valueX, y);
+            doc.text(value, currentValueX, y);
         }
 
         // Draw dotted line
         if (showLine) {
             doc.setLineDash([0.5, 0.5]);
-            doc.line(valueX, y + 1, 185, y + 1);
+            doc.line(currentValueX, y + 1, 185, y + 1);
             doc.setLineDash([]);
         }
         y += lineSpacing;
@@ -187,6 +187,10 @@ export const generateTBillApplicationPDF = (data, clientDetails = {}) => {
     y += 10;
     doc.setFontSize(10);
 
+    // Reset X positions for Section B as requested (without affecting Section B)
+    currentLabelX = 25;
+    currentValueX = 82;
+
     addField('Client Full Name', client.fullName);
     addField('CSD Client Securities Account No', client.accountNo);
     addField('Clients CSD Custodian/Bank', client.bankName);
@@ -205,6 +209,7 @@ export const generateTBillApplicationPDF = (data, clientDetails = {}) => {
         // Width = 40.95 * 1523 / 1032 ≈ 60.44mm.
         // Y-Offset: Top line in image is at 344/1032 * 40.95 ≈ 13.65mm from top.
         // PDF line is at sigY + 1. So image Y = sigY + 1 - 13.65 = sigY - 12.65.
+        // Use explicit valueX 82 for signature overlay as it is in Section B
         doc.addImage(LOGOS.signature, 'PNG', 82, sigY - 12.65, 60.44, 40.95);
     }
 
