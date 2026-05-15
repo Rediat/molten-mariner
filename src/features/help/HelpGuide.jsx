@@ -670,8 +670,9 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                         { name: 'Predicted Yield', description: 'Dynamic forecast based on the latest NBE cut-off yields. Click the prediction badge to automatically apply it to the discount rate.' },
                         { name: 'Brokerage %', description: 'Commission percentage charged by your broker' },
                         { name: 'Auction Date', description: 'The date when the T-Bill auction occurs. The system uses this date + 1 (Settlement Date) to anchor the maturity calculation.' },
-                        { name: 'Today Button', description: 'Instantly sets the Auction Date to today\'s date' },
-                        { name: 'Upcoming Auctions', description: 'Reveals a floating list of the next 10 bi-weekly T-Bill auctions. Selecting a date from this list automatically updates the Auction Date and clears the results to prepare for a new calculation.' },
+                        { name: 'Auction Navigation', description: 'Use the < and > arrows on either side of the date to quickly move backward or forward by 14 days (the standard NBE auction cycle).' },
+                        { name: 'Upcoming Auctions', description: 'Reveals a floating list of the next 10 bi-weekly T-Bill auctions. Selecting a date from this list automatically updates the Auction Date and clears the results.' },
+                        { name: 'CSD Custodian (Bank)', description: 'Select your target custodian (Wegagen Capital, Gadaa Securities, or CBE Capital). This automatically fills the corresponding bank name and CSD account number on your application form.' },
                         { name: 'Brokerage %', description: 'Commission percentage charged by your broker' }
                     ]} />
                 </div>
@@ -683,7 +684,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                             <ArrowRight className="w-3 h-3 mt-1 text-emerald-500 shrink-0" />
                             <div>
                                 <span className="font-bold text-white uppercase tracking-tight">PDF Export:</span>
-                                <p className="text-neutral-400 mt-1">Professional PDF reports include a high-density header with total T-Bill value and simulation parameters. The <strong>ISIN field is left blank</strong> for manual entry to comply with official submission requirements.</p>
+                                <p className="text-neutral-400 mt-1">Professional PDF reports include a high-density header with total T-Bill value, simulation parameters, and the <strong>correct CSD Account No.</strong> for your selected custodian. The <strong>ISIN field is left blank</strong> for manual entry to comply with official submission requirements.</p>
                             </div>
                         </li>
                     </ul>

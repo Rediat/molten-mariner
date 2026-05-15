@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useInputFocus } from '../../hooks/useInputFocus';
 import { useHistory } from '../../context/HistoryContext';
-import { Receipt, Info, HelpCircle, Settings, History, Trash2, Copy, Download, ChevronDown } from 'lucide-react';
+import { Receipt, Info, HelpCircle, Settings, History, Trash2, Copy, Download, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { generateTBillApplicationPDF } from './tbill-pdf-utils';
 import { amountToWords } from '../../utils/text-utils';
 import { copyToClipboard } from '../../utils/clipboard';
@@ -105,7 +105,22 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
         return list;
     }, []);
 
+    const handlePrevAuction = () => {
+        const current = new Date(auctionDate);
+        current.setDate(current.getDate() - 14);
+        setAuctionDate(formatToLocalDate(current));
+        setResult(null);
+    };
+
+    const handleNextAuction = () => {
+        const current = new Date(auctionDate);
+        current.setDate(current.getDate() + 14);
+        setAuctionDate(formatToLocalDate(current));
+        setResult(null);
+    };
+
     const clearResults = useCallback(() => {
+
         setResult(null);
     }, []);
 
@@ -261,7 +276,7 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
             )}
 
             {/* Input Fields */}
-            <div className="space-y-1 flex-1 overflow-y-auto pr-1 scrollbar-hide mt-2.5">
+            <div className="space-y-1 flex-1 overflow-y-auto pr-1 scrollbar-hide mt-1.5">
                 {mode === 'forward' ? (
                     <div className="bg-neutral-800/40 rounded-2xl px-4 py-2 border border-emerald-500/30 ring-1 ring-emerald-500/5 transition-all">
                         <div className="flex justify-between items-center gap-4">
@@ -306,7 +321,7 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
                     </div>
                 )}
 
-                <div className="bg-neutral-800/40 rounded-xl px-3 py-1.5 border border-transparent hover:border-neutral-700 transition-all flex justify-between items-center">
+                <div className="bg-neutral-800/40 rounded-xl px-3 py-1 border border-transparent hover:border-neutral-700 transition-all flex justify-between items-center">
                     <label className="text-[11px] uppercase tracking-wider text-neutral-500 font-bold text-left">Tenure</label>
                     <div className="flex bg-neutral-900/50 rounded-lg p-0.5 ring-1 ring-neutral-800">
                         {TENURES.map(t => (
@@ -356,11 +371,32 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
                     </div>
                 </div>
 
-                <div ref={auctionsRef} className="relative bg-neutral-800/40 rounded-xl px-3 py-1.5 border border-transparent hover:border-neutral-700 transition-all flex justify-between items-center">
+                <div ref={auctionsRef} className="relative bg-neutral-800/40 rounded-xl px-3 py-1 border border-transparent hover:border-neutral-700 transition-all flex justify-between items-center">
                     <label className="text-[11px] uppercase tracking-wider text-neutral-500 font-bold text-left">Auction Date</label>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
                         <button onClick={() => { setShowAuctions(!showAuctions); setResult(null); }} className={`text-[10px] font-bold px-2 py-1 rounded transition-all uppercase tracking-wider ${showAuctions ? 'bg-primary-500 text-neutral-900 shadow-lg shadow-primary-900/40' : 'bg-neutral-800 text-neutral-500 hover:text-white'}`}>{showAuctions ? 'Close' : 'Upcoming'}</button>
-                        <input type="date" value={auctionDate} onChange={(e) => setAuctionDate(e.target.value)} className="bg-transparent text-white text-sm font-mono focus:outline-none w-32 text-right font-bold" />
+                        <div className="flex items-center bg-neutral-900/50 rounded-lg p-0.5 ring-1 ring-neutral-800">
+                            <button 
+                                onClick={handlePrevAuction}
+                                className="p-1 hover:text-primary-400 text-neutral-500 transition-colors"
+                                title="Previous Auction"
+                            >
+                                <ChevronLeft size={14} />
+                            </button>
+                            <input 
+                                type="date" 
+                                value={auctionDate} 
+                                onChange={(e) => { setAuctionDate(e.target.value); setResult(null); }} 
+                                className="bg-transparent text-white text-[11px] font-mono focus:outline-none w-[105px] text-center font-bold" 
+                            />
+                            <button 
+                                onClick={handleNextAuction}
+                                className="p-1 hover:text-primary-400 text-neutral-500 transition-colors"
+                                title="Next Auction"
+                            >
+                                <ChevronRight size={14} />
+                            </button>
+                        </div>
                     </div>
                     {showAuctions && (
                         <div className="absolute left-0 right-0 top-full mt-1 z-[50] bg-neutral-900 border border-neutral-700 rounded-xl p-3 shadow-2xl animate-in fade-in zoom-in-95 duration-200 ring-1 ring-white/10">
@@ -382,7 +418,7 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
                 <div 
                     ref={bankSelectorRef} 
                     onClick={() => setShowBankSelector(!showBankSelector)}
-                    className="relative bg-neutral-800/40 rounded-xl px-3 py-1.5 border border-transparent hover:border-neutral-700 transition-all duration-300 cursor-pointer group"
+                    className="relative bg-neutral-800/40 rounded-xl px-3 py-1 border border-transparent hover:border-neutral-700 transition-all duration-300 cursor-pointer group"
                 >
                     <div className="flex justify-between items-center">
                         <div className="text-left">
