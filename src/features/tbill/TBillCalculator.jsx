@@ -146,6 +146,8 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
             const netReturn = actualFaceValue - totalConsideration;
             const effectiveYield = totalConsideration > 0 ? (netReturn / totalConsideration) * (365 / tenure) * 100 : 0;
 
+            const bidPrice = 100 / (1 + (disc / 100) * (tenure / 365));
+
             const res = {
                 mode: 'forward',
                 maturityDate,
@@ -157,6 +159,7 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
                 effectiveYield,
                 netReturn,
                 quantity,
+                bidPrice,
                 leftover: fv - actualFaceValue
             };
             setResult(res);
@@ -172,6 +175,8 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
             const netReturn = computedFaceValue - totalConsideration;
             const effectiveYield = totalConsideration > 0 ? (netReturn / totalConsideration) * (365 / tenure) * 100 : 0;
 
+            const bidPrice = 100 / (1 + (disc / 100) * (tenure / 365));
+
             const res = {
                 mode: 'reverse',
                 maturityDate,
@@ -184,6 +189,7 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
                 netReturn,
                 quantity,
                 budget,
+                bidPrice,
                 leftover: budget - totalConsideration
             };
             setResult(res);
@@ -550,12 +556,18 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
                                             </div>
                                             <p className="text-sm font-bold text-white">{formatCurrency(result.totalConsideration)}</p>
                                         </div>
-                                        {result.leftover !== 0 && (
+                                        <div className="flex items-center justify-end gap-4">
                                             <div>
-                                                <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Leftover</p>
-                                                <p className={`text-[10px] font-bold ${result.leftover > 0 ? 'text-emerald-400' : 'text-amber-500'}`}>{formatCurrency(result.leftover)}</p>
+                                                <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Bid Price</p>
+                                                <p className="text-[10px] font-bold text-indigo-400">{result.bidPrice.toFixed(4)}</p>
                                             </div>
-                                        )}
+                                            {result.leftover !== 0 && (
+                                                <div>
+                                                    <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Leftover</p>
+                                                    <p className={`text-[10px] font-bold ${result.leftover > 0 ? 'text-emerald-400' : 'text-amber-500'}`}>{formatCurrency(result.leftover)}</p>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 ) : (
                                     <div className="text-right space-y-1">
@@ -566,12 +578,18 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
                                             </div>
                                             <p className="text-sm font-bold text-white">{formatCurrency(result.faceValue)}</p>
                                         </div>
-                                        {result.leftover !== 0 && (
+                                        <div className="flex items-center justify-end gap-4">
                                             <div>
-                                                <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Leftover (FV)</p>
-                                                <p className="text-[10px] font-bold text-amber-500">{formatCurrency(result.leftover)}</p>
+                                                <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Bid Price</p>
+                                                <p className="text-[10px] font-bold text-indigo-400">{result.bidPrice.toFixed(4)}</p>
                                             </div>
-                                        )}
+                                            {result.leftover !== 0 && (
+                                                <div>
+                                                    <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Leftover (FV)</p>
+                                                    <p className="text-[10px] font-bold text-amber-500">{formatCurrency(result.leftover)}</p>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 )}
                             </div>

@@ -693,12 +693,13 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                     <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Results:</p>
                     <FieldList fields={[
                         { name: 'Security IDs', description: 'Displays the official ESX Symbol (TBL...) and the formal ISO 6166 ISIN (ETTBL...) with a mathematically calculated check digit.' },
+                        { name: 'Bid Price', description: 'The bidding price per 100 ETB of face value. Calculated as: 100 / (1 + (Rate × Tenure / 365)).' },
                         { name: 'Quantity', description: 'The number of 5,000 ETB units being purchased' },
                         { name: 'Purchase Price', description: 'The discounted amount to pay for the T-Bill (before brokerage)' },
                         { name: 'Brokerage', description: 'The commission amount based on the purchase price' },
                         { name: 'Total Consideration / Face Value', description: 'The primary result: total out-of-pocket cost (Forward) or the maturity value received (Reverse)' },
                         { name: 'Actual Face Value / Actual Cost', description: 'The secondary result: the exact maturity amount (Forward) or the actual amount spent (Reverse) after rounding to the nearest 5,000 unit' },
-                        { name: 'Leftover', description: '(Reverse Mode) The remaining budget after purchasing the maximum possible units. Displayed in emerald (profit) or amber (slight over-budget allowance).' },
+                        { name: 'Leftover', description: 'In Reverse Mode, shows remaining budget (emerald) or slight over-budget amount (amber) due to the 5 ETB buffer. In Forward Mode, labeled as Leftover (FV), it shows the Face Value discarded when rounding to the nearest 5,000 ETB unit.' },
                         { name: 'Maturity Date', description: 'The date when the T-Bill matures, calculated as: Auction Date + 1 (Settlement) + Tenure.' },
                         { name: 'Discount', description: 'The difference between face value and purchase price (gross profit)' },
                         { name: 'Net Return', description: 'Your actual profit after accounting for brokerage (Face Value − Total Consideration)' },
@@ -716,6 +717,9 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                 <InfoBox type="formula">
                     <strong>Purchase Price = Face Value / (1 + (Rate × Days / 365))</strong>
                     <br />This is the standard discount pricing formula for T-Bills.
+                    <br /><br />
+                    <strong>Bid Price = 100 / (1 + (Rate × Days / 365))</strong>
+                    <br />The price per 100 units of face value.
                     <br /><br />
                     <strong>Effective Yield = (Net Return / Total Consideration) × (365 / Days) × 100</strong>
                     <br />Accounts for brokerage fees in the yield calculation.
