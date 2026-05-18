@@ -274,7 +274,9 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
 
                             {mode === 'capital' && (
                                 <div className="bg-neutral-900/50 rounded-lg p-2 border border-neutral-800 flex flex-col justify-between">
-                                    <div className="text-[10px] uppercase font-bold text-neutral-500 mb-1 text-left">Taxable Gain</div>
+                                    <div className="text-[10px] uppercase font-bold text-neutral-500 mb-1 text-left">
+                                        Taxable Gain ({result.gross > 0 ? ((result.taxableGain / result.gross) * 100).toFixed(2) : '0.00'}%)
+                                    </div>
                                     <span className="text-sm font-bold text-white font-mono self-end">
                                         {result.taxableGain.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                     </span>
@@ -284,7 +286,7 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                             <div className="bg-neutral-900/50 rounded-lg p-2 border border-neutral-800 flex flex-col justify-between">
                                 <div className="text-[10px] uppercase font-bold text-neutral-500 mb-1 text-left">
                                     {mode === 'rent' 
-                                        ? 'Annual Tax' 
+                                        ? `Annual Tax (${result.gross > 0 ? ((result.tax / result.gross) * 100).toFixed(2) : '0.00'}%)` 
                                         : mode === 'chance' 
                                             ? 'Tax Amount (20%)' 
                                             : mode === 'capital' 
@@ -308,7 +310,13 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                             )}
                             
                             <div className={`bg-neutral-900/50 rounded-lg p-2 border border-neutral-800 flex flex-col justify-between ${mode === 'chance' || mode === 'rent' ? 'col-span-2' : ''}`}>
-                                <div className="text-[10px] uppercase font-bold text-neutral-500 mb-1 text-left">{mode === 'rent' ? 'Annual Net' : mode === 'capital' ? 'Net Proceeds' : 'Net Income'}</div>
+                                <div className="text-[10px] uppercase font-bold text-neutral-500 mb-1 text-left">
+                                    {mode === 'rent' 
+                                        ? `Annual Net (${result.gross > 0 ? ((result.netIncome / result.gross) * 100).toFixed(2) : '0.00'}%)` 
+                                        : mode === 'capital' 
+                                            ? `Net Proceeds (${result.gross > 0 ? ((result.netIncome / result.gross) * 100).toFixed(2) : '0.00'}%)` 
+                                            : `Net Income (${result.gross > 0 ? ((result.netIncome / result.gross) * 100).toFixed(2) : '0.00'}%)`}
+                                </div>
                                 <span className="text-lg font-bold text-primary-500 font-mono self-end">
                                     {result.netIncome.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                 </span>
