@@ -18,6 +18,7 @@ import PensionCalculator from './features/pension/PensionCalculator';
 import InflationCalculator from './features/inflation/InflationCalculator';
 import RideFareCalculator from './features/transport/RideFareCalculator';
 import FxCompare from './features/fxcompare/FxCompare';
+import TaxCalculator from './features/tax/TaxCalculator';
 import { Analytics } from "@vercel/analytics/react";
 import { initGlobalClipboard } from './utils/clipboard';
 
@@ -32,6 +33,7 @@ const TAB_TO_SETTING = {
     bond: 'showBond',
     rates: 'showRates',
     tbill: 'showTBill',
+    tax: 'showTax',
     fxcompare: 'showFxCompare',
     inflation: 'showInflation',
     history: 'showHistory'
@@ -41,7 +43,7 @@ function AppContent() {
     const { settings } = useSettings();
     const [activeTab, setActiveTab] = useState(() => {
         // Initialize to first enabled tab
-        const tabOrder = settings.tabOrder || ['tvm', 'goal', 'loan', 'pension', 'inflation', 'tbill', 'fxcompare', 'transport', 'flow', 'bond', 'rates', 'history'];
+        const tabOrder = settings.tabOrder || ['tvm', 'goal', 'loan', 'tax', 'pension', 'inflation', 'tbill', 'fxcompare', 'transport', 'flow', 'bond', 'rates', 'history'];
         const firstEnabled = tabOrder.find(id => settings[TAB_TO_SETTING[id]]);
         return firstEnabled || 'tvm';
     });
@@ -58,7 +60,7 @@ function AppContent() {
     useEffect(() => {
         const settingKey = TAB_TO_SETTING[activeTab];
         if (settingKey && !settings[settingKey]) {
-            const tabOrder = settings.tabOrder || ['tvm', 'goal', 'loan', 'pension', 'inflation', 'tbill', 'fxcompare', 'transport', 'flow', 'bond', 'rates', 'history'];
+            const tabOrder = settings.tabOrder || ['tvm', 'goal', 'loan', 'tax', 'pension', 'inflation', 'tbill', 'fxcompare', 'transport', 'flow', 'bond', 'rates', 'history'];
             const firstEnabled = tabOrder.find(id => settings[TAB_TO_SETTING[id]]);
             if (firstEnabled) {
                 setActiveTab(firstEnabled);
@@ -149,6 +151,9 @@ function AppContent() {
             </div>
             <div className={activeTab === 'tbill' ? 'block h-full' : 'hidden'}>
                 <TBillCalculator toggleHelp={toggleHelp} toggleSettings={toggleSettings} />
+            </div>
+            <div className={activeTab === 'tax' ? 'block h-full' : 'hidden'}>
+                <TaxCalculator toggleHelp={toggleHelp} toggleSettings={toggleSettings} />
             </div>
             <div className={activeTab === 'fxcompare' ? 'block h-full' : 'hidden'}>
                 <FxCompare toggleHelp={toggleHelp} toggleSettings={toggleSettings} />

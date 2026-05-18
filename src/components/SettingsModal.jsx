@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Activity, FileText, Percent, History, Receipt, Calculator, CreditCard, Target, ChevronUp, ChevronDown, Wallet, TrendingUp, Car, ArrowRightLeft } from 'lucide-react';
+import { X, Activity, FileText, Percent, History, Receipt, Calculator, CreditCard, Target, ChevronUp, ChevronDown, Wallet, TrendingUp, Car, ArrowRightLeft, Landmark } from 'lucide-react';
 import { useSettings } from '../context/SettingsContext';
 
 const MIN_TABS = 1;
@@ -8,6 +8,7 @@ const MAX_TABS = 7;
 const TAB_CONFIG = {
     tvm: { key: 'showTVM', label: 'TVM', icon: Calculator },
     loan: { key: 'showLoan', label: 'Loan', icon: CreditCard },
+    tax: { key: 'showTax', label: 'Tax', icon: Landmark },
     pension: { key: 'showPension', label: 'Pension', icon: Wallet },
     transport: { key: 'showTransport', label: 'Ride', icon: Car },
     flow: { key: 'showFlow', label: 'Cash Flow', icon: Activity },
@@ -26,7 +27,7 @@ const SettingsModal = ({ isOpen, onClose }) => {
     if (!isOpen) return null;
 
     // Get ordered items based on tabOrder, with history always at the bottom
-    const tabOrder = settings.tabOrder || ['tvm', 'goal', 'loan', 'pension', 'inflation', 'tbill', 'fxcompare', 'transport', 'flow', 'bond', 'rates', 'history'];
+    const tabOrder = settings.tabOrder || ['tvm', 'goal', 'loan', 'tax', 'pension', 'inflation', 'tbill', 'fxcompare', 'transport', 'flow', 'bond', 'rates', 'history'];
     const orderedItems = tabOrder
         .filter(id => id !== 'history' && TAB_CONFIG[id]) // Exclude history and unknown tabs from normal order
         .map(id => ({ id, ...TAB_CONFIG[id] }));

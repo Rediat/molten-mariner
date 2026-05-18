@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
     HelpCircle, Calculator, Target, DollarSign, Activity, FileText, Percent,
-    ChevronDown, ChevronUp, Book, Lightbulb, Hash, ArrowRight, History, Trash2, Receipt, Settings, Wallet, TrendingUp, Car, ArrowRightLeft
+    ChevronDown, ChevronUp, Book, Lightbulb, Hash, ArrowRight, History, Trash2, Receipt, Settings, Wallet, TrendingUp, Car, ArrowRightLeft, Landmark
 } from 'lucide-react';
 import { MIN_YEAR, MAX_YEAR, FORECAST_END } from '../inflation/data';
 
@@ -16,6 +16,7 @@ const TAB_TO_SECTION = {
     bond: 'bond',
     rates: 'rates',
     tbill: 'tbill',
+    tax: 'tax',
     fxcompare: 'fxcompare',
     transport: 'transport',
     history: 'history',
@@ -171,6 +172,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                         <li>• <strong>Rates</strong> - Interest rate conversions</li>
                         <li>• <strong>Ride</strong> - Ride Fare Calculator</li>
                         <li>• <strong>T-Bill</strong> - Treasury Bill bidding calculator</li>
+                        <li>• <strong>Tax</strong> - Ethiopian Tax calculator</li>
                         <li>• <strong>FX-VS</strong> - Arbitrage</li>
                         <li>• <strong>Sync</strong> - Data maintenance & refresh info</li>
                         <li>• <strong>History</strong> - View past calculations</li>
@@ -1189,6 +1191,72 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
 
                 <InfoBox type="formula">
                     <strong>Update Frequency:</strong> T-Bill auctions occur bi-weekly, while FX and Inflation data are typically updated monthly. Run <code>sync-all</code> periodically to ensure the predictive AI models have enough data to maintain accuracy.
+                </InfoBox>
+            </HelpSection>
+
+            {/* Tax Calculator */}
+            <HelpSection
+                id="tax"
+                title="Tax Calculator"
+                icon={Landmark}
+                isOpen={openSection === 'tax'}
+                onToggle={handleToggle}
+            >
+                <p>
+                    Calculate taxes across various income streams based on the latest 
+                    Ethiopian Tax Proclamation No.1395/2025.
+                </p>
+
+                <div className="pt-2">
+                    <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Modes:</p>
+                    <FieldList fields={[
+                        { name: 'Salary', description: 'Calculates Employment Income Tax and 7% Pension contribution. Includes a Taxable Allowance field for non-pensionable income.' },
+                        { name: 'Rent', description: 'Calculates Rental Income Tax. Tax is applied to 50% of the annualized gross rent (allowing a 50% standard deduction).' },
+                        { name: 'Chance', description: 'Calculates tax on winnings from games of chance (flat 20%).' },
+                        { name: 'Capital', description: 'Calculates Capital Gains Tax on disposal of assets using the inflation-adjusted formula.' }
+                    ]} />
+                </div>
+
+                <div className="pt-2">
+                    <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Results:</p>
+                    <FieldList fields={[
+                        { name: 'Gross Amount', description: 'Your inputted gross amount' },
+                        { name: 'Pension', description: 'Calculated employee pension contribution (7% of gross, Salary mode only)' },
+                        { name: 'Tax Amount', description: 'Calculated tax based on the selected mode' },
+                        { name: 'Quarterly Payment', description: 'Calculated rental tax payable every quarter (Annual Tax divided by 4, Rent mode only)' },
+                        { name: 'Net Income', description: 'Gross amount minus tax (and pension if applicable)' }
+                    ]} />
+                </div>
+
+                <InfoBox type="formula">
+                    <strong>Employment Tax Brackets:</strong>
+                    <br />0 - 2,000 ETB: 0%
+                    <br />2,001 - 4,000 ETB: 15% - 300
+                    <br />4,001 - 7,000 ETB: 20% - 500
+                    <br />7,001 - 10,000 ETB: 25% - 850
+                    <br />10,001 - 14,000 ETB: 30% - 1350
+                    <br />Over 14,000 ETB: 35% - 2050
+                </InfoBox>
+
+                <InfoBox type="formula">
+                    <strong>Rental Income Tax Brackets (Annual):</strong>
+                    <br /><span className="text-[10px] text-neutral-400">Note: Applied to exactly 50% of the annualized gross rental income.</span>
+                    <br /><span className="text-[10px] text-neutral-400">Quarterly Payment: Total Annual Tax divided by 4.</span>
+                    <br />0 - 24,000 ETB: 0%
+                    <br />24,001 - 48,000 ETB: 15% - 3600
+                    <br />48,001 - 84,000 ETB: 20% - 6000
+                    <br />84,001 - 120,000 ETB: 25% - 10200
+                    <br />120,001 - 168,000 ETB: 30% - 16200
+                    <br />Over 168,000 ETB: 35% - 24600
+                </InfoBox>
+                
+                <InfoBox type="formula">
+                    <strong>Capital Gains Tax Formula:</strong>
+                    <br />Taxable Gain = C - (A + B)
+                    <br />• C = Selling Price (Consideration)
+                    <br />• A = Purchase Price (Original Cost)
+                    <br />• B = 30% Inflation Adjustment (A × 30%)
+                    <br />Tax Owed = Taxable Gain × 15%
                 </InfoBox>
             </HelpSection>
 
