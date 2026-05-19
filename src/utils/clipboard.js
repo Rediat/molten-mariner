@@ -96,7 +96,12 @@ const handleCopy = (e) => {
     if (!textToCopy || textToCopy.trim() === '' || textToCopy.trim().length > 150) return;
 
     // Clean up
-    const cleanText = textToCopy.trim();
+    let cleanText = textToCopy.trim();
+    
+    // Strip trailing units like /mo, /yr, mo, yr (case-insensitive, optionally with spaces/slashes)
+    cleanText = cleanText.replace(/\s*\/?\bmo\b/gi, '');
+    cleanText = cleanText.replace(/\s*\/?\byr\b/gi, '');
+    cleanText = cleanText.trim();
 
     // Use a single function for copying across the app
     copyToClipboard(cleanText, target);

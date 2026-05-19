@@ -333,16 +333,26 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                                                             ? 'Gross Sales'
                                                             : 'Gross Amount'}
                                 </div>
-                                <div className="flex flex-col items-end">
-                                    <span className="text-sm font-bold text-white font-mono">
-                                        {result.gross.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                        {mode === 'salary' && <span className="text-[9px] text-neutral-500 font-normal ml-1">/mo</span>}
-                                    </span>
-                                    {mode === 'salary' && (
-                                        <span className="text-[11px] font-medium text-neutral-400 font-mono mt-0.5">
-                                            {(result.gross * 12).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                            <span className="text-[8px] text-neutral-500 font-normal ml-0.5">/yr</span>
+                                <div className="flex flex-col items-end gap-1">
+                                    <div className="flex items-center gap-1.5 justify-end">
+                                        <span className="text-sm font-bold text-white font-mono">
+                                            {result.gross.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                         </span>
+                                        {mode === 'salary' && (
+                                            <span className="select-none text-[8px] font-bold px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-400 uppercase tracking-widest leading-none">
+                                                mo
+                                            </span>
+                                        )}
+                                    </div>
+                                    {mode === 'salary' && (
+                                        <div className="flex items-center gap-1.5 justify-end">
+                                            <span className="text-[11px] font-medium text-neutral-400 font-mono">
+                                                {(result.gross * 12).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                            </span>
+                                            <span className="select-none text-[7px] font-bold px-1 py-0.25 rounded bg-neutral-900 text-neutral-500 uppercase tracking-widest leading-none">
+                                                yr
+                                            </span>
+                                        </div>
                                     )}
                                 </div>
                             </div>
@@ -350,15 +360,23 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                             {mode === 'salary' && (
                                 <div className="bg-neutral-900/50 rounded-lg p-2 border border-neutral-800 flex flex-col justify-between">
                                     <div className="text-[10px] uppercase font-bold text-neutral-500 mb-1 text-left">Pension (7%)</div>
-                                    <div className="flex flex-col items-end">
-                                        <span className="text-sm font-bold text-white font-mono">
-                                            {result.pension.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                            <span className="text-[9px] text-neutral-500 font-normal ml-1">/mo</span>
-                                        </span>
-                                        <span className="text-[11px] font-medium text-neutral-400 font-mono mt-0.5">
-                                            {(result.pension * 12).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                            <span className="text-[8px] text-neutral-500 font-normal ml-0.5">/yr</span>
-                                        </span>
+                                    <div className="flex flex-col items-end gap-1">
+                                        <div className="flex items-center gap-1.5 justify-end">
+                                            <span className="text-sm font-bold text-white font-mono">
+                                                {result.pension.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                            </span>
+                                            <span className="select-none text-[8px] font-bold px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-400 uppercase tracking-widest leading-none">
+                                                mo
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center gap-1.5 justify-end">
+                                            <span className="text-[11px] font-medium text-neutral-400 font-mono">
+                                                {(result.pension * 12).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                            </span>
+                                            <span className="select-none text-[7px] font-bold px-1 py-0.25 rounded bg-neutral-900 text-neutral-500 uppercase tracking-widest leading-none">
+                                                yr
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
                             )}
@@ -403,16 +421,26 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                                                                     ? `Tax Amount (${result.gross > 0 ? ((result.tax / result.gross) * 100).toFixed(2) : '0.00'}%)`
                                                                     : 'Tax Amount'}
                                 </div>
-                                <div className="flex flex-col items-end">
-                                    <span className="text-lg font-bold text-red-400 font-mono">
-                                        {result.tax.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                        {mode === 'salary' && <span className="text-[10px] text-red-400/60 font-normal ml-1">/mo</span>}
-                                    </span>
-                                    {mode === 'salary' && (
-                                        <span className="text-xs font-bold text-red-400/80 font-mono mt-0.5">
-                                            {(result.tax * 12).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                            <span className="text-[9px] text-red-400/60 font-normal ml-0.5">/yr</span>
+                                <div className="flex flex-col items-end gap-1">
+                                    <div className="flex items-center gap-1.5 justify-end">
+                                        <span className="text-lg font-bold text-red-400 font-mono">
+                                            {result.tax.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                         </span>
+                                        {mode === 'salary' && (
+                                            <span className="select-none text-[8px] font-black px-1.5 py-0.5 rounded bg-red-950/40 text-red-400/80 uppercase tracking-widest leading-none">
+                                                mo
+                                            </span>
+                                        )}
+                                    </div>
+                                    {mode === 'salary' && (
+                                        <div className="flex items-center gap-1.5 justify-end">
+                                            <span className="text-xs font-bold text-red-400/80 font-mono">
+                                                {(result.tax * 12).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                            </span>
+                                            <span className="select-none text-[7px] font-bold px-1 py-0.25 rounded bg-red-950/20 text-red-500/50 uppercase tracking-widest leading-none">
+                                                yr
+                                            </span>
+                                        </div>
                                     )}
                                 </div>
                             </div>
@@ -442,16 +470,26 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                                                             ? `Net Sales Proceeds (${result.gross > 0 ? ((result.netIncome / result.gross) * 100).toFixed(2) : '0.00'}%)`
                                                             : `Net Income (${result.gross > 0 ? ((result.netIncome / result.gross) * 100).toFixed(2) : '0.00'}%)`}
                                 </div>
-                                <div className="flex flex-col items-end">
-                                    <span className="text-lg font-bold text-primary-500 font-mono">
-                                        {result.netIncome.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                        {mode === 'salary' && <span className="text-[10px] text-primary-500/60 font-normal ml-1">/mo</span>}
-                                    </span>
-                                    {mode === 'salary' && (
-                                        <span className="text-xs font-bold text-primary-400/80 font-mono mt-0.5">
-                                            {(result.netIncome * 12).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                            <span className="text-[9px] text-primary-400/60 font-normal ml-0.5">/yr</span>
+                                <div className="flex flex-col items-end gap-1">
+                                    <div className="flex items-center gap-1.5 justify-end">
+                                        <span className="text-lg font-bold text-primary-500 font-mono">
+                                            {result.netIncome.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                         </span>
+                                        {mode === 'salary' && (
+                                            <span className="select-none text-[8px] font-black px-1.5 py-0.5 rounded bg-primary-950/40 text-primary-400/80 uppercase tracking-widest leading-none">
+                                                mo
+                                            </span>
+                                        )}
+                                    </div>
+                                    {mode === 'salary' && (
+                                        <div className="flex items-center gap-1.5 justify-end">
+                                            <span className="text-xs font-bold text-primary-400/80 font-mono">
+                                                {(result.netIncome * 12).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                            </span>
+                                            <span className="select-none text-[7px] font-bold px-1 py-0.25 rounded bg-primary-950/20 text-primary-500/50 uppercase tracking-widest leading-none">
+                                                yr
+                                            </span>
+                                        </div>
                                     )}
                                 </div>
                             </div>
