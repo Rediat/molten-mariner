@@ -1224,11 +1224,11 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                 <div className="pt-2">
                     <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Results:</p>
                     <FieldList fields={[
-                        { name: 'Gross Amount', description: 'Your inputted gross amount (e.g. Gross Salary, Rent, Wins, consideration, or gross Interest/Dividend)' },
-                        { name: 'Pension', description: 'Calculated employee pension contribution (7% of gross, Salary mode only)' },
-                        { name: 'Tax Amount', description: 'Calculated tax based on the selected mode' },
-                        { name: 'Quarterly Payment', description: 'Calculated rental tax payable every quarter (Annual Tax divided by 4, Rent mode only)' },
-                        { name: 'Net Income', description: 'Gross amount minus tax (and pension if applicable)' }
+                        { name: 'Gross Amount', description: 'Your inputted gross amount (e.g. Gross Salary, Rent, Wins, consideration, or gross Interest/Dividend). In Salary mode, both monthly and annual figures are displayed.' },
+                        { name: 'Pension', description: 'Calculated employee pension contribution (7% of gross, Salary mode only). Displays both monthly and annual figures.' },
+                        { name: 'Tax Amount', description: 'Calculated tax based on the selected mode. In Salary mode, displays both monthly and annual figures.' },
+                        { name: 'Quarterly Payment', description: 'Calculated rental tax payable every quarter (Annual Tax divided by 4, Rent mode only).' },
+                        { name: 'Net Income', description: 'Gross amount minus tax (and pension if applicable). In Salary mode, displays both monthly and annual figures.' }
                     ]} />
                 </div>
 
