@@ -24,11 +24,40 @@ const calculateRentalTaxAnnual = (annualRent) => {
     return annualRent * 0.35 - 24600;
 };
 
+const calculateBusinessTaxAnnual = (annualIncome) => {
+    if (annualIncome <= 24000) return 0;
+    if (annualIncome <= 48000) return annualIncome * 0.15 - 3600;
+    if (annualIncome <= 84000) return annualIncome * 0.20 - 6000;
+    if (annualIncome <= 120000) return annualIncome * 0.25 - 10200;
+    if (annualIncome <= 168000) return annualIncome * 0.30 - 16200;
+    return annualIncome * 0.35 - 24600;
+};
+
+const calculateSalesTax = (grossSales) => {
+    if (grossSales <= 100000) return grossSales * 0.02;
+    if (grossSales <= 500000) return grossSales * 0.03;
+    if (grossSales <= 1000000) return grossSales * 0.05;
+    if (grossSales <= 1500000) return grossSales * 0.07;
+    return grossSales * 0.09;
+};
+
+const getSalesTaxRate = (grossSales) => {
+    if (grossSales <= 100000) return 2;
+    if (grossSales <= 500000) return 3;
+    if (grossSales <= 1000000) return 5;
+    if (grossSales <= 1500000) return 7;
+    return 9;
+};
+
 const DEFAULTS = {
     salary: { amount: 174830.40, taxableAllowance: 20000, purchasePrice: 0 },
     rent: { amount: 25000, taxableAllowance: 0, purchasePrice: 0 },
     chance: { amount: 500000, taxableAllowance: 0, purchasePrice: 0 },
-    capital: { amount: 3000, taxableAllowance: 0, purchasePrice: 1000 }
+    capital: { amount: 3000, taxableAllowance: 0, purchasePrice: 1000 },
+    interest: { amount: 10000, taxableAllowance: 0, purchasePrice: 0 },
+    dividend: { amount: 15000, taxableAllowance: 0, purchasePrice: 0 },
+    business: { amount: 150000, taxableAllowance: 0, purchasePrice: 0 },
+    sales: { amount: 120000, taxableAllowance: 0, purchasePrice: 0 }
 };
 
 const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
@@ -92,6 +121,22 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
             tax = taxableGain * 0.15; // 15% flat tax
             netIncome = C - tax;
             gross = C;
+        } else if (mode === 'interest') {
+            tax = amt * 0.10; // 10% flat tax under Proclamation No.1395/2025
+            netIncome = amt - tax;
+            gross = amt;
+        } else if (mode === 'dividend') {
+            tax = amt * 0.15; // 15% flat tax under Proclamation No.1395/2025
+            netIncome = amt - tax;
+            gross = amt;
+        } else if (mode === 'business') {
+            tax = calculateBusinessTaxAnnual(amt);
+            netIncome = amt - tax;
+            gross = amt;
+        } else if (mode === 'sales') {
+            tax = calculateSalesTax(amt);
+            netIncome = amt - tax;
+            gross = amt;
         }
 
         const res = { tax, pension, netIncome, gross, taxableGain, taxableAmount, quarterlyPayment };
@@ -111,6 +156,10 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
             case 'rent': return { label: 'Monthly Rent', sub: 'ETB Gross' };
             case 'chance': return { label: 'Winning Amount', sub: 'ETB Gross' };
             case 'capital': return { label: 'Selling Price', sub: 'Consideration (C)' };
+            case 'interest': return { label: 'Interest Income', sub: 'ETB Gross' };
+            case 'dividend': return { label: 'Dividend Income', sub: 'ETB Gross' };
+            case 'business': return { label: 'Taxable Business Income', sub: 'ETB per Year' };
+            case 'sales': return { label: 'Annual Gross Sales', sub: 'Category B Receipts' };
             default: return { label: 'Amount', sub: 'ETB' };
         }
     };
@@ -119,7 +168,7 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
 
     return (
         <div className="flex flex-col h-full">
-            <div className="flex justify-between items-start mb-2">
+            <div className="flex justify-between items-start mb-4">
                 <div className="flex items-center gap-2 min-w-0">
                     <Landmark className="w-5 h-5 text-primary-500 shrink-0" />
                     <div className="min-w-0">
@@ -146,28 +195,49 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                     <p className="font-bold text-primary-400 mb-1">Ethiopian Tax Calculator</p>
                     <p className="text-[11px] leading-relaxed">
                         Calculates taxes based on Proclamation No.1395/2025. 
-                        Includes Employment Tax, Rental Income Tax, Games of Chance (20%), and Capital Gains (15%).
+                        Includes Employment Tax, Rental Income, Games of Chance (20%), Capital Gains (15%), Interest Income (10%), Dividend Income (15%), Business Income Tax (up to 35%), and Category B Sales Tax (2% - 9%).
                     </p>
                 </div>
             )}
 
-            <div className="bg-neutral-800 p-1 rounded-xl flex mb-3 overflow-x-auto scrollbar-hide">
-                {[
-                    { val: 'salary', label: 'SALARY' },
-                    { val: 'rent', label: 'RENT' },
-                    { val: 'chance', label: 'CHANCE' },
-                    { val: 'capital', label: 'CAPITAL' }
-                ].map(opt => (
-                    <button key={opt.val} 
-                        onClick={() => { 
-                            setMode(opt.val); 
-                            setResult(null); 
-                            setValues(DEFAULTS[opt.val]);
-                        }}
-                        className={`px-3 py-1.5 text-[10px] font-bold rounded-lg transition-all whitespace-nowrap flex-1 ${mode === opt.val ? 'bg-neutral-700 text-white shadow' : 'text-neutral-500 hover:text-neutral-300'}`}>
-                        {opt.label}
-                    </button>
-                ))}
+            <div className="space-y-1 mb-3 mt-3">
+                <label className="block text-[10px] font-bold text-neutral-500 uppercase tracking-wider text-left">Tax Category</label>
+                <div className="grid grid-cols-3 gap-1">
+                    {[
+                        { val: 'salary', label: 'Salary' },
+                        { val: 'rent', label: 'Rent' },
+                        { val: 'business', label: 'Business' },
+                        { val: 'sales', label: 'Sales' },
+                        { val: 'chance', label: 'Chance' },
+                        { val: 'interest', label: 'Interest' }
+                    ].map(opt => (
+                        <button key={opt.val} 
+                            onClick={() => { 
+                                setMode(opt.val); 
+                                setResult(null); 
+                                setValues(DEFAULTS[opt.val]);
+                            }}
+                            className={`py-1.5 px-0.5 rounded text-[10px] font-bold transition-all whitespace-nowrap ${mode === opt.val ? 'bg-primary-600/20 text-primary-400 ring-1 ring-primary-500/50' : 'bg-neutral-900/50 text-neutral-500 hover:bg-neutral-900'}`}>
+                            {opt.label}
+                        </button>
+                    ))}
+                </div>
+                <div className="grid grid-cols-2 gap-1 mt-1">
+                    {[
+                        { val: 'capital', label: 'Capital' },
+                        { val: 'dividend', label: 'Dividend' }
+                    ].map(opt => (
+                        <button key={opt.val} 
+                            onClick={() => { 
+                                setMode(opt.val); 
+                                setResult(null); 
+                                setValues(DEFAULTS[opt.val]);
+                            }}
+                            className={`py-1.5 px-0.5 rounded text-[10px] font-bold transition-all whitespace-nowrap ${mode === opt.val ? 'bg-primary-600/20 text-primary-400 ring-1 ring-primary-500/50' : 'bg-neutral-900/50 text-neutral-500 hover:bg-neutral-900'}`}>
+                            {opt.label}
+                        </button>
+                    ))}
+                </div>
             </div>
 
             <div className="space-y-0.5 flex-1 overflow-y-auto pr-1 scrollbar-hide">
@@ -248,7 +318,21 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                         </div>
                         <div className="grid grid-cols-2 gap-2">
                             <div className="bg-neutral-900/50 rounded-lg p-2 border border-neutral-800 flex flex-col justify-between">
-                                <div className="text-[10px] uppercase font-bold text-neutral-500 mb-1 text-left">{mode === 'rent' ? 'Annual Gross' : mode === 'capital' ? 'Selling Price' : 'Gross Amount'}</div>
+                                <div className="text-[10px] uppercase font-bold text-neutral-500 mb-1 text-left">
+                                    {mode === 'rent' 
+                                        ? 'Annual Gross' 
+                                        : mode === 'capital' 
+                                            ? 'Selling Price' 
+                                            : mode === 'interest' 
+                                                ? 'Gross Interest' 
+                                                : mode === 'dividend' 
+                                                    ? 'Gross Dividend' 
+                                                    : mode === 'business'
+                                                        ? 'Taxable Profit'
+                                                        : mode === 'sales'
+                                                            ? 'Gross Sales'
+                                                            : 'Gross Amount'}
+                                </div>
                                 <span className="text-sm font-bold text-white font-mono self-end">
                                     {result.gross.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                 </span>
@@ -291,9 +375,17 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                                             ? 'Tax Amount (20%)' 
                                             : mode === 'capital' 
                                                 ? 'Tax Amount (15%)' 
-                                                : mode === 'salary'
-                                                    ? `Tax Amount (${result.gross > 0 ? ((result.tax / result.gross) * 100).toFixed(2) : '0.00'}%)`
-                                                    : 'Tax Amount'}
+                                                : mode === 'interest'
+                                                    ? 'Tax Amount (10%)'
+                                                    : mode === 'dividend'
+                                                        ? 'Tax Amount (15%)'
+                                                        : mode === 'business'
+                                                            ? `Annual Tax (${result.gross > 0 ? ((result.tax / result.gross) * 100).toFixed(2) : '0.00'}%)`
+                                                            : mode === 'sales'
+                                                                ? `Annual Tax (${result.gross > 0 ? getSalesTaxRate(result.gross) : '0'}%)`
+                                                                : mode === 'salary'
+                                                                    ? `Tax Amount (${result.gross > 0 ? ((result.tax / result.gross) * 100).toFixed(2) : '0.00'}%)`
+                                                                    : 'Tax Amount'}
                                 </div>
                                 <span className="text-lg font-bold text-red-400 font-mono self-end">
                                     {result.tax.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -309,13 +401,21 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                                 </div>
                             )}
                             
-                            <div className={`bg-neutral-900/50 rounded-lg p-2 border border-neutral-800 flex flex-col justify-between ${mode === 'chance' || mode === 'rent' ? 'col-span-2' : ''}`}>
+                            <div className={`bg-neutral-900/50 rounded-lg p-2 border border-neutral-800 flex flex-col justify-between ${['chance', 'rent', 'interest', 'dividend', 'business', 'sales'].includes(mode) ? 'col-span-2' : ''}`}>
                                 <div className="text-[10px] uppercase font-bold text-neutral-500 mb-1 text-left">
                                     {mode === 'rent' 
                                         ? `Annual Net (${result.gross > 0 ? ((result.netIncome / result.gross) * 100).toFixed(2) : '0.00'}%)` 
                                         : mode === 'capital' 
                                             ? `Net Proceeds (${result.gross > 0 ? ((result.netIncome / result.gross) * 100).toFixed(2) : '0.00'}%)` 
-                                            : `Net Income (${result.gross > 0 ? ((result.netIncome / result.gross) * 100).toFixed(2) : '0.00'}%)`}
+                                            : mode === 'interest'
+                                                ? `Net Interest (${result.gross > 0 ? ((result.netIncome / result.gross) * 100).toFixed(2) : '0.00'}%)`
+                                                : mode === 'dividend'
+                                                    ? `Net Dividend (${result.gross > 0 ? ((result.netIncome / result.gross) * 100).toFixed(2) : '0.00'}%)`
+                                                    : mode === 'business'
+                                                        ? `Net Business Profit (${result.gross > 0 ? ((result.netIncome / result.gross) * 100).toFixed(2) : '0.00'}%)`
+                                                        : mode === 'sales'
+                                                            ? `Net Sales Proceeds (${result.gross > 0 ? ((result.netIncome / result.gross) * 100).toFixed(2) : '0.00'}%)`
+                                                            : `Net Income (${result.gross > 0 ? ((result.netIncome / result.gross) * 100).toFixed(2) : '0.00'}%)`}
                                 </div>
                                 <span className="text-lg font-bold text-primary-500 font-mono self-end">
                                     {result.netIncome.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}

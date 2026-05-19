@@ -149,14 +149,14 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                     Each calculator saves your history automatically.
                 </InfoBox>
                 <InfoBox type="tip">
-                    <strong>Smart Data Entry:</strong> Click on any field's <strong>label</strong> 
-                    to instantly clear its value and start fresh. If you leave an input field empty, 
+                    <strong>Smart Data Entry:</strong> Click on any field's <strong>label</strong>
+                    to instantly clear its value and start fresh. If you leave an input field empty,
                     it automatically resets to zero. This interaction pattern is standardized across all calculators.
                 </InfoBox>
                 <InfoBox type="tip">
-                    <strong>Global Copy Utility:</strong> Double-click (Desktop) or long-press (Mobile) any input 
-                    field or result value to instantly copy it to your clipboard. Some calculators also provide 
-                    special <strong>Copy icons</strong> next to labels to copy amounts converted into formal 
+                    <strong>Global Copy Utility:</strong> Double-click (Desktop) or long-press (Mobile) any input
+                    field or result value to instantly copy it to your clipboard. Some calculators also provide
+                    special <strong>Copy icons</strong> next to labels to copy amounts converted into formal
                     English words (e.g., "One Million Only").
                 </InfoBox>
                 <div className="pt-2">
@@ -711,9 +711,9 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                 </div>
 
                 <InfoBox type="tip">
-                    <strong>Copy in Words:</strong> Click the <strong>Copy icon</strong> next to 
-                    <em>Quantity</em>, <em>Purchase Price</em>, <em>Brokerage</em>, <em>Total Consideration</em>, or <em>Actual Face Value</em> 
-                    to copy the amount converted into formal English words (e.g., "One Million Sixty-Five Thousand Only"). 
+                    <strong>Copy in Words:</strong> Click the <strong>Copy icon</strong> next to
+                    <em>Quantity</em>, <em>Purchase Price</em>, <em>Brokerage</em>, <em>Total Consideration</em>, or <em>Actual Face Value</em>
+                    to copy the amount converted into formal English words (e.g., "One Million Sixty-Five Thousand Only").
                     For Quantity, the text is formatted as "X Units Only".
                 </InfoBox>
 
@@ -789,7 +789,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                     <strong>ISIN Accuracy:</strong> The ISIN number provided in the results is a mathematical prediction and may not always match official records. However, the <strong>ESX Symbol is always correct</strong>. For official ISIN verification, please visit <a href="https://csdtsega.nbe.gov.et" target="_blank" rel="noopener noreferrer" className="text-primary-400 underline hover:text-primary-300">csdtsega.nbe.gov.et</a> and filter the data using the ESX Symbol provided by this app.
                 </InfoBox>
             </HelpSection>
-            
+
             {/* Arbitrage */}
             <HelpSection
                 id="fxcompare"
@@ -799,8 +799,8 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                 onToggle={handleToggle}
             >
                 <p>
-                    Compare the historical returns of investing in Ethiopian Treasury Bills versus holding foreign currencies 
-                    (e.g., USD, EUR, GBP), Commodities (GOLD), or Cryptocurrency (BITCOIN) purchased on the parallel market. 
+                    Compare the historical returns of investing in Ethiopian Treasury Bills versus holding foreign currencies
+                    (e.g., USD, EUR, GBP), Commodities (GOLD), or Cryptocurrency (BITCOIN) purchased on the parallel market.
                 </p>
 
                 <div className="pt-2">
@@ -825,7 +825,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                             <div>
                                 <span className="font-bold text-white uppercase tracking-tight">Leverage Mode:</span>
                                 <p className="text-neutral-400 mt-1">
-                                    Analyzes the profitability of borrowing money to invest in T-Bills. Calculates compound interest on a loan over a given term and compares it against a <strong>realistic bi-weekly rolling reinvestment strategy</strong>. 
+                                    Analyzes the profitability of borrowing money to invest in T-Bills. Calculates compound interest on a loan over a given term and compares it against a <strong>realistic bi-weekly rolling reinvestment strategy</strong>.
                                     It simulates purchases on scheduled auction dates (Wednesdays every 14 days) and reinvests strictly into the next available auction after maturity.
                                 </p>
                             </div>
@@ -866,7 +866,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                 </div>
 
                 <InfoBox type="note">
-                    <strong>Auction Schedule:</strong> Leverage simulations follow the official NBE bi-weekly schedule (Wednesdays every 14 days, referenced from April 01, 2026). 
+                    <strong>Auction Schedule:</strong> Leverage simulations follow the official NBE bi-weekly schedule (Wednesdays every 14 days, referenced from April 01, 2026).
                     A <strong>1-day safety buffer</strong> is applied: if the simulation starts on or within 24 hours of an auction, it waits for the next scheduled date to ensure realistic participation timing.
                 </InfoBox>
 
@@ -1173,7 +1173,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                 <p>
                     The app uses local datasets (<code>data.json</code>, <code>fxData.json</code>) to ensure maximum speed, offline capability, and precise financial modeling. These datasets are updated through developer-run synchronization scripts.
                 </p>
-                
+
                 <div className="pt-2">
                     <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Sync Commands:</p>
                     <FieldList fields={[
@@ -1203,7 +1203,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                 onToggle={handleToggle}
             >
                 <p>
-                    Calculate taxes across various income streams based on the latest 
+                    Calculate taxes across various income streams based on the latest
                     Ethiopian Tax Proclamation No.1395/2025.
                 </p>
 
@@ -1212,15 +1212,19 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                     <FieldList fields={[
                         { name: 'Salary', description: 'Calculates Employment Income Tax and 7% Pension contribution. Includes a Taxable Allowance field for non-pensionable income.' },
                         { name: 'Rent', description: 'Calculates Rental Income Tax. Tax is applied to 50% of the annualized gross rent (allowing a 50% standard deduction).' },
+                        { name: 'Business', description: 'Calculates Business Income Tax for individual taxpayers (sole proprietorships/Category A) using annual brackets.' },
+                        { name: 'Sales', description: 'Calculates Category B Gross Sales/Receipts Tax based on flat bracket-based rates.' },
                         { name: 'Chance', description: 'Calculates tax on winnings from games of chance (flat 20%).' },
-                        { name: 'Capital', description: 'Calculates Capital Gains Tax on disposal of assets using the inflation-adjusted formula.' }
+                        { name: 'Capital', description: 'Calculates Capital Gains Tax on disposal of assets using the inflation-adjusted formula.' },
+                        { name: 'Interest', description: 'Calculates flat withholding tax on interest income from savings deposits (flat 10% under Proclamation No.1395/2025).' },
+                        { name: 'Dividend', description: 'Calculates flat withholding tax on dividend income from company shares (flat 15% under Proclamation No.1395/2025).' }
                     ]} />
                 </div>
 
                 <div className="pt-2">
                     <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Results:</p>
                     <FieldList fields={[
-                        { name: 'Gross Amount', description: 'Your inputted gross amount' },
+                        { name: 'Gross Amount', description: 'Your inputted gross amount (e.g. Gross Salary, Rent, Wins, consideration, or gross Interest/Dividend)' },
                         { name: 'Pension', description: 'Calculated employee pension contribution (7% of gross, Salary mode only)' },
                         { name: 'Tax Amount', description: 'Calculated tax based on the selected mode' },
                         { name: 'Quarterly Payment', description: 'Calculated rental tax payable every quarter (Annual Tax divided by 4, Rent mode only)' },
@@ -1249,7 +1253,28 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                     <br />120,001 - 168,000 ETB: 30% - 16200
                     <br />Over 168,000 ETB: 35% - 24600
                 </InfoBox>
-                
+
+                <InfoBox type="formula">
+                    <strong>Business Income Tax Brackets (Annual):</strong>
+                    <br /><span className="text-[10px] text-neutral-400">Note: Applied to individual business owners (Category "A" / "C" sole proprietors).</span>
+                    <br />0 - 24,000 ETB: 0%
+                    <br />24,001 - 48,000 ETB: 15% - 3600
+                    <br />48,001 - 84,000 ETB: 20% - 6000
+                    <br />84,001 - 120,000 ETB: 25% - 10200
+                    <br />120,001 - 168,000 ETB: 30% - 16200
+                    <br />Over 168,000 ETB: 35% - 24600
+                </InfoBox>
+
+                <InfoBox type="formula">
+                    <strong>Category B Sales Tax Brackets (Annual Gross Sales):</strong>
+                    <br /><span className="text-[10px] text-neutral-400">Note: Flat tax on total annual gross receipts under Proclamation No.1395/2025.</span>
+                    <br />0 – 100,000 ETB: 2%
+                    <br />100,001 – 500,000 ETB: 3%
+                    <br />500,001 – 1,000,000 ETB: 5%
+                    <br />1,000,001 – 1,500,000 ETB: 7%
+                    <br />1,500,001 – under 2,000,000 ETB: 9%
+                </InfoBox>
+
                 <InfoBox type="formula">
                     <strong>Capital Gains Tax Formula:</strong>
                     <br />Taxable Gain = C - (A + B)
@@ -1257,6 +1282,12 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                     <br />• A = Purchase Price (Original Cost)
                     <br />• B = 30% Inflation Adjustment (A × 30%)
                     <br />Tax Owed = Taxable Gain × 15%
+                </InfoBox>
+
+                <InfoBox type="formula">
+                    <strong>Interest & Dividend Income Tax Rates:</strong>
+                    <br />• Interest Income Tax: 10% flat rate (withholding on savings deposits)
+                    <br />• Dividend Income Tax: 15% flat rate (withholding on distributions)
                 </InfoBox>
             </HelpSection>
 
@@ -1330,20 +1361,20 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                     </InfoBox>
 
                     <InfoBox type="tip">
-                        <strong>Double-Click / Long-Press to Copy:</strong> Every data field (input and result) 
-                        supports quick copying. Double-click on Desktop or long-press on Mobile to copy 
+                        <strong>Double-Click / Long-Press to Copy:</strong> Every data field (input and result)
+                        supports quick copying. Double-click on Desktop or long-press on Mobile to copy
                         the value. Look for the "Copied!" badge for confirmation.
                     </InfoBox>
 
                     <InfoBox type="note">
-                        <strong>Developer Sync:</strong> To update all data sources (T-Bills, FX Rates, Gold, Bitcoin, and Inflation) 
-                        simultaneously, run <code>npm run sync-all</code> in the terminal. This incrementally 
+                        <strong>Developer Sync:</strong> To update all data sources (T-Bills, FX Rates, Gold, Bitcoin, and Inflation)
+                        simultaneously, run <code>npm run sync-all</code> in the terminal. This incrementally
                         updates the local datasets to ensure forecasts and comparisons reflect the latest market data.
                     </InfoBox>
 
                     <InfoBox type="tip">
-                        <strong>Clear Button:</strong> Use the trash icon button at the bottom to clear results. 
-                        In most tabs, this only removes the result box while preserving your inputs. 
+                        <strong>Clear Button:</strong> Use the trash icon button at the bottom to clear results.
+                        In most tabs, this only removes the result box while preserving your inputs.
                         In <strong>TVM</strong> and <strong>Cash Flow</strong>, it also resets input fields (preserving rates in Cash Flow).
                     </InfoBox>
 
