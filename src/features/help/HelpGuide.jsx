@@ -1367,6 +1367,10 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                         the value. Look for the "Copied!" badge for confirmation.
                     </InfoBox>
 
+                    <InfoBox type="tip">
+                        <strong>Copy in Words:</strong> In <strong>T-Bill</strong> and <strong>Tax (Salary & Rent)</strong> calculators, hovering over results reveals a Copy icon that copies the exact amount written fully in English words (e.g., "One Million Only").
+                    </InfoBox>
+
                     <InfoBox type="note">
                         <strong>Developer Sync:</strong> To update all data sources (T-Bills, FX Rates, Gold, Bitcoin, and Inflation)
                         simultaneously, run <code>npm run sync-all</code> in the terminal. This incrementally

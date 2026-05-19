@@ -1,7 +1,9 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { useInputFocus } from '../../hooks/useInputFocus';
 import { useHistory } from '../../context/HistoryContext';
-import { Info, HelpCircle, Trash2, Settings, History, Landmark } from 'lucide-react';
+import { Info, HelpCircle, Trash2, Settings, History, Landmark, Copy } from 'lucide-react';
+import { amountToWords } from '../../utils/text-utils';
+import { copyToClipboard } from '../../utils/clipboard';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
 import { CalculateIcon } from '../../components/Icons';
 import HistoryOverlay from '../../components/HistoryOverlay';
@@ -317,21 +319,35 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                             </button>
                         </div>
                         <div className="grid grid-cols-2 gap-2">
-                            <div className="bg-neutral-900/50 rounded-lg p-2 border border-neutral-800 flex flex-col justify-between">
-                                <div className="text-[10px] uppercase font-bold text-neutral-500 mb-1 text-left">
-                                    {mode === 'rent' 
-                                        ? 'Annual Gross' 
-                                        : mode === 'capital' 
-                                            ? 'Selling Price' 
-                                            : mode === 'interest' 
-                                                ? 'Gross Interest' 
-                                                : mode === 'dividend' 
-                                                    ? 'Gross Dividend' 
-                                                    : mode === 'business'
-                                                        ? 'Taxable Profit'
-                                                        : mode === 'sales'
-                                                            ? 'Gross Sales'
-                                                            : 'Gross Amount'}
+                            <div className="bg-neutral-900/50 rounded-lg p-2 border border-neutral-800 flex flex-col justify-between group relative">
+                                <div className="flex justify-between items-start mb-1">
+                                    <div className="text-[10px] uppercase font-bold text-neutral-500 text-left">
+                                        {mode === 'rent' 
+                                            ? 'Annual Gross' 
+                                            : mode === 'capital' 
+                                                ? 'Selling Price' 
+                                                : mode === 'interest' 
+                                                    ? 'Gross Interest' 
+                                                    : mode === 'dividend' 
+                                                        ? 'Gross Dividend' 
+                                                        : mode === 'business'
+                                                            ? 'Taxable Profit'
+                                                            : mode === 'sales'
+                                                                ? 'Gross Sales'
+                                                                : 'Gross Amount'}
+                                    </div>
+                                    {['salary', 'rent'].includes(mode) && (
+                                        <button 
+                                            onClick={(e) => { 
+                                                const words = amountToWords(result.gross); 
+                                                copyToClipboard(words, e.currentTarget); 
+                                            }} 
+                                            className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-primary-500/10 rounded text-primary-500/70 hover:text-primary-400" 
+                                            title="Copy in Words"
+                                        >
+                                            <Copy size={9} />
+                                        </button>
+                                    )}
                                 </div>
                                 <div className="flex flex-col items-end gap-1">
                                     <div className="flex items-center gap-1.5 justify-end">
@@ -358,8 +374,20 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                             </div>
                             
                             {mode === 'salary' && (
-                                <div className="bg-neutral-900/50 rounded-lg p-2 border border-neutral-800 flex flex-col justify-between">
-                                    <div className="text-[10px] uppercase font-bold text-neutral-500 mb-1 text-left">Pension (7%)</div>
+                                <div className="bg-neutral-900/50 rounded-lg p-2 border border-neutral-800 flex flex-col justify-between group relative">
+                                    <div className="flex justify-between items-start mb-1">
+                                        <div className="text-[10px] uppercase font-bold text-neutral-500 text-left">Pension (7%)</div>
+                                        <button 
+                                            onClick={(e) => { 
+                                                const words = amountToWords(result.pension); 
+                                                copyToClipboard(words, e.currentTarget); 
+                                            }} 
+                                            className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-primary-500/10 rounded text-primary-500/70 hover:text-primary-400" 
+                                            title="Copy in Words"
+                                        >
+                                            <Copy size={9} />
+                                        </button>
+                                    </div>
                                     <div className="flex flex-col items-end gap-1">
                                         <div className="flex items-center gap-1.5 justify-end">
                                             <span className="text-sm font-bold text-white font-mono">
@@ -382,8 +410,20 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                             )}
 
                             {mode === 'rent' && (
-                                <div className="bg-neutral-900/50 rounded-lg p-2 border border-neutral-800 flex flex-col justify-between">
-                                    <div className="text-[10px] uppercase font-bold text-neutral-500 mb-1 text-left">Taxable Rent (50%)</div>
+                                <div className="bg-neutral-900/50 rounded-lg p-2 border border-neutral-800 flex flex-col justify-between group relative">
+                                    <div className="flex justify-between items-start mb-1">
+                                        <div className="text-[10px] uppercase font-bold text-neutral-500 text-left">Taxable Rent (50%)</div>
+                                        <button 
+                                            onClick={(e) => { 
+                                                const words = amountToWords(result.taxableAmount); 
+                                                copyToClipboard(words, e.currentTarget); 
+                                            }} 
+                                            className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-primary-500/10 rounded text-primary-500/70 hover:text-primary-400" 
+                                            title="Copy in Words"
+                                        >
+                                            <Copy size={9} />
+                                        </button>
+                                    </div>
                                     <span className="text-sm font-bold text-white font-mono self-end">
                                         {result.taxableAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                     </span>
@@ -401,25 +441,39 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                                 </div>
                             )}
 
-                            <div className="bg-neutral-900/50 rounded-lg p-2 border border-neutral-800 flex flex-col justify-between">
-                                <div className="text-[10px] uppercase font-bold text-neutral-500 mb-1 text-left">
-                                    {mode === 'rent' 
-                                        ? `Annual Tax (${result.gross > 0 ? ((result.tax / result.gross) * 100).toFixed(2) : '0.00'}%)` 
-                                        : mode === 'chance' 
-                                            ? 'Tax Amount (20%)' 
-                                            : mode === 'capital' 
-                                                ? 'Tax Amount (15%)' 
-                                                : mode === 'interest'
-                                                    ? 'Tax Amount (10%)'
-                                                    : mode === 'dividend'
-                                                        ? 'Tax Amount (15%)'
-                                                        : mode === 'business'
-                                                            ? `Annual Tax (${result.gross > 0 ? ((result.tax / result.gross) * 100).toFixed(2) : '0.00'}%)`
-                                                            : mode === 'sales'
-                                                                ? `Annual Tax (${result.gross > 0 ? getSalesTaxRate(result.gross) : '0'}%)`
-                                                                 : mode === 'salary'
-                                                                     ? `Tax Amount (${result.gross > 0 ? ((result.tax / result.gross) * 100).toFixed(2) : '0.00'}%)`
-                                                                     : 'Tax Amount'}
+                            <div className="bg-neutral-900/50 rounded-lg p-2 border border-neutral-800 flex flex-col justify-between group relative">
+                                <div className="flex justify-between items-start mb-1">
+                                    <div className="text-[10px] uppercase font-bold text-neutral-500 text-left">
+                                        {mode === 'rent' 
+                                            ? `Annual Tax (${result.gross > 0 ? ((result.tax / result.gross) * 100).toFixed(2) : '0.00'}%)` 
+                                            : mode === 'chance' 
+                                                ? 'Tax Amount (20%)' 
+                                                : mode === 'capital' 
+                                                    ? 'Tax Amount (15%)' 
+                                                    : mode === 'interest'
+                                                        ? 'Tax Amount (10%)'
+                                                        : mode === 'dividend'
+                                                            ? 'Tax Amount (15%)'
+                                                            : mode === 'business'
+                                                                ? `Annual Tax (${result.gross > 0 ? ((result.tax / result.gross) * 100).toFixed(2) : '0.00'}%)`
+                                                                : mode === 'sales'
+                                                                    ? `Annual Tax (${result.gross > 0 ? getSalesTaxRate(result.gross) : '0'}%)`
+                                                                     : mode === 'salary'
+                                                                         ? `Tax Amount (${result.gross > 0 ? ((result.tax / result.gross) * 100).toFixed(2) : '0.00'}%)`
+                                                                         : 'Tax Amount'}
+                                    </div>
+                                    {['salary', 'rent'].includes(mode) && (
+                                        <button 
+                                            onClick={(e) => { 
+                                                const words = amountToWords(result.tax); 
+                                                copyToClipboard(words, e.currentTarget); 
+                                            }} 
+                                            className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-red-500/10 rounded text-red-400/70 hover:text-red-400" 
+                                            title="Copy in Words"
+                                        >
+                                            <Copy size={9} />
+                                        </button>
+                                    )}
                                 </div>
                                 <div className="flex flex-col items-end gap-1">
                                     <div className="flex items-center gap-1.5 justify-end">
@@ -446,9 +500,21 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                             </div>
 
                             {mode === 'salary' && (
-                                <div className="bg-neutral-900/50 rounded-lg p-2 border border-neutral-800 flex flex-col justify-between">
-                                    <div className="text-[10px] uppercase font-bold text-neutral-500 mb-1 text-left">
-                                        Total Deduction ({result.gross > 0 ? (((result.tax + result.pension) / result.gross) * 100).toFixed(2) : '0.00'}%)
+                                <div className="bg-neutral-900/50 rounded-lg p-2 border border-neutral-800 flex flex-col justify-between group relative">
+                                    <div className="flex justify-between items-start mb-1">
+                                        <div className="text-[10px] uppercase font-bold text-neutral-500 text-left">
+                                            Total Deduction ({result.gross > 0 ? (((result.tax + result.pension) / result.gross) * 100).toFixed(2) : '0.00'}%)
+                                        </div>
+                                        <button 
+                                            onClick={(e) => { 
+                                                const words = amountToWords(result.totalDeduction); 
+                                                copyToClipboard(words, e.currentTarget); 
+                                            }} 
+                                            className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-red-500/10 rounded text-red-400/70 hover:text-red-400" 
+                                            title="Copy in Words"
+                                        >
+                                            <Copy size={9} />
+                                        </button>
                                     </div>
                                     <div className="flex flex-col items-end gap-1">
                                         <div className="flex items-center gap-1.5 justify-end">
@@ -472,29 +538,55 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                             )}
 
                             {mode === 'rent' && (
-                                <div className="bg-neutral-900/50 rounded-lg p-2 border border-neutral-800 flex flex-col justify-between">
-                                    <div className="text-[10px] uppercase font-bold text-neutral-500 mb-1 text-left">Quarterly Payment</div>
+                                <div className="bg-neutral-900/50 rounded-lg p-2 border border-neutral-800 flex flex-col justify-between group relative">
+                                    <div className="flex justify-between items-start mb-1">
+                                        <div className="text-[10px] uppercase font-bold text-neutral-500 text-left">Quarterly Payment</div>
+                                        <button 
+                                            onClick={(e) => { 
+                                                const words = amountToWords(result.quarterlyPayment); 
+                                                copyToClipboard(words, e.currentTarget); 
+                                            }} 
+                                            className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-red-500/10 rounded text-red-400/70 hover:text-red-400" 
+                                            title="Copy in Words"
+                                        >
+                                            <Copy size={9} />
+                                        </button>
+                                    </div>
                                     <span className="text-lg font-bold text-red-400 font-mono self-end">
                                         {result.quarterlyPayment.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                     </span>
                                 </div>
                             )}
                             
-                            <div className={`bg-neutral-900/50 rounded-lg p-2 border border-neutral-800 flex flex-col justify-between ${['chance', 'rent', 'interest', 'dividend', 'business', 'sales', 'salary'].includes(mode) ? 'col-span-2' : ''}`}>
-                                <div className="text-[10px] uppercase font-bold text-neutral-500 mb-1 text-left">
-                                    {mode === 'rent' 
-                                        ? `Annual Net (${result.gross > 0 ? ((result.netIncome / result.gross) * 100).toFixed(2) : '0.00'}%)` 
-                                        : mode === 'capital' 
-                                            ? `Net Proceeds (${result.gross > 0 ? ((result.netIncome / result.gross) * 100).toFixed(2) : '0.00'}%)` 
-                                            : mode === 'interest'
-                                                ? `Net Interest (${result.gross > 0 ? ((result.netIncome / result.gross) * 100).toFixed(2) : '0.00'}%)`
-                                                : mode === 'dividend'
-                                                    ? `Net Dividend (${result.gross > 0 ? ((result.netIncome / result.gross) * 100).toFixed(2) : '0.00'}%)`
-                                                    : mode === 'business'
-                                                        ? `Net Business Profit (${result.gross > 0 ? ((result.netIncome / result.gross) * 100).toFixed(2) : '0.00'}%)`
-                                                        : mode === 'sales'
-                                                            ? `Net Sales Proceeds (${result.gross > 0 ? ((result.netIncome / result.gross) * 100).toFixed(2) : '0.00'}%)`
-                                                            : `Net Income (${result.gross > 0 ? ((result.netIncome / result.gross) * 100).toFixed(2) : '0.00'}%)`}
+                            <div className={`bg-neutral-900/50 rounded-lg p-2 border border-neutral-800 flex flex-col justify-between group relative ${['chance', 'rent', 'interest', 'dividend', 'business', 'sales', 'salary'].includes(mode) ? 'col-span-2' : ''}`}>
+                                <div className="flex justify-between items-start mb-1">
+                                    <div className="text-[10px] uppercase font-bold text-neutral-500 text-left">
+                                        {mode === 'rent' 
+                                            ? `Annual Net (${result.gross > 0 ? ((result.netIncome / result.gross) * 100).toFixed(2) : '0.00'}%)` 
+                                            : mode === 'capital' 
+                                                ? `Net Proceeds (${result.gross > 0 ? ((result.netIncome / result.gross) * 100).toFixed(2) : '0.00'}%)` 
+                                                : mode === 'interest'
+                                                    ? `Net Interest (${result.gross > 0 ? ((result.netIncome / result.gross) * 100).toFixed(2) : '0.00'}%)`
+                                                    : mode === 'dividend'
+                                                        ? `Net Dividend (${result.gross > 0 ? ((result.netIncome / result.gross) * 100).toFixed(2) : '0.00'}%)`
+                                                        : mode === 'business'
+                                                            ? `Net Business Profit (${result.gross > 0 ? ((result.netIncome / result.gross) * 100).toFixed(2) : '0.00'}%)`
+                                                            : mode === 'sales'
+                                                                ? `Net Sales Proceeds (${result.gross > 0 ? ((result.netIncome / result.gross) * 100).toFixed(2) : '0.00'}%)`
+                                                                : `Net Income (${result.gross > 0 ? ((result.netIncome / result.gross) * 100).toFixed(2) : '0.00'}%)`}
+                                    </div>
+                                    {['salary', 'rent'].includes(mode) && (
+                                        <button 
+                                            onClick={(e) => { 
+                                                const words = amountToWords(result.netIncome); 
+                                                copyToClipboard(words, e.currentTarget); 
+                                            }} 
+                                            className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-primary-500/10 rounded text-primary-500/70 hover:text-primary-400" 
+                                            title="Copy in Words"
+                                        >
+                                            <Copy size={9} />
+                                        </button>
+                                    )}
                                 </div>
                                 <div className="flex flex-col items-end gap-1">
                                     <div className="flex items-center gap-1.5 justify-end">
