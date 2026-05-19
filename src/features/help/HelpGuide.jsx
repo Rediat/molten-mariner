@@ -1210,7 +1210,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                 <div className="pt-2">
                     <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Modes:</p>
                     <FieldList fields={[
-                        { name: 'Salary', description: 'Calculates Employment Income Tax and 7% Pension contribution. Includes a Taxable Allowance field for non-pensionable income.' },
+                        { name: 'Salary', description: 'Calculates Employment Income Tax, 7% Pension contribution, and Total Deductions. Includes a Taxable Allowance field for non-pensionable income.' },
                         { name: 'Rent', description: 'Calculates Rental Income Tax. Tax is applied to 50% of the annualized gross rent (allowing a 50% standard deduction).' },
                         { name: 'Business', description: 'Calculates Business Income Tax for individual taxpayers (sole proprietorships/Category A) using annual brackets.' },
                         { name: 'Sales', description: 'Calculates Category B Gross Sales/Receipts Tax based on flat bracket-based rates.' },
@@ -1227,6 +1227,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                         { name: 'Gross Amount', description: 'Your inputted gross amount (e.g. Gross Salary, Rent, Wins, consideration, or gross Interest/Dividend). In Salary mode, both monthly and annual figures are displayed.' },
                         { name: 'Pension', description: 'Calculated employee pension contribution (7% of gross, Salary mode only). Displays both monthly and annual figures.' },
                         { name: 'Tax Amount', description: 'Calculated tax based on the selected mode. In Salary mode, displays both monthly and annual figures.' },
+                        { name: 'Total Deduction', description: 'The sum of employment tax and pension contribution (Salary mode only). Displays both monthly and annual figures.' },
                         { name: 'Quarterly Payment', description: 'Calculated rental tax payable every quarter (Annual Tax divided by 4, Rent mode only).' },
                         { name: 'Net Income', description: 'Gross amount minus tax (and pension if applicable). In Salary mode, displays both monthly and annual figures.' }
                     ]} />

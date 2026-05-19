@@ -22,13 +22,14 @@ const HistoryOverlay = ({ isOpen, onClose, module, title }) => {
             return Object.entries(result)
                 .filter(([k, v]) => {
                     // Filter out zero values for optional/mode-specific fields to keep the UI clean
-                    if (v === 0 && ['pension', 'taxableGain', 'taxableAmount', 'quarterlyPayment'].includes(k)) return false;
+                    if (v === 0 && ['pension', 'taxableGain', 'taxableAmount', 'quarterlyPayment', 'totalDeduction'].includes(k)) return false;
                     return true;
                 })
                 .map(([k, v]) => {
                     let label = k;
                     if (['npv', 'irr', 'mirr', 'pi', 'fv', 'pv', 'pmt'].includes(k)) label = k.toUpperCase();
                     if (k === 'totalInterest') label = 'Interest';
+                    if (k === 'totalDeduction') label = 'Total Deduction';
                     return `${label}: ${typeof v === 'number' ? formatNum(v) : v}`;
                 })
                 .join(', ');

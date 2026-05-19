@@ -139,7 +139,7 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
             gross = amt;
         }
 
-        const res = { tax, pension, netIncome, gross, taxableGain, taxableAmount, quarterlyPayment };
+        const res = { tax, pension, netIncome, gross, taxableGain, taxableAmount, quarterlyPayment, totalDeduction: tax + pension };
         setResult(res);
         addToHistory('TAX', { mode: mode.toUpperCase(), amount: amt, ...(mode === 'salary' && allowance ? { allowance } : {}), ...(mode === 'capital' ? { purchasePrice: values.purchasePrice } : {}) }, res);
     };
@@ -417,9 +417,9 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                                                             ? `Annual Tax (${result.gross > 0 ? ((result.tax / result.gross) * 100).toFixed(2) : '0.00'}%)`
                                                             : mode === 'sales'
                                                                 ? `Annual Tax (${result.gross > 0 ? getSalesTaxRate(result.gross) : '0'}%)`
-                                                                : mode === 'salary'
-                                                                    ? `Tax Amount (${result.gross > 0 ? ((result.tax / result.gross) * 100).toFixed(2) : '0.00'}%)`
-                                                                    : 'Tax Amount'}
+                                                                 : mode === 'salary'
+                                                                     ? `Tax Amount (${result.gross > 0 ? ((result.tax / result.gross) * 100).toFixed(2) : '0.00'}%)`
+                                                                     : 'Tax Amount'}
                                 </div>
                                 <div className="flex flex-col items-end gap-1">
                                     <div className="flex items-center gap-1.5 justify-end">
@@ -445,6 +445,32 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                                 </div>
                             </div>
 
+                            {mode === 'salary' && (
+                                <div className="bg-neutral-900/50 rounded-lg p-2 border border-neutral-800 flex flex-col justify-between">
+                                    <div className="text-[10px] uppercase font-bold text-neutral-500 mb-1 text-left">
+                                        Total Deduction ({result.gross > 0 ? (((result.tax + result.pension) / result.gross) * 100).toFixed(2) : '0.00'}%)
+                                    </div>
+                                    <div className="flex flex-col items-end gap-1">
+                                        <div className="flex items-center gap-1.5 justify-end">
+                                            <span className="text-lg font-bold text-red-400 font-mono">
+                                                {result.totalDeduction.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                            </span>
+                                            <span className="select-none text-[8px] font-black px-1.5 py-0.5 rounded bg-red-950/40 text-red-400/80 uppercase tracking-widest leading-none">
+                                                mo
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center gap-1.5 justify-end">
+                                            <span className="text-xs font-bold text-red-400/80 font-mono">
+                                                {(result.totalDeduction * 12).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                            </span>
+                                            <span className="select-none text-[7px] font-bold px-1 py-0.25 rounded bg-red-950/20 text-red-500/50 uppercase tracking-widest leading-none">
+                                                yr
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
                             {mode === 'rent' && (
                                 <div className="bg-neutral-900/50 rounded-lg p-2 border border-neutral-800 flex flex-col justify-between">
                                     <div className="text-[10px] uppercase font-bold text-neutral-500 mb-1 text-left">Quarterly Payment</div>
@@ -454,7 +480,7 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                                 </div>
                             )}
                             
-                            <div className={`bg-neutral-900/50 rounded-lg p-2 border border-neutral-800 flex flex-col justify-between ${['chance', 'rent', 'interest', 'dividend', 'business', 'sales'].includes(mode) ? 'col-span-2' : ''}`}>
+                            <div className={`bg-neutral-900/50 rounded-lg p-2 border border-neutral-800 flex flex-col justify-between ${['chance', 'rent', 'interest', 'dividend', 'business', 'sales', 'salary'].includes(mode) ? 'col-span-2' : ''}`}>
                                 <div className="text-[10px] uppercase font-bold text-neutral-500 mb-1 text-left">
                                     {mode === 'rent' 
                                         ? `Annual Net (${result.gross > 0 ? ((result.netIncome / result.gross) * 100).toFixed(2) : '0.00'}%)` 
