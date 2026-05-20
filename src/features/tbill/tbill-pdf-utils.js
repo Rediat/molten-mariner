@@ -35,13 +35,7 @@ const calculateTenderNo = (dateStr) => {
         }
     };
 
-    const formattedIssueDate = new Date(dateStr).toLocaleDateString('en-US', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric'
-    });
-
-    return `${auctionNo}${getSuffix(auctionNo)}/2026, to be held on ${formattedIssueDate}`;
+    return `${auctionNo}${getSuffix(auctionNo)}/2026`;
 };
 
 /**
@@ -104,29 +98,29 @@ export const generateTBillApplicationPDF = (data, clientDetails = {}) => {
     doc.setTextColor(0);
     // Draw "Date " label in bold
     doc.setFont('helvetica', 'bold');
-    doc.text('Date ', 25, 60);
+    doc.text('Date ', 25, 52);
     const dateLabelWidth = doc.getTextWidth('Date ');
     // Draw the actual inserted date value in normal face
     doc.setFont('helvetica', 'normal');
-    doc.text(formattedDate, 25 + dateLabelWidth, 60);
+    doc.text(formattedDate, 25 + dateLabelWidth + 1.5, 52, { charSpace: 0.5 });
     // Draw "NBE-MSOD" in bold
     doc.setFont('helvetica', 'bold');
-    doc.text('NBE-MSOD', 185, 60, { align: 'right' });
+    doc.text('NBE-MSOD', 185, 52, { align: 'right' });
 
     // Title
     doc.setFontSize(12);
-    doc.text('CSD COMPETITIVE TREASURY BILL APPLICATION FORM', 105, 75, { align: 'center' });
+    doc.text('CSD COMPETITIVE TREASURY BILL APPLICATION FORM', 105, 67, { align: 'center' });
 
     // --- Section A: Treasury Bill Details ---
     doc.setFontSize(11);
     // Moved slightly lower from 85 to 90 to add white space above
-    doc.text('A. Treasury Bill Details', 25, 90);
+    doc.text('A. Treasury Bill Details', 25, 82);
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
 
     // Moved slightly lower from 95 to 100 to maintain spacing relative to header
-    let y = 100;
+    let y = 92;
     const lineSpacing = 10;
     let currentLabelX = 25; // Reverted to 25 to align with headers and Section B
     let currentValueX = 60; // Moved further left to minimize the gap in Section A without overlapping labels
@@ -136,6 +130,8 @@ export const generateTBillApplicationPDF = (data, clientDetails = {}) => {
         doc.text(`${label}:`, currentLabelX, y);
         doc.setFont('helvetica', 'normal');
 
+        const maxWidth = 185 - currentValueX;
+
         if (label === 'Tender No') {
             // Regex to find ordinal pattern: digits + (st|nd|rd|th) + rest
             const match = value.match(/^(\d+)(st|nd|rd|th)(\/.*)$/);
@@ -144,34 +140,97 @@ export const generateTBillApplicationPDF = (data, clientDetails = {}) => {
                 let currentX = currentValueX;
 
                 // 1. Draw number
-                doc.text(num, currentX, y);
-                currentX += doc.getTextWidth(num);
+                doc.text(num, currentX, y, { charSpace: 0.5 });
+                currentX += doc.getTextWidth(num) + (num.length - 1) * 0.5 + 0.8;
 
                 // 2. Draw suffix as superscript
                 const originalSize = doc.getFontSize();
                 const superSize = originalSize * 0.65; // Slightly smaller for better aesthetic
                 doc.setFontSize(superSize);
-                doc.text(suffix, currentX, y - 1.2);
+                doc.text(suffix, currentX, y - 1.2, { charSpace: 0.5 });
 
                 // 3. Draw rest of the string
-                const suffixWidth = doc.getTextWidth(suffix);
+                const suffixWidth = doc.getTextWidth(suffix) + (suffix.length - 1) * 0.5;
                 doc.setFontSize(originalSize);
-                currentX += suffixWidth;
-                doc.text(rest, currentX, y);
+                currentX += suffixWidth + 0.8;
+                doc.text(rest, currentX, y, { charSpace: 0.5 });
+
+                // Draw dotted line
+                if (showLine) {
+                    doc.setLineDash([0.5, 0.5]);
+                    doc.line(currentValueX, y + 1, 185, y + 1);
+                    doc.setLineDash([]);
+                }
+                y += lineSpacing;
             } else {
-                doc.text(value, currentValueX, y);
+                doc.text(value, currentValueX, y, { charSpace: 0.5 });
+                if (showLine) {
+                    doc.setLineDash([0.5, 0.5]);
+                    doc.line(currentValueX, y + 1, 185, y + 1);
+                    doc.setLineDash([]);
+                }
+                y += lineSpacing;
             }
         } else {
-            doc.text(value, currentValueX, y);
-        }
+            // Split text taking charSpace into account to prevent overflowing the dotted line's right margin
+            const splitTextWithCharSpace = (text, maxW, spacing) => {
+                if (!text) return [''];
+                const words = text.split(' ');
+                const lines = [];
+                let currentLine = '';
 
-        // Draw dotted line
-        if (showLine) {
-            doc.setLineDash([0.5, 0.5]);
-            doc.line(currentValueX, y + 1, 185, y + 1);
-            doc.setLineDash([]);
+                for (let i = 0; i < words.length; i++) {
+                    const word = words[i];
+                    const testLine = currentLine ? `${currentLine} ${word}` : word;
+                    // Exact rendered width calculation including character spacing
+                    const testWidth = doc.getTextWidth(testLine) + (testLine.length - 1) * spacing;
+                    
+                    if (testWidth <= maxW) {
+                        currentLine = testLine;
+                    } else {
+                        if (currentLine) {
+                            lines.push(currentLine);
+                        }
+                        const singleWordWidth = doc.getTextWidth(word) + (word.length - 1) * spacing;
+                        if (singleWordWidth > maxW) {
+                            // If a single word itself exceeds maxWidth, split it character by character
+                            let charLine = '';
+                            for (let j = 0; j < word.length; j++) {
+                                const testCharLine = charLine + word[j];
+                                const charLineWidth = doc.getTextWidth(testCharLine) + (testCharLine.length - 1) * spacing;
+                                if (charLineWidth <= maxW) {
+                                    charLine = testCharLine;
+                                } else {
+                                    lines.push(charLine);
+                                    charLine = word[j];
+                                }
+                            }
+                            currentLine = charLine;
+                        } else {
+                            currentLine = word;
+                        }
+                    }
+                }
+                if (currentLine) {
+                    lines.push(currentLine);
+                }
+                return lines;
+            };
+
+            const lines = splitTextWithCharSpace(value, maxWidth, 0.5);
+
+            lines.forEach((line) => {
+                doc.text(line, currentValueX, y, { charSpace: 0.5 });
+
+                // Draw dotted line under each wrapped line
+                if (showLine) {
+                    doc.setLineDash([0.5, 0.5]);
+                    doc.line(currentValueX, y + 1, 185, y + 1);
+                    doc.setLineDash([]);
+                }
+                y += lineSpacing;
+            });
         }
-        y += lineSpacing;
     };
 
     addField('Tender No', client.tenderNo);
@@ -185,7 +244,8 @@ export const generateTBillApplicationPDF = (data, clientDetails = {}) => {
 
     const faceValueWords = amountToWords(faceValue);
     addField('Face Value', `${faceValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${faceValueWords})`);
-    addField('Yield Rate', `${yieldRate}%`);
+    const yieldWords = amountToWords(yieldRate).replace(' Only', ' Percent');
+    addField('Yield Rate', `${yieldRate}% (${yieldWords})`);
 
     // --- Section B: Client Details ---
     y += 5;
@@ -236,6 +296,7 @@ export const generateTBillApplicationPDF = (data, clientDetails = {}) => {
     doc.line(70, y, 70, y + 30);
 
     doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
     doc.text('Processed by', 27, y + 7);
     doc.text('Checked by', 27, y + 17);
     doc.text('Approved by', 27, y + 27);
