@@ -90,6 +90,7 @@ const LiveFareTracker = ({ isVisible, onClose, fareData, initialMapState, mapsRe
     const [activeStopIndex, setActiveStopIndex] = useState(0); // Which stop is being viewed
     const [trackingStopIndex, setTrackingStopIndex] = useState(null); // Which stop is currently tracking (null if none)
     const [viewMode, setViewMode] = useState('individual'); // 'individual' | 'total'
+    const [isHydrated, setIsHydrated] = useState(false);
 
     const [currentSpeed, setCurrentSpeed] = useState(0); // km/h
     const [positionCount, setPositionCount] = useState(0);
@@ -159,33 +160,26 @@ const LiveFareTracker = ({ isVisible, onClose, fareData, initialMapState, mapsRe
         return baseFare + waitCharge;
     }, []);
 
-    // ---- Persistence: Hydrate state on mount ----
+    // Cleanup watchPosition on unmount to avoid background leaks
     useEffect(() => {
-        const savedState = localStorage.getItem(STORAGE_KEY);
-        if (savedState) {
-            try {
-                const parsed = JSON.parse(savedState);
-                if (parsed.stops) setStops(parsed.stops);
-                
-                if (parsed.trackingStopIndex !== null && parsed.trackingStopIndex !== undefined) {
-                    const index = parsed.trackingStopIndex;
-                    setActiveStopIndex(index);
-                }
-            } catch (e) {
-                console.error("Failed to restore fare state", e);
+        return () => {
+            if (watchIdRef.current != null) {
+                navigator.geolocation.clearWatch(watchIdRef.current);
             }
-        }
+        };
     }, []);
 
     // ---- Persistence: Save state on changes ----
     useEffect(() => {
+        if (!isHydrated) return; // Skip saving until hydration has completed
+        
         const stateToSave = {
             stops,
             trackingStopIndex,
             lastUpdated: Date.now()
         };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
-    }, [stops, trackingStopIndex]);
+    }, [stops, trackingStopIndex, isHydrated]);
 
     // ---- Map Management ----
     useEffect(() => {
@@ -623,6 +617,49 @@ const LiveFareTracker = ({ isVisible, onClose, fareData, initialMapState, mapsRe
         setTrackingStopIndex(null);
         trackingStopIndexRef.current = null;
     }, [trackingStopIndex]);
+
+    // ---- Hydrate State on Mount ----
+    useEffect(() => {
+        const savedState = localStorage.getItem(STORAGE_KEY);
+        if (savedState) {
+            try {
+                const parsed = JSON.parse(savedState);
+                if (parsed.stops) {
+                    setStops(parsed.stops);
+                }
+                
+                if (parsed.trackingStopIndex !== null && parsed.trackingStopIndex !== undefined) {
+                    const index = parsed.trackingStopIndex;
+                    setActiveStopIndex(index);
+                    setTrackingStopIndex(index);
+                    trackingStopIndexRef.current = index;
+                    
+                    const activeStop = parsed.stops[index];
+                    if (activeStop) {
+                        startTimeRef.current = Date.now();
+                        elapsedAtPauseRef.current = activeStop.elapsedTime || 0;
+                        isWaitingRef.current = true;
+                        
+                        lastPositionRef.current = null;
+                        lastTimestampRef.current = null;
+                        distanceAccumulatorRef.current = activeStop.distance || 0;
+                        waitAccumulatorRef.current = activeStop.waitTime || 0;
+                        
+                        if (navigator.geolocation) {
+                            watchIdRef.current = navigator.geolocation.watchPosition(
+                                handlePosition,
+                                (error) => console.warn('GPS error from hydration:', error.message),
+                                { enableHighAccuracy: true, maximumAge: 2000, timeout: 10000 }
+                            );
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error("Failed to restore fare state", e);
+            }
+        }
+        setIsHydrated(true);
+    }, [handlePosition]);
 
     // ---- Add Next Stop ----
     const addNextStop = useCallback(() => {
