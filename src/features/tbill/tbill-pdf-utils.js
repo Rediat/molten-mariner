@@ -90,35 +90,43 @@ export const generateTBillApplicationPDF = (data, clientDetails = {}) => {
     // --- Header ---
     // NBE Logo (Left)
     if (LOGOS.nbe_logo) {
-        // Aspect ratio: 817x312 (2.62). Height 18mm -> Width 47.1mm
-        doc.addImage(LOGOS.nbe_logo, 'PNG', 25, 10, 47.1, 18);
+        // Height minutely reduced to 19mm, width scaled proportionally to 49.8mm to preserve its 2.62 aspect ratio, top margin: 15mm
+        doc.addImage(LOGOS.nbe_logo, 'PNG', 25, 15, 49.8, 19);
     }
 
     // CSD Logo (Right)
     if (LOGOS.csd_logo) {
-        // Aspect ratio: 1150x308 (3.73). Height 15mm -> Width 56mm
-        // Positioned at the right margin (185 - 56 = 129)
-        doc.addImage(LOGOS.csd_logo, 'PNG', 129, 10, 56, 15);
+        // Height minutely reduced to 19mm, width scaled proportionally to 49.4mm (preserving the 2.6 aspect ratio), top margin: 15mm, right margin aligned at 185mm (185 - 49.4 = 135.6)
+        doc.addImage(LOGOS.csd_logo, 'PNG', 135.6, 15, 49.4, 19);
     }
 
     doc.setFontSize(10);
     doc.setTextColor(0);
+    // Draw "Date " label in bold
     doc.setFont('helvetica', 'bold');
-    doc.text(`Date ${formattedDate}`, 25, 50);
-    doc.text('NBE-MSOD', 185, 50, { align: 'right' });
+    doc.text('Date ', 25, 60);
+    const dateLabelWidth = doc.getTextWidth('Date ');
+    // Draw the actual inserted date value in normal face
+    doc.setFont('helvetica', 'normal');
+    doc.text(formattedDate, 25 + dateLabelWidth, 60);
+    // Draw "NBE-MSOD" in bold
+    doc.setFont('helvetica', 'bold');
+    doc.text('NBE-MSOD', 185, 60, { align: 'right' });
 
     // Title
     doc.setFontSize(12);
-    doc.text('CSD COMPETITIVE TREASURY BILL APPLICATION FORM', 105, 65, { align: 'center' });
+    doc.text('CSD COMPETITIVE TREASURY BILL APPLICATION FORM', 105, 75, { align: 'center' });
 
     // --- Section A: Treasury Bill Details ---
     doc.setFontSize(11);
-    doc.text('A. Treasury Bill Details', 25, 80);
+    // Moved slightly lower from 85 to 90 to add white space above
+    doc.text('A. Treasury Bill Details', 25, 90);
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
 
-    let y = 90;
+    // Moved slightly lower from 95 to 100 to maintain spacing relative to header
+    let y = 100;
     const lineSpacing = 10;
     let currentLabelX = 25; // Reverted to 25 to align with headers and Section B
     let currentValueX = 60; // Moved further left to minimize the gap in Section A without overlapping labels
@@ -126,7 +134,7 @@ export const generateTBillApplicationPDF = (data, clientDetails = {}) => {
     const addField = (label, value, showLine = true) => {
         doc.setFont('helvetica', 'normal');
         doc.text(`${label}:`, currentLabelX, y);
-        doc.setFont('helvetica', 'bold');
+        doc.setFont('helvetica', 'normal');
 
         if (label === 'Tender No') {
             // Regex to find ordinal pattern: digits + (st|nd|rd|th) + rest
