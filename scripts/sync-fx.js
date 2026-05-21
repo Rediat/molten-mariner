@@ -7,8 +7,34 @@ const __dirname = path.dirname(__filename);
 const DATA_FILE = path.join(__dirname, '../src/features/fxcompare/fxData.json');
 const API_URL = 'https://ethioblackmarket.com/api/price-history-range';
 
+// Load environment variables from .env or .env.local if they exist
+const loadEnv = () => {
+  for (const envFile of ['.env', '.env.local']) {
+    try {
+      const envPath = path.join(__dirname, `../${envFile}`);
+      if (fs.existsSync(envPath)) {
+        const envContent = fs.readFileSync(envPath, 'utf8');
+        envContent.split('\n').forEach(line => {
+          const trimmed = line.trim();
+          if (trimmed && !trimmed.startsWith('#')) {
+            const parts = trimmed.split('=');
+            if (parts.length >= 2) {
+              const key = parts[0].trim();
+              const value = parts.slice(1).join('=').trim().replace(/^['"]|['"]$/g, '');
+              process.env[key] = value;
+            }
+          }
+        });
+      }
+    } catch (e) {
+      console.warn(`Could not load environment variables from ${envFile}:`, e.message);
+    }
+  }
+};
+loadEnv();
+
 // Telegram Wallet P2P parameters
-const WALLET_API_KEY = "BfTcnWaIf66VdWTY7YjkwxPvbJCa7E0suL0D";
+const WALLET_API_KEY = process.env.VITE_TELEGRAM_WALLET_API_KEY || process.env.TELEGRAM_WALLET_API_KEY;
 const WALLET_P2P_URL = "https://p2p.walletbot.me/p2p/integration-api/v1/item/online";
 const STANDARD_RATES_URL = "https://open.er-api.com/v6/latest/USD";
 
