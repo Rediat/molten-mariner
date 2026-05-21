@@ -875,7 +875,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                 </InfoBox>
 
                 <InfoBox type="tip">
-                    <strong>Real-Time Data:</strong> Rates are available from <strong>January 2023</strong>. FX rates come from <code>ethioblackmarket.com</code>, Gold from <code>Datahub.io</code>, and Bitcoin from <code>Yahoo Finance</code>. All are converted to ETB based on parallel market averages for accuracy.
+                    <strong>Real-Time Data:</strong> Rates are available from <strong>January 2023</strong>. Historical FX rates (prior to May 2026) come from <code>ethioblackmarket.com</code>, while rates starting from May 2026 are calculated dynamically using the live Telegram Wallet P2P average rate conversion scaled against standard global exchange rates. Gold comes from <code>Datahub.io</code>, and Bitcoin from <code>Yahoo Finance</code>. All are converted to ETB based on parallel market averages for accuracy.
                 </InfoBox>
 
                 <InfoBox type="note">
@@ -1178,7 +1178,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                     <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Sync Commands:</p>
                     <FieldList fields={[
                         { name: 'npm run sync-tbill', description: 'Scrapes the NBE website for latest Treasury Bill auction results (Starts from Aug 2024). Updates cut-off yields and supply/demand metrics.' },
-                        { name: 'npm run sync-fx', description: 'Fetches parallel market exchange rates (Starts from Jan 2023). Updates monthly averages for USD, EUR, GBP, and more.' },
+                        { name: 'npm run sync-fx', description: 'Fetches parallel market rates prior to May 2026 and dynamically calculates live rates starting from May 2026 using Telegram Wallet P2P USDT/ETB averages and global exchange rates.' },
                         { name: 'npm run sync-gold', description: 'Updates historical Gold prices from Datahub.io (Starts from Jan 2023) and converts them to ETB using the latest parallel rates.' },
                         { name: 'npm run sync-inflation', description: 'Updates historical Ethiopian and USA inflation rates (Starts from 1966). Re-calculates CAGR and ARIMA forecast baselines.' },
                         { name: 'npm run sync-all', description: 'Executes all sync scripts in sequence. This is the recommended way to maintain the entire application data stack.' }
