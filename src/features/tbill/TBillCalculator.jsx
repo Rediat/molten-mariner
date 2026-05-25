@@ -43,7 +43,7 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
     });
     const [tenure, setTenure] = useState(182);
     const [discountRate, setDiscountRate] = useState(14);
-    const [brokerageRate, setBrokerageRate] = useState(0.1);
+    const [brokerageRate, setBrokerageRate] = useState(0.105);
 
     const tenureKey = `${tenure}_days`;
     const predictionCache = useRef({});
