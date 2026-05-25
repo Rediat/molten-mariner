@@ -80,7 +80,7 @@ const HistoryOverlay = ({ isOpen, onClose, module, title }) => {
                                         let label = k;
                                         if (k === 'auctionDate') label = 'Auction Date';
                                         if (k === 'discountRate') label = 'Yield (%)';
-                                        if (k === 'brokerageRate') label = 'Brokerage (%)';
+                                        if (k === 'brokerageRate') label = 'Commissions (%)';
                                         if (k === 'faceValue') label = 'Face Value';
                                         if (k === 'totalBudget') label = 'Budget';
                                         if (k === 'tenure') label = 'Tenor (Days)';

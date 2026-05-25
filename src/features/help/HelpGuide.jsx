@@ -670,12 +670,11 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                         { name: 'Tenure', description: 'T-Bill duration (28, 91, 182, or 364 days), labeled with approximate periods: 1, 3, 6 months and 1 year' },
                         { name: 'Discount Rate', description: 'Annual discount rate used to calculate purchase price' },
                         { name: 'Predicted Yield', description: 'Dynamic forecast based on the latest NBE cut-off yields. Click the prediction badge to automatically apply it to the discount rate.' },
-                        { name: 'Brokerage %', description: 'Commission percentage charged by your broker' },
+                        { name: 'Commissions %', description: 'Commission percentage charged by your broker. This includes the actual brokerage fee of 0.1% paid to the broker, an ECMA regulatory fee of 0.005%, and any other charges that may be added later.' },
                         { name: 'Auction Date', description: 'The date when the T-Bill auction occurs. The system uses this date + 1 (Settlement Date) to anchor the maturity calculation.' },
                         { name: 'Auction Navigation', description: 'Use the < and > arrows on either side of the date to quickly move backward or forward by 14 days (the standard NBE auction cycle).' },
                         { name: 'Upcoming Auctions', description: 'Reveals a floating list of the next 10 bi-weekly T-Bill auctions. Selecting a date from this list automatically updates the Auction Date and clears the results.' },
-                        { name: 'CSD Custodian (Bank)', description: 'Select your target custodian (Wegagen Capital, Gadaa Securities, or CBE Capital). This automatically fills the corresponding bank name and CSD account number on your application form.' },
-                        { name: 'Brokerage %', description: 'Commission percentage charged by your broker' }
+                        { name: 'CSD Custodian (Bank)', description: 'Select your target custodian (Wegagen Capital, Gadaa Securities, or CBE Capital). This automatically fills the corresponding bank name and CSD account number on your application form.' }
                     ]} />
                 </div>
 
@@ -698,21 +697,21 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                         { name: 'Security IDs', description: 'Displays the official ESX Symbol (TBL...) and the formal ISO 6166 ISIN (ETTBL...) with a mathematically calculated check digit.' },
                         { name: 'Bid Price', description: 'The bidding price per 100 ETB of face value. Calculated as: 100 / (1 + (Rate × Tenure / 365)).' },
                         { name: 'Quantity', description: 'The number of 5,000 ETB units being purchased' },
-                        { name: 'Purchase Price', description: 'The discounted amount to pay for the T-Bill (before brokerage)' },
-                        { name: 'Brokerage', description: 'The commission amount based on the purchase price' },
+                        { name: 'Purchase Price', description: 'The discounted amount to pay for the T-Bill (before commissions)' },
+                        { name: 'Commissions', description: 'The commission amount based on the purchase price' },
                         { name: 'Total Consideration / Face Value', description: 'The primary result: total out-of-pocket cost (Forward) or the maturity value received (Reverse)' },
                         { name: 'Actual Face Value / Actual Cost', description: 'The secondary result: the exact maturity amount (Forward) or the actual amount spent (Reverse) after rounding to the nearest 5,000 unit' },
                         { name: 'Leftover', description: 'In Reverse Mode, shows remaining budget (emerald) or slight over-budget amount (amber) due to the 5 ETB buffer. In Forward Mode, labeled as Leftover (FV), it shows the Face Value discarded when rounding to the nearest 5,000 ETB unit.' },
                         { name: 'Maturity Date', description: 'The date when the T-Bill matures, calculated as: Auction Date + 1 (Settlement) + Tenure.' },
                         { name: 'Discount', description: 'The difference between face value and purchase price (gross profit)' },
-                        { name: 'Net Return', description: 'Your actual profit after accounting for brokerage (Face Value − Total Consideration)' },
+                        { name: 'Net Return', description: 'Your actual profit after accounting for commissions (Face Value − Total Consideration)' },
                         { name: 'Effective Yield', description: 'Annualized return based on net profit relative to total consideration' }
                     ]} />
                 </div>
 
                 <InfoBox type="tip">
                     <strong>Copy in Words:</strong> Click the <strong>Copy icon</strong> next to
-                    <em>Quantity</em>, <em>Purchase Price</em>, <em>Brokerage</em>, <em>Total Consideration</em>, or <em>Actual Face Value</em>
+                    <em>Quantity</em>, <em>Purchase Price</em>, <em>Commissions</em>, <em>Total Consideration</em>, or <em>Actual Face Value</em>
                     to copy the amount converted into formal English words (e.g., "One Million Sixty-Five Thousand Only").
                     For Quantity, the text is formatted as "X Units Only".
                 </InfoBox>
@@ -725,7 +724,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                     <br />The price per 100 units of face value.
                     <br /><br />
                     <strong>Effective Yield = (Net Return / Total Consideration) × (365 / Days) × 100</strong>
-                    <br />Accounts for brokerage fees in the yield calculation.
+                    <br />Accounts for commission fees in the yield calculation.
                 </InfoBox>
 
                 <InfoBox type="tip">
@@ -739,7 +738,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                     The "Quantity" result shows exactly how many units your budget or face value allows.
                 </InfoBox>
                 <InfoBox type="tip">
-                    <strong>Reverse Mode:</strong> In Budget→Face mode, the calculator calculates the cost of a single unit (Price + Brokerage)
+                    <strong>Reverse Mode:</strong> In Budget→Face mode, the calculator calculates the cost of a single unit (Price + Commissions)
                     and divides your budget by this unit cost to find the maximum possible quantity.
                 </InfoBox>
 
@@ -883,7 +882,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                 </InfoBox>
 
                 <InfoBox type="note">
-                    <strong>Brokerage Fees:</strong> T-Bill calculations assume a standard 0.1% brokerage fee on the purchase price, matching the default setting in the main T-Bill tab.
+                    <strong>Commission Fees:</strong> T-Bill calculations assume a standard 0.105% total commission fee on the purchase price (comprising the 0.1% broker commission, 0.005% ECMA fee, and any other charges that may be added later), matching the default setting in the main T-Bill tab.
                 </InfoBox>
             </HelpSection>
 

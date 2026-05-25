@@ -50,6 +50,7 @@ function AppContent() {
     const [showHelp, setShowHelp] = useState(false);
     const [showSettings, setShowSettings] = useState(false);
     const [mapsReady, setMapsReady] = useState(false);
+    const [tbillBrokerageRate, setTbillBrokerageRate] = useState(0.105);
 
     const toggleHelp = () => setShowHelp(true);
     const closeHelp = () => setShowHelp(false);
@@ -150,13 +151,13 @@ function AppContent() {
                 <HistoryView toggleHelp={toggleHelp} toggleSettings={toggleSettings} />
             </div>
             <div className={activeTab === 'tbill' ? 'block h-full' : 'hidden'}>
-                <TBillCalculator toggleHelp={toggleHelp} toggleSettings={toggleSettings} />
+                <TBillCalculator toggleHelp={toggleHelp} toggleSettings={toggleSettings} brokerageRate={tbillBrokerageRate} setBrokerageRate={setTbillBrokerageRate} />
             </div>
             <div className={activeTab === 'tax' ? 'block h-full' : 'hidden'}>
                 <TaxCalculator toggleHelp={toggleHelp} toggleSettings={toggleSettings} />
             </div>
             <div className={activeTab === 'fxcompare' ? 'block h-full' : 'hidden'}>
-                <FxCompare toggleHelp={toggleHelp} toggleSettings={toggleSettings} />
+                <FxCompare toggleHelp={toggleHelp} toggleSettings={toggleSettings} tbillBrokerageRate={tbillBrokerageRate} />
             </div>
             <div className={activeTab === 'pension' ? 'block h-full' : 'hidden'}>
                 <PensionCalculator toggleHelp={toggleHelp} toggleSettings={toggleSettings} />

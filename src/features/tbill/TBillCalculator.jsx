@@ -18,7 +18,12 @@ const TENURES = [
     { days: 364, label: '364 Days', sub: '1 Year' },
 ];
 
-const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
+const TBillCalculator = ({
+    toggleHelp,
+    toggleSettings,
+    brokerageRate: propBrokerageRate,
+    setBrokerageRate: propSetBrokerageRate
+}) => {
     const { addToHistory } = useHistory();
 
     const [faceValue, setFaceValue] = useState(1000000);
@@ -43,7 +48,10 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
     });
     const [tenure, setTenure] = useState(182);
     const [discountRate, setDiscountRate] = useState(14);
-    const [brokerageRate, setBrokerageRate] = useState(0.105);
+    
+    const [localBrokerageRate, setLocalBrokerageRate] = useState(0.105);
+    const brokerageRate = propBrokerageRate !== undefined ? propBrokerageRate : localBrokerageRate;
+    const setBrokerageRate = propSetBrokerageRate !== undefined ? propSetBrokerageRate : setLocalBrokerageRate;
 
     const tenureKey = `${tenure}_days`;
     const predictionCache = useRef({});
@@ -263,7 +271,7 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
                     </p>
                     <p className="text-[11px] leading-relaxed">
                         {mode === 'forward'
-                            ? 'Face→Cost: Enter your target face value. The calculator floors this to the nearest 5,000 ETB unit and calculates your purchase price and brokerage.'
+                            ? 'Face→Cost: Enter your target face value. The calculator floors this to the nearest 5,000 ETB unit and calculates your purchase price and commissions.'
                             : 'Budget→Face: Enter your investment budget. The calculator determines the maximum number of 5,000 ETB units you can afford.'}
                     </p>
                     <p className="text-[11px] leading-relaxed mt-1 text-neutral-400">
@@ -358,7 +366,7 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
                         </div>
                     </div>
                     <div className="bg-neutral-800/40 rounded-xl px-3 py-1.5 border border-transparent hover:border-neutral-700 transition-all">
-                        <label onClick={focusBrokerageRate} className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold block mb-1 cursor-pointer hover:text-emerald-400 transition-colors text-left">Brokerage %</label>
+                        <label onClick={focusBrokerageRate} className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold block mb-1 cursor-pointer hover:text-emerald-400 transition-colors text-left">Commissions %</label>
                         <div className="flex items-center justify-end">
                             <FormattedNumberInput 
                                 ref={brokerageRateRef} 
@@ -568,7 +576,7 @@ const TBillCalculator = ({ toggleHelp, toggleSettings }) => {
                             </div>
                             <div className="bg-neutral-900/50 rounded-lg p-2 relative group">
                                 <div className="flex justify-between items-start">
-                                    <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Brokerage ({brokerageRate}%)</p>
+                                    <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Commissions ({brokerageRate}%)</p>
                                     <button onClick={(e) => { const words = amountToWords(result.brokerage); copyToClipboard(words, e.currentTarget); }} className="opacity-40 hover:opacity-100 transition-opacity p-1 hover:bg-amber-500/10 rounded-md text-amber-500/70 hover:text-amber-400" title="Copy in Words"><Copy size={10} /></button>
                                 </div>
                                 <p className="text-lg font-bold text-amber-400">{formatCurrency(result.brokerage)}</p>

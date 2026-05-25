@@ -51,7 +51,9 @@ const TENURE_OPTIONS = [
     { days: 364, label: '364 Days', sub: '1 Year' },
 ];
 
-const FxCompare = ({ toggleHelp, toggleSettings }) => {
+const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
+    const brokerageRate = tbillBrokerageRate !== undefined ? tbillBrokerageRate : 0.105;
+
     // Extract available currencies from the first month of fxData
     const currencies = useMemo(() => {
         if (!fxData || !fxData.monthlyPrices || fxData.monthlyPrices.length === 0) return [];
@@ -140,7 +142,7 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
                 validAuctions[selectedAuctionIdx],
                 fxData,
                 selectedCurrency,
-                0.1
+                brokerageRate
             );
             setResultData(res);
         } else if (mode === 'rolling') {
@@ -150,7 +152,7 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
                 tbillData,
                 fxData,
                 selectedCurrency,
-                0.1,
+                brokerageRate,
                 selectedTenure
             );
             setRollingResult(res);
@@ -161,7 +163,7 @@ const FxCompare = ({ toggleHelp, toggleSettings }) => {
                 loanYears || 0,
                 loanFrequency || 12,
                 customTbillRate || 0,
-                0.1,
+                brokerageRate,
                 selectedTenure
             );
             setLeverageResult(res);

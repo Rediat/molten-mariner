@@ -89,7 +89,7 @@ export function getFxRateWithFallback(fxDataObj, currency, targetMonth) {
     return null;
 }
 
-export function compareReturns(budget, tbillAuction, fxDataObj, currency, brokerageRate = 0.1) {
+export function compareReturns(budget, tbillAuction, fxDataObj, currency, brokerageRate = 0.105) {
     const startMonth = getMonthKey(tbillAuction.timestamp);
     const issueDateStr = toLocalISO(tbillAuction.timestamp);
     
