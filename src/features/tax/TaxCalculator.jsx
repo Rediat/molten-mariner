@@ -69,14 +69,23 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
     const [mode, setMode] = useState('salary'); // 'salary', 'rent', 'chance', 'capital', 'cbeCapital'
     const [securityType, setSecurityType] = useState('tbill'); // default to 'tbill'
     const transactionType = 'buy';
-    const [values, setValues] = useState({
-        amount: 174830.40,
-        taxableAllowance: 20000,
-        purchasePrice: 0
+    const [modeValues, setModeValues] = useState(DEFAULTS);
+    const [modeResults, setModeResults] = useState({
+        salary: null,
+        rent: null,
+        business: null,
+        sales: null,
+        chance: null,
+        interest: null,
+        capital: null,
+        dividend: null,
+        cbeCapital: null
     });
-    const [result, setResult] = useState(null);
     const [showExplanation, setShowExplanation] = useState(false);
     const [showHistory, setShowHistory] = useState(false);
+
+    const values = modeValues[mode] || { amount: 0, taxableAllowance: 0, purchasePrice: 0 };
+    const result = modeResults[mode] || null;
 
     // Refs for input focus
     const inputRefs = {
@@ -86,12 +95,12 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
     };
 
     const clearResults = useCallback(() => {
-        setResult(null);
-    }, []);
+        setModeResults(prev => ({ ...prev, [mode]: null }));
+    }, [mode]);
 
-    const focusAmount = useInputFocus((val) => setValues(prev => ({ ...prev, amount: val })), inputRefs.amount, clearResults);
-    const focusTaxableAllowance = useInputFocus((val) => setValues(prev => ({ ...prev, taxableAllowance: val })), inputRefs.taxableAllowance, clearResults);
-    const focusPurchasePrice = useInputFocus((val) => setValues(prev => ({ ...prev, purchasePrice: val })), inputRefs.purchasePrice, clearResults);
+    const focusAmount = useInputFocus((val) => setModeValues(prev => ({ ...prev, [mode]: { ...prev[mode], amount: val } })), inputRefs.amount, clearResults);
+    const focusTaxableAllowance = useInputFocus((val) => setModeValues(prev => ({ ...prev, [mode]: { ...prev[mode], taxableAllowance: val } })), inputRefs.taxableAllowance, clearResults);
+    const focusPurchasePrice = useInputFocus((val) => setModeValues(prev => ({ ...prev, [mode]: { ...prev[mode], purchasePrice: val } })), inputRefs.purchasePrice, clearResults);
 
     const handleCalculate = (logHistory = true) => {
         const amt = values.amount || 0;
@@ -205,7 +214,7 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
             securityType,
             transactionType
         };
-        setResult(res);
+        setModeResults(prev => ({ ...prev, [mode]: res }));
 
         const historyInputs = {
             mode: mode.toUpperCase(),
@@ -232,8 +241,8 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
 
     const handleChange = (field, val) => {
         const numericVal = val === '' ? null : (parseFloat(val.toString().replace(/,/g, '')) || 0);
-        setValues(prev => ({ ...prev, [field]: numericVal }));
-        setResult(null);
+        setModeValues(prev => ({ ...prev, [mode]: { ...prev[mode], [field]: numericVal } }));
+        setModeResults(prev => ({ ...prev, [mode]: null }));
     };
 
     const getModeConfig = () => {
@@ -304,8 +313,6 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                         <button key={opt.val}
                             onClick={() => {
                                 setMode(opt.val);
-                                setResult(null);
-                                setValues(DEFAULTS[opt.val]);
                             }}
                             className={`py-1.5 px-1 rounded-lg text-[11px] font-bold transition-all whitespace-nowrap ${mode === opt.val ? 'bg-primary-600/20 text-primary-400 ring-1 ring-primary-500/50' : 'bg-neutral-900/50 text-neutral-500 hover:bg-neutral-900'}`}>
                             {opt.label}
@@ -941,8 +948,8 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
             <div className="flex gap-1.5 mt-1 pt-1">
                 <button
                     onClick={() => {
-                        setResult(null);
-                        setValues({ amount: 0, taxableAllowance: 0, purchasePrice: 0 });
+                        setModeResults(prev => ({ ...prev, [mode]: null }));
+                        setModeValues(prev => ({ ...prev, [mode]: { amount: 0, taxableAllowance: 0, purchasePrice: 0 } }));
                     }}
                     className="w-[12%] bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-xs py-2.5 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center gap-1 uppercase tracking-wider"
                     title="Clear all values"
