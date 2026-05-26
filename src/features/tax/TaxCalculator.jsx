@@ -67,7 +67,7 @@ const DEFAULTS = {
 const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
     const { addToHistory } = useHistory();
     const [mode, setMode] = useState('salary'); // 'salary', 'rent', 'chance', 'capital', 'cbeCapital'
-    const [securityType, setSecurityType] = useState('equity_main'); // 'equity_main', 'equity_otc', 'funds_etf', 'fixed_income'
+    const [securityType, setSecurityType] = useState('tbill'); // default to 'tbill'
     const transactionType = 'buy';
     const [values, setValues] = useState({
         amount: 174830.40,
@@ -96,7 +96,7 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
     const handleCalculate = (logHistory = true) => {
         const amt = values.amount || 0;
         const allowance = mode === 'salary' ? (values.taxableAllowance || 0) : 0;
-        
+
         let tax = 0;
         let pension = 0;
         let netIncome = 0;
@@ -187,14 +187,14 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
             gross = amt;
         }
 
-        const res = { 
-            tax, 
-            pension, 
-            netIncome, 
-            gross, 
-            taxableGain, 
-            taxableAmount, 
-            quarterlyPayment, 
+        const res = {
+            tax,
+            pension,
+            netIncome,
+            gross,
+            taxableGain,
+            taxableAmount,
+            quarterlyPayment,
             totalDeduction: tax + pension,
             commission,
             vat,
@@ -207,10 +207,10 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
         };
         setResult(res);
 
-        const historyInputs = { 
-            mode: mode.toUpperCase(), 
-            amount: amt, 
-            ...(mode === 'salary' && allowance ? { allowance } : {}), 
+        const historyInputs = {
+            mode: mode.toUpperCase(),
+            amount: amt,
+            ...(mode === 'salary' && allowance ? { allowance } : {}),
             ...(mode === 'capital' ? { purchasePrice: values.purchasePrice } : {}),
             ...(mode === 'cbeCapital' ? { securityType, transactionType } : {})
         };
@@ -281,7 +281,7 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                 <div className="bg-gradient-to-r from-primary-900/30 to-neutral-800/50 border border-primary-500/30 rounded-xl p-2 mb-2 text-xs text-neutral-300 text-left">
                     <p className="font-bold text-primary-400 mb-1">Ethiopian Tax Calculator</p>
                     <p className="text-[11px] leading-relaxed">
-                        Calculates taxes based on Proclamation No.1395/2025. 
+                        Calculates taxes based on Proclamation No.1395/2025.
                         Includes Employment Tax, Rental Income, Games of Chance (20%), Capital Gains (15%), Interest Income (10%), Dividend Income (15%), Business Income Tax (up to 35%), and Category B Sales Tax (2% - 9%).
                     </p>
                 </div>
@@ -301,11 +301,14 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                         { val: 'dividend', label: 'Dividend' },
                         { val: 'cbeCapital', label: 'Brokerage' }
                     ].map(opt => (
-                        <button key={opt.val} 
-                            onClick={() => { 
-                                setMode(opt.val); 
-                                setResult(null); 
+                        <button key={opt.val}
+                            onClick={() => {
+                                setMode(opt.val);
+                                setResult(null);
                                 setValues(DEFAULTS[opt.val]);
+                                if (opt.val === 'cbeCapital') {
+                                    setSecurityType('tbill');
+                                }
                             }}
                             className={`py-1.5 px-1 rounded-lg text-[11px] font-bold transition-all whitespace-nowrap ${mode === opt.val ? 'bg-primary-600/20 text-primary-400 ring-1 ring-primary-500/50' : 'bg-neutral-900/50 text-neutral-500 hover:bg-neutral-900'}`}>
                             {opt.label}
@@ -320,7 +323,7 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                     {/* Amount Input */}
                     <div className="bg-neutral-800/40 rounded-lg p-1.5 flex justify-between items-center gap-4 border border-transparent hover:border-neutral-700 transition-all">
                         <div className="flex flex-col shrink-0 items-start text-left">
-                            <label 
+                            <label
                                 onClick={focusAmount}
                                 className="text-sm font-bold text-neutral-300 cursor-pointer hover:text-primary-400 transition-colors"
                                 title="Click to Clear"
@@ -329,12 +332,12 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                             </label>
                             <span className="text-[9px] uppercase tracking-tighter text-neutral-500 font-bold">{config.sub}</span>
                         </div>
-                        <FormattedNumberInput 
+                        <FormattedNumberInput
                             ref={inputRefs.amount}
-                            value={values.amount} 
-                            onChange={(e) => handleChange('amount', e.target.value)} 
-                            decimals={2} 
-                            className="bg-transparent text-right text-lg font-mono text-white focus:outline-none w-full flex-1" 
+                            value={values.amount}
+                            onChange={(e) => handleChange('amount', e.target.value)}
+                            decimals={2}
+                            className="bg-transparent text-right text-lg font-mono text-white focus:outline-none w-full flex-1"
                         />
                     </div>
 
@@ -342,7 +345,7 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                     {mode === 'salary' && (
                         <div className="bg-neutral-800/40 rounded-lg p-1.5 flex justify-between items-center gap-4 border border-transparent hover:border-neutral-700 transition-all mt-0.5">
                             <div className="flex flex-col shrink-0 items-start text-left">
-                                <label 
+                                <label
                                     onClick={focusTaxableAllowance}
                                     className="text-sm font-bold text-neutral-300 cursor-pointer hover:text-primary-400 transition-colors"
                                     title="Click to Clear"
@@ -351,12 +354,12 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                                 </label>
                                 <span className="text-[9px] uppercase tracking-tighter text-neutral-500 font-bold">Non-Pensionable</span>
                             </div>
-                            <FormattedNumberInput 
+                            <FormattedNumberInput
                                 ref={inputRefs.taxableAllowance}
-                                value={values.taxableAllowance} 
-                                onChange={(e) => handleChange('taxableAllowance', e.target.value)} 
-                                decimals={2} 
-                                className="bg-transparent text-right text-lg font-mono text-white focus:outline-none w-full flex-1" 
+                                value={values.taxableAllowance}
+                                onChange={(e) => handleChange('taxableAllowance', e.target.value)}
+                                decimals={2}
+                                className="bg-transparent text-right text-lg font-mono text-white focus:outline-none w-full flex-1"
                             />
                         </div>
                     )}
@@ -365,7 +368,7 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                     {mode === 'capital' && (
                         <div className="bg-neutral-800/40 rounded-lg p-1.5 flex justify-between items-center gap-4 border border-transparent hover:border-neutral-700 transition-all mt-0.5">
                             <div className="flex flex-col shrink-0 items-start text-left">
-                                <label 
+                                <label
                                     onClick={focusPurchasePrice}
                                     className="text-sm font-bold text-neutral-300 cursor-pointer hover:text-primary-400 transition-colors"
                                     title="Click to Clear"
@@ -374,12 +377,12 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                                 </label>
                                 <span className="text-[9px] uppercase tracking-tighter text-neutral-500 font-bold">Purchase Price (A)</span>
                             </div>
-                            <FormattedNumberInput 
+                            <FormattedNumberInput
                                 ref={inputRefs.purchasePrice}
-                                value={values.purchasePrice} 
-                                onChange={(e) => handleChange('purchasePrice', e.target.value)} 
-                                decimals={2} 
-                                className="bg-transparent text-right text-lg font-mono text-white focus:outline-none w-full flex-1" 
+                                value={values.purchasePrice}
+                                onChange={(e) => handleChange('purchasePrice', e.target.value)}
+                                decimals={2}
+                                className="bg-transparent text-right text-lg font-mono text-white focus:outline-none w-full flex-1"
                             />
                         </div>
                     )}
@@ -406,14 +409,14 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                                 <div className="bg-neutral-900/50 rounded-lg p-2 border border-neutral-800 flex flex-col justify-between group relative">
                                     <div className="flex justify-between items-start mb-1">
                                         <div className="text-[10px] uppercase font-bold text-neutral-500 text-left">
-                                            {mode === 'rent' 
-                                                ? 'Annual Gross' 
-                                                : mode === 'capital' 
-                                                    ? 'Selling Price' 
-                                                    : mode === 'interest' 
-                                                        ? 'Gross Interest' 
-                                                        : mode === 'dividend' 
-                                                            ? 'Gross Dividend' 
+                                            {mode === 'rent'
+                                                ? 'Annual Gross'
+                                                : mode === 'capital'
+                                                    ? 'Selling Price'
+                                                    : mode === 'interest'
+                                                        ? 'Gross Interest'
+                                                        : mode === 'dividend'
+                                                            ? 'Gross Dividend'
                                                             : mode === 'business'
                                                                 ? 'Taxable Profit'
                                                                 : mode === 'sales'
@@ -421,12 +424,12 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                                                                     : 'Gross Amount'}
                                         </div>
                                         {['salary', 'rent'].includes(mode) && (
-                                            <button 
-                                                onClick={(e) => { 
-                                                    const words = amountToWords(result.gross); 
-                                                    copyToClipboard(words, e.currentTarget); 
-                                                }} 
-                                                className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-primary-500/10 rounded text-primary-500/70 hover:text-primary-400" 
+                                            <button
+                                                onClick={(e) => {
+                                                    const words = amountToWords(result.gross);
+                                                    copyToClipboard(words, e.currentTarget);
+                                                }}
+                                                className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-primary-500/10 rounded text-primary-500/70 hover:text-primary-400"
                                                 title="Copy in Words"
                                             >
                                                 <Copy size={9} />
@@ -456,17 +459,17 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                                         )}
                                     </div>
                                 </div>
-                                
+
                                 {mode === 'salary' && (
                                     <div className="bg-neutral-900/50 rounded-lg p-2 border border-neutral-800 flex flex-col justify-between group relative">
                                         <div className="flex justify-between items-start mb-1">
                                             <div className="text-[10px] uppercase font-bold text-neutral-500 text-left">Pension (7%)</div>
-                                            <button 
-                                                onClick={(e) => { 
-                                                    const words = amountToWords(result.pension); 
-                                                    copyToClipboard(words, e.currentTarget); 
-                                                }} 
-                                                className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-primary-500/10 rounded text-primary-500/70 hover:text-primary-400" 
+                                            <button
+                                                onClick={(e) => {
+                                                    const words = amountToWords(result.pension);
+                                                    copyToClipboard(words, e.currentTarget);
+                                                }}
+                                                className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-primary-500/10 rounded text-primary-500/70 hover:text-primary-400"
                                                 title="Copy in Words"
                                             >
                                                 <Copy size={9} />
@@ -497,12 +500,12 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                                     <div className="bg-neutral-900/50 rounded-lg p-2 border border-neutral-800 flex flex-col justify-between group relative">
                                         <div className="flex justify-between items-start mb-1">
                                             <div className="text-[10px] uppercase font-bold text-neutral-500 text-left">Taxable Rent (50%)</div>
-                                            <button 
-                                                onClick={(e) => { 
-                                                    const words = amountToWords(result.taxableAmount); 
-                                                    copyToClipboard(words, e.currentTarget); 
-                                                }} 
-                                                className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-primary-500/10 rounded text-primary-500/70 hover:text-primary-400" 
+                                            <button
+                                                onClick={(e) => {
+                                                    const words = amountToWords(result.taxableAmount);
+                                                    copyToClipboard(words, e.currentTarget);
+                                                }}
+                                                className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-primary-500/10 rounded text-primary-500/70 hover:text-primary-400"
                                                 title="Copy in Words"
                                             >
                                                 <Copy size={9} />
@@ -528,12 +531,12 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                                 <div className="bg-neutral-900/50 rounded-lg p-2 border border-neutral-800 flex flex-col justify-between group relative">
                                     <div className="flex justify-between items-start mb-1">
                                         <div className="text-[10px] uppercase font-bold text-neutral-500 text-left">
-                                            {mode === 'rent' 
-                                                ? `Annual Tax (${result.gross > 0 ? ((result.tax / result.gross) * 100).toFixed(2) : '0.00'}%)` 
-                                                : mode === 'chance' 
-                                                    ? 'Tax Amount (20%)' 
-                                                    : mode === 'capital' 
-                                                        ? 'Tax Amount (15%)' 
+                                            {mode === 'rent'
+                                                ? `Annual Tax (${result.gross > 0 ? ((result.tax / result.gross) * 100).toFixed(2) : '0.00'}%)`
+                                                : mode === 'chance'
+                                                    ? 'Tax Amount (20%)'
+                                                    : mode === 'capital'
+                                                        ? 'Tax Amount (15%)'
                                                         : mode === 'interest'
                                                             ? 'Tax Amount (10%)'
                                                             : mode === 'dividend'
@@ -542,17 +545,17 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                                                                     ? `Annual Tax (${result.gross > 0 ? ((result.tax / result.gross) * 100).toFixed(2) : '0.00'}%)`
                                                                     : mode === 'sales'
                                                                         ? `Annual Tax (${result.gross > 0 ? getSalesTaxRate(result.gross) : '0'}%)`
-                                                                         : mode === 'salary'
-                                                                             ? `Tax Amount (${result.gross > 0 ? ((result.tax / result.gross) * 100).toFixed(2) : '0.00'}%)`
-                                                                             : 'Tax Amount'}
+                                                                        : mode === 'salary'
+                                                                            ? `Tax Amount (${result.gross > 0 ? ((result.tax / result.gross) * 100).toFixed(2) : '0.00'}%)`
+                                                                            : 'Tax Amount'}
                                         </div>
                                         {['salary', 'rent'].includes(mode) && (
-                                            <button 
-                                                onClick={(e) => { 
-                                                    const words = amountToWords(result.tax); 
-                                                    copyToClipboard(words, e.currentTarget); 
-                                                }} 
-                                                className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-red-500/10 rounded text-red-400/70 hover:text-red-400" 
+                                            <button
+                                                onClick={(e) => {
+                                                    const words = amountToWords(result.tax);
+                                                    copyToClipboard(words, e.currentTarget);
+                                                }}
+                                                className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-red-500/10 rounded text-red-400/70 hover:text-red-400"
                                                 title="Copy in Words"
                                             >
                                                 <Copy size={9} />
@@ -589,12 +592,12 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                                             <div className="text-[10px] uppercase font-bold text-neutral-500 text-left">
                                                 Total Deduction ({result.gross > 0 ? (((result.tax + result.pension) / result.gross) * 100).toFixed(2) : '0.00'}%)
                                             </div>
-                                            <button 
-                                                onClick={(e) => { 
-                                                    const words = amountToWords(result.totalDeduction); 
-                                                    copyToClipboard(words, e.currentTarget); 
-                                                }} 
-                                                className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-red-500/10 rounded text-red-400/70 hover:text-red-400" 
+                                            <button
+                                                onClick={(e) => {
+                                                    const words = amountToWords(result.totalDeduction);
+                                                    copyToClipboard(words, e.currentTarget);
+                                                }}
+                                                className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-red-500/10 rounded text-red-400/70 hover:text-red-400"
                                                 title="Copy in Words"
                                             >
                                                 <Copy size={9} />
@@ -625,12 +628,12 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                                     <div className="bg-neutral-900/50 rounded-lg p-2 border border-neutral-800 flex flex-col justify-between group relative">
                                         <div className="flex justify-between items-start mb-1">
                                             <div className="text-[10px] uppercase font-bold text-neutral-500 text-left">Quarterly Payment</div>
-                                            <button 
-                                                onClick={(e) => { 
-                                                    const words = amountToWords(result.quarterlyPayment); 
-                                                    copyToClipboard(words, e.currentTarget); 
-                                                }} 
-                                                className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-red-500/10 rounded text-red-400/70 hover:text-red-400" 
+                                            <button
+                                                onClick={(e) => {
+                                                    const words = amountToWords(result.quarterlyPayment);
+                                                    copyToClipboard(words, e.currentTarget);
+                                                }}
+                                                className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-red-500/10 rounded text-red-400/70 hover:text-red-400"
                                                 title="Copy in Words"
                                             >
                                                 <Copy size={9} />
@@ -641,14 +644,14 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                                         </span>
                                     </div>
                                 )}
-                                
+
                                 <div className={`bg-neutral-900/50 rounded-lg p-2 border border-neutral-800 flex flex-col justify-between group relative ${['chance', 'rent', 'interest', 'dividend', 'business', 'sales', 'salary'].includes(mode) ? 'col-span-2' : ''}`}>
                                     <div className="flex justify-between items-start mb-1">
                                         <div className="text-[10px] uppercase font-bold text-neutral-500 text-left">
-                                            {mode === 'rent' 
-                                                ? `Annual Net (${result.gross > 0 ? ((result.netIncome / result.gross) * 100).toFixed(2) : '0.00'}%)` 
-                                                : mode === 'capital' 
-                                                    ? `Net Proceeds (${result.gross > 0 ? ((result.netIncome / result.gross) * 100).toFixed(2) : '0.00'}%)` 
+                                            {mode === 'rent'
+                                                ? `Annual Net (${result.gross > 0 ? ((result.netIncome / result.gross) * 100).toFixed(2) : '0.00'}%)`
+                                                : mode === 'capital'
+                                                    ? `Net Proceeds (${result.gross > 0 ? ((result.netIncome / result.gross) * 100).toFixed(2) : '0.00'}%)`
                                                     : mode === 'interest'
                                                         ? `Net Interest (${result.gross > 0 ? ((result.netIncome / result.gross) * 100).toFixed(2) : '0.00'}%)`
                                                         : mode === 'dividend'
@@ -660,12 +663,12 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                                                                     : `Net Income (${result.gross > 0 ? ((result.netIncome / result.gross) * 100).toFixed(2) : '0.00'}%)`}
                                         </div>
                                         {['salary', 'rent'].includes(mode) && (
-                                            <button 
-                                                onClick={(e) => { 
-                                                    const words = amountToWords(result.netIncome); 
-                                                    copyToClipboard(words, e.currentTarget); 
-                                                }} 
-                                                className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-primary-500/10 rounded text-primary-500/70 hover:text-primary-400" 
+                                            <button
+                                                onClick={(e) => {
+                                                    const words = amountToWords(result.netIncome);
+                                                    copyToClipboard(words, e.currentTarget);
+                                                }}
+                                                className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-primary-500/10 rounded text-primary-500/70 hover:text-primary-400"
                                                 title="Copy in Words"
                                             >
                                                 <Copy size={9} />
@@ -697,7 +700,7 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                         </div>
                     )}
                 </div>
-             ) : (
+            ) : (
                 /* Brokerage Mode Only */
                 <div className="flex-1 flex flex-col min-h-0">
                     {/* Fixed Brokerage Inputs */}
@@ -705,7 +708,7 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                         {/* Transaction Value Input */}
                         <div className="bg-neutral-800/40 rounded-lg py-1 px-1.5 flex justify-between items-center gap-4 border border-transparent hover:border-neutral-700 transition-all">
                             <div className="flex flex-col shrink-0 items-start text-left">
-                                <label 
+                                <label
                                     onClick={focusAmount}
                                     className="text-sm font-bold text-neutral-300 cursor-pointer hover:text-primary-400 transition-colors"
                                     title="Click to Clear"
@@ -714,19 +717,19 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                                 </label>
                                 <span className="text-[9px] uppercase tracking-tighter text-neutral-500 font-bold">{config.sub}</span>
                             </div>
-                            <FormattedNumberInput 
+                            <FormattedNumberInput
                                 ref={inputRefs.amount}
-                                value={values.amount} 
-                                onChange={(e) => handleChange('amount', e.target.value)} 
-                                decimals={2} 
-                                className="bg-transparent text-right text-lg font-mono text-white focus:outline-none w-full flex-1" 
+                                value={values.amount}
+                                onChange={(e) => handleChange('amount', e.target.value)}
+                                decimals={2}
+                                className="bg-transparent text-right text-lg font-mono text-white focus:outline-none w-full flex-1"
                             />
                         </div>
 
                         {/* Security Type Selector */}
                         <div className="bg-neutral-800/40 rounded-lg py-1.5 px-2 border border-transparent hover:border-neutral-700 transition-all">
                             <label className="block text-[9.5px] font-bold text-neutral-500 uppercase tracking-wider text-left mb-1">Security Type</label>
-                            
+
                             <div className="grid grid-cols-2 gap-1">
                                 {[
                                     { val: 'equity_main', label: 'Equity (Main)', rate: '1.6%' },
@@ -748,7 +751,7 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                                 ))}
                                 {/* T-Bill spans 2 columns */}
                                 {[
-                                    { val: 'tbill', label: 'T-Bill (Treasury Bill)', rate: '0.1%' }
+                                    { val: 'tbill', label: 'Treasury Bill', rate: '0.1%' }
                                 ].map(sec => (
                                     <button
                                         key={sec.val}
@@ -775,7 +778,7 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                         {result !== null && (
                             <div className="space-y-1.5 mb-1.5 pt-1">
                                 <div className="flex justify-between items-center">
-                                    <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Brokerage & Market charges breakdown</span>
+                                    <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Charges breakdown</span>
                                     <button
                                         onClick={() => setShowHistory(true)}
                                         className="text-[10px] text-primary-500 font-bold uppercase tracking-wider flex items-center gap-1 hover:text-primary-400 transition-colors"
@@ -788,12 +791,12 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                                     <div className="bg-neutral-900/50 rounded-xl p-2 border border-neutral-800 flex flex-col justify-between group relative hover:border-neutral-700 transition-all">
                                         <div className="flex justify-between items-start mb-1">
                                             <div className="text-[10px] uppercase font-extrabold text-neutral-500 text-left tracking-wider">Gross Value</div>
-                                            <button 
-                                                onClick={(e) => { 
-                                                    const words = amountToWords(result.gross); 
-                                                    copyToClipboard(words, e.currentTarget); 
-                                                }} 
-                                                className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-primary-500/10 rounded text-primary-500/70 hover:text-primary-400" 
+                                            <button
+                                                onClick={(e) => {
+                                                    const words = amountToWords(result.gross);
+                                                    copyToClipboard(words, e.currentTarget);
+                                                }}
+                                                className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-primary-500/10 rounded text-primary-500/70 hover:text-primary-400"
                                                 title="Copy in Words"
                                             >
                                                 <Copy size={9.5} />
@@ -810,12 +813,12 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                                             <div className="text-[10px] uppercase font-extrabold text-neutral-500 text-left tracking-wider">
                                                 Commission ({securityType === 'equity_main' ? '1.6%' : securityType === 'equity_otc' || securityType === 'funds_etf' ? '2.0%' : '0.1%'})
                                             </div>
-                                            <button 
-                                                onClick={(e) => { 
-                                                    const words = amountToWords(result.commission); 
-                                                    copyToClipboard(words, e.currentTarget); 
-                                                }} 
-                                                className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-primary-500/10 rounded text-primary-500/70 hover:text-primary-400" 
+                                            <button
+                                                onClick={(e) => {
+                                                    const words = amountToWords(result.commission);
+                                                    copyToClipboard(words, e.currentTarget);
+                                                }}
+                                                className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-primary-500/10 rounded text-primary-500/70 hover:text-primary-400"
                                                 title="Copy in Words"
                                             >
                                                 <Copy size={9.5} />
@@ -830,12 +833,12 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                                     <div className="bg-neutral-900/50 rounded-xl p-2 border border-neutral-800 flex flex-col justify-between group relative hover:border-neutral-700 transition-all">
                                         <div className="flex justify-between items-start mb-1">
                                             <div className="text-[10px] uppercase font-extrabold text-neutral-500 text-left tracking-wider">VAT on Fee (15%)</div>
-                                            <button 
-                                                onClick={(e) => { 
-                                                    const words = amountToWords(result.vat); 
-                                                    copyToClipboard(words, e.currentTarget); 
-                                                }} 
-                                                className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-primary-500/10 rounded text-primary-500/70 hover:text-primary-400" 
+                                            <button
+                                                onClick={(e) => {
+                                                    const words = amountToWords(result.vat);
+                                                    copyToClipboard(words, e.currentTarget);
+                                                }}
+                                                className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-primary-500/10 rounded text-primary-500/70 hover:text-primary-400"
                                                 title="Copy in Words"
                                             >
                                                 <Copy size={9.5} />
@@ -852,12 +855,12 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                                             <div className="text-[10px] uppercase font-extrabold text-neutral-500 text-left tracking-wider font-semibold">
                                                 ESX Fee ({securityType === 'fixed_income' ? '0.021%' : securityType === 'equity_otc' ? '0.5%' : securityType === 'tbill' ? '0%' : '0.36%'})
                                             </div>
-                                            <button 
-                                                onClick={(e) => { 
-                                                    const words = amountToWords(result.esx); 
-                                                    copyToClipboard(words, e.currentTarget); 
-                                                }} 
-                                                className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-primary-500/10 rounded text-primary-500/70 hover:text-primary-400" 
+                                            <button
+                                                onClick={(e) => {
+                                                    const words = amountToWords(result.esx);
+                                                    copyToClipboard(words, e.currentTarget);
+                                                }}
+                                                className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-primary-500/10 rounded text-primary-500/70 hover:text-primary-400"
                                                 title="Copy in Words"
                                             >
                                                 <Copy size={9.5} />
@@ -874,12 +877,12 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                                             <div className="text-[10px] uppercase font-extrabold text-neutral-500 text-left tracking-wider">
                                                 ECMA Fee ({['fixed_income', 'tbill'].includes(securityType) ? '0.005%' : '0.15%'})
                                             </div>
-                                            <button 
-                                                onClick={(e) => { 
-                                                    const words = amountToWords(result.ecma); 
-                                                    copyToClipboard(words, e.currentTarget); 
-                                                }} 
-                                                className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-primary-500/10 rounded text-primary-500/70 hover:text-primary-400" 
+                                            <button
+                                                onClick={(e) => {
+                                                    const words = amountToWords(result.ecma);
+                                                    copyToClipboard(words, e.currentTarget);
+                                                }}
+                                                className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-primary-500/10 rounded text-primary-500/70 hover:text-primary-400"
                                                 title="Copy in Words"
                                             >
                                                 <Copy size={9.5} />
@@ -894,12 +897,12 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                                     <div className="bg-neutral-900/50 rounded-xl p-2 border border-neutral-800 flex flex-col justify-between group relative hover:border-neutral-700 transition-all">
                                         <div className="flex justify-between items-start mb-1">
                                             <div className="text-[10px] uppercase font-extrabold text-neutral-500 text-left tracking-wider">Total Charges</div>
-                                            <button 
-                                                onClick={(e) => { 
-                                                    const words = amountToWords(result.totalFees); 
-                                                    copyToClipboard(words, e.currentTarget); 
-                                                }} 
-                                                className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-primary-500/10 rounded text-primary-500/70 hover:text-primary-400" 
+                                            <button
+                                                onClick={(e) => {
+                                                    const words = amountToWords(result.totalFees);
+                                                    copyToClipboard(words, e.currentTarget);
+                                                }}
+                                                className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-primary-500/10 rounded text-primary-500/70 hover:text-primary-400"
                                                 title="Copy in Words"
                                             >
                                                 <Copy size={9.5} />
@@ -916,12 +919,12 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                                             <div className="text-[10px] uppercase font-black text-neutral-500 text-left font-black tracking-widest">
                                                 {transactionType === 'buy' ? 'Total Cost (Settlement)' : 'Net Proceeds (To Receive)'}
                                             </div>
-                                            <button 
-                                                onClick={(e) => { 
-                                                    const words = amountToWords(result.netProceeds); 
-                                                    copyToClipboard(words, e.currentTarget); 
-                                                }} 
-                                                className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-primary-500/10 rounded text-primary-500/70 hover:text-primary-400" 
+                                            <button
+                                                onClick={(e) => {
+                                                    const words = amountToWords(result.netProceeds);
+                                                    copyToClipboard(words, e.currentTarget);
+                                                }}
+                                                className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-primary-500/10 rounded text-primary-500/70 hover:text-primary-400"
                                                 title="Copy in Words"
                                             >
                                                 <Copy size={9.5} />
@@ -943,7 +946,6 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                     onClick={() => {
                         setResult(null);
                         setValues({ amount: 0, taxableAllowance: 0, purchasePrice: 0 });
-                        setSecurityType('equity_main');
                     }}
                     className="w-[12%] bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-xs py-2.5 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center gap-1 uppercase tracking-wider"
                     title="Clear all values"
