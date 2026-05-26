@@ -286,7 +286,7 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                 </div>
             )}
 
-            <div className="space-y-1 mb-1.5 mt-1.5">
+            <div className="space-y-1 mb-1.5 mt-1 shrink-0">
                 <label className="block text-[10px] font-bold text-neutral-500 uppercase tracking-wider text-left">Tax Category</label>
                 <div className="grid grid-cols-3 gap-1">
                     {[
@@ -295,21 +295,7 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                         { val: 'business', label: 'Business' },
                         { val: 'sales', label: 'Sales' },
                         { val: 'chance', label: 'Chance' },
-                        { val: 'interest', label: 'Interest' }
-                    ].map(opt => (
-                        <button key={opt.val} 
-                            onClick={() => { 
-                                setMode(opt.val); 
-                                setResult(null); 
-                                setValues(DEFAULTS[opt.val]);
-                            }}
-                            className={`py-1.5 px-0.5 rounded text-[10px] font-bold transition-all whitespace-nowrap ${mode === opt.val ? 'bg-primary-600/20 text-primary-400 ring-1 ring-primary-500/50' : 'bg-neutral-900/50 text-neutral-500 hover:bg-neutral-900'}`}>
-                            {opt.label}
-                        </button>
-                    ))}
-                </div>
-                <div className="grid grid-cols-3 gap-1 mt-1">
-                    {[
+                        { val: 'interest', label: 'Interest' },
                         { val: 'capital', label: 'Capital' },
                         { val: 'dividend', label: 'Dividend' },
                         { val: 'cbeCapital', label: 'Brokerage' }
@@ -320,7 +306,7 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                                 setResult(null); 
                                 setValues(DEFAULTS[opt.val]);
                             }}
-                            className={`py-1.5 px-0.5 rounded text-[10px] font-bold transition-all whitespace-nowrap ${mode === opt.val ? 'bg-primary-600/20 text-primary-400 ring-1 ring-primary-500/50' : 'bg-neutral-900/50 text-neutral-500 hover:bg-neutral-900'}`}>
+                            className={`py-1.5 px-1 rounded-lg text-[11px] font-bold transition-all whitespace-nowrap ${mode === opt.val ? 'bg-primary-600/20 text-primary-400 ring-1 ring-primary-500/50' : 'bg-neutral-900/50 text-neutral-500 hover:bg-neutral-900'}`}>
                             {opt.label}
                         </button>
                     ))}
@@ -704,13 +690,13 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                         </div>
                     )}
                 </div>
-            ) : (
+             ) : (
                 /* Brokerage Mode Only */
                 <div className="flex-1 flex flex-col min-h-0">
                     {/* Fixed Brokerage Inputs */}
-                    <div className="space-y-1.5 shrink-0 mb-1.5">
+                    <div className="space-y-1 shrink-0 mb-1">
                         {/* Transaction Value Input */}
-                        <div className="bg-neutral-800/40 rounded-lg p-1.5 flex justify-between items-center gap-4 border border-transparent hover:border-neutral-700 transition-all">
+                        <div className="bg-neutral-800/40 rounded-lg py-1 px-1.5 flex justify-between items-center gap-4 border border-transparent hover:border-neutral-700 transition-all">
                             <div className="flex flex-col shrink-0 items-start text-left">
                                 <label 
                                     onClick={focusAmount}
@@ -731,33 +717,13 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                         </div>
 
                         {/* Security Type Selector */}
-                        <div className="bg-neutral-800/40 rounded-lg p-2 border border-transparent hover:border-neutral-700 transition-all">
-                            <label className="block text-[9px] font-bold text-neutral-500 uppercase tracking-wider text-left mb-1.5">Security Type</label>
+                        <div className="bg-neutral-800/40 rounded-lg py-1.5 px-2 border border-transparent hover:border-neutral-700 transition-all">
+                            <label className="block text-[9.5px] font-bold text-neutral-500 uppercase tracking-wider text-left mb-1">Security Type</label>
                             
-                            {/* Row 1: 3 Columns */}
-                            <div className="grid grid-cols-3 gap-1">
+                            <div className="grid grid-cols-2 gap-1">
                                 {[
                                     { val: 'equity_main', label: 'Equity (Main)', rate: '1.6%' },
                                     { val: 'equity_otc', label: 'Equity (OTC)', rate: '2.0%' },
-                                    { val: 'tbill', label: 'T-Bill', rate: '0.1%' }
-                                ].map(sec => (
-                                    <button
-                                        key={sec.val}
-                                        onClick={() => {
-                                            setSecurityType(sec.val);
-                                            setResult(null);
-                                        }}
-                                        className={`py-1.5 px-1 rounded text-[10px] font-bold transition-all text-left flex justify-between items-center ${securityType === sec.val ? 'bg-primary-600/20 text-primary-400 ring-1 ring-primary-500/50' : 'bg-neutral-900/50 text-neutral-500 hover:bg-neutral-900'}`}
-                                    >
-                                        <span className="truncate">{sec.label}</span>
-                                        <span className={`px-1 py-0.25 rounded text-[8px] leading-none shrink-0 ${securityType === sec.val ? 'bg-primary-500/20 text-primary-400' : 'bg-neutral-800 text-neutral-600'}`}>{sec.rate}</span>
-                                    </button>
-                                ))}
-                            </div>
-
-                            {/* Row 2: 2 Columns */}
-                            <div className="grid grid-cols-2 gap-1 mt-1">
-                                {[
                                     { val: 'funds_etf', label: 'Funds & ETFs', rate: '2.0%' },
                                     { val: 'fixed_income', label: 'Fixed Income', rate: '0.1%' }
                                 ].map(sec => (
@@ -767,10 +733,26 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                                             setSecurityType(sec.val);
                                             setResult(null);
                                         }}
-                                        className={`py-1.5 px-2 rounded text-[10px] font-bold transition-all text-left flex justify-between items-center ${securityType === sec.val ? 'bg-primary-600/20 text-primary-400 ring-1 ring-primary-500/50' : 'bg-neutral-900/50 text-neutral-500 hover:bg-neutral-900'}`}
+                                        className={`py-1 px-1.5 rounded-md text-[11px] font-semibold transition-all text-left flex justify-between items-center ${securityType === sec.val ? 'bg-primary-600/20 text-primary-400 ring-1 ring-primary-500/50' : 'bg-neutral-900/50 text-neutral-500 hover:bg-neutral-900'}`}
+                                    >
+                                        <span className="truncate">{sec.label}</span>
+                                        <span className={`px-1 py-0.25 rounded text-[8.5px] leading-none shrink-0 ${securityType === sec.val ? 'bg-primary-500/20 text-primary-400' : 'bg-neutral-800 text-neutral-600'}`}>{sec.rate}</span>
+                                    </button>
+                                ))}
+                                {/* T-Bill spans 2 columns */}
+                                {[
+                                    { val: 'tbill', label: 'T-Bill (Treasury Bill)', rate: '0.1%' }
+                                ].map(sec => (
+                                    <button
+                                        key={sec.val}
+                                        onClick={() => {
+                                            setSecurityType(sec.val);
+                                            setResult(null);
+                                        }}
+                                        className={`col-span-2 py-1 px-1.5 rounded-md text-[11px] font-semibold transition-all text-left flex justify-between items-center ${securityType === sec.val ? 'bg-primary-600/20 text-primary-400 ring-1 ring-primary-500/50' : 'bg-neutral-900/50 text-neutral-500 hover:bg-neutral-900'}`}
                                     >
                                         <span>{sec.label}</span>
-                                        <span className={`px-1 py-0.25 rounded text-[8px] leading-none ${securityType === sec.val ? 'bg-primary-500/20 text-primary-400' : 'bg-neutral-800 text-neutral-600'}`}>{sec.rate}</span>
+                                        <span className={`px-1 py-0.25 rounded text-[8.5px] leading-none shrink-0 ${securityType === sec.val ? 'bg-primary-500/20 text-primary-400' : 'bg-neutral-800 text-neutral-600'}`}>{sec.rate}</span>
                                     </button>
                                 ))}
                             </div>
@@ -788,21 +770,21 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                         )}
 
                         {result !== null && (
-                            <div className="space-y-2 mb-2 pt-2">
+                            <div className="space-y-1.5 mb-1.5 pt-1">
                                 <div className="flex justify-between items-center">
-                                    <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Brokerage & Market charges breakdown</span>
+                                    <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Brokerage & Market charges breakdown</span>
                                     <button
                                         onClick={() => setShowHistory(true)}
-                                        className="text-[9px] text-primary-500 font-bold uppercase tracking-wider flex items-center gap-1 hover:text-primary-400 transition-colors"
+                                        className="text-[10px] text-primary-500 font-bold uppercase tracking-wider flex items-center gap-1 hover:text-primary-400 transition-colors"
                                     >
                                         <History size={12} /> View History
                                     </button>
                                 </div>
                                 <div className="grid grid-cols-2 gap-1.5">
                                     {/* Gross Transaction Value */}
-                                    <div className="bg-neutral-900/50 rounded-lg p-1.5 border border-neutral-800 flex flex-col justify-between group relative">
+                                    <div className="bg-neutral-900/50 rounded-xl p-2 border border-neutral-800 flex flex-col justify-between group relative hover:border-neutral-700 transition-all">
                                         <div className="flex justify-between items-start mb-1">
-                                            <div className="text-[10px] uppercase font-bold text-neutral-500 text-left">Gross Value</div>
+                                            <div className="text-[10px] uppercase font-extrabold text-neutral-500 text-left tracking-wider">Gross Value</div>
                                             <button 
                                                 onClick={(e) => { 
                                                     const words = amountToWords(result.gross); 
@@ -811,7 +793,7 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                                                 className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-primary-500/10 rounded text-primary-500/70 hover:text-primary-400" 
                                                 title="Copy in Words"
                                             >
-                                                <Copy size={9} />
+                                                <Copy size={9.5} />
                                             </button>
                                         </div>
                                         <span className="text-sm font-bold text-white font-mono self-end">
@@ -820,9 +802,9 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                                     </div>
 
                                     {/* Brokerage Commission */}
-                                    <div className="bg-neutral-900/50 rounded-lg p-1.5 border border-neutral-800 flex flex-col justify-between group relative">
+                                    <div className="bg-neutral-900/50 rounded-xl p-2 border border-neutral-800 flex flex-col justify-between group relative hover:border-neutral-700 transition-all">
                                         <div className="flex justify-between items-start mb-1">
-                                            <div className="text-[10px] uppercase font-bold text-neutral-500 text-left">
+                                            <div className="text-[10px] uppercase font-extrabold text-neutral-500 text-left tracking-wider">
                                                 Commission ({securityType === 'equity_main' ? '1.6%' : securityType === 'equity_otc' || securityType === 'funds_etf' ? '2.0%' : '0.1%'})
                                             </div>
                                             <button 
@@ -833,7 +815,7 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                                                 className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-primary-500/10 rounded text-primary-500/70 hover:text-primary-400" 
                                                 title="Copy in Words"
                                             >
-                                                <Copy size={9} />
+                                                <Copy size={9.5} />
                                             </button>
                                         </div>
                                         <span className="text-sm font-bold text-white font-mono self-end">
@@ -842,9 +824,9 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                                     </div>
 
                                     {/* VAT on Commission */}
-                                    <div className="bg-neutral-900/50 rounded-lg p-1.5 border border-neutral-800 flex flex-col justify-between group relative">
+                                    <div className="bg-neutral-900/50 rounded-xl p-2 border border-neutral-800 flex flex-col justify-between group relative hover:border-neutral-700 transition-all">
                                         <div className="flex justify-between items-start mb-1">
-                                            <div className="text-[10px] uppercase font-bold text-neutral-500 text-left">VAT on Fee (15%)</div>
+                                            <div className="text-[10px] uppercase font-extrabold text-neutral-500 text-left tracking-wider">VAT on Fee (15%)</div>
                                             <button 
                                                 onClick={(e) => { 
                                                     const words = amountToWords(result.vat); 
@@ -853,7 +835,7 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                                                 className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-primary-500/10 rounded text-primary-500/70 hover:text-primary-400" 
                                                 title="Copy in Words"
                                             >
-                                                <Copy size={9} />
+                                                <Copy size={9.5} />
                                             </button>
                                         </div>
                                         <span className="text-sm font-bold text-red-400 font-mono self-end">
@@ -862,9 +844,9 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                                     </div>
 
                                     {/* ESX Fee */}
-                                    <div className="bg-neutral-900/50 rounded-lg p-1.5 border border-neutral-800 flex flex-col justify-between group relative">
+                                    <div className="bg-neutral-900/50 rounded-xl p-2 border border-neutral-800 flex flex-col justify-between group relative hover:border-neutral-700 transition-all">
                                         <div className="flex justify-between items-start mb-1">
-                                            <div className="text-[10px] uppercase font-bold text-neutral-500 text-left font-semibold">
+                                            <div className="text-[10px] uppercase font-extrabold text-neutral-500 text-left tracking-wider font-semibold">
                                                 ESX Fee ({securityType === 'fixed_income' ? '0.021%' : securityType === 'equity_otc' ? '0.5%' : securityType === 'tbill' ? '0%' : '0.36%'})
                                             </div>
                                             <button 
@@ -875,7 +857,7 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                                                 className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-primary-500/10 rounded text-primary-500/70 hover:text-primary-400" 
                                                 title="Copy in Words"
                                             >
-                                                <Copy size={9} />
+                                                <Copy size={9.5} />
                                             </button>
                                         </div>
                                         <span className="text-sm font-bold text-amber-500 font-mono self-end">
@@ -884,9 +866,9 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                                     </div>
 
                                     {/* ECMA Fee */}
-                                    <div className="bg-neutral-900/50 rounded-lg p-1.5 border border-neutral-800 flex flex-col justify-between group relative">
+                                    <div className="bg-neutral-900/50 rounded-xl p-2 border border-neutral-800 flex flex-col justify-between group relative hover:border-neutral-700 transition-all">
                                         <div className="flex justify-between items-start mb-1">
-                                            <div className="text-[10px] uppercase font-bold text-neutral-500 text-left">
+                                            <div className="text-[10px] uppercase font-extrabold text-neutral-500 text-left tracking-wider">
                                                 ECMA Fee ({['fixed_income', 'tbill'].includes(securityType) ? '0.005%' : '0.15%'})
                                             </div>
                                             <button 
@@ -897,7 +879,7 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                                                 className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-primary-500/10 rounded text-primary-500/70 hover:text-primary-400" 
                                                 title="Copy in Words"
                                             >
-                                                <Copy size={9} />
+                                                <Copy size={9.5} />
                                             </button>
                                         </div>
                                         <span className="text-sm font-bold text-indigo-400 font-mono self-end">
@@ -906,9 +888,9 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                                     </div>
 
                                     {/* Total Charges */}
-                                    <div className="bg-neutral-900/50 rounded-lg p-1.5 border border-neutral-800 flex flex-col justify-between group relative">
+                                    <div className="bg-neutral-900/50 rounded-xl p-2 border border-neutral-800 flex flex-col justify-between group relative hover:border-neutral-700 transition-all">
                                         <div className="flex justify-between items-start mb-1">
-                                            <div className="text-[10px] uppercase font-bold text-neutral-500 text-left">Total Charges</div>
+                                            <div className="text-[10px] uppercase font-extrabold text-neutral-500 text-left tracking-wider">Total Charges</div>
                                             <button 
                                                 onClick={(e) => { 
                                                     const words = amountToWords(result.totalFees); 
@@ -917,7 +899,7 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                                                 className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-primary-500/10 rounded text-primary-500/70 hover:text-primary-400" 
                                                 title="Copy in Words"
                                             >
-                                                <Copy size={9} />
+                                                <Copy size={9.5} />
                                             </button>
                                         </div>
                                         <span className="text-sm font-bold text-red-400 font-mono self-end">
@@ -926,9 +908,9 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                                     </div>
 
                                     {/* Net Proceeds / Total Settlement (Spans full width) */}
-                                    <div className="bg-neutral-900/50 rounded-lg p-1.5 border border-neutral-800 flex flex-col justify-between group relative col-span-2">
-                                        <div className="flex justify-between items-start mb-1">
-                                            <div className="text-[10px] uppercase font-bold text-neutral-500 text-left font-black tracking-wider">
+                                    <div className="bg-neutral-900/50 rounded-xl py-1.5 px-2 border border-neutral-800 flex flex-col justify-between group relative col-span-2 hover:border-neutral-700 transition-all">
+                                        <div className="flex justify-between items-start mb-0.5">
+                                            <div className="text-[10px] uppercase font-black text-neutral-500 text-left font-black tracking-widest">
                                                 {transactionType === 'buy' ? 'Total Cost (Settlement)' : 'Net Proceeds (To Receive)'}
                                             </div>
                                             <button 
@@ -939,10 +921,10 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                                                 className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-primary-500/10 rounded text-primary-500/70 hover:text-primary-400" 
                                                 title="Copy in Words"
                                             >
-                                                <Copy size={9} />
+                                                <Copy size={9.5} />
                                             </button>
                                         </div>
-                                        <span className="text-xl font-black font-mono self-end text-primary-500">
+                                        <span className="text-lg font-black font-mono self-end text-primary-500">
                                             {result.netProceeds.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                         </span>
                                     </div>
@@ -953,7 +935,7 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                 </div>
             )}
 
-            <div className="flex gap-1.5 mt-1 pt-2">
+            <div className="flex gap-1.5 mt-1 pt-1">
                 <button
                     onClick={() => {
                         setResult(null);
