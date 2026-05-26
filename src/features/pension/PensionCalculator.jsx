@@ -5,6 +5,7 @@ import { Wallet, Info, HelpCircle, Trash2, Settings, History } from 'lucide-reac
 import FormattedNumberInput from '../../components/FormattedNumberInput';
 import { CalculateIcon } from '../../components/Icons';
 import HistoryOverlay from '../../components/HistoryOverlay';
+import AwaitingCalculation from '../../components/AwaitingCalculation';
 
 const PENSION_TYPES = [
     { id: 'civil', label: 'Civil Servant' },
@@ -232,7 +233,7 @@ const PensionCalculator = ({ toggleHelp, toggleSettings }) => {
             </div>
 
             {/* Results */}
-            {result && (
+            {result ? (
                 <div className="mt-2 bg-gradient-to-br from-primary-900/30 to-neutral-800/50 border border-primary-500/30 rounded-xl p-3 space-y-2">
                     <div className="flex justify-between items-center mb-1">
                         <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Results</span>
@@ -294,6 +295,10 @@ const PensionCalculator = ({ toggleHelp, toggleSettings }) => {
                             </div>
                         </>
                     )}
+                </div>
+            ) : (
+                <div className="mt-2.5 h-[140px] shrink-0">
+                    <AwaitingCalculation Icon={Wallet} />
                 </div>
             )}
 

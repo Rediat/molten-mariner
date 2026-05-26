@@ -6,6 +6,7 @@ import { List, X, FileText, FileSpreadsheet, Info, HelpCircle, Trash2, Settings,
 import FormattedNumberInput from '../../components/FormattedNumberInput';
 import { CalculateIcon } from '../../components/Icons';
 import HistoryOverlay from '../../components/HistoryOverlay';
+import AwaitingCalculation from '../../components/AwaitingCalculation';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { createStandardPDF, addStandardFooter, STANDARD_TABLE_STYLES } from '../../utils/pdf-utils';
@@ -447,7 +448,7 @@ const LoanCalculator = ({ toggleHelp, toggleSettings }) => {
                             )}
                         </div>
 
-                        {result && (
+                        {result ? (
                             <div className="bg-neutral-900/50 rounded-2xl p-4 border border-primary-900/30 mb-4 mt-4 space-y-3">
                                 <div className="flex justify-between items-center mb-1">
                                     <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Results</span>
@@ -481,6 +482,10 @@ const LoanCalculator = ({ toggleHelp, toggleSettings }) => {
                                         </div>
                                     )}
                                 </div>
+                            </div>
+                        ) : (
+                            <div className="mt-2.5 h-[140px] shrink-0">
+                                <AwaitingCalculation Icon={DollarSign} />
                             </div>
                         )}
 

@@ -5,6 +5,7 @@ import { Target, TrendingUp, Wallet, PiggyBank, Calculator, Info, HelpCircle, Tr
 import FormattedNumberInput from '../../components/FormattedNumberInput';
 import { CalculateIcon } from '../../components/Icons';
 import HistoryOverlay from '../../components/HistoryOverlay';
+import AwaitingCalculation from '../../components/AwaitingCalculation';
 
 // Constants
 const FREQUENCIES = [
@@ -536,7 +537,7 @@ const GoalPlanner = ({ toggleHelp, toggleSettings }) => {
 
 
                 {/* Results */}
-                {results && !results.error && (
+                {results && !results.error ? (
                     <div className="mt-4 bg-gradient-to-br from-primary-900/30 to-neutral-800/50 border border-primary-500/30 rounded-xl p-4 space-y-3 shrink-0">
                         <div className="flex justify-between items-center mb-2">
                             <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Results</span>
@@ -682,6 +683,10 @@ const GoalPlanner = ({ toggleHelp, toggleSettings }) => {
                                 </div>
                             </div>
                         )}
+                    </div>
+                ) : (
+                    <div className="mt-4 shrink-0 h-[140px]">
+                        <AwaitingCalculation Icon={Target} />
                     </div>
                 )}
                 <div ref={bottomRef} className="h-1" />

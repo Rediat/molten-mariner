@@ -8,6 +8,7 @@ import { copyToClipboard } from '../../utils/clipboard';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
 import { CalculateIcon } from '../../components/Icons';
 import HistoryOverlay from '../../components/HistoryOverlay';
+import AwaitingCalculation from '../../components/AwaitingCalculation';
 import tbillData from './data.json';
 import { predictNextYield } from './predictionEngine';
 
@@ -492,7 +493,7 @@ const TBillCalculator = ({
                 </div>
             </div>
 
-            {result && (() => {
+            {result ? (() => {
                 const isReverse = result.mode === 'reverse';
                 return (
                     <div className={`mt-1.5 mb-1.5 bg-gradient-to-br ${isReverse ? 'from-emerald-900/30' : 'from-primary-900/30'} to-neutral-800/50 border ${isReverse ? 'border-emerald-500/30' : 'border-primary-500/30'} rounded-xl p-2.5 space-y-2`}>
@@ -646,7 +647,11 @@ const TBillCalculator = ({
                         </div>
                     </div>
                 );
-            })()}
+            })() : (
+                <div className="mt-2.5 h-[160px] shrink-0">
+                    <AwaitingCalculation Icon={Receipt} />
+                </div>
+            )}
 
             <div className="mt-1.5 flex gap-1.5">
                 <button onClick={handleClear} className="w-[12%] bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-xs py-2.5 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center gap-1 uppercase tracking-wider" title="Clear all values"><Trash2 className="w-3.5 h-3.5" /></button>

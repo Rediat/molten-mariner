@@ -7,6 +7,7 @@ import { copyToClipboard } from '../../utils/clipboard';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
 import { CalculateIcon } from '../../components/Icons';
 import HistoryOverlay from '../../components/HistoryOverlay';
+import AwaitingCalculation from '../../components/AwaitingCalculation';
 
 const calculateEmploymentTax = (salary) => {
     if (salary <= 2000) return 0;
@@ -384,6 +385,12 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                     )}
 
                     {/* Standard Results */}
+                    {result === null && (
+                        <div className="mt-2.5 h-[140px] shrink-0">
+                            <AwaitingCalculation Icon={Landmark} />
+                        </div>
+                    )}
+
                     {result !== null && (
                         <div className="space-y-2 mb-2 pt-6">
                             <div className="flex justify-between items-center">
@@ -762,11 +769,7 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                     {/* Relaxed Height Results Box with Placeholder strictly for Brokerage Mode */}
                     <div className="flex-grow flex-1 overflow-y-auto pr-1 scrollbar-hide min-h-0">
                         {result === null && (
-                            <div className="h-full border border-dashed border-neutral-800/80 rounded-xl flex flex-col items-center justify-center text-neutral-500 gap-1.5 p-4 bg-neutral-900/10 hover:border-neutral-700/50 transition-all select-none">
-                                <Landmark className="w-5 h-5 text-neutral-600 animate-pulse" />
-                                <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">Awaiting Calculation</span>
-                                <span className="text-[9px] text-neutral-600 text-center max-w-[200px]">Enter values above and click Calculate to view the breakdown</span>
-                            </div>
+                            <AwaitingCalculation Icon={Landmark} />
                         )}
 
                         {result !== null && (

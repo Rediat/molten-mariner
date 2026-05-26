@@ -7,6 +7,7 @@ import * as XLSX from 'xlsx';
 import { ArrowRightLeft, Info, HelpCircle, Settings, ChevronDown, ChevronUp, Trash2, X, TrendingUp, TrendingDown, Search, Calendar, FileSpreadsheet, FileText, Download } from 'lucide-react';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
 import { CalculateIcon } from '../../components/Icons';
+import AwaitingCalculation from '../../components/AwaitingCalculation';
 import tbillData from '../tbill/data.json';
 import fxData from './fxData.json';
 import { compareReturns, compareRollingReturns, compareLeverageReturns, TENURES, getMonthKey, getFxRateWithFallback } from './compareLogic';
@@ -637,6 +638,13 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
 
             {/* Scrollable Results Section */}
             <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar">
+                {/* Awaiting Calculation Placeholder */}
+                {((mode === 'single' && !resultData) || (mode === 'rolling' && !rollingResult) || (mode === 'leverage' && !leverageResult)) && (
+                    <div className="mt-2.5 h-[140px] shrink-0">
+                        <AwaitingCalculation Icon={ArrowRightLeft} />
+                    </div>
+                )}
+
                 {/* Single mode results (unchanged) */}
                 {mode === 'single' && resultData && (
                         <div className="mt-1 space-y-2.5 pb-2">

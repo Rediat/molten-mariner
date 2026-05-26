@@ -6,6 +6,7 @@ import { Plus, Trash2, Info, HelpCircle, Settings, History, Activity } from 'luc
 import FormattedNumberInput from '../../components/FormattedNumberInput';
 import { CalculateIcon } from '../../components/Icons';
 import HistoryOverlay from '../../components/HistoryOverlay';
+import AwaitingCalculation from '../../components/AwaitingCalculation';
 
 const CashFlowCalculator = ({ toggleHelp, toggleSettings }) => {
     const { addToHistory } = useHistory();
@@ -165,7 +166,7 @@ const CashFlowCalculator = ({ toggleHelp, toggleSettings }) => {
                 </button>
             </div>
 
-            {result && (
+            {result ? (
                 <div className="grid grid-cols-2 gap-3 mb-6">
                     <div className="col-span-2 flex justify-between items-center mb-1">
                         <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Results</span>
@@ -196,6 +197,10 @@ const CashFlowCalculator = ({ toggleHelp, toggleSettings }) => {
                             <div className="text-sm font-bold text-white font-mono">{item.value}</div>
                         </div>
                     ))}
+                </div>
+            ) : (
+                <div className="mt-2.5 h-[140px] shrink-0">
+                    <AwaitingCalculation Icon={Activity} />
                 </div>
             )}
 

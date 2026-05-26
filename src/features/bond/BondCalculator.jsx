@@ -6,6 +6,7 @@ import { Info, HelpCircle, Trash2, Settings, History, FileText } from 'lucide-re
 import FormattedNumberInput from '../../components/FormattedNumberInput';
 import { CalculateIcon } from '../../components/Icons';
 import HistoryOverlay from '../../components/HistoryOverlay';
+import AwaitingCalculation from '../../components/AwaitingCalculation';
 
 const BondCalculator = ({ toggleHelp, toggleSettings }) => {
     const { addToHistory } = useHistory();
@@ -170,7 +171,7 @@ const BondCalculator = ({ toggleHelp, toggleSettings }) => {
                 ))}
             </div>
 
-            {result !== null && metrics && (
+            {result !== null && metrics ? (
                 <div className="space-y-2 mb-2 mt-2">
                     <div className="flex justify-between items-center">
                         <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Results</span>
@@ -206,6 +207,10 @@ const BondCalculator = ({ toggleHelp, toggleSettings }) => {
                             <span className="text-lg font-bold text-secondary-400 font-mono self-end">{metrics.ytc ? `${metrics.ytc.toFixed(3)}%` : 'N/A'}</span>
                         </div>
                     </div>
+                </div>
+            ) : (
+                <div className="mt-2.5 h-[140px] shrink-0">
+                    <AwaitingCalculation Icon={FileText} />
                 </div>
             )}
 
