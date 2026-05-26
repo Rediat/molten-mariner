@@ -306,9 +306,6 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                                 setMode(opt.val);
                                 setResult(null);
                                 setValues(DEFAULTS[opt.val]);
-                                if (opt.val === 'cbeCapital') {
-                                    setSecurityType('tbill');
-                                }
                             }}
                             className={`py-1.5 px-1 rounded-lg text-[11px] font-bold transition-all whitespace-nowrap ${mode === opt.val ? 'bg-primary-600/20 text-primary-400 ring-1 ring-primary-500/50' : 'bg-neutral-900/50 text-neutral-500 hover:bg-neutral-900'}`}>
                             {opt.label}
