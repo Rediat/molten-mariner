@@ -290,7 +290,7 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
                 <div className={`flex justify-between items-center ${isHalfRow ? 'gap-2' : 'gap-4'}`}>
                     <div className="flex flex-col items-start text-left min-w-0">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                            <label 
+                            <label
                                 onClick={() => !field.isReadOnly && focusHandlers[field.id]?.()}
                                 className={`text-sm font-bold transition-colors ${field.isReadOnly ? 'text-neutral-500' : 'cursor-pointer hover:text-white'} ${!field.isReadOnly && target === field.id ? 'text-primary-400' : 'text-neutral-300'} whitespace-nowrap`}
                                 title={!field.isReadOnly ? "Click to Clear" : ""}
@@ -346,14 +346,16 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
     return (
         <div className="flex flex-col h-full">
             {/* Header */}
-            <div className="flex justify-between items-start mb-4">
+            <div className="flex justify-between items-center mb-2">
                 <div className="flex items-center gap-2 min-w-0">
                     <Calculator className="w-5 h-5 text-primary-500 shrink-0" />
                     <div className="min-w-0">
-                        <h1 className="text-xl font-bold bg-gradient-to-r from-white to-neutral-400 bg-clip-text text-transparent leading-tight">
+                        <h1 className="text-lg font-bold bg-gradient-to-r from-white to-neutral-400 bg-clip-text text-transparent leading-tight">
                             TVM Calculator
                         </h1>
-                        <p className="text-neutral-500 text-[10px] font-medium uppercase tracking-wider">Time Value of Money</p>
+                        <p className="text-neutral-500 text-[9px] font-medium uppercase tracking-wider">
+                            Time Value of Money
+                        </p>
                     </div>
                 </div>
                 <div className="flex flex-col items-end gap-1.5">
@@ -426,51 +428,53 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
 
             <div className="flex-1 overflow-y-auto pr-2 -mr-2 space-y-4">
                 {/* Explanation Panel */}
-            {showExplanation && (
-                <div className="bg-gradient-to-r from-primary-900/30 to-neutral-800/50 border border-primary-500/30 rounded-xl p-3 mb-4 text-xs text-neutral-300 text-left">
-                    <p className="font-bold text-primary-400 mb-1">Time Value of Money (TVM)</p>
-                    <p className="text-[11px] leading-relaxed">
-                        Solve for any variable in the TVM equation: N (periods), I/Y (interest rate),
-                        PV (present value), PMT (payment), or FV (future value). Supports both
-                        compound and simple interest with customizable payment frequencies.
-                    </p>
-                </div>
-            )}
+                {showExplanation && (
+                    <div className="bg-gradient-to-r from-primary-900/30 to-neutral-800/50 border border-primary-500/30 rounded-xl p-3 mb-4 text-xs text-neutral-300 text-left">
+                        <p className="font-bold text-primary-400 mb-1">Time Value of Money (TVM)</p>
+                        <p className="text-[11px] leading-relaxed">
+                            Solve for any variable in the TVM equation: N (periods), I/Y (interest rate),
+                            PV (present value), PMT (payment), or FV (future value). Supports both
+                            compound and simple interest with customizable payment frequencies.
+                        </p>
+                    </div>
+                )}
 
-            {/* Target Selector */}
-            <div className="flex gap-1 bg-neutral-900/50 p-1 rounded-xl mb-4 overflow-x-auto scrollbar-hide">
-                {fields.filter(f => !f.isReadOnly && f.id !== 'totalInterest').map(field => (
+                {/* Target Selector */}
+                <div className="flex gap-1 bg-neutral-900/50 p-1 rounded-xl mb-4 overflow-x-auto scrollbar-hide">
+                    {fields.filter(f => !f.isReadOnly && f.id !== 'totalInterest').map(field => (
+                        <button
+                            key={field.id}
+                            onClick={() => setTarget(field.id)}
+                            className={`flex-1 py-2.5 px-2 rounded-lg text-xs font-black transition-all whitespace-nowrap ${target === field.id ? 'bg-primary-600/20 text-primary-400 ring-1 ring-primary-500/50' : 'bg-transparent text-neutral-500 hover:bg-neutral-800'}`}
+                        >
+                            {field.label}
+                        </button>
+                    ))}
+                </div>
+
+                {/* Inputs */}
+                <div className="space-y-2 flex flex-col">
+                    <div className="flex gap-2 w-full">
+                        {renderField(fields.find(f => f.id === 'n'), true)}
+                        {renderField(fields.find(f => f.id === 'i'), true)}
+                    </div>
+                    {fields.filter(f => f.id !== 'n' && f.id !== 'i').map(field => renderField(field, false))}
+                </div>
+
+                {/* View History Link */}
+                <div className="mt-3 flex justify-end">
                     <button
-                        key={field.id}
-                        onClick={() => setTarget(field.id)}
-                        className={`flex-1 py-2.5 px-2 rounded-lg text-xs font-black transition-all whitespace-nowrap ${target === field.id ? 'bg-primary-600/20 text-primary-400 ring-1 ring-primary-500/50' : 'bg-transparent text-neutral-500 hover:bg-neutral-800'}`}
+                        onClick={() => setShowHistory(true)}
+                        className="text-[9px] text-primary-500 font-bold uppercase tracking-wider flex items-center gap-1 hover:text-primary-400 transition-colors"
                     >
-                        {field.label}
+                        <History size={12} /> View History
                     </button>
-                ))}
-            </div>
-
-            {/* Inputs */}
-            <div className="space-y-2 flex flex-col">
-                <div className="flex gap-2 w-full">
-                    {renderField(fields.find(f => f.id === 'n'), true)}
-                    {renderField(fields.find(f => f.id === 'i'), true)}
                 </div>
-                {fields.filter(f => f.id !== 'n' && f.id !== 'i').map(field => renderField(field, false))}
-            </div>
 
-            {/* View History Link */}
-            <div className="mt-3 flex justify-end">
-                <button
-                    onClick={() => setShowHistory(true)}
-                    className="text-[9px] text-primary-500 font-bold uppercase tracking-wider flex items-center gap-1 hover:text-primary-400 transition-colors"
-                >
-                    <History size={12} /> View History
-                </button>
             </div>
 
             {/* Action Buttons */}
-            <div className="mt-2 flex gap-1.5">
+            <div className="flex gap-1.5 mt-1 pt-1">
                 <button
                     onClick={() => {
                         setValues({ n: 0, i: 0, pv: 0, pmt: 0, fv: 0 });
@@ -504,8 +508,6 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
                     Calculate
                 </button>
             </div>
-
-                </div>
 
             {/* History Overlay */}
             <HistoryOverlay
