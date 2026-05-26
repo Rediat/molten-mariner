@@ -23,6 +23,7 @@ const HistoryOverlay = ({ isOpen, onClose, module, title }) => {
                 .filter(([k, v]) => {
                     // Filter out zero values for optional/mode-specific fields to keep the UI clean
                     if (v === 0 && ['pension', 'taxableGain', 'taxableAmount', 'quarterlyPayment', 'totalDeduction'].includes(k)) return false;
+                    if (['securityType', 'transactionType'].includes(k)) return false;
                     return true;
                 })
                 .map(([k, v]) => {
@@ -30,6 +31,12 @@ const HistoryOverlay = ({ isOpen, onClose, module, title }) => {
                     if (['npv', 'irr', 'mirr', 'pi', 'fv', 'pv', 'pmt'].includes(k)) label = k.toUpperCase();
                     if (k === 'totalInterest') label = 'Interest';
                     if (k === 'totalDeduction') label = 'Total Deduction';
+                    if (k === 'commission') label = 'Commission';
+                    if (k === 'vat') label = 'VAT on Fee';
+                    if (k === 'esx') label = 'ESX Fee';
+                    if (k === 'ecma') label = 'ECMA Fee';
+                    if (k === 'totalFees') label = 'Total Charges';
+                    if (k === 'netProceeds') label = 'Settlement';
                     return `${label}: ${typeof v === 'number' ? formatNum(v) : v}`;
                 })
                 .join(', ');
@@ -84,6 +91,8 @@ const HistoryOverlay = ({ isOpen, onClose, module, title }) => {
                                         if (k === 'faceValue') label = 'Face Value';
                                         if (k === 'totalBudget') label = 'Budget';
                                         if (k === 'tenure') label = 'Tenor (Days)';
+                                        if (k === 'securityType') label = 'Security';
+                                        if (k === 'transactionType') label = 'Action';
                                         
                                         return (
                                             <div key={k} className="flex justify-between gap-2">
@@ -91,7 +100,11 @@ const HistoryOverlay = ({ isOpen, onClose, module, title }) => {
                                                 <span className="text-neutral-300 text-right truncate">
                                                     {typeof v === 'object' && v !== null
                                                         ? Object.entries(v).map(([subK, subV]) => `${subV}${subK[0]}`).join(' ')
-                                                        : (typeof v === 'number' ? formatNum(v, getDecimalsForField(k)) : v)}
+                                                        : (k === 'securityType'
+                                                            ? v === 'equity_main' ? 'Equity (Main)' : v === 'equity_otc' ? 'Equity (OTC)' : v === 'funds_etf' ? 'Funds/ETFs' : v === 'tbill' ? 'T-Bill' : 'Fixed Income'
+                                                            : k === 'transactionType'
+                                                                ? v === 'buy' ? 'Buy' : 'Sell'
+                                                                : (typeof v === 'number' ? formatNum(v, getDecimalsForField(k)) : v))}
                                                 </span>
                                             </div>
                                         );

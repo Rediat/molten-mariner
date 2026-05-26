@@ -1216,7 +1216,8 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                         { name: 'Chance', description: 'Calculates tax on winnings from games of chance (flat 20%).' },
                         { name: 'Capital', description: 'Calculates Capital Gains Tax on disposal of assets using the inflation-adjusted formula.' },
                         { name: 'Interest', description: 'Calculates flat withholding tax on interest income from savings deposits (flat 10% under Proclamation No.1395/2025).' },
-                        { name: 'Dividend', description: 'Calculates flat withholding tax on dividend income from company shares (flat 15% under Proclamation No.1395/2025).' }
+                        { name: 'Dividend', description: 'Calculates flat withholding tax on dividend income from company shares (flat 15% under Proclamation No.1395/2025).' },
+                        { name: 'Brokerage', description: 'Calculates capital market brokerage commissions and statutory charges (VAT, ESX exchange, and ECMA regulatory fees) based on actual CBE Capital Investment Bank S.C. transactions. Other Investment banks and Brokers may have different rates. Based on current 2026 rates, they are following the same payment percentages for each category of payment. Note: The rates for each category of payment are as follows: Buy/Sale of Shares(0.5%), Subscription of new share(0.5%), Subscription of Treasury Bill(0.1%)' }
                     ]} />
                 </div>
 
@@ -1288,6 +1289,16 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                     <strong>Interest & Dividend Income Tax Rates:</strong>
                     <br />• Interest Income Tax: 10% flat rate (withholding on savings deposits)
                     <br />• Dividend Income Tax: 15% flat rate (withholding on distributions)
+                </InfoBox>
+
+                <InfoBox type="formula">
+                    <strong>Brokerage & Market Charges:</strong>
+                    <br />• <strong>Equity (Main Market):</strong> 1.6% commission + 15% VAT on commission, 0.36% ESX exchange fee, 0.15% ECMA regulatory fee
+                    <br />• <strong>Equity (OTC / Unlisted):</strong> 2.0% commission + 15% VAT on commission, 0.50% ESX exchange fee, 0.15% ECMA regulatory fee
+                    <br />• <strong>Mutual Funds & ETFs:</strong> 2.0% commission + 15% VAT on commission, 0.36% ESX exchange fee, 0.15% ECMA regulatory fee
+                    <br />• <strong>Corporate Bonds / Fixed Income:</strong> 0.1% commission + 15% VAT on commission, 0.021% ESX exchange fee, 0.005% ECMA regulatory fee
+                    <br />• <strong>T-Bill (Primary Market):</strong> 0.1% commission + 15% VAT on commission, 0% ESX exchange fee (exempt), 0.005% ECMA regulatory fee
+                    <br /><span className="text-[10px] text-neutral-400">Note: Transactions calculate the total settlement cost (Transaction Value + Brokerage + VAT + ESX + ECMA).</span>
                 </InfoBox>
             </HelpSection>
 

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useInputFocus } from '../../hooks/useInputFocus';
 import { useHistory } from '../../context/HistoryContext';
 import { Info, HelpCircle, Trash2, Settings, History, Landmark, Copy } from 'lucide-react';
@@ -59,12 +59,15 @@ const DEFAULTS = {
     interest: { amount: 10000, taxableAllowance: 0, purchasePrice: 0 },
     dividend: { amount: 15000, taxableAllowance: 0, purchasePrice: 0 },
     business: { amount: 150000, taxableAllowance: 0, purchasePrice: 0 },
-    sales: { amount: 120000, taxableAllowance: 0, purchasePrice: 0 }
+    sales: { amount: 120000, taxableAllowance: 0, purchasePrice: 0 },
+    cbeCapital: { amount: 100000, taxableAllowance: 0, purchasePrice: 0 }
 };
 
 const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
     const { addToHistory } = useHistory();
-    const [mode, setMode] = useState('salary'); // 'salary', 'rent', 'chance', 'capital'
+    const [mode, setMode] = useState('salary'); // 'salary', 'rent', 'chance', 'capital', 'cbeCapital'
+    const [securityType, setSecurityType] = useState('equity_main'); // 'equity_main', 'equity_otc', 'funds_etf', 'fixed_income'
+    const transactionType = 'buy';
     const [values, setValues] = useState({
         amount: 174830.40,
         taxableAllowance: 20000,
@@ -89,7 +92,7 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
     const focusTaxableAllowance = useInputFocus((val) => setValues(prev => ({ ...prev, taxableAllowance: val })), inputRefs.taxableAllowance, clearResults);
     const focusPurchasePrice = useInputFocus((val) => setValues(prev => ({ ...prev, purchasePrice: val })), inputRefs.purchasePrice, clearResults);
 
-    const handleCalculate = () => {
+    const handleCalculate = (logHistory = true) => {
         const amt = values.amount || 0;
         const allowance = mode === 'salary' ? (values.taxableAllowance || 0) : 0;
         
@@ -100,6 +103,14 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
         let taxableGain = 0;
         let taxableAmount = 0;
         let quarterlyPayment = 0;
+
+        // CBE Capital brokerage fees & regulatory charges
+        let commission = 0;
+        let vat = 0;
+        let esx = 0;
+        let ecma = 0;
+        let totalFees = 0;
+        let netProceeds = 0;
 
         if (mode === 'salary') {
             tax = calculateEmploymentTax(gross);
@@ -139,11 +150,83 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
             tax = calculateSalesTax(amt);
             netIncome = amt - tax;
             gross = amt;
+        } else if (mode === 'cbeCapital') {
+            let rate = 0.016;
+            let esxRate = 0.0036; // 0.36% exchange fee
+            let ecmaRate = 0.0015; // 0.15% regulatory fee
+
+            if (securityType === 'equity_main') {
+                rate = 0.016;
+                esxRate = 0.0036;
+                ecmaRate = 0.0015;
+            } else if (securityType === 'equity_otc') {
+                rate = 0.02;
+                esxRate = 0.005; // 0.5% exchange fee for OTC
+                ecmaRate = 0.0015;
+            } else if (securityType === 'funds_etf') {
+                rate = 0.02;
+                esxRate = 0.0036;
+                ecmaRate = 0.0015;
+            } else if (securityType === 'fixed_income') {
+                rate = 0.001; // 0.1%
+                esxRate = 0.00021; // 0.021%
+                ecmaRate = 0.00005; // 0.005%
+            } else if (securityType === 'tbill') {
+                rate = 0.001; // 0.1%
+                esxRate = 0.0; // 0.0% (no ESX fee for primary T-Bill)
+                ecmaRate = 0.00005; // 0.005%
+            }
+
+            commission = amt * rate;
+            vat = commission * 0.15; // 15% VAT on CBE commission
+            esx = amt * esxRate;
+            ecma = amt * ecmaRate;
+            totalFees = commission + vat + esx + ecma;
+            netProceeds = transactionType === 'buy' ? amt + totalFees : amt - totalFees;
+            gross = amt;
         }
 
-        const res = { tax, pension, netIncome, gross, taxableGain, taxableAmount, quarterlyPayment, totalDeduction: tax + pension };
+        const res = { 
+            tax, 
+            pension, 
+            netIncome, 
+            gross, 
+            taxableGain, 
+            taxableAmount, 
+            quarterlyPayment, 
+            totalDeduction: tax + pension,
+            commission,
+            vat,
+            esx,
+            ecma,
+            totalFees,
+            netProceeds,
+            securityType,
+            transactionType
+        };
         setResult(res);
-        addToHistory('TAX', { mode: mode.toUpperCase(), amount: amt, ...(mode === 'salary' && allowance ? { allowance } : {}), ...(mode === 'capital' ? { purchasePrice: values.purchasePrice } : {}) }, res);
+
+        const historyInputs = { 
+            mode: mode.toUpperCase(), 
+            amount: amt, 
+            ...(mode === 'salary' && allowance ? { allowance } : {}), 
+            ...(mode === 'capital' ? { purchasePrice: values.purchasePrice } : {}),
+            ...(mode === 'cbeCapital' ? { securityType, transactionType } : {})
+        };
+
+        const historyResult = mode === 'cbeCapital' ? {
+            gross: amt,
+            commission,
+            vat,
+            esx,
+            ecma,
+            totalFees,
+            netProceeds
+        } : res;
+
+        if (logHistory === true || (logHistory && typeof logHistory === 'object')) {
+            addToHistory('TAX', historyInputs, historyResult);
+        }
     };
 
     const handleChange = (field, val) => {
@@ -162,6 +245,7 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
             case 'dividend': return { label: 'Dividend Income', sub: 'ETB Gross' };
             case 'business': return { label: 'Taxable Business Income', sub: 'ETB per Year' };
             case 'sales': return { label: 'Annual Gross Sales', sub: 'Category B Receipts' };
+            case 'cbeCapital': return { label: 'Transaction Value', sub: 'ETB Gross' };
             default: return { label: 'Amount', sub: 'ETB' };
         }
     };
@@ -170,7 +254,7 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
 
     return (
         <div className="flex flex-col h-full">
-            <div className="flex justify-between items-start mb-4">
+            <div className="flex justify-between items-start mb-2">
                 <div className="flex items-center gap-2 min-w-0">
                     <Landmark className="w-5 h-5 text-primary-500 shrink-0" />
                     <div className="min-w-0">
@@ -202,7 +286,7 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                 </div>
             )}
 
-            <div className="space-y-1 mb-3 mt-3">
+            <div className="space-y-1 mb-1.5 mt-1.5">
                 <label className="block text-[10px] font-bold text-neutral-500 uppercase tracking-wider text-left">Tax Category</label>
                 <div className="grid grid-cols-3 gap-1">
                     {[
@@ -224,10 +308,11 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                         </button>
                     ))}
                 </div>
-                <div className="grid grid-cols-2 gap-1 mt-1">
+                <div className="grid grid-cols-3 gap-1 mt-1">
                     {[
                         { val: 'capital', label: 'Capital' },
-                        { val: 'dividend', label: 'Dividend' }
+                        { val: 'dividend', label: 'Dividend' },
+                        { val: 'cbeCapital', label: 'Brokerage' }
                     ].map(opt => (
                         <button key={opt.val} 
                             onClick={() => { 
@@ -242,353 +327,358 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                 </div>
             </div>
 
-            <div className="space-y-0.5 flex-1 overflow-y-auto pr-1 scrollbar-hide">
-                <div className="bg-neutral-800/40 rounded-lg p-1.5 flex justify-between items-center gap-4 border border-transparent hover:border-neutral-700 transition-all">
-                    <div className="flex flex-col shrink-0 items-start text-left">
-                        <label 
-                            onClick={focusAmount}
-                            className="text-sm font-bold text-neutral-300 cursor-pointer hover:text-primary-400 transition-colors"
-                            title="Click to Clear"
-                        >
-                            {config.label}
-                        </label>
-                        <span className="text-[9px] uppercase tracking-tighter text-neutral-500 font-bold">{config.sub}</span>
-                    </div>
-                    <FormattedNumberInput 
-                        ref={inputRefs.amount}
-                        value={values.amount} 
-                        onChange={(e) => handleChange('amount', e.target.value)} 
-                        decimals={2} 
-                        className="bg-transparent text-right text-lg font-mono text-white focus:outline-none w-full flex-1" 
-                    />
-                </div>
-
-                {mode === 'salary' && (
-                    <div className="bg-neutral-800/40 rounded-lg p-1.5 flex justify-between items-center gap-4 border border-transparent hover:border-neutral-700 transition-all mt-0.5">
+            {mode !== 'cbeCapital' ? (
+                /* Standard modes: Single Scrollable Container */
+                <div className="space-y-0.5 flex-1 overflow-y-auto pr-1 scrollbar-hide">
+                    {/* Amount Input */}
+                    <div className="bg-neutral-800/40 rounded-lg p-1.5 flex justify-between items-center gap-4 border border-transparent hover:border-neutral-700 transition-all">
                         <div className="flex flex-col shrink-0 items-start text-left">
                             <label 
-                                onClick={focusTaxableAllowance}
+                                onClick={focusAmount}
                                 className="text-sm font-bold text-neutral-300 cursor-pointer hover:text-primary-400 transition-colors"
                                 title="Click to Clear"
                             >
-                                Taxable Allowance
+                                {config.label}
                             </label>
-                            <span className="text-[9px] uppercase tracking-tighter text-neutral-500 font-bold">Non-Pensionable</span>
+                            <span className="text-[9px] uppercase tracking-tighter text-neutral-500 font-bold">{config.sub}</span>
                         </div>
                         <FormattedNumberInput 
-                            ref={inputRefs.taxableAllowance}
-                            value={values.taxableAllowance} 
-                            onChange={(e) => handleChange('taxableAllowance', e.target.value)} 
+                            ref={inputRefs.amount}
+                            value={values.amount} 
+                            onChange={(e) => handleChange('amount', e.target.value)} 
                             decimals={2} 
                             className="bg-transparent text-right text-lg font-mono text-white focus:outline-none w-full flex-1" 
                         />
                     </div>
-                )}
 
-                {mode === 'capital' && (
-                    <div className="bg-neutral-800/40 rounded-lg p-1.5 flex justify-between items-center gap-4 border border-transparent hover:border-neutral-700 transition-all mt-0.5">
-                        <div className="flex flex-col shrink-0 items-start text-left">
-                            <label 
-                                onClick={focusPurchasePrice}
-                                className="text-sm font-bold text-neutral-300 cursor-pointer hover:text-primary-400 transition-colors"
-                                title="Click to Clear"
-                            >
-                                Original Cost
-                            </label>
-                            <span className="text-[9px] uppercase tracking-tighter text-neutral-500 font-bold">Purchase Price (A)</span>
-                        </div>
-                        <FormattedNumberInput 
-                            ref={inputRefs.purchasePrice}
-                            value={values.purchasePrice} 
-                            onChange={(e) => handleChange('purchasePrice', e.target.value)} 
-                            decimals={2} 
-                            className="bg-transparent text-right text-lg font-mono text-white focus:outline-none w-full flex-1" 
-                        />
-                    </div>
-                )}
-
-                {result !== null && (
-                    <div className="space-y-2 mb-2 pt-6">
-                        <div className="flex justify-between items-center">
-                            <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Results</span>
-                            <button
-                                onClick={() => setShowHistory(true)}
-                                className="text-[9px] text-primary-500 font-bold uppercase tracking-wider flex items-center gap-1 hover:text-primary-400 transition-colors"
-                            >
-                                <History size={12} /> View History
-                            </button>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2">
-                            <div className="bg-neutral-900/50 rounded-lg p-2 border border-neutral-800 flex flex-col justify-between group relative">
-                                <div className="flex justify-between items-start mb-1">
-                                    <div className="text-[10px] uppercase font-bold text-neutral-500 text-left">
-                                        {mode === 'rent' 
-                                            ? 'Annual Gross' 
-                                            : mode === 'capital' 
-                                                ? 'Selling Price' 
-                                                : mode === 'interest' 
-                                                    ? 'Gross Interest' 
-                                                    : mode === 'dividend' 
-                                                        ? 'Gross Dividend' 
-                                                        : mode === 'business'
-                                                            ? 'Taxable Profit'
-                                                            : mode === 'sales'
-                                                                ? 'Gross Sales'
-                                                                : 'Gross Amount'}
-                                    </div>
-                                    {['salary', 'rent'].includes(mode) && (
-                                        <button 
-                                            onClick={(e) => { 
-                                                const words = amountToWords(result.gross); 
-                                                copyToClipboard(words, e.currentTarget); 
-                                            }} 
-                                            className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-primary-500/10 rounded text-primary-500/70 hover:text-primary-400" 
-                                            title="Copy in Words"
-                                        >
-                                            <Copy size={9} />
-                                        </button>
-                                    )}
-                                </div>
-                                <div className="flex flex-col items-end gap-1">
-                                    <div className="flex items-center gap-1.5 justify-end">
-                                        <span className="text-sm font-bold text-white font-mono">
-                                            {result.gross.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                        </span>
-                                        {mode === 'salary' && (
-                                            <span className="select-none text-[8px] font-bold px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-400 uppercase tracking-widest leading-none">
-                                                mo
-                                            </span>
-                                        )}
-                                    </div>
-                                    {mode === 'salary' && (
-                                        <div className="flex items-center gap-1.5 justify-end">
-                                            <span className="text-[11px] font-medium text-neutral-400 font-mono">
-                                                {(result.gross * 12).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                            </span>
-                                            <span className="select-none text-[7px] font-bold px-1 py-0.25 rounded bg-neutral-900 text-neutral-500 uppercase tracking-widest leading-none">
-                                                yr
-                                            </span>
-                                        </div>
-                                    )}
-                                </div>
+                    {/* Salary Allowance Input */}
+                    {mode === 'salary' && (
+                        <div className="bg-neutral-800/40 rounded-lg p-1.5 flex justify-between items-center gap-4 border border-transparent hover:border-neutral-700 transition-all mt-0.5">
+                            <div className="flex flex-col shrink-0 items-start text-left">
+                                <label 
+                                    onClick={focusTaxableAllowance}
+                                    className="text-sm font-bold text-neutral-300 cursor-pointer hover:text-primary-400 transition-colors"
+                                    title="Click to Clear"
+                                >
+                                    Taxable Allowance
+                                </label>
+                                <span className="text-[9px] uppercase tracking-tighter text-neutral-500 font-bold">Non-Pensionable</span>
                             </div>
-                            
-                            {mode === 'salary' && (
+                            <FormattedNumberInput 
+                                ref={inputRefs.taxableAllowance}
+                                value={values.taxableAllowance} 
+                                onChange={(e) => handleChange('taxableAllowance', e.target.value)} 
+                                decimals={2} 
+                                className="bg-transparent text-right text-lg font-mono text-white focus:outline-none w-full flex-1" 
+                            />
+                        </div>
+                    )}
+
+                    {/* Capital Cost Input */}
+                    {mode === 'capital' && (
+                        <div className="bg-neutral-800/40 rounded-lg p-1.5 flex justify-between items-center gap-4 border border-transparent hover:border-neutral-700 transition-all mt-0.5">
+                            <div className="flex flex-col shrink-0 items-start text-left">
+                                <label 
+                                    onClick={focusPurchasePrice}
+                                    className="text-sm font-bold text-neutral-300 cursor-pointer hover:text-primary-400 transition-colors"
+                                    title="Click to Clear"
+                                >
+                                    Original Cost
+                                </label>
+                                <span className="text-[9px] uppercase tracking-tighter text-neutral-500 font-bold">Purchase Price (A)</span>
+                            </div>
+                            <FormattedNumberInput 
+                                ref={inputRefs.purchasePrice}
+                                value={values.purchasePrice} 
+                                onChange={(e) => handleChange('purchasePrice', e.target.value)} 
+                                decimals={2} 
+                                className="bg-transparent text-right text-lg font-mono text-white focus:outline-none w-full flex-1" 
+                            />
+                        </div>
+                    )}
+
+                    {/* Standard Results */}
+                    {result !== null && (
+                        <div className="space-y-2 mb-2 pt-6">
+                            <div className="flex justify-between items-center">
+                                <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Results</span>
+                                <button
+                                    onClick={() => setShowHistory(true)}
+                                    className="text-[9px] text-primary-500 font-bold uppercase tracking-wider flex items-center gap-1 hover:text-primary-400 transition-colors"
+                                >
+                                    <History size={12} /> View History
+                                </button>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
                                 <div className="bg-neutral-900/50 rounded-lg p-2 border border-neutral-800 flex flex-col justify-between group relative">
                                     <div className="flex justify-between items-start mb-1">
-                                        <div className="text-[10px] uppercase font-bold text-neutral-500 text-left">Pension (7%)</div>
-                                        <button 
-                                            onClick={(e) => { 
-                                                const words = amountToWords(result.pension); 
-                                                copyToClipboard(words, e.currentTarget); 
-                                            }} 
-                                            className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-primary-500/10 rounded text-primary-500/70 hover:text-primary-400" 
-                                            title="Copy in Words"
-                                        >
-                                            <Copy size={9} />
-                                        </button>
+                                        <div className="text-[10px] uppercase font-bold text-neutral-500 text-left">
+                                            {mode === 'rent' 
+                                                ? 'Annual Gross' 
+                                                : mode === 'capital' 
+                                                    ? 'Selling Price' 
+                                                    : mode === 'interest' 
+                                                        ? 'Gross Interest' 
+                                                        : mode === 'dividend' 
+                                                            ? 'Gross Dividend' 
+                                                            : mode === 'business'
+                                                                ? 'Taxable Profit'
+                                                                : mode === 'sales'
+                                                                    ? 'Gross Sales'
+                                                                    : 'Gross Amount'}
+                                        </div>
+                                        {['salary', 'rent'].includes(mode) && (
+                                            <button 
+                                                onClick={(e) => { 
+                                                    const words = amountToWords(result.gross); 
+                                                    copyToClipboard(words, e.currentTarget); 
+                                                }} 
+                                                className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-primary-500/10 rounded text-primary-500/70 hover:text-primary-400" 
+                                                title="Copy in Words"
+                                            >
+                                                <Copy size={9} />
+                                            </button>
+                                        )}
                                     </div>
                                     <div className="flex flex-col items-end gap-1">
                                         <div className="flex items-center gap-1.5 justify-end">
                                             <span className="text-sm font-bold text-white font-mono">
-                                                {result.pension.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                {result.gross.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                             </span>
-                                            <span className="select-none text-[8px] font-bold px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-400 uppercase tracking-widest leading-none">
-                                                mo
-                                            </span>
+                                            {mode === 'salary' && (
+                                                <span className="select-none text-[8px] font-bold px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-400 uppercase tracking-widest leading-none">
+                                                    mo
+                                                </span>
+                                            )}
                                         </div>
-                                        <div className="flex items-center gap-1.5 justify-end">
-                                            <span className="text-[11px] font-medium text-neutral-400 font-mono">
-                                                {(result.pension * 12).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                            </span>
-                                            <span className="select-none text-[7px] font-bold px-1 py-0.25 rounded bg-neutral-900 text-neutral-500 uppercase tracking-widest leading-none">
-                                                yr
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {mode === 'rent' && (
-                                <div className="bg-neutral-900/50 rounded-lg p-2 border border-neutral-800 flex flex-col justify-between group relative">
-                                    <div className="flex justify-between items-start mb-1">
-                                        <div className="text-[10px] uppercase font-bold text-neutral-500 text-left">Taxable Rent (50%)</div>
-                                        <button 
-                                            onClick={(e) => { 
-                                                const words = amountToWords(result.taxableAmount); 
-                                                copyToClipboard(words, e.currentTarget); 
-                                            }} 
-                                            className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-primary-500/10 rounded text-primary-500/70 hover:text-primary-400" 
-                                            title="Copy in Words"
-                                        >
-                                            <Copy size={9} />
-                                        </button>
-                                    </div>
-                                    <span className="text-sm font-bold text-white font-mono self-end">
-                                        {result.taxableAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                    </span>
-                                </div>
-                            )}
-
-                            {mode === 'capital' && (
-                                <div className="bg-neutral-900/50 rounded-lg p-2 border border-neutral-800 flex flex-col justify-between">
-                                    <div className="text-[10px] uppercase font-bold text-neutral-500 mb-1 text-left">
-                                        Taxable Gain ({result.gross > 0 ? ((result.taxableGain / result.gross) * 100).toFixed(2) : '0.00'}%)
-                                    </div>
-                                    <span className="text-sm font-bold text-white font-mono self-end">
-                                        {result.taxableGain.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                    </span>
-                                </div>
-                            )}
-
-                            <div className="bg-neutral-900/50 rounded-lg p-2 border border-neutral-800 flex flex-col justify-between group relative">
-                                <div className="flex justify-between items-start mb-1">
-                                    <div className="text-[10px] uppercase font-bold text-neutral-500 text-left">
-                                        {mode === 'rent' 
-                                            ? `Annual Tax (${result.gross > 0 ? ((result.tax / result.gross) * 100).toFixed(2) : '0.00'}%)` 
-                                            : mode === 'chance' 
-                                                ? 'Tax Amount (20%)' 
-                                                : mode === 'capital' 
-                                                    ? 'Tax Amount (15%)' 
-                                                    : mode === 'interest'
-                                                        ? 'Tax Amount (10%)'
-                                                        : mode === 'dividend'
-                                                            ? 'Tax Amount (15%)'
-                                                            : mode === 'business'
-                                                                ? `Annual Tax (${result.gross > 0 ? ((result.tax / result.gross) * 100).toFixed(2) : '0.00'}%)`
-                                                                : mode === 'sales'
-                                                                    ? `Annual Tax (${result.gross > 0 ? getSalesTaxRate(result.gross) : '0'}%)`
-                                                                     : mode === 'salary'
-                                                                         ? `Tax Amount (${result.gross > 0 ? ((result.tax / result.gross) * 100).toFixed(2) : '0.00'}%)`
-                                                                         : 'Tax Amount'}
-                                    </div>
-                                    {['salary', 'rent'].includes(mode) && (
-                                        <button 
-                                            onClick={(e) => { 
-                                                const words = amountToWords(result.tax); 
-                                                copyToClipboard(words, e.currentTarget); 
-                                            }} 
-                                            className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-red-500/10 rounded text-red-400/70 hover:text-red-400" 
-                                            title="Copy in Words"
-                                        >
-                                            <Copy size={9} />
-                                        </button>
-                                    )}
-                                </div>
-                                <div className="flex flex-col items-end gap-1">
-                                    <div className="flex items-center gap-1.5 justify-end">
-                                        <span className="text-lg font-bold text-red-400 font-mono">
-                                            {result.tax.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                        </span>
                                         {mode === 'salary' && (
-                                            <span className="select-none text-[8px] font-black px-1.5 py-0.5 rounded bg-red-950/40 text-red-400/80 uppercase tracking-widest leading-none">
-                                                mo
-                                            </span>
+                                            <div className="flex items-center gap-1.5 justify-end">
+                                                <span className="text-[11px] font-medium text-neutral-400 font-mono">
+                                                    {(result.gross * 12).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                </span>
+                                                <span className="select-none text-[7px] font-bold px-1 py-0.25 rounded bg-neutral-900 text-neutral-500 uppercase tracking-widest leading-none">
+                                                    yr
+                                                </span>
+                                            </div>
                                         )}
                                     </div>
-                                    {mode === 'salary' && (
-                                        <div className="flex items-center gap-1.5 justify-end">
-                                            <span className="text-xs font-bold text-red-400/80 font-mono">
-                                                {(result.tax * 12).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                            </span>
-                                            <span className="select-none text-[7px] font-bold px-1 py-0.25 rounded bg-red-950/20 text-red-500/50 uppercase tracking-widest leading-none">
-                                                yr
-                                            </span>
-                                        </div>
-                                    )}
                                 </div>
-                            </div>
+                                
+                                {mode === 'salary' && (
+                                    <div className="bg-neutral-900/50 rounded-lg p-2 border border-neutral-800 flex flex-col justify-between group relative">
+                                        <div className="flex justify-between items-start mb-1">
+                                            <div className="text-[10px] uppercase font-bold text-neutral-500 text-left">Pension (7%)</div>
+                                            <button 
+                                                onClick={(e) => { 
+                                                    const words = amountToWords(result.pension); 
+                                                    copyToClipboard(words, e.currentTarget); 
+                                                }} 
+                                                className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-primary-500/10 rounded text-primary-500/70 hover:text-primary-400" 
+                                                title="Copy in Words"
+                                            >
+                                                <Copy size={9} />
+                                            </button>
+                                        </div>
+                                        <div className="flex flex-col items-end gap-1">
+                                            <div className="flex items-center gap-1.5 justify-end">
+                                                <span className="text-sm font-bold text-white font-mono">
+                                                    {result.pension.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                </span>
+                                                <span className="select-none text-[8px] font-bold px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-400 uppercase tracking-widest leading-none">
+                                                    mo
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center gap-1.5 justify-end">
+                                                <span className="text-[11px] font-medium text-neutral-400 font-mono">
+                                                    {(result.pension * 12).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                </span>
+                                                <span className="select-none text-[7px] font-bold px-1 py-0.25 rounded bg-neutral-900 text-neutral-500 uppercase tracking-widest leading-none">
+                                                    yr
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
 
-                            {mode === 'salary' && (
+                                {mode === 'rent' && (
+                                    <div className="bg-neutral-900/50 rounded-lg p-2 border border-neutral-800 flex flex-col justify-between group relative">
+                                        <div className="flex justify-between items-start mb-1">
+                                            <div className="text-[10px] uppercase font-bold text-neutral-500 text-left">Taxable Rent (50%)</div>
+                                            <button 
+                                                onClick={(e) => { 
+                                                    const words = amountToWords(result.taxableAmount); 
+                                                    copyToClipboard(words, e.currentTarget); 
+                                                }} 
+                                                className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-primary-500/10 rounded text-primary-500/70 hover:text-primary-400" 
+                                                title="Copy in Words"
+                                            >
+                                                <Copy size={9} />
+                                            </button>
+                                        </div>
+                                        <span className="text-sm font-bold text-white font-mono self-end">
+                                            {result.taxableAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                        </span>
+                                    </div>
+                                )}
+
+                                {mode === 'capital' && (
+                                    <div className="bg-neutral-900/50 rounded-lg p-2 border border-neutral-800 flex flex-col justify-between">
+                                        <div className="text-[10px] uppercase font-bold text-neutral-500 mb-1 text-left">
+                                            Taxable Gain ({result.gross > 0 ? ((result.taxableGain / result.gross) * 100).toFixed(2) : '0.00'}%)
+                                        </div>
+                                        <span className="text-sm font-bold text-white font-mono self-end">
+                                            {result.taxableGain.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                        </span>
+                                    </div>
+                                )}
+
                                 <div className="bg-neutral-900/50 rounded-lg p-2 border border-neutral-800 flex flex-col justify-between group relative">
                                     <div className="flex justify-between items-start mb-1">
                                         <div className="text-[10px] uppercase font-bold text-neutral-500 text-left">
-                                            Total Deduction ({result.gross > 0 ? (((result.tax + result.pension) / result.gross) * 100).toFixed(2) : '0.00'}%)
+                                            {mode === 'rent' 
+                                                ? `Annual Tax (${result.gross > 0 ? ((result.tax / result.gross) * 100).toFixed(2) : '0.00'}%)` 
+                                                : mode === 'chance' 
+                                                    ? 'Tax Amount (20%)' 
+                                                    : mode === 'capital' 
+                                                        ? 'Tax Amount (15%)' 
+                                                        : mode === 'interest'
+                                                            ? 'Tax Amount (10%)'
+                                                            : mode === 'dividend'
+                                                                ? 'Tax Amount (15%)'
+                                                                : mode === 'business'
+                                                                    ? `Annual Tax (${result.gross > 0 ? ((result.tax / result.gross) * 100).toFixed(2) : '0.00'}%)`
+                                                                    : mode === 'sales'
+                                                                        ? `Annual Tax (${result.gross > 0 ? getSalesTaxRate(result.gross) : '0'}%)`
+                                                                         : mode === 'salary'
+                                                                             ? `Tax Amount (${result.gross > 0 ? ((result.tax / result.gross) * 100).toFixed(2) : '0.00'}%)`
+                                                                             : 'Tax Amount'}
                                         </div>
-                                        <button 
-                                            onClick={(e) => { 
-                                                const words = amountToWords(result.totalDeduction); 
-                                                copyToClipboard(words, e.currentTarget); 
-                                            }} 
-                                            className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-red-500/10 rounded text-red-400/70 hover:text-red-400" 
-                                            title="Copy in Words"
-                                        >
-                                            <Copy size={9} />
-                                        </button>
+                                        {['salary', 'rent'].includes(mode) && (
+                                            <button 
+                                                onClick={(e) => { 
+                                                    const words = amountToWords(result.tax); 
+                                                    copyToClipboard(words, e.currentTarget); 
+                                                }} 
+                                                className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-red-500/10 rounded text-red-400/70 hover:text-red-400" 
+                                                title="Copy in Words"
+                                            >
+                                                <Copy size={9} />
+                                            </button>
+                                        )}
                                     </div>
                                     <div className="flex flex-col items-end gap-1">
                                         <div className="flex items-center gap-1.5 justify-end">
                                             <span className="text-lg font-bold text-red-400 font-mono">
-                                                {result.totalDeduction.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                {result.tax.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                             </span>
-                                            <span className="select-none text-[8px] font-black px-1.5 py-0.5 rounded bg-red-950/40 text-red-400/80 uppercase tracking-widest leading-none">
-                                                mo
-                                            </span>
+                                            {mode === 'salary' && (
+                                                <span className="select-none text-[8px] font-black px-1.5 py-0.5 rounded bg-red-950/40 text-red-400/80 uppercase tracking-widest leading-none">
+                                                    mo
+                                                </span>
+                                            )}
                                         </div>
-                                        <div className="flex items-center gap-1.5 justify-end">
-                                            <span className="text-xs font-bold text-red-400/80 font-mono">
-                                                {(result.totalDeduction * 12).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                            </span>
-                                            <span className="select-none text-[7px] font-bold px-1 py-0.25 rounded bg-red-950/20 text-red-500/50 uppercase tracking-widest leading-none">
-                                                yr
-                                            </span>
-                                        </div>
+                                        {mode === 'salary' && (
+                                            <div className="flex items-center gap-1.5 justify-end">
+                                                <span className="text-xs font-bold text-red-400/80 font-mono">
+                                                    {(result.tax * 12).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                </span>
+                                                <span className="select-none text-[7px] font-bold px-1 py-0.25 rounded bg-red-950/20 text-red-500/50 uppercase tracking-widest leading-none">
+                                                    yr
+                                                </span>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
-                            )}
 
-                            {mode === 'rent' && (
-                                <div className="bg-neutral-900/50 rounded-lg p-2 border border-neutral-800 flex flex-col justify-between group relative">
+                                {mode === 'salary' && (
+                                    <div className="bg-neutral-900/50 rounded-lg p-2 border border-neutral-800 flex flex-col justify-between group relative">
+                                        <div className="flex justify-between items-start mb-1">
+                                            <div className="text-[10px] uppercase font-bold text-neutral-500 text-left">
+                                                Total Deduction ({result.gross > 0 ? (((result.tax + result.pension) / result.gross) * 100).toFixed(2) : '0.00'}%)
+                                            </div>
+                                            <button 
+                                                onClick={(e) => { 
+                                                    const words = amountToWords(result.totalDeduction); 
+                                                    copyToClipboard(words, e.currentTarget); 
+                                                }} 
+                                                className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-red-500/10 rounded text-red-400/70 hover:text-red-400" 
+                                                title="Copy in Words"
+                                            >
+                                                <Copy size={9} />
+                                            </button>
+                                        </div>
+                                        <div className="flex flex-col items-end gap-1">
+                                            <div className="flex items-center gap-1.5 justify-end">
+                                                <span className="text-lg font-bold text-red-400 font-mono">
+                                                    {result.totalDeduction.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                </span>
+                                                <span className="select-none text-[8px] font-black px-1.5 py-0.5 rounded bg-red-950/40 text-red-400/80 uppercase tracking-widest leading-none">
+                                                    mo
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center gap-1.5 justify-end">
+                                                <span className="text-xs font-bold text-red-400/80 font-mono">
+                                                    {(result.totalDeduction * 12).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                </span>
+                                                <span className="select-none text-[7px] font-bold px-1 py-0.25 rounded bg-red-950/20 text-red-500/50 uppercase tracking-widest leading-none">
+                                                    yr
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {mode === 'rent' && (
+                                    <div className="bg-neutral-900/50 rounded-lg p-2 border border-neutral-800 flex flex-col justify-between group relative">
+                                        <div className="flex justify-between items-start mb-1">
+                                            <div className="text-[10px] uppercase font-bold text-neutral-500 text-left">Quarterly Payment</div>
+                                            <button 
+                                                onClick={(e) => { 
+                                                    const words = amountToWords(result.quarterlyPayment); 
+                                                    copyToClipboard(words, e.currentTarget); 
+                                                }} 
+                                                className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-red-500/10 rounded text-red-400/70 hover:text-red-400" 
+                                                title="Copy in Words"
+                                            >
+                                                <Copy size={9} />
+                                            </button>
+                                        </div>
+                                        <span className="text-lg font-bold text-red-400 font-mono self-end">
+                                            {result.quarterlyPayment.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                        </span>
+                                    </div>
+                                )}
+                                
+                                <div className={`bg-neutral-900/50 rounded-lg p-2 border border-neutral-800 flex flex-col justify-between group relative ${['chance', 'rent', 'interest', 'dividend', 'business', 'sales', 'salary'].includes(mode) ? 'col-span-2' : ''}`}>
                                     <div className="flex justify-between items-start mb-1">
-                                        <div className="text-[10px] uppercase font-bold text-neutral-500 text-left">Quarterly Payment</div>
-                                        <button 
-                                            onClick={(e) => { 
-                                                const words = amountToWords(result.quarterlyPayment); 
-                                                copyToClipboard(words, e.currentTarget); 
-                                            }} 
-                                            className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-red-500/10 rounded text-red-400/70 hover:text-red-400" 
-                                            title="Copy in Words"
-                                        >
-                                            <Copy size={9} />
-                                        </button>
+                                        <div className="text-[10px] uppercase font-bold text-neutral-500 text-left">
+                                            {mode === 'rent' 
+                                                ? `Annual Net (${result.gross > 0 ? ((result.netIncome / result.gross) * 100).toFixed(2) : '0.00'}%)` 
+                                                : mode === 'capital' 
+                                                    ? `Net Proceeds (${result.gross > 0 ? ((result.netIncome / result.gross) * 100).toFixed(2) : '0.00'}%)` 
+                                                    : mode === 'interest'
+                                                        ? `Net Interest (${result.gross > 0 ? ((result.netIncome / result.gross) * 100).toFixed(2) : '0.00'}%)`
+                                                        : mode === 'dividend'
+                                                            ? `Net Dividend (${result.gross > 0 ? ((result.netIncome / result.gross) * 100).toFixed(2) : '0.00'}%)`
+                                                            : mode === 'business'
+                                                                ? `Net Business Profit (${result.gross > 0 ? ((result.netIncome / result.gross) * 100).toFixed(2) : '0.00'}%)`
+                                                                : mode === 'sales'
+                                                                    ? `Net Sales Proceeds (${result.gross > 0 ? ((result.netIncome / result.gross) * 100).toFixed(2) : '0.00'}%)`
+                                                                    : `Net Income (${result.gross > 0 ? ((result.netIncome / result.gross) * 100).toFixed(2) : '0.00'}%)`}
+                                        </div>
+                                        {['salary', 'rent'].includes(mode) && (
+                                            <button 
+                                                onClick={(e) => { 
+                                                    const words = amountToWords(result.netIncome); 
+                                                    copyToClipboard(words, e.currentTarget); 
+                                                }} 
+                                                className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-primary-500/10 rounded text-primary-500/70 hover:text-primary-400" 
+                                                title="Copy in Words"
+                                            >
+                                                <Copy size={9} />
+                                            </button>
+                                        )}
                                     </div>
-                                    <span className="text-lg font-bold text-red-400 font-mono self-end">
-                                        {result.quarterlyPayment.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                    </span>
-                                </div>
-                            )}
-                            
-                            <div className={`bg-neutral-900/50 rounded-lg p-2 border border-neutral-800 flex flex-col justify-between group relative ${['chance', 'rent', 'interest', 'dividend', 'business', 'sales', 'salary'].includes(mode) ? 'col-span-2' : ''}`}>
-                                <div className="flex justify-between items-start mb-1">
-                                    <div className="text-[10px] uppercase font-bold text-neutral-500 text-left">
-                                        {mode === 'rent' 
-                                            ? `Annual Net (${result.gross > 0 ? ((result.netIncome / result.gross) * 100).toFixed(2) : '0.00'}%)` 
-                                            : mode === 'capital' 
-                                                ? `Net Proceeds (${result.gross > 0 ? ((result.netIncome / result.gross) * 100).toFixed(2) : '0.00'}%)` 
-                                                : mode === 'interest'
-                                                    ? `Net Interest (${result.gross > 0 ? ((result.netIncome / result.gross) * 100).toFixed(2) : '0.00'}%)`
-                                                    : mode === 'dividend'
-                                                        ? `Net Dividend (${result.gross > 0 ? ((result.netIncome / result.gross) * 100).toFixed(2) : '0.00'}%)`
-                                                        : mode === 'business'
-                                                            ? `Net Business Profit (${result.gross > 0 ? ((result.netIncome / result.gross) * 100).toFixed(2) : '0.00'}%)`
-                                                            : mode === 'sales'
-                                                                ? `Net Sales Proceeds (${result.gross > 0 ? ((result.netIncome / result.gross) * 100).toFixed(2) : '0.00'}%)`
-                                                                : `Net Income (${result.gross > 0 ? ((result.netIncome / result.gross) * 100).toFixed(2) : '0.00'}%)`}
-                                    </div>
-                                    {['salary', 'rent'].includes(mode) && (
-                                        <button 
-                                            onClick={(e) => { 
-                                                const words = amountToWords(result.netIncome); 
-                                                copyToClipboard(words, e.currentTarget); 
-                                            }} 
-                                            className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-primary-500/10 rounded text-primary-500/70 hover:text-primary-400" 
-                                            title="Copy in Words"
-                                        >
-                                            <Copy size={9} />
-                                        </button>
-                                    )}
-                                </div>
-                                <div className="flex flex-col items-end gap-1">
                                     <div className="flex items-center gap-1.5 justify-end">
                                         <span className="text-lg font-bold text-primary-500 font-mono">
                                             {result.netIncome.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -612,15 +702,263 @@ const TaxCalculator = ({ toggleHelp, toggleSettings }) => {
                                 </div>
                             </div>
                         </div>
+                    )}
+                </div>
+            ) : (
+                /* Brokerage Mode Only */
+                <div className="flex-1 flex flex-col min-h-0">
+                    {/* Fixed Brokerage Inputs */}
+                    <div className="space-y-1.5 shrink-0 mb-1.5">
+                        {/* Transaction Value Input */}
+                        <div className="bg-neutral-800/40 rounded-lg p-1.5 flex justify-between items-center gap-4 border border-transparent hover:border-neutral-700 transition-all">
+                            <div className="flex flex-col shrink-0 items-start text-left">
+                                <label 
+                                    onClick={focusAmount}
+                                    className="text-sm font-bold text-neutral-300 cursor-pointer hover:text-primary-400 transition-colors"
+                                    title="Click to Clear"
+                                >
+                                    {config.label}
+                                </label>
+                                <span className="text-[9px] uppercase tracking-tighter text-neutral-500 font-bold">{config.sub}</span>
+                            </div>
+                            <FormattedNumberInput 
+                                ref={inputRefs.amount}
+                                value={values.amount} 
+                                onChange={(e) => handleChange('amount', e.target.value)} 
+                                decimals={2} 
+                                className="bg-transparent text-right text-lg font-mono text-white focus:outline-none w-full flex-1" 
+                            />
+                        </div>
+
+                        {/* Security Type Selector */}
+                        <div className="bg-neutral-800/40 rounded-lg p-2 border border-transparent hover:border-neutral-700 transition-all">
+                            <label className="block text-[9px] font-bold text-neutral-500 uppercase tracking-wider text-left mb-1.5">Security Type</label>
+                            
+                            {/* Row 1: 3 Columns */}
+                            <div className="grid grid-cols-3 gap-1">
+                                {[
+                                    { val: 'equity_main', label: 'Equity (Main)', rate: '1.6%' },
+                                    { val: 'equity_otc', label: 'Equity (OTC)', rate: '2.0%' },
+                                    { val: 'tbill', label: 'T-Bill', rate: '0.1%' }
+                                ].map(sec => (
+                                    <button
+                                        key={sec.val}
+                                        onClick={() => {
+                                            setSecurityType(sec.val);
+                                            setResult(null);
+                                        }}
+                                        className={`py-1.5 px-1 rounded text-[10px] font-bold transition-all text-left flex justify-between items-center ${securityType === sec.val ? 'bg-primary-600/20 text-primary-400 ring-1 ring-primary-500/50' : 'bg-neutral-900/50 text-neutral-500 hover:bg-neutral-900'}`}
+                                    >
+                                        <span className="truncate">{sec.label}</span>
+                                        <span className={`px-1 py-0.25 rounded text-[8px] leading-none shrink-0 ${securityType === sec.val ? 'bg-primary-500/20 text-primary-400' : 'bg-neutral-800 text-neutral-600'}`}>{sec.rate}</span>
+                                    </button>
+                                ))}
+                            </div>
+
+                            {/* Row 2: 2 Columns */}
+                            <div className="grid grid-cols-2 gap-1 mt-1">
+                                {[
+                                    { val: 'funds_etf', label: 'Funds & ETFs', rate: '2.0%' },
+                                    { val: 'fixed_income', label: 'Fixed Income', rate: '0.1%' }
+                                ].map(sec => (
+                                    <button
+                                        key={sec.val}
+                                        onClick={() => {
+                                            setSecurityType(sec.val);
+                                            setResult(null);
+                                        }}
+                                        className={`py-1.5 px-2 rounded text-[10px] font-bold transition-all text-left flex justify-between items-center ${securityType === sec.val ? 'bg-primary-600/20 text-primary-400 ring-1 ring-primary-500/50' : 'bg-neutral-900/50 text-neutral-500 hover:bg-neutral-900'}`}
+                                    >
+                                        <span>{sec.label}</span>
+                                        <span className={`px-1 py-0.25 rounded text-[8px] leading-none ${securityType === sec.val ? 'bg-primary-500/20 text-primary-400' : 'bg-neutral-800 text-neutral-600'}`}>{sec.rate}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
                     </div>
-                )}
-            </div>
+
+                    {/* Relaxed Height Results Box with Placeholder strictly for Brokerage Mode */}
+                    <div className="flex-grow flex-1 overflow-y-auto pr-1 scrollbar-hide min-h-0">
+                        {result === null && (
+                            <div className="h-full border border-dashed border-neutral-800/80 rounded-xl flex flex-col items-center justify-center text-neutral-500 gap-1.5 p-4 bg-neutral-900/10 hover:border-neutral-700/50 transition-all select-none">
+                                <Landmark className="w-5 h-5 text-neutral-600 animate-pulse" />
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">Awaiting Calculation</span>
+                                <span className="text-[9px] text-neutral-600 text-center max-w-[200px]">Enter values above and click Calculate to view the breakdown</span>
+                            </div>
+                        )}
+
+                        {result !== null && (
+                            <div className="space-y-2 mb-2 pt-2">
+                                <div className="flex justify-between items-center">
+                                    <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Brokerage & Market charges breakdown</span>
+                                    <button
+                                        onClick={() => setShowHistory(true)}
+                                        className="text-[9px] text-primary-500 font-bold uppercase tracking-wider flex items-center gap-1 hover:text-primary-400 transition-colors"
+                                    >
+                                        <History size={12} /> View History
+                                    </button>
+                                </div>
+                                <div className="grid grid-cols-2 gap-1.5">
+                                    {/* Gross Transaction Value */}
+                                    <div className="bg-neutral-900/50 rounded-lg p-1.5 border border-neutral-800 flex flex-col justify-between group relative">
+                                        <div className="flex justify-between items-start mb-1">
+                                            <div className="text-[10px] uppercase font-bold text-neutral-500 text-left">Gross Value</div>
+                                            <button 
+                                                onClick={(e) => { 
+                                                    const words = amountToWords(result.gross); 
+                                                    copyToClipboard(words, e.currentTarget); 
+                                                }} 
+                                                className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-primary-500/10 rounded text-primary-500/70 hover:text-primary-400" 
+                                                title="Copy in Words"
+                                            >
+                                                <Copy size={9} />
+                                            </button>
+                                        </div>
+                                        <span className="text-sm font-bold text-white font-mono self-end">
+                                            {result.gross.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                        </span>
+                                    </div>
+
+                                    {/* Brokerage Commission */}
+                                    <div className="bg-neutral-900/50 rounded-lg p-1.5 border border-neutral-800 flex flex-col justify-between group relative">
+                                        <div className="flex justify-between items-start mb-1">
+                                            <div className="text-[10px] uppercase font-bold text-neutral-500 text-left">
+                                                Commission ({securityType === 'equity_main' ? '1.6%' : securityType === 'equity_otc' || securityType === 'funds_etf' ? '2.0%' : '0.1%'})
+                                            </div>
+                                            <button 
+                                                onClick={(e) => { 
+                                                    const words = amountToWords(result.commission); 
+                                                    copyToClipboard(words, e.currentTarget); 
+                                                }} 
+                                                className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-primary-500/10 rounded text-primary-500/70 hover:text-primary-400" 
+                                                title="Copy in Words"
+                                            >
+                                                <Copy size={9} />
+                                            </button>
+                                        </div>
+                                        <span className="text-sm font-bold text-white font-mono self-end">
+                                            {result.commission.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                        </span>
+                                    </div>
+
+                                    {/* VAT on Commission */}
+                                    <div className="bg-neutral-900/50 rounded-lg p-1.5 border border-neutral-800 flex flex-col justify-between group relative">
+                                        <div className="flex justify-between items-start mb-1">
+                                            <div className="text-[10px] uppercase font-bold text-neutral-500 text-left">VAT on Fee (15%)</div>
+                                            <button 
+                                                onClick={(e) => { 
+                                                    const words = amountToWords(result.vat); 
+                                                    copyToClipboard(words, e.currentTarget); 
+                                                }} 
+                                                className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-primary-500/10 rounded text-primary-500/70 hover:text-primary-400" 
+                                                title="Copy in Words"
+                                            >
+                                                <Copy size={9} />
+                                            </button>
+                                        </div>
+                                        <span className="text-sm font-bold text-red-400 font-mono self-end">
+                                            {result.vat.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                        </span>
+                                    </div>
+
+                                    {/* ESX Fee */}
+                                    <div className="bg-neutral-900/50 rounded-lg p-1.5 border border-neutral-800 flex flex-col justify-between group relative">
+                                        <div className="flex justify-between items-start mb-1">
+                                            <div className="text-[10px] uppercase font-bold text-neutral-500 text-left font-semibold">
+                                                ESX Fee ({securityType === 'fixed_income' ? '0.021%' : securityType === 'equity_otc' ? '0.5%' : securityType === 'tbill' ? '0%' : '0.36%'})
+                                            </div>
+                                            <button 
+                                                onClick={(e) => { 
+                                                    const words = amountToWords(result.esx); 
+                                                    copyToClipboard(words, e.currentTarget); 
+                                                }} 
+                                                className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-primary-500/10 rounded text-primary-500/70 hover:text-primary-400" 
+                                                title="Copy in Words"
+                                            >
+                                                <Copy size={9} />
+                                            </button>
+                                        </div>
+                                        <span className="text-sm font-bold text-amber-500 font-mono self-end">
+                                            {result.esx.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                        </span>
+                                    </div>
+
+                                    {/* ECMA Fee */}
+                                    <div className="bg-neutral-900/50 rounded-lg p-1.5 border border-neutral-800 flex flex-col justify-between group relative">
+                                        <div className="flex justify-between items-start mb-1">
+                                            <div className="text-[10px] uppercase font-bold text-neutral-500 text-left">
+                                                ECMA Fee ({['fixed_income', 'tbill'].includes(securityType) ? '0.005%' : '0.15%'})
+                                            </div>
+                                            <button 
+                                                onClick={(e) => { 
+                                                    const words = amountToWords(result.ecma); 
+                                                    copyToClipboard(words, e.currentTarget); 
+                                                }} 
+                                                className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-primary-500/10 rounded text-primary-500/70 hover:text-primary-400" 
+                                                title="Copy in Words"
+                                            >
+                                                <Copy size={9} />
+                                            </button>
+                                        </div>
+                                        <span className="text-sm font-bold text-indigo-400 font-mono self-end">
+                                            {result.ecma.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                        </span>
+                                    </div>
+
+                                    {/* Total Charges */}
+                                    <div className="bg-neutral-900/50 rounded-lg p-1.5 border border-neutral-800 flex flex-col justify-between group relative">
+                                        <div className="flex justify-between items-start mb-1">
+                                            <div className="text-[10px] uppercase font-bold text-neutral-500 text-left">Total Charges</div>
+                                            <button 
+                                                onClick={(e) => { 
+                                                    const words = amountToWords(result.totalFees); 
+                                                    copyToClipboard(words, e.currentTarget); 
+                                                }} 
+                                                className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-primary-500/10 rounded text-primary-500/70 hover:text-primary-400" 
+                                                title="Copy in Words"
+                                            >
+                                                <Copy size={9} />
+                                            </button>
+                                        </div>
+                                        <span className="text-sm font-bold text-red-400 font-mono self-end">
+                                            {result.totalFees.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                        </span>
+                                    </div>
+
+                                    {/* Net Proceeds / Total Settlement (Spans full width) */}
+                                    <div className="bg-neutral-900/50 rounded-lg p-1.5 border border-neutral-800 flex flex-col justify-between group relative col-span-2">
+                                        <div className="flex justify-between items-start mb-1">
+                                            <div className="text-[10px] uppercase font-bold text-neutral-500 text-left font-black tracking-wider">
+                                                {transactionType === 'buy' ? 'Total Cost (Settlement)' : 'Net Proceeds (To Receive)'}
+                                            </div>
+                                            <button 
+                                                onClick={(e) => { 
+                                                    const words = amountToWords(result.netProceeds); 
+                                                    copyToClipboard(words, e.currentTarget); 
+                                                }} 
+                                                className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-primary-500/10 rounded text-primary-500/70 hover:text-primary-400" 
+                                                title="Copy in Words"
+                                            >
+                                                <Copy size={9} />
+                                            </button>
+                                        </div>
+                                        <span className="text-xl font-black font-mono self-end text-primary-500">
+                                            {result.netProceeds.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
 
             <div className="flex gap-1.5 mt-1 pt-2">
                 <button
                     onClick={() => {
                         setResult(null);
                         setValues({ amount: 0, taxableAllowance: 0, purchasePrice: 0 });
+                        setSecurityType('equity_main');
                     }}
                     className="w-[12%] bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-xs py-2.5 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center gap-1 uppercase tracking-wider"
                     title="Clear all values"
