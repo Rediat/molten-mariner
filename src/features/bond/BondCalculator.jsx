@@ -99,7 +99,7 @@ const BondCalculator = ({ toggleHelp, toggleSettings }) => {
 
     return (
         <div className="flex flex-col h-full">
-            <div className="flex justify-between items-start mb-2">
+            <div className="flex justify-between items-center mb-2">
                 <div className="flex items-center gap-2 min-w-0">
                     <FileText className="w-5 h-5 text-primary-500 shrink-0" />
                     <div className="min-w-0">
@@ -107,32 +107,14 @@ const BondCalculator = ({ toggleHelp, toggleSettings }) => {
                         <p className="text-neutral-500 text-[10px] font-medium uppercase tracking-wider">Valuation & Yield</p>
                     </div>
                 </div>
-                <div className="flex flex-col items-end gap-1">
-                    <div className="flex gap-1.5">
-                        <button
-                            onClick={() => setShowExplanation(!showExplanation)}
-                            className={`flex items-center justify-center p-1 rounded-full transition-all ${showExplanation ? 'bg-primary-600/20 text-primary-400 ring-1 ring-primary-500/50' : 'bg-neutral-800 text-neutral-500 hover:bg-neutral-700'}`}
-                            title="Show Info"
-                        >
-                            <Info className="w-3 h-3" />
-                        </button>
-                        <div className="bg-neutral-800 p-1 rounded-xl flex">
-                            {['price', 'ytm'].map(t => (
-                                <button key={t} onClick={() => { setTarget(t); setResult(null); setMetrics(null); }}
-                                    className={`px-3 py-1 text-[10px] font-bold rounded-lg transition-all ${target === t ? 'bg-neutral-700 text-white shadow' : 'text-neutral-500'}`}>
-                                    {t.toUpperCase()}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                    <div className="bg-neutral-800 p-1 rounded-xl flex">
-                        {[{ val: 1, label: 'ANNUAL' }, { val: 2, label: 'SEMI' }].map(opt => (
-                            <button key={opt.val} onClick={() => handleChange('frequency', opt.val)}
-                                className={`px-3 py-1 text-[10px] font-bold rounded-lg transition-all ${values.frequency === opt.val ? 'bg-neutral-700 text-white shadow' : 'text-neutral-500 hover:text-neutral-300'}`}>
-                                {opt.label}
-                            </button>
-                        ))}
-                    </div>
+                <div>
+                    <button
+                        onClick={() => setShowExplanation(!showExplanation)}
+                        className={`flex items-center justify-center p-1 rounded-full transition-all ${showExplanation ? 'bg-primary-600/20 text-primary-400 ring-1 ring-primary-500/50' : 'bg-neutral-800 text-neutral-500 hover:bg-neutral-700'}`}
+                        title="Show Info"
+                    >
+                        <Info className="w-3.5 h-3.5" />
+                    </button>
                 </div>
             </div>
 
@@ -146,6 +128,42 @@ const BondCalculator = ({ toggleHelp, toggleSettings }) => {
                     </p>
                 </div>
             )}
+
+            {/* Target & Frequency Selectors */}
+            <div className="space-y-3 mb-3 px-0.5">
+                <div className="grid grid-cols-2 gap-2">
+                    <div className="flex flex-col gap-1 text-left">
+                        <span className="text-[9px] uppercase tracking-wider text-neutral-500 font-extrabold">Calculate Target</span>
+                        <div className="flex bg-neutral-900 border border-neutral-800 p-0.5 rounded-lg">
+                            {['price', 'ytm'].map(t => (
+                                <button 
+                                    key={t} 
+                                    type="button"
+                                    onClick={() => { setTarget(t); setResult(null); setMetrics(null); }}
+                                    className={`flex-1 px-2.5 py-1 text-[10px] font-bold rounded-md transition-all uppercase ${target === t ? 'bg-primary-500 text-neutral-900 font-black shadow-md' : 'text-neutral-400 hover:text-white hover:bg-neutral-800/50'}`}
+                                >
+                                    {t}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                    <div className="flex flex-col gap-1 text-left">
+                        <span className="text-[9px] uppercase tracking-wider text-neutral-500 font-extrabold">Coupon Frequency</span>
+                        <div className="flex bg-neutral-900 border border-neutral-800 p-0.5 rounded-lg">
+                            {[{ val: 1, label: 'Annual' }, { val: 2, label: 'Semi-Annual' }].map(opt => (
+                                <button 
+                                    key={opt.val} 
+                                    type="button"
+                                    onClick={() => handleChange('frequency', opt.val)}
+                                    className={`flex-1 px-2.5 py-1 text-[10px] font-bold rounded-md transition-all ${values.frequency === opt.val ? 'bg-primary-500 text-neutral-900 font-black shadow-md' : 'text-neutral-400 hover:text-white hover:bg-neutral-800/50'}`}
+                                >
+                                    {opt.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             <div className="space-y-0.5 flex-1 overflow-y-auto pr-1 scrollbar-hide">
                 {inputFields.map(field => (

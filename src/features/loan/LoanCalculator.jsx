@@ -337,7 +337,7 @@ const LoanCalculator = ({ toggleHelp, toggleSettings }) => {
                     </div>
                 </div>
                 <div className="flex flex-col items-end gap-2">
-                    <div className="flex gap-1.5">
+                    <div className="flex items-center gap-1.5">
                         <button
                             onClick={() => setShowExplanation(!showExplanation)}
                             className={`flex items-center justify-center p-1 rounded-full transition-all ${showExplanation ? 'bg-primary-600/20 text-primary-400 ring-1 ring-primary-500/50' : 'bg-neutral-800 text-neutral-500 hover:bg-neutral-700'}`}
@@ -345,13 +345,10 @@ const LoanCalculator = ({ toggleHelp, toggleSettings }) => {
                         >
                             <Info className="w-3 h-3" />
                         </button>
-                        <button onClick={() => setUseDates(!useDates)} className="text-[10px] font-bold uppercase tracking-tighter bg-neutral-800 border border-neutral-700 rounded-full px-3 py-1 text-primary-500 hover:bg-neutral-700 transition-all">
-                            {useDates ? 'Use Manual Count' : 'Use Dates'}
-                        </button>
+                        <select value={values.frequency} onChange={(e) => handleChange('frequency', e.target.value)} className="bg-neutral-800 border border-neutral-700 rounded-lg px-2 py-0.5 text-[10px] font-bold text-neutral-300 focus:outline-none">
+                            {FREQUENCIES.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+                        </select>
                     </div>
-                    <select value={values.frequency} onChange={(e) => handleChange('frequency', e.target.value)} className="bg-neutral-800 border border-neutral-700 rounded-lg px-2 py-0.5 text-[10px] font-bold text-neutral-300 focus:outline-none">
-                        {FREQUENCIES.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
-                    </select>
                 </div>
             </div>
 
@@ -394,6 +391,27 @@ const LoanCalculator = ({ toggleHelp, toggleSettings }) => {
                                     </div>
                                 </div>
                             ))}
+
+                            {/* Tracking Method Segmented Control */}
+                            <div className="flex items-center justify-between mt-3 mb-2 px-1">
+                                <span className="text-[10px] uppercase tracking-wider text-neutral-500 font-extrabold">Track Payments By</span>
+                                <div className="flex bg-neutral-900 border border-neutral-800 p-0.5 rounded-lg">
+                                    <button 
+                                        type="button"
+                                        onClick={() => setUseDates(true)}
+                                        className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all ${useDates ? 'bg-primary-500 text-neutral-900 font-black shadow-md' : 'text-neutral-400 hover:text-white hover:bg-neutral-800/50'}`}
+                                    >
+                                        Calendar Dates
+                                    </button>
+                                    <button 
+                                        type="button"
+                                        onClick={() => setUseDates(false)}
+                                        className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all ${!useDates ? 'bg-primary-500 text-neutral-900 font-black shadow-md' : 'text-neutral-400 hover:text-white hover:bg-neutral-800/50'}`}
+                                    >
+                                        Manual Count
+                                    </button>
+                                </div>
+                            </div>
 
                             {useDates ? (
                                 <div className="grid grid-cols-2 gap-2">
