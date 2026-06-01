@@ -250,6 +250,12 @@ const DrivingView = ({ onClose, fareData, onOpenLiveTracker, tripType = 'single'
                 strokeWeight: 2,
             }
         });
+        const originInfo = new window.google.maps.InfoWindow({
+            content: `<div style="color: #1f2937; font-family: sans-serif; font-size: 11px; padding: 2px; font-weight: bold;">Origin: ${origin.name}</div>`
+        });
+        originMarker.addListener('click', () => {
+            originInfo.open(mapInstance, originMarker);
+        });
         markersRef.current.push(originMarker);
 
         // --- Add Destination Marker (Red Pin) ---
@@ -259,9 +265,15 @@ const DrivingView = ({ onClose, fareData, onOpenLiveTracker, tripType = 'single'
             title: destination.name || 'Destination',
             zIndex: 20,
         });
+        const destInfo = new window.google.maps.InfoWindow({
+            content: `<div style="color: #1f2937; font-family: sans-serif; font-size: 11px; padding: 2px; font-weight: bold;">Destination: ${destination.name}</div>`
+        });
+        destMarker.addListener('click', () => {
+            destInfo.open(mapInstance, destMarker);
+        });
         markersRef.current.push(destMarker);
 
-        // --- Add Intermediate Stopover Markers (Amber Circles) ---
+        // --- Add Intermediate Stopover Markers (Amber Circles with Numbers + Click Names) ---
         const isMulti = tripType === 'multi';
         const validStops = isMulti ? stops.filter(s => s?.place).map(s => s.place) : [];
 
@@ -271,15 +283,30 @@ const DrivingView = ({ onClose, fareData, onOpenLiveTracker, tripType = 'single'
                 map: mapInstance,
                 title: stop.name || `Stop ${i + 1}`,
                 zIndex: 20,
+                label: {
+                    text: `${i + 1}`,
+                    color: '#ffffff',
+                    fontSize: '10px',
+                    fontWeight: 'bold'
+                },
                 icon: {
                     path: window.google.maps.SymbolPath.CIRCLE,
-                    scale: 6,
+                    scale: 10, // Increased scale so label fits beautifully
                     fillColor: '#f59e0b', // Amber
                     fillOpacity: 1,
                     strokeColor: '#b45309', // Dark Amber
                     strokeWeight: 2,
+                    labelOrigin: new window.google.maps.Point(0, 0) // Center label perfectly
                 }
             });
+
+            const stopInfo = new window.google.maps.InfoWindow({
+                content: `<div style="color: #1f2937; font-family: sans-serif; font-size: 11px; padding: 2px; font-weight: bold;">Stop ${i + 1}: ${stop.name}</div>`
+            });
+            stopMarker.addListener('click', () => {
+                stopInfo.open(mapInstance, stopMarker);
+            });
+
             markersRef.current.push(stopMarker);
         });
 
