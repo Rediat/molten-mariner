@@ -75,7 +75,7 @@ const DrivingView = ({ onClose, fareData, onOpenLiveTracker, tripType = 'single'
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [showSteps, setShowSteps] = useState(false);
-    const [bottomSheetTab, setBottomSheetTab] = useState('steps'); // 'steps' | 'fare'
+    const [bottomSheetTab, setBottomSheetTab] = useState('fare'); // 'fare' | 'steps'
     
     // Day/Night Mode Logic
     const isNightTime = () => {
@@ -693,16 +693,6 @@ const DrivingView = ({ onClose, fareData, onOpenLiveTracker, tripType = 'single'
                             <div className="px-4 pt-3 pb-2 shrink-0 border-b border-neutral-800 bg-neutral-900">
                                 <div className="flex bg-neutral-800 p-0.5 rounded-lg border border-neutral-700/60 select-none">
                                     <button
-                                        onClick={() => setBottomSheetTab('steps')}
-                                        className={`flex-1 text-center py-1.5 rounded-md text-xs font-bold transition-all ${
-                                            bottomSheetTab === 'steps'
-                                                ? 'bg-primary-500 text-neutral-900 shadow-md shadow-primary-500/10'
-                                                : 'text-neutral-400 hover:text-white hover:bg-neutral-700/30'
-                                        }`}
-                                    >
-                                        Directions
-                                    </button>
-                                    <button
                                         onClick={() => setBottomSheetTab('fare')}
                                         className={`flex-1 text-center py-1.5 rounded-md text-xs font-bold transition-all ${
                                             bottomSheetTab === 'fare'
@@ -711,6 +701,16 @@ const DrivingView = ({ onClose, fareData, onOpenLiveTracker, tripType = 'single'
                                         }`}
                                     >
                                         Fare Summary
+                                    </button>
+                                    <button
+                                        onClick={() => setBottomSheetTab('steps')}
+                                        className={`flex-1 text-center py-1.5 rounded-md text-xs font-bold transition-all ${
+                                            bottomSheetTab === 'steps'
+                                                ? 'bg-primary-500 text-neutral-900 shadow-md shadow-primary-500/10'
+                                                : 'text-neutral-400 hover:text-white hover:bg-neutral-700/30'
+                                        }`}
+                                    >
+                                        Directions
                                     </button>
                                 </div>
                             </div>
@@ -779,7 +779,7 @@ const DrivingView = ({ onClose, fareData, onOpenLiveTracker, tripType = 'single'
                                                                 {formatDuration(totalDurationMulti)} ({totalDistanceMulti.toFixed(2)} km)
                                                             </span>
                                                         </div>
-                                                        <div className="space-y-1.5 max-h-[120px] overflow-y-auto pr-1">
+                                                        <div className="space-y-1.5">
                                                             <div className="flex items-center gap-1.5">
                                                                 <span className="w-1.5 h-1.5 rounded-full bg-primary-400 shrink-0"></span>
                                                                 <span className="truncate font-semibold text-neutral-200 text-[10px]">Origin: {origin.name?.replace('📍 ', '')}</span>

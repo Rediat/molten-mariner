@@ -57,11 +57,13 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
 
     const [tripType, setTripType] = useState('single'); // 'single' or 'multi'
     const [stops, setStops] = useState([]); // [{ id, place }]
+    const [stopsExpanded, setStopsExpanded] = useState(true);
     const [legsData, setLegsData] = useState([]); // [{ distance, durationValue, durationText, loading }]
 
     const addStop = useCallback(() => {
         if (stops.length >= 5) return;
         setStops(prev => [...prev, { id: Date.now() + Math.random(), place: null }]);
+        setStopsExpanded(true);
         setResults(null);
     }, [stops.length]);
 
@@ -469,8 +471,9 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
             ? legsData.reduce((sum, leg) => sum + (leg?.durationValue || 0), 0)
             : 0;
 
-        const dist = isMulti ? totalDistanceMulti : (values.distance || 0);
-        const durVal = isMulti ? totalDurationMulti : (durationValue || 0);
+        const hasRouteInputs = origin || destination || stops.some(s => s?.place);
+        const dist = (isMulti && hasRouteInputs) ? totalDistanceMulti : (values.distance || 0);
+        const durVal = (isMulti && hasRouteInputs) ? totalDurationMulti : (durationValue || 0);
 
         const mileage = values.mileage || 0;
         const cost = values.costPerLiter || 0;
@@ -509,7 +512,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
             const netGainRound = totalToCharge - totalFuelCost;
             return { oneWayFuelCost, totalFuelCost, reasonablePrice: basePrice, totalToCharge, waitTime, revenuePerKm, netGain, netGainPerKm, fuelPerKm, perHead, serviceMultiplier: serviceMultiplierValue, netGainSingle, netGainRound };
         }
-    }, [values, waitMultiplier, priceToCharge, durationValue, roundTrip, mode, tripType, legsData]);
+    }, [values, waitMultiplier, priceToCharge, durationValue, roundTrip, mode, tripType, legsData, origin, destination, stops]);
 
     const handleCalculate = () => {
         const newResults = calculateResults();
@@ -569,8 +572,9 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
         ? legsData.reduce((sum, leg) => sum + (leg?.durationValue || 0), 0)
         : 0;
 
-    const dist = isMulti ? totalDistanceMulti : (values.distance || 0);
-    const waitMin = isMulti ? totalDurationMulti : (durationValue || 0);
+    const hasRouteInputs = origin || destination || stops.some(s => s?.place);
+    const dist = (isMulti && hasRouteInputs) ? totalDistanceMulti : (values.distance || 0);
+    const waitMin = (isMulti && hasRouteInputs) ? totalDurationMulti : (durationValue || 0);
     
     const rideFlagDown = 260;
     const rideDistRate = 24;
@@ -710,66 +714,101 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                                 </>
                             ) : (
                                 <>
-                                    {/* Stopovers with interspersed leg badges */}
-                                    {stops.map((stop, index) => {
-                                        const leg = legsData[index];
-                                        return (
-                                            <React.Fragment key={stop.id}>
-                                                {/* Leg Spacer Connector Row (between previous point and this stopover) */}
-                                                <div className="relative pl-6 py-3">
-                                                    <div className="absolute left-[13px] top-[-10px] bottom-[-10px] border-l border-dashed border-neutral-700/60 z-0"></div>
-                                                    {leg && (
-                                                        <div className="absolute left-[20px] top-[50%] translate-y-[-50%] bg-neutral-900 ring-1 ring-neutral-800 text-[10px] font-mono font-bold text-primary-400 px-1.5 py-0.5 rounded shadow z-10 whitespace-nowrap">
-                                                            {leg.loading ? (
-                                                                <span className="flex items-center gap-1">
-                                                                    <Loader2 className="w-2.5 h-2.5 animate-spin" /> Loading
-                                                                </span>
-                                                            ) : (
-                                                                `🚗 ${leg.distance.toFixed(1)} km • ${leg.durationText || '0 min'}`
-                                                            )}
-                                                        </div>
-                                                    )}
-                                                </div>
-
-                                                {/* Stopover input box itself */}
-                                                <div className="relative pl-6">
-                                                    <div className="absolute left-[13px] top-[-10px] bottom-[-10px] border-l border-dashed border-neutral-700/60 z-0"></div>
-                                                    <div className="flex items-center gap-1.5 bg-neutral-900/40 rounded-lg p-1 border border-neutral-800 relative z-1">
-                                                        <div className="flex-1 min-w-0">
-                                                            <PlacesAutocomplete
-                                                                label={`Stop ${index + 1}`}
-                                                                placeholder="Search stopover..."
-                                                                onPlaceSelected={(place) => handleStopSelected(index, place)}
-                                                                accentColor="primary"
-                                                                compact
-                                                                mapsReady={mapsReady}
-                                                                defaultValue={stop.place ? stop.place.description || stop.place.address || stop.place.name : ''}
-                                                            />
-                                                        </div>
-                                                        <button
-                                                            onClick={() => removeStop(index)}
-                                                            className="p-1 rounded-md text-neutral-500 hover:text-rose-400 hover:bg-rose-500/10 transition-all active:scale-90 shrink-0"
-                                                            title="Remove Stopover"
-                                                        >
-                                                            <Trash2 className="w-3.5 h-3.5" />
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </React.Fragment>
-                                        );
-                                    })}
-
-                                    {/* Add Stopover button row */}
-                                    {stops.length < 5 && (
-                                        <div className="relative pl-6 py-2">
+                                    {/* Stopovers toggle bar */}
+                                    {stops.length > 0 && (
+                                        <div className="relative pl-6 py-1 flex items-center justify-between">
                                             <div className="absolute left-[13px] top-[-10px] bottom-[-10px] border-l border-dashed border-neutral-700/60 z-0"></div>
+                                            <span className="relative z-1 text-[8px] font-bold text-neutral-500 uppercase tracking-wider">Stopovers ({stops.length})</span>
                                             <button
-                                                onClick={addStop}
-                                                className="relative z-1 flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary-500/10 hover:bg-primary-500/20 border border-primary-500/30 text-primary-400 font-bold text-[9px] uppercase tracking-wider transition-all active:scale-[0.97]"
+                                                onClick={() => setStopsExpanded(!stopsExpanded)}
+                                                className="relative z-1 text-[8px] font-extrabold text-primary-400 hover:text-primary-300 transition-colors uppercase tracking-wider flex items-center gap-0.5"
                                             >
-                                                <span>+</span> Add Stopover ({stops.length}/5)
+                                                {stopsExpanded ? 'Collapse' : 'Expand'}
                                             </button>
                                         </div>
+                                    )}
+
+                                    {/* Expanded Stops rendering */}
+                                    {stopsExpanded ? (
+                                        <>
+                                            {stops.map((stop, index) => {
+                                                const leg = legsData[index];
+                                                return (
+                                                    <React.Fragment key={stop.id}>
+                                                        {/* Leg Spacer Connector Row (between previous point and this stopover) */}
+                                                        <div className="relative pl-6 py-3">
+                                                            <div className="absolute left-[13px] top-[-10px] bottom-[-10px] border-l border-dashed border-neutral-700/60 z-0"></div>
+                                                            {leg && (
+                                                                <div className="absolute left-[20px] top-[50%] translate-y-[-50%] bg-neutral-900 ring-1 ring-neutral-800 text-[10px] font-mono font-bold text-primary-400 px-1.5 py-0.5 rounded shadow z-10 whitespace-nowrap">
+                                                                    {leg.loading ? (
+                                                                        <span className="flex items-center gap-1">
+                                                                            <Loader2 className="w-2.5 h-2.5 animate-spin" /> Loading
+                                                                        </span>
+                                                                    ) : (
+                                                                        `🚗 ${leg.distance.toFixed(1)} km • ${leg.durationText || '0 min'}`
+                                                                    )}
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        {/* Stopover input box itself */}
+                                                        <div className="relative pl-6">
+                                                            <div className="absolute left-[13px] top-[-10px] bottom-[-10px] border-l border-dashed border-neutral-700/60 z-0"></div>
+                                                            <div className="flex items-center gap-1.5 bg-neutral-900/40 rounded-lg p-1 border border-neutral-800 relative z-1">
+                                                                <div className="flex-1 min-w-0">
+                                                                    <PlacesAutocomplete
+                                                                        label={`Stop ${index + 1}`}
+                                                                        placeholder="Search stopover..."
+                                                                        onPlaceSelected={(place) => handleStopSelected(index, place)}
+                                                                        accentColor="primary"
+                                                                        compact
+                                                                        mapsReady={mapsReady}
+                                                                        defaultValue={stop.place ? stop.place.description || stop.place.address || stop.place.name : ''}
+                                                                    />
+                                                                </div>
+                                                                <button
+                                                                    onClick={() => removeStop(index)}
+                                                                    className="p-1 rounded-md text-neutral-500 hover:text-rose-400 hover:bg-rose-500/10 transition-all active:scale-90 shrink-0"
+                                                                    title="Remove Stopover"
+                                                                >
+                                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </React.Fragment>
+                                                );
+                                            })}
+
+                                            {/* Add Stopover button row */}
+                                            {stops.length < 5 && (
+                                                <div className="relative pl-6 py-2">
+                                                    <div className="absolute left-[13px] top-[-10px] bottom-[-10px] border-l border-dashed border-neutral-700/60 z-0"></div>
+                                                    <button
+                                                        onClick={addStop}
+                                                        className="relative z-1 flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary-500/10 hover:bg-primary-500/20 border border-primary-500/30 text-primary-400 font-bold text-[9px] uppercase tracking-wider transition-all active:scale-[0.97]"
+                                                    >
+                                                        <span>+</span> Add Stopover ({stops.length}/5)
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </>
+                                    ) : (
+                                        /* Collapsed Stops rendering */
+                                        stops.length > 0 && (
+                                            <div className="relative pl-6 py-2">
+                                                <div className="absolute left-[13px] top-[-10px] bottom-[-10px] border-l border-dashed border-neutral-700/60 z-0"></div>
+                                                <div className="relative z-1 bg-neutral-900/65 rounded-lg p-2 border border-neutral-800 text-left">
+                                                    <p className="text-[9px] font-bold text-neutral-300 leading-relaxed break-words">
+                                                        {stops.map((s, idx) => s.place?.name?.replace('📍 ', '') || `Stop ${idx + 1}`).join(' → ')}
+                                                    </p>
+                                                    {legsData.length > 0 && (
+                                                        <p className="text-[8px] font-bold text-primary-400 mt-1 font-mono">
+                                                            Total leg distance: {legsData.slice(0, stops.length).reduce((sum, leg) => sum + (leg?.distance || 0), 0).toFixed(1)} km
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )
                                     )}
 
                                     {/* Final leg spacer connector row */}
@@ -1027,7 +1066,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                                                 {formatDuration(totalDurationMulti)} ({totalDistanceMulti.toFixed(2)} km)
                                             </span>
                                         </div>
-                                        <div className="space-y-1.5 max-h-[100px] overflow-y-auto pr-1">
+                                        <div className="space-y-1.5">
                                             <div className="flex items-center gap-1.5">
                                                 <span className="w-1.5 h-1.5 rounded-full bg-primary-400 shrink-0"></span>
                                                 <span className="truncate font-semibold text-neutral-200">Origin: {origin.name?.replace('📍 ', '')}</span>
