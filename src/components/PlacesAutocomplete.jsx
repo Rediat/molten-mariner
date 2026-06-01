@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { MapPin, Crosshair, Search, Loader2 } from 'lucide-react';
 
-const PlacesAutocomplete = ({ placeholder, onPlaceSelected, label, accentColor = 'white', compact = false, onUseCurrentLocation, locationLoading, externalInputRef, mapsReady }) => {
+const PlacesAutocomplete = ({ placeholder, onPlaceSelected, label, accentColor = 'white', compact = false, onUseCurrentLocation, locationLoading, externalInputRef, mapsReady, defaultValue }) => {
     const internalRef = useRef(null);
     const inputRef = externalInputRef || internalRef;
     const [predictions, setPredictions] = useState([]);
@@ -13,6 +13,13 @@ const PlacesAutocomplete = ({ placeholder, onPlaceSelected, label, accentColor =
     const autocompleteService = useRef(null);
     const placesService = useRef(null);
     const dropdownRef = useRef(null);
+
+    // Sync defaultValue with input element value
+    useEffect(() => {
+        if (defaultValue !== undefined && inputRef.current) {
+            inputRef.current.value = defaultValue || '';
+        }
+    }, [defaultValue, inputRef]);
 
     // Initialize Services
     useEffect(() => {
@@ -128,6 +135,7 @@ const PlacesAutocomplete = ({ placeholder, onPlaceSelected, label, accentColor =
                     lng: place.geometry.location.lng(),
                     name: place.name,
                     address: place.formatted_address,
+                    description: prediction.description,
                 });
                 // Refresh session token for the next trip
                 setSessionToken(new window.google.maps.places.AutocompleteSessionToken());

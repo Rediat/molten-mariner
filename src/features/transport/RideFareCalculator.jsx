@@ -20,6 +20,16 @@ const DEFAULT_VALUES = {
 
 const hasMapsApi = () => !!window.google?.maps?.DistanceMatrixService;
 
+const formatDuration = (mins) => {
+    if (!mins) return '0 mins';
+    const h = Math.floor(mins / 60);
+    const m = Math.round(mins % 60);
+    if (h > 0) {
+        return `${h} hr ${m} min${m !== 1 ? 's' : ''}`;
+    }
+    return `${m} min${m !== 1 ? 's' : ''}`;
+};
+
 const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive }) => {
     const { addToHistory } = useHistory();
     const {
@@ -44,6 +54,30 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
     const [mode, setMode] = useState('forward');
     const [priceToCharge, setPriceToCharge] = useState(585);
     const [roundTrip, setRoundTrip] = useState(false);
+
+    const [tripType, setTripType] = useState('single'); // 'single' or 'multi'
+    const [stops, setStops] = useState([]); // [{ id, place }]
+    const [legsData, setLegsData] = useState([]); // [{ distance, durationValue, durationText, loading }]
+
+    const addStop = useCallback(() => {
+        if (stops.length >= 5) return;
+        setStops(prev => [...prev, { id: Date.now() + Math.random(), place: null }]);
+        setResults(null);
+    }, [stops.length]);
+
+    const removeStop = useCallback((index) => {
+        setStops(prev => prev.filter((_, i) => i !== index));
+        setResults(null);
+    }, []);
+
+    const handleStopSelected = useCallback((index, place) => {
+        setStops(prev => {
+            const next = [...prev];
+            next[index] = { ...next[index], place };
+            return next;
+        });
+        setResults(null);
+    }, []);
 
     const [fetchingDistance, setFetchingDistance] = useState(false);
     const [distanceSource, setDistanceSource] = useState('manual');
@@ -120,6 +154,107 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
         );
     }, [setDistanceKm, setDurationText, setDurationValue]);
 
+    const fetchLegDistance = useCallback((fromPoint, toPoint, index) => {
+        if (!fromPoint || !toPoint || !hasMapsApi()) return;
+
+        setLegsData(prev => {
+            const next = [...prev];
+            next[index] = { ...next[index], loading: true };
+            return next;
+        });
+
+        const service = new window.google.maps.DistanceMatrixService();
+        service.getDistanceMatrix(
+            {
+                origins: [new window.google.maps.LatLng(fromPoint.lat, fromPoint.lng)],
+                destinations: [new window.google.maps.LatLng(toPoint.lat, toPoint.lng)],
+                travelMode: window.google.maps.TravelMode.DRIVING,
+                unitSystem: window.google.maps.UnitSystem.METRIC,
+            },
+            (response, status) => {
+                if (status === 'OK' && response.rows[0]?.elements[0]?.status === 'OK') {
+                    const element = response.rows[0].elements[0];
+                    const distVal = parseFloat((element.distance.value / 1000).toFixed(2));
+                    const durationSec = element.duration_in_traffic?.value || element.duration?.value || 0;
+                    const durationMin = durationSec > 0 ? durationSec / 60 : 0;
+                    const durationText = element.duration_in_traffic?.text || element.duration?.text || '';
+
+                    setLegsData(prev => {
+                        const next = [...prev];
+                        next[index] = {
+                            from: { lat: fromPoint.lat, lng: fromPoint.lng },
+                            to: { lat: toPoint.lat, lng: toPoint.lng },
+                            distance: distVal,
+                            durationValue: durationMin,
+                            durationText: durationText,
+                            loading: false,
+                            error: null
+                        };
+                        return next;
+                    });
+                    setResults(null);
+                } else {
+                    setLegsData(prev => {
+                        const next = [...prev];
+                        next[index] = {
+                            ...next[index],
+                            loading: false,
+                            error: 'Failed'
+                        };
+                        return next;
+                    });
+                }
+            }
+        );
+    }, []);
+
+    const waypointList = [origin, ...stops.map(s => s.place), destination];
+    const waypointCoordsSerialized = JSON.stringify(
+        waypointList.map(w => w ? { lat: w.lat, lng: w.lng } : null)
+    );
+
+    useEffect(() => {
+        if (tripType !== 'multi') return;
+
+        const expectedLegCount = Math.max(0, waypointList.length - 1);
+        
+        setLegsData(prev => {
+            let next = [...prev];
+            if (next.length !== expectedLegCount) {
+                next = next.slice(0, expectedLegCount);
+                while (next.length < expectedLegCount) {
+                    next.push(null);
+                }
+            }
+
+            for (let i = 0; i < expectedLegCount; i++) {
+                const fromPoint = waypointList[i];
+                const toPoint = waypointList[i + 1];
+
+                if (!fromPoint || !toPoint) {
+                    next[i] = null;
+                } else {
+                    const currentLeg = next[i];
+                    const isSameFrom = currentLeg?.from?.lat === fromPoint.lat && currentLeg?.from?.lng === fromPoint.lng;
+                    const isSameTo = currentLeg?.to?.lat === toPoint.lat && currentLeg?.to?.lng === toPoint.lng;
+
+                    if (!currentLeg || !isSameFrom || !isSameTo) {
+                        next[i] = {
+                            from: { lat: fromPoint.lat, lng: fromPoint.lng },
+                            to: { lat: toPoint.lat, lng: toPoint.lng },
+                            loading: true,
+                            distance: 0,
+                            durationValue: 0,
+                            durationText: ''
+                        };
+                        fetchLegDistance(fromPoint, toPoint, i);
+                    }
+                }
+            }
+            return next;
+        });
+    }, [waypointCoordsSerialized, tripType, fetchLegDistance]);
+
     // Sync distance when route is selected/changed on the Driving tab
     useEffect(() => {
         if (routeVersion > 0 && distanceKm !== null) {
@@ -179,9 +314,11 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                 setLocationLoading(false);
                 if (shouldAbort()) return;
 
+                const finalLabel = '📍 ' + name;
                 place.name = name;
                 place.address = name;
-                setInputValue('📍 ' + name);
+                place.description = finalLabel;
+                setInputValue(finalLabel);
                 setOrigin(place);
                 if (destination) fetchDistance(place, destination);
             };
@@ -324,7 +461,17 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
         const chargeMultiplier = roundTrip ? 2 : 1;
         const actualFuelMultiplier = 2; // Always estimate fuel for round-trip for true cost out of pocket
 
-        const dist = values.distance || 0;
+        const isMulti = tripType === 'multi';
+        const totalDistanceMulti = isMulti
+            ? legsData.reduce((sum, leg) => sum + (leg?.distance || 0), 0)
+            : 0;
+        const totalDurationMulti = isMulti
+            ? legsData.reduce((sum, leg) => sum + (leg?.durationValue || 0), 0)
+            : 0;
+
+        const dist = isMulti ? totalDistanceMulti : (values.distance || 0);
+        const durVal = isMulti ? totalDurationMulti : (durationValue || 0);
+
         const mileage = values.mileage || 0;
         const cost = values.costPerLiter || 0;
         const waitMult = waitMultiplier || 0;
@@ -335,7 +482,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
         const chargingFuelCost = oneWayFuelCost * chargeMultiplier;
         const totalFuelCost = oneWayFuelCost * actualFuelMultiplier;
 
-        const waitTimeBase = durationValue != null ? durationValue * 1.1 * waitMult : 0;
+        const waitTimeBase = durVal != null ? durVal * 1.1 * waitMult : 0;
         const waitTime = waitTimeBase * 2; // Always double to represent true round-trip even in one-way mode
 
         if (mode === 'forward') {
@@ -362,7 +509,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
             const netGainRound = totalToCharge - totalFuelCost;
             return { totalFuelCost, reasonablePrice: basePrice, totalToCharge, waitTime, revenuePerKm, netGain, netGainPerKm, fuelPerKm, perHead, serviceMultiplier: serviceMultiplierValue, netGainSingle, netGainRound };
         }
-    }, [values, waitMultiplier, priceToCharge, durationValue, roundTrip, mode]);
+    }, [values, waitMultiplier, priceToCharge, durationValue, roundTrip, mode, tripType, legsData]);
 
     const handleCalculate = () => {
         const newResults = calculateResults();
@@ -387,7 +534,16 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
 
     const openInGoogleMaps = () => {
         if (!origin || !destination) return;
-        const params = `origin=${origin.lat},${origin.lng}&destination=${destination.lat},${destination.lng}&travelmode=driving&dir_action=navigate`;
+
+        let params = `origin=${origin.lat},${origin.lng}&destination=${destination.lat},${destination.lng}`;
+        const isMulti = tripType === 'multi';
+        const validStops = isMulti ? stops.filter(s => s?.place).map(s => s.place) : [];
+        if (isMulti && validStops.length > 0) {
+            const waypointsParam = validStops.map(s => `${s.lat},${s.lng}`).join('|');
+            params += `&waypoints=${encodeURIComponent(waypointsParam)}`;
+        }
+        params += `&travelmode=driving&dir_action=navigate`;
+
         const webUrl = `https://www.google.com/maps/dir/?api=1&${params}`;
 
         // Android WebView: use intent:// to force opening the external Google Maps app
@@ -405,8 +561,16 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
     const activeResults = results || calculateResults();
 
     // ---- Market Comparison Calculations ----
-    const dist = values.distance || 0;
-    const waitMin = durationValue || 0;
+    const isMulti = tripType === 'multi';
+    const totalDistanceMulti = isMulti
+        ? legsData.reduce((sum, leg) => sum + (leg?.distance || 0), 0)
+        : 0;
+    const totalDurationMulti = isMulti
+        ? legsData.reduce((sum, leg) => sum + (leg?.durationValue || 0), 0)
+        : 0;
+
+    const dist = isMulti ? totalDistanceMulti : (values.distance || 0);
+    const waitMin = isMulti ? totalDurationMulti : (durationValue || 0);
     
     const rideFlagDown = 260;
     const rideDistRate = 24;
@@ -422,7 +586,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
 
     return (
         <div className="flex flex-col h-full relative">
-            {/* Header + Mode Toggle (combined) */}
+            {/* Header */}
             <div className="flex justify-between items-center mb-1.5">
                 <div className="flex items-center gap-2 min-w-0">
                     <Car className="w-5 h-5 text-primary-500 shrink-0" />
@@ -435,19 +599,19 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                         </p>
                     </div>
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1.5 shrink-0">
                     <div className="flex bg-neutral-900/70 rounded-md p-0.5 ring-1 ring-neutral-800">
                         <button
-                            onClick={() => { if (mode !== 'forward') { setMode('forward'); setResults(null); } }}
-                            className={`px-2 py-1 text-[8px] font-bold uppercase tracking-wider rounded transition-all ${mode === 'forward' ? 'bg-primary-600/25 text-primary-400 ring-1 ring-primary-500/40' : 'text-neutral-500 hover:text-neutral-300'}`}
+                            onClick={() => { if (tripType !== 'single') { setTripType('single'); setResults(null); } }}
+                            className={`px-2 py-1 text-[8px] font-bold uppercase tracking-wider rounded transition-all ${tripType === 'single' ? 'bg-primary-600/25 text-primary-400 ring-1 ring-primary-500/40' : 'text-neutral-500 hover:text-neutral-300'}`}
                         >
-                            Input→Price
+                            Single
                         </button>
                         <button
-                            onClick={() => { if (mode !== 'reverse') { setMode('reverse'); setResults(null); } }}
-                            className={`px-2 py-1 text-[8px] font-bold uppercase tracking-wider rounded transition-all ${mode === 'reverse' ? 'bg-emerald-600/25 text-emerald-400 ring-1 ring-emerald-500/40' : 'text-neutral-500 hover:text-neutral-300'}`}
+                            onClick={() => { if (tripType !== 'multi') { setTripType('multi'); setResults(null); } }}
+                            className={`px-2 py-1 text-[8px] font-bold uppercase tracking-wider rounded transition-all ${tripType === 'multi' ? 'bg-primary-600/25 text-primary-400 ring-1 ring-primary-500/40' : 'text-neutral-500 hover:text-neutral-300'}`}
                         >
-                            Price→Split
+                            Multi
                         </button>
                     </div>
                     <button
@@ -455,7 +619,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                         className={`flex items-center justify-center p-1 rounded-full transition-all ${showExplanation ? 'bg-primary-600/20 text-primary-400 ring-1 ring-primary-500/50' : 'bg-neutral-800 text-neutral-500 hover:bg-neutral-700'}`}
                         title="Show Info"
                     >
-                        <Info className="w-3 h-3" />
+                        <Info className="w-3.5 h-3.5" />
                     </button>
                 </div>
             </div>
@@ -488,6 +652,22 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                 </div>
             )}
 
+            {/* Mode Selectors */}
+            <div className="flex bg-neutral-900/70 rounded-lg p-0.5 ring-1 ring-neutral-800 mb-1.5 gap-1">
+                <button
+                    onClick={() => { if (mode !== 'forward') { setMode('forward'); setResults(null); } }}
+                    className={`flex-1 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded transition-all ${mode === 'forward' ? 'bg-primary-600/25 text-primary-400 ring-1 ring-primary-500/40' : 'text-neutral-500 hover:text-neutral-300'}`}
+                >
+                    Input→Price
+                </button>
+                <button
+                    onClick={() => { if (mode !== 'reverse') { setMode('reverse'); setResults(null); } }}
+                    className={`flex-1 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded transition-all ${mode === 'reverse' ? 'bg-emerald-600/25 text-emerald-400 ring-1 ring-emerald-500/40' : 'text-neutral-500 hover:text-neutral-300'}`}
+                >
+                    Price→Split
+                </button>
+            </div>
+
             {/* Route Card - From/To combined into one compact card */}
             {mapsAvailable && (
                 <div className="bg-neutral-800/30 rounded-xl p-2 mb-1.5 border border-neutral-700/40">
@@ -503,27 +683,124 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                             externalInputRef={fromInputRef}
                             mapsReady={mapsReady}
                             locationError={locationError}
+                            defaultValue={origin ? origin.description || origin.address || origin.name : ''}
                         />
-                        <div className="flex items-center gap-2 py-0.5 px-4">
-                            <div className="flex-1 border-t border-dashed border-neutral-700/60"></div>
-                            <button
-                                onClick={handleSwapLocations}
-                                className="p-0.5 rounded-full hover:bg-neutral-700/50 transition-all active:scale-90 group"
-                                title="Swap From and To"
-                            >
-                                <ArrowUpDown className="w-3 h-3 text-neutral-600 group-hover:text-primary-400 transition-colors" />
-                            </button>
-                            <div className="flex-1 border-t border-dashed border-neutral-700/60"></div>
-                        </div>
-                        <PlacesAutocomplete
-                            label="To"
-                            placeholder="e.g. Megenagna"
-                            onPlaceSelected={handleDestinationSelected}
-                            accentColor="primary"
-                            compact
-                            externalInputRef={toInputRef}
-                            mapsReady={mapsReady}
-                        />
+                        {tripType === 'single' ? (
+                            <>
+                                <div className="flex items-center gap-2 py-0.5 px-4">
+                                    <div className="flex-1 border-t border-dashed border-neutral-700/60"></div>
+                                    <button
+                                        onClick={handleSwapLocations}
+                                        className="p-0.5 rounded-full hover:bg-neutral-700/50 transition-all active:scale-90 group"
+                                        title="Swap From and To"
+                                    >
+                                        <ArrowUpDown className="w-3 h-3 text-neutral-600 group-hover:text-primary-400 transition-colors" />
+                                    </button>
+                                    <div className="flex-1 border-t border-dashed border-neutral-700/60"></div>
+                                </div>
+                                <PlacesAutocomplete
+                                    label="To"
+                                    placeholder="e.g. Megenagna"
+                                    onPlaceSelected={handleDestinationSelected}
+                                    accentColor="primary"
+                                    compact
+                                    externalInputRef={toInputRef}
+                                    mapsReady={mapsReady}
+                                    defaultValue={destination ? destination.description || destination.address || destination.name : ''}
+                                />
+                            </>
+                        ) : (
+                            <>
+                                {/* Stopovers with interspersed leg badges */}
+                                {stops.map((stop, index) => {
+                                    const leg = legsData[index];
+                                    return (
+                                        <React.Fragment key={stop.id}>
+                                            {/* Leg Spacer Connector Row (between previous point and this stopover) */}
+                                            <div className="relative pl-6 py-3">
+                                                <div className="absolute left-[13px] top-[-10px] bottom-[-10px] border-l border-dashed border-neutral-700/60 z-0"></div>
+                                                {leg && (
+                                                    <div className="absolute left-[20px] top-[50%] translate-y-[-50%] bg-neutral-900 ring-1 ring-neutral-800 text-[10px] font-mono font-bold text-primary-400 px-1.5 py-0.5 rounded shadow z-10 whitespace-nowrap">
+                                                        {leg.loading ? (
+                                                            <span className="flex items-center gap-1">
+                                                                <Loader2 className="w-2.5 h-2.5 animate-spin" /> Loading
+                                                            </span>
+                                                        ) : (
+                                                            `🚗 ${leg.distance.toFixed(1)} km • ${leg.durationText || '0 min'}`
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Stopover input box itself */}
+                                            <div className="relative pl-6">
+                                                <div className="absolute left-[13px] top-[-10px] bottom-[-10px] border-l border-dashed border-neutral-700/60 z-0"></div>
+                                                <div className="flex items-center gap-1.5 bg-neutral-900/40 rounded-lg p-1 border border-neutral-800 relative z-1">
+                                                    <div className="flex-1 min-w-0">
+                                                        <PlacesAutocomplete
+                                                            label={`Stop ${index + 1}`}
+                                                            placeholder="Search stopover..."
+                                                            onPlaceSelected={(place) => handleStopSelected(index, place)}
+                                                            accentColor="primary"
+                                                            compact
+                                                            mapsReady={mapsReady}
+                                                            defaultValue={stop.place ? stop.place.description || stop.place.address || stop.place.name : ''}
+                                                        />
+                                                    </div>
+                                                    <button
+                                                        onClick={() => removeStop(index)}
+                                                        className="p-1 rounded-md text-neutral-500 hover:text-rose-400 hover:bg-rose-500/10 transition-all active:scale-90 shrink-0"
+                                                        title="Remove Stopover"
+                                                    >
+                                                        <Trash2 className="w-3.5 h-3.5" />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </React.Fragment>
+                                    );
+                                })}
+
+                                {/* Add Stopover button row */}
+                                {stops.length < 5 && (
+                                    <div className="relative pl-6 py-2">
+                                        <div className="absolute left-[13px] top-[-10px] bottom-[-10px] border-l border-dashed border-neutral-700/60 z-0"></div>
+                                        <button
+                                            onClick={addStop}
+                                            className="relative z-1 flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary-500/10 hover:bg-primary-500/20 border border-primary-500/30 text-primary-400 font-bold text-[9px] uppercase tracking-wider transition-all active:scale-[0.97]"
+                                        >
+                                            <span>+</span> Add Stopover ({stops.length}/5)
+                                        </button>
+                                    </div>
+                                )}
+
+                                {/* Final leg spacer connector row */}
+                                <div className="relative pl-6 py-3">
+                                    <div className="absolute left-[13px] top-[-10px] bottom-[-10px] border-l border-dashed border-neutral-700/60 z-0"></div>
+                                    {legsData[stops.length] && (
+                                        <div className="absolute left-[20px] top-[50%] translate-y-[-50%] bg-neutral-900 ring-1 ring-neutral-800 text-[10px] font-mono font-bold text-emerald-400 px-1.5 py-0.5 rounded shadow z-10 whitespace-nowrap">
+                                            {legsData[stops.length].loading ? (
+                                                <span className="flex items-center gap-1">
+                                                    <Loader2 className="w-2.5 h-2.5 animate-spin" /> Loading
+                                                </span>
+                                            ) : (
+                                                `🚗 ${legsData[stops.length].distance.toFixed(1)} km • ${legsData[stops.length].durationText || '0 min'}`
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <PlacesAutocomplete
+                                    label="To"
+                                    placeholder="e.g. Megenagna"
+                                    onPlaceSelected={handleDestinationSelected}
+                                    accentColor="primary"
+                                    compact
+                                    externalInputRef={toInputRef}
+                                    mapsReady={mapsReady}
+                                    defaultValue={destination ? destination.description || destination.address || destination.name : ''}
+                                />
+                            </>
+                        )}
                         <div className="flex gap-1.5 mt-2 pt-2 border-t border-neutral-700/40">
                             {origin && destination && (
                                 <>
@@ -731,14 +1008,57 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                         </div>
 
                         {/* Route & drive time */}
-                        {durationText && origin && destination && (
-                            <div className="flex items-center gap-1.5 text-[10px] text-neutral-400 bg-neutral-900/40 rounded-md px-2 py-1">
-                                <Clock className="w-3 h-3 text-primary-400 shrink-0" />
-                                <span className="truncate">
-                                    {origin.name?.replace('📍 ', '')} → {destination.name?.replace('📍 ', '')}
-                                </span>
-                                <span className="text-primary-400 font-bold whitespace-nowrap ml-auto">~{durationText}</span>
-                            </div>
+                        {tripType === 'single' ? (
+                            durationText && origin && destination && (
+                                <div className="flex items-center gap-1.5 text-[10px] text-neutral-400 bg-neutral-900/40 rounded-md px-2 py-1">
+                                    <Clock className="w-3 h-3 text-primary-400 shrink-0" />
+                                    <span className="truncate">
+                                        {origin.name?.replace('📍 ', '')} → {destination.name?.replace('📍 ', '')}
+                                    </span>
+                                    <span className="text-primary-400 font-bold whitespace-nowrap ml-auto">~{durationText}</span>
+                                </div>
+                            )
+                        ) : (
+                            origin && destination && (
+                                <div className="text-[10px] text-neutral-400 bg-neutral-900/40 rounded-lg p-2 space-y-1.5 text-left leading-relaxed">
+                                    <div className="flex items-center gap-1.5 border-b border-neutral-800/80 pb-1.5">
+                                        <Clock className="w-3.5 h-3.5 text-primary-400 shrink-0" />
+                                        <span className="font-bold text-neutral-300">Multi-Stop Summary</span>
+                                        <span className="text-primary-400 font-black whitespace-nowrap ml-auto">
+                                            {formatDuration(totalDurationMulti)} ({totalDistanceMulti.toFixed(2)} km)
+                                        </span>
+                                    </div>
+                                    <div className="space-y-1.5 max-h-[100px] overflow-y-auto pr-1">
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-primary-400 shrink-0"></span>
+                                            <span className="truncate font-semibold text-neutral-200">Origin: {origin.name?.replace('📍 ', '')}</span>
+                                        </div>
+                                        {stops.map((stop, i) => {
+                                            const leg = legsData[i];
+                                            return (
+                                                <div key={stop.id} className="flex items-center gap-1.5 pl-3 border-l border-neutral-800">
+                                                    <span className="text-neutral-500 font-bold text-[8px]">{i + 1}.</span>
+                                                    <span className="truncate text-neutral-300 font-medium">{stop.place?.name || `Stopover ${i + 1}`}</span>
+                                                    {leg && !leg.loading && (
+                                                        <span className="text-[8px] text-neutral-500 font-mono ml-auto">
+                                                            +{leg.distance.toFixed(1)} km (~{leg.durationText || '0 min'})
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0"></span>
+                                            <span className="truncate font-semibold text-neutral-200">Destination: {destination.name?.replace('📍 ', '')}</span>
+                                            {legsData[stops.length] && !legsData[stops.length].loading && (
+                                                <span className="text-[8px] text-neutral-500 font-mono ml-auto">
+                                                    +{legsData[stops.length].distance.toFixed(1)} km (~{legsData[stops.length].durationText || '0 min'})
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            )
                         )}
 
 
@@ -968,7 +1288,13 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                     : 'opacity-0 pointer-events-none scale-95 -z-10'
                     }`}
             >
-                <DrivingView onClose={() => setShowMap(false)} fareData={{ ...activeResults, ...values, waitMultiplier }} onOpenLiveTracker={() => setShowLiveTracker(true)} />
+                <DrivingView 
+                    onClose={() => setShowMap(false)} 
+                    fareData={{ ...activeResults, ...values, waitMultiplier }} 
+                    onOpenLiveTracker={() => setShowLiveTracker(true)} 
+                    tripType={tripType}
+                    stops={stops}
+                />
             </div>
 
             <LiveFareTracker

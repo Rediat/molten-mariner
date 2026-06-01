@@ -895,42 +895,48 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                 onToggle={handleToggle}
             >
                 <p>
-                    Calculate fuel costs and a reasonable fare for transport. Supports Google Maps
+                    Calculate fuel costs and a reasonable fare for transport. Supports both Single-Trip
+                    and Multi-Trip modes with up to 5 intermediate stopovers, Google Maps
                     integration for automatic distance lookup, interactive route maps with live
                     traffic visualization, and alternate route comparison — all in one tab.
                 </p>
 
                 <div className="pt-2">
-                    <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Calculation Modes:</p>
+                    <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Calculation Modes & Trips:</p>
                     <FieldList fields={[
+                        { name: 'Single vs Multi-Trip', description: 'Toggle between a direct Single-Trip and a sequential Multi-Trip using the pill-style selector at the top header next to the Info button.' },
                         { name: 'Inputs → Price', description: 'Enter distance, fuel details, and service multiplier and wait time multiplier to calculate the fare' },
                         { name: 'Price → Breakdown', description: 'Enter a known fare to reverse-calculate fuel cost, net gain, and implied service multiplier' }
                     ]} />
                 </div>
 
                 <div className="pt-2">
-                    <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Google Maps Integration:</p>
+                    <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Google Maps & Multi-Stop Autocomplete:</p>
                     <FieldList fields={[
                         { name: 'From / To', description: 'Type an address and select from autocomplete suggestions. Locations are restricted to Ethiopia.' },
+                        { name: 'Stopovers (+ Add Stopover)', description: 'In Multi-Trip mode, add up to 5 intermediate stopovers. Autocomplete inputs have full width and can be removed using the trash button.' },
+                        { name: 'Sequential Leg Metrics', description: 'Displays clear, bold HSL-colored badges (e.g., "🚗 X.X km • Y mins") in dedicated spacing rows between each input leg to prevent overlapping text.' },
+                        { name: 'State & Toggle Integrity', description: 'Switching between Single and Multi-Trip modes retains all input values and preserves the exact friendly location names selected from suggestions.' },
                         { name: 'Quick Clear', description: 'Click the Map Pin icon in the From/To fields to instantly clear the location and focus the input' },
-                        { name: 'Auto-Distance', description: 'When both From and To are selected, the driving distance and estimated travel time are fetched automatically via the Distance Matrix API' },
-                        { name: '✓ Google Maps', description: 'A green indicator confirms the distance was auto-populated from Google Maps. You can still override it manually.' },
+                        { name: 'Auto-Distance', description: 'When endpoints are selected, driving distance and travel times are fetched automatically via the Distance Matrix API' },
                         { name: '⇅ Swap Button', description: 'Click the swap icon between From and To fields to instantly reverse your origin and destination.' },
                         { name: '📍 Current Location', description: 'Auto-detects your GPS position on launch. Uses the Places API to resolve your coordinates to the nearest building or POI name (e.g., "Marketing Complex") with Geocoder fallback.' }
                     ]} />
                 </div>
 
                 <div className="pt-2">
-                    <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Map & Driving View:</p>
+                    <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Map & Multi-Stop Waypoint Routing:</p>
                     <FieldList fields={[
-                        { name: 'View Map & Alternate Routes', description: 'Appears when both From and To are populated. Opens a full-screen interactive map overlay directly within the Ride tab.' },
+                        { name: 'Multi-Stop Path Routing', description: 'Draws the complete path sequentially through all intermediate stopovers on the map, rather than a straight direct line.' },
+                        { name: 'Amber Waypoint Markers', description: 'Renders green markers for Origin, red for Destination, and dedicated amber markers for all resolved stopovers.' },
+                        { name: 'Combined Turn-by-Turn Steps', description: 'Consolidates driving steps across all legs, inserting formatted milestone banners (e.g. "Reach Stopover: [Location Name]") at each intermediate stop.' },
+                        { name: 'Google Maps GPS Handoff', description: 'Clicking the Navigate button compiles the entire stop sequence with intermediate waypoints and pre-loads it directly in Google Maps for active voice GPS.' },
+                        { name: 'View Map & Alternate Routes', description: 'Appears when endpoints are populated. Opens a full-screen interactive map overlay directly within the Ride tab.' },
                         { name: 'Traffic-Aware Routing', description: 'Routes are color-coded: blue (normal), yellow (slow), red (traffic jam).' },
                         { name: 'Alternative Routes', description: 'Up to 3 routes are shown with labels like Suggested, Shortest, Fastest, or Economical. Grey lines on the map indicate alternate paths — tap any to switch routes.' },
-                        { name: 'Navigate Button', description: 'Opens your selected route directly in the Google Maps app (Android) or browser for turn-by-turn navigation.' },
                         { name: 'SMS Button', description: 'Generates a professional trip summary message (for the passenger) with fare, distance, and payment options (TeleBirr, CBE, or Cash).' },
                         { name: 'Live Button', description: 'Opens the Live Fare Tracker for real-time GPS tracking (see below).' },
                         { name: 'Log Button', description: 'Opens the Manual Trip Log for offline entry and profitability analysis (see below).' },
-                        { name: 'Turn-by-Turn Steps', description: 'An expandable bottom sheet shows step-by-step navigation directions.' },
                         { name: '← Back Button', description: 'Return to the calculator with your selected route data preserved.' }
                     ]} />
                 </div>
@@ -990,8 +996,10 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                 </InfoBox>
 
                 <div className="pt-2">
-                    <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Results:</p>
+                    <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Results & Hierarchical Tree:</p>
                     <FieldList fields={[
+                        { name: 'Interactive Tree Summary', description: 'In Multi-Trip mode, renders an expandable tree view of your complete journey. Shows total aggregate metrics alongside individual leg breakdowns.' },
+                        { name: 'Aggregate Calculations', description: 'Out-of-pocket fuel costs, wait time charges, passenger splits, net gains, and competitor comparisons are calculated using the full multi-leg distance and duration sums.' },
                         { name: 'Route & Drive Time', description: 'Shows the origin → destination names with estimated drive time. Appears when a Google Maps route is active.' },
                         { name: 'Wait Time Charge', description: 'Total charge for wait time — estimated travel time + 10% buffer, multiplied by the Wait Multiplier. Added to the fare. Only shown when using Google Maps route.' },
                         { name: 'Total to Charge', description: 'The recommended fare (forward mode) or the entered fare (reverse mode), including wait time charge' },

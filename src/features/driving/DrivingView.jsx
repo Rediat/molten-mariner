@@ -50,7 +50,7 @@ const dayStyles = [
     { featureType: 'water', elementType: 'labels.text.fill', stylers: [{ color: '#92998d' }] }
 ];
 
-const DrivingView = ({ onClose, fareData, onOpenLiveTracker }) => {
+const DrivingView = ({ onClose, fareData, onOpenLiveTracker, tripType = 'single', stops = [] }) => {
     const {
         origin, destination,
         setDistanceKm, setDurationValue, setDurationText, setRouteVersion,
@@ -125,8 +125,12 @@ const DrivingView = ({ onClose, fareData, onOpenLiveTracker }) => {
             return;
         }
 
+        const isMulti = tripType === 'multi';
+        const validStops = isMulti ? stops.filter(s => s?.place).map(s => s.place) : [];
+        const stopsKey = validStops.map(s => `${s.lat},${s.lng}`).join('|');
+        const coordsKey = `${origin.lat},${origin.lng}-${stopsKey}-${destination.lat},${destination.lng}`;
+
         // Check if we already have cached routes for these exact coordinates
-        const coordsKey = `${origin.lat},${origin.lng}-${destination.lat},${destination.lng}`;
         if (cachedRoutesData.length > 0 && cachedCoordsKey === coordsKey) {
             return;
         }
@@ -156,19 +160,27 @@ const DrivingView = ({ onClose, fareData, onOpenLiveTracker }) => {
                     headers['X-Goog-Api-Key'] = devKey;
                 }
 
+                const requestBody = {
+                    origin: { location: { latLng: { latitude: origin.lat, longitude: origin.lng } } },
+                    destination: { location: { latLng: { latitude: destination.lat, longitude: destination.lng } } },
+                    travelMode: 'DRIVE',
+                    routingPreference: 'TRAFFIC_AWARE',
+                    computeAlternativeRoutes: isMulti ? false : true,
+                    extraComputations: ['TRAFFIC_ON_POLYLINE'],
+                    languageCode: 'en-US',
+                    units: 'METRIC',
+                };
+
+                if (isMulti && validStops.length > 0) {
+                    requestBody.intermediates = validStops.map(stop => ({
+                        location: { latLng: { latitude: stop.lat, longitude: stop.lng } }
+                    }));
+                }
+
                 const response = await fetch(endpoint, {
                     method: 'POST',
                     headers,
-                    body: JSON.stringify({
-                        origin: { location: { latLng: { latitude: origin.lat, longitude: origin.lng } } },
-                        destination: { location: { latLng: { latitude: destination.lat, longitude: destination.lng } } },
-                        travelMode: 'DRIVE',
-                        routingPreference: 'TRAFFIC_AWARE',
-                        computeAlternativeRoutes: true,
-                        extraComputations: ['TRAFFIC_ON_POLYLINE'],
-                        languageCode: 'en-US',
-                        units: 'METRIC',
-                    })
+                    body: JSON.stringify(requestBody)
                 });
 
                 if (!response.ok) {
@@ -209,7 +221,7 @@ const DrivingView = ({ onClose, fareData, onOpenLiveTracker }) => {
         };
 
         fetchRoute();
-    }, [origin, destination, mapInstance]);
+    }, [origin, destination, mapInstance, tripType, stops]);
 
     // Draw polylines and update route info when cachedRoutesData or cachedActiveRouteIndex changes
     useEffect(() => {
@@ -248,6 +260,28 @@ const DrivingView = ({ onClose, fareData, onOpenLiveTracker }) => {
             zIndex: 20,
         });
         markersRef.current.push(destMarker);
+
+        // --- Add Intermediate Stopover Markers (Amber Circles) ---
+        const isMulti = tripType === 'multi';
+        const validStops = isMulti ? stops.filter(s => s?.place).map(s => s.place) : [];
+
+        validStops.forEach((stop, i) => {
+            const stopMarker = new window.google.maps.Marker({
+                position: { lat: stop.lat, lng: stop.lng },
+                map: mapInstance,
+                title: stop.name || `Stop ${i + 1}`,
+                zIndex: 20,
+                icon: {
+                    path: window.google.maps.SymbolPath.CIRCLE,
+                    scale: 6,
+                    fillColor: '#f59e0b', // Amber
+                    fillOpacity: 1,
+                    strokeColor: '#b45309', // Dark Amber
+                    strokeWeight: 2,
+                }
+            });
+            markersRef.current.push(stopMarker);
+        });
 
         // Helper to get traffic color
         const getTrafficColor = (speed) => {
@@ -331,12 +365,28 @@ const DrivingView = ({ onClose, fareData, onOpenLiveTracker }) => {
 
         // Update Route Info for the active route
         if (activeRoute && activeRoute.legs && activeRoute.legs.length > 0) {
-            const leg = activeRoute.legs[0];
-            const formattedSteps = leg.steps ? leg.steps.map(step => ({
-                instructions: step.navigationInstruction?.instructions || 'Continue',
-                distance: { text: `${(step.distanceMeters || 0) < 1000 ? step.distanceMeters + ' m' : (step.distanceMeters / 1000).toFixed(1) + ' km'}` },
-                duration: { text: step.staticDuration ? `${Math.ceil(parseInt(step.staticDuration) / 60)} min` : '' }
-            })) : [];
+            const formattedSteps = [];
+            activeRoute.legs.forEach((leg, legIdx) => {
+                if (leg.steps) {
+                    leg.steps.forEach(step => {
+                        formattedSteps.push({
+                            instructions: step.navigationInstruction?.instructions || 'Continue',
+                            distance: { text: `${(step.distanceMeters || 0) < 1000 ? step.distanceMeters + ' m' : (step.distanceMeters / 1000).toFixed(1) + ' km'}` },
+                            duration: { text: step.staticDuration ? `${Math.ceil(parseInt(step.staticDuration) / 60)} min` : '' }
+                        });
+                    });
+                }
+
+                // Add a special "stopover reached" step if this is not the final leg!
+                if (legIdx < activeRoute.legs.length - 1) {
+                    const stopName = validStops[legIdx]?.name || `Stopover ${legIdx + 1}`;
+                    formattedSteps.push({
+                        instructions: `<b>Reach Stopover: ${stopName}</b>`,
+                        distance: { text: 'Arrived' },
+                        duration: { text: '' }
+                    });
+                }
+            });
 
             const durationSecs = activeRoute.duration ? parseInt(activeRoute.duration) : 0;
             const distanceKms = parseFloat((activeRoute.distanceMeters / 1000).toFixed(2));
@@ -356,7 +406,7 @@ const DrivingView = ({ onClose, fareData, onOpenLiveTracker }) => {
             setRouteVersion(v => v + 1);
         }
 
-    }, [cachedRoutesData, cachedActiveRouteIndex, mapInstance, origin, destination, setDistanceKm, setDurationValue, setDurationText, setRouteVersion]);
+    }, [cachedRoutesData, cachedActiveRouteIndex, mapInstance, origin, destination, setDistanceKm, setDurationValue, setDurationText, setRouteVersion, tripType, stops]);
 
     const hasRoute = origin && destination;
 
@@ -490,9 +540,16 @@ const DrivingView = ({ onClose, fareData, onOpenLiveTracker }) => {
                         <button
                             onClick={() => {
                                 if (!origin || !destination) return;
-                                const activeRoute = cachedRoutesData[cachedActiveRouteIndex];
-                                // Use basic origin/destination, let Google handle traffic-aware active route
-                                const params = `origin=${origin.lat},${origin.lng}&destination=${destination.lat},${destination.lng}&travelmode=driving&dir_action=navigate`;
+
+                                let params = `origin=${origin.lat},${origin.lng}&destination=${destination.lat},${destination.lng}`;
+                                const isMulti = tripType === 'multi';
+                                const validStops = isMulti ? stops.filter(s => s?.place).map(s => s.place) : [];
+                                if (isMulti && validStops.length > 0) {
+                                    const waypointsParam = validStops.map(s => `${s.lat},${s.lng}`).join('|');
+                                    params += `&waypoints=${encodeURIComponent(waypointsParam)}`;
+                                }
+                                params += `&travelmode=driving&dir_action=navigate`;
+
                                 const webUrl = `https://www.google.com/maps/dir/?api=1&${params}`;
                                 const isAndroid = /android/i.test(navigator.userAgent);
                                 if (isAndroid) {
