@@ -55,8 +55,8 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
     const [priceToCharge, setPriceToCharge] = useState(585);
     const [roundTrip, setRoundTrip] = useState(false);
 
-    const [tripType, setTripType] = useState('single'); // 'single' or 'multi'
     const [stops, setStops] = useState([]); // [{ id, place }]
+    const isMulti = stops.length > 0;
     const [stopsExpanded, setStopsExpanded] = useState(true);
     const [legsData, setLegsData] = useState([]); // [{ distance, durationValue, durationText, loading }]
 
@@ -216,7 +216,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
     );
 
     useEffect(() => {
-        if (tripType !== 'multi') return;
+        if (!isMulti) return;
 
         const expectedLegCount = Math.max(0, waypointList.length - 1);
         
@@ -255,7 +255,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
             }
             return next;
         });
-    }, [waypointCoordsSerialized, tripType, fetchLegDistance]);
+    }, [waypointCoordsSerialized, isMulti, fetchLegDistance]);
 
     // Sync distance when route is selected/changed on the Driving tab
     useEffect(() => {
@@ -463,7 +463,6 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
         const chargeMultiplier = roundTrip ? 2 : 1;
         const actualFuelMultiplier = 2; // Always estimate fuel for round-trip for true cost out of pocket
 
-        const isMulti = tripType === 'multi';
         const totalDistanceMulti = isMulti
             ? legsData.reduce((sum, leg) => sum + (leg?.distance || 0), 0)
             : 0;
@@ -512,7 +511,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
             const netGainRound = totalToCharge - totalFuelCost;
             return { oneWayFuelCost, totalFuelCost, reasonablePrice: basePrice, totalToCharge, waitTime, revenuePerKm, netGain, netGainPerKm, fuelPerKm, perHead, serviceMultiplier: serviceMultiplierValue, netGainSingle, netGainRound };
         }
-    }, [values, waitMultiplier, priceToCharge, durationValue, roundTrip, mode, tripType, legsData, origin, destination, stops]);
+    }, [values, waitMultiplier, priceToCharge, durationValue, roundTrip, mode, isMulti, legsData, origin, destination, stops]);
 
     const handleCalculate = () => {
         const newResults = calculateResults();
@@ -539,7 +538,6 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
         if (!origin || !destination) return;
 
         let params = `origin=${origin.lat},${origin.lng}&destination=${destination.lat},${destination.lng}`;
-        const isMulti = tripType === 'multi';
         const validStops = isMulti ? stops.filter(s => s?.place).map(s => s.place) : [];
         if (isMulti && validStops.length > 0) {
             const waypointsParam = validStops.map(s => `${s.lat},${s.lng}`).join('|');
@@ -564,7 +562,6 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
     const activeResults = results || calculateResults();
 
     // ---- Market Comparison Calculations ----
-    const isMulti = tripType === 'multi';
     const totalDistanceMulti = isMulti
         ? legsData.reduce((sum, leg) => sum + (leg?.distance || 0), 0)
         : 0;
@@ -604,20 +601,6 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                     </div>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
-                    <div className="flex bg-neutral-900/70 rounded-md p-0.5 ring-1 ring-neutral-800">
-                        <button
-                            onClick={() => { if (tripType !== 'single') { setTripType('single'); setResults(null); } }}
-                            className={`px-2 py-1 text-[8px] font-bold uppercase tracking-wider rounded transition-all ${tripType === 'single' ? 'bg-primary-600/25 text-primary-400 ring-1 ring-primary-500/40' : 'text-neutral-500 hover:text-neutral-300'}`}
-                        >
-                            Single
-                        </button>
-                        <button
-                            onClick={() => { if (tripType !== 'multi') { setTripType('multi'); setResults(null); } }}
-                            className={`px-2 py-1 text-[8px] font-bold uppercase tracking-wider rounded transition-all ${tripType === 'multi' ? 'bg-primary-600/25 text-primary-400 ring-1 ring-primary-500/40' : 'text-neutral-500 hover:text-neutral-300'}`}
-                        >
-                            Multi
-                        </button>
-                    </div>
                     <button
                         onClick={() => setShowExplanation(!showExplanation)}
                         className={`flex items-center justify-center p-1 rounded-full transition-all ${showExplanation ? 'bg-primary-600/20 text-primary-400 ring-1 ring-primary-500/50' : 'bg-neutral-800 text-neutral-500 hover:bg-neutral-700'}`}
@@ -688,7 +671,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                                 locationError={locationError}
                                 defaultValue={origin ? origin.description || origin.address || origin.name : ''}
                             />
-                            {tripType === 'single' ? (
+                            {!isMulti ? (
                                 <>
                                     <div className="flex items-center gap-2 py-0.5 px-4">
                                         <div className="flex-1 border-t border-dashed border-neutral-700/60"></div>
@@ -711,6 +694,14 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                                         mapsReady={mapsReady}
                                         defaultValue={destination ? destination.description || destination.address || destination.name : ''}
                                     />
+                                    <div className="flex justify-end pt-1">
+                                        <button
+                                            onClick={addStop}
+                                            className="flex items-center gap-1 px-2.5 py-1 rounded bg-primary-500/10 hover:bg-primary-500/20 border border-primary-500/30 text-primary-400 font-bold text-[9px] uppercase tracking-wider transition-all active:scale-[0.97]"
+                                        >
+                                            <span>+</span> Add Stop
+                                        </button>
+                                    </div>
                                 </>
                             ) : (
                                 <>
@@ -1046,7 +1037,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                             </div>
 
                             {/* Route & drive time */}
-                            {tripType === 'single' ? (
+                            {!isMulti ? (
                                 durationText && origin && destination && (
                                     <div className="flex items-center gap-1.5 text-[10px] text-neutral-400 bg-neutral-900/40 rounded-md px-2 py-1">
                                         <Clock className="w-3 h-3 text-primary-400 shrink-0" />
@@ -1337,7 +1328,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                     onClose={() => setShowMap(false)} 
                     fareData={{ ...activeResults, ...values, waitMultiplier }} 
                     onOpenLiveTracker={() => setShowLiveTracker(true)} 
-                    tripType={tripType}
+                    tripType={isMulti ? 'multi' : 'single'}
                     stops={stops}
                     legsData={legsData}
                     roundTrip={roundTrip}
