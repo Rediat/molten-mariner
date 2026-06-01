@@ -623,628 +623,628 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                     </button>
                 </div>
             </div>
-
-
-            {showExplanation && (
-                <div className="bg-gradient-to-r from-primary-900/30 to-neutral-800/50 border border-primary-500/30 rounded-xl p-2.5 mb-1.5 text-[11px] text-neutral-300 text-left leading-relaxed space-y-1.5">
-                    <p className="font-bold text-primary-400 text-xs">How It Works</p>
-                    {mapsAvailable && (
-                        <p>📍 <strong className="text-white">Google Maps:</strong> Select From/To locations to auto-fetch driving distance. Your current location is auto-detected on launch using GPS + Places API.</p>
-                    )}
-                    <p>
-                        {mode === 'forward'
-                            ? `📍 Enter distance, fuel price, and service multiplier to calculate the recommended fare. Formula: Price = (Distance × Mileage × Fuel Cost × ${roundTrip ? '2' : '1'}) × Service Multiplier + Wait Time Charge.`
-                            : `🔄 Enter a known fare to reverse-calculate fuel cost breakdown, net gain, and the implied service multiplier.`}
-                    </p>
-                    <p>⛽ <strong className="text-white">Mileage:</strong> Fixed at 0.10 L/Km — the baseline fuel consumption rate used in all calculations.</p>
-                    <p>🔄 <strong className="text-white">Round Trip (1× / 2×):</strong> {roundTrip ? 'Enabled (2x fuel cost)' : 'Disabled (1x fuel cost)'} — applies a 2x factor to fuel costs when calculating total fare.</p>
-                    <p>⏱️ <strong className="text-white">Wait Time:</strong> Estimated travel time + 10% buffer, multiplied by a configurable factor (default 2.5) to estimate total charge for wait time.</p>
-                    <p>👥 <strong className="text-white">Per Head:</strong> Total fare split by 4 passengers for cost-sharing.</p>
-                    {mapsAvailable && (
-                        <>
-                            <p className="font-bold text-primary-400 text-xs pt-1">Map</p>
-                            <p>🗺️ <strong className="text-white">View Map:</strong> When both From and To are set, tap "Map" for a full-screen interactive map with traffic-colored polylines (blue = normal, yellow = slow, red = jam).</p>
-                            <p>🔀 <strong className="text-white">Alternate Routes:</strong> Grey lines on the map show alternative Routes — tap one to switch. The selected route's distance and time sync back to the calculator automatically.</p>
-                            <p>🧭 <strong className="text-white">Turn-by-Turn:</strong> Expand the bottom sheet on the map view for step-by-step navigation directions.</p>
-                            <p>⇅ <strong className="text-white">Swap:</strong> Use the swap button between From/To to instantly reverse your route.</p>
-                        </>
-                    )}
-                </div>
-            )}
-
-            {/* Mode Selectors */}
-            <div className="flex bg-neutral-900/70 rounded-lg p-0.5 ring-1 ring-neutral-800 mb-1.5 gap-1">
-                <button
-                    onClick={() => { if (mode !== 'forward') { setMode('forward'); setResults(null); } }}
-                    className={`flex-1 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded transition-all ${mode === 'forward' ? 'bg-primary-600/25 text-primary-400 ring-1 ring-primary-500/40' : 'text-neutral-500 hover:text-neutral-300'}`}
-                >
-                    Input→Price
-                </button>
-                <button
-                    onClick={() => { if (mode !== 'reverse') { setMode('reverse'); setResults(null); } }}
-                    className={`flex-1 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded transition-all ${mode === 'reverse' ? 'bg-emerald-600/25 text-emerald-400 ring-1 ring-emerald-500/40' : 'text-neutral-500 hover:text-neutral-300'}`}
-                >
-                    Price→Split
-                </button>
-            </div>
-
-            {/* Route Card - From/To combined into one compact card */}
-            {mapsAvailable && (
-                <div className="bg-neutral-800/30 rounded-xl p-2 mb-1.5 border border-neutral-700/40">
-                    <div className="space-y-0">
-                        <PlacesAutocomplete
-                            label="From"
-                            placeholder="e.g. Bole Airport"
-                            onPlaceSelected={handleOriginSelected}
-                            accentColor="primary"
-                            compact
-                            onUseCurrentLocation={useCurrentLocation}
-                            locationLoading={locationLoading}
-                            externalInputRef={fromInputRef}
-                            mapsReady={mapsReady}
-                            locationError={locationError}
-                            defaultValue={origin ? origin.description || origin.address || origin.name : ''}
-                        />
-                        {tripType === 'single' ? (
+            <div className="flex-1 overflow-y-auto pr-1 -mr-1 scrollbar-hide space-y-2 mb-2 flex flex-col">
+                {showExplanation && (
+                    <div className="bg-gradient-to-r from-primary-900/30 to-neutral-800/50 border border-primary-500/30 rounded-xl p-2.5 mb-1.5 text-[11px] text-neutral-300 text-left leading-relaxed space-y-1.5">
+                        <p className="font-bold text-primary-400 text-xs">How It Works</p>
+                        {mapsAvailable && (
+                            <p>📍 <strong className="text-white">Google Maps:</strong> Select From/To locations to auto-fetch driving distance. Your current location is auto-detected on launch using GPS + Places API.</p>
+                        )}
+                        <p>
+                            {mode === 'forward'
+                                ? `📍  Enter distance, fuel price, and service multiplier to calculate the recommended fare. Formula: Price = (Distance × Mileage × Fuel Cost × ${roundTrip ? '2' : '1'}) × Service Multiplier + Wait Time Charge.`
+                                : `🔄 Enter a known fare to reverse-calculate fuel cost breakdown, net gain, and the implied service multiplier.`}
+                        </p>
+                        <p>⛽ <strong className="text-white">Mileage:</strong> Fixed at 0.10 L/Km —  the baseline fuel consumption rate used in all calculations.</p>
+                        <p>🔄 <strong className="text-white">Round Trip (1× / 2×):</strong> {roundTrip ? 'Enabled (2x fuel cost)' : 'Disabled (1x fuel cost)'} — applies a 2x factor to fuel costs when calculating total fare.</p>
+                        <p>⏱️ <strong className="text-white">Wait Time:</strong> Estimated travel time + 10% buffer, multiplied by a configurable factor (default 2.5) to estimate total charge for wait time.</p>
+                        <p>👥 <strong className="text-white">Per Head:</strong> Total fare split by 4 passengers for cost-sharing.</p>
+                        {mapsAvailable && (
                             <>
-                                <div className="flex items-center gap-2 py-0.5 px-4">
-                                    <div className="flex-1 border-t border-dashed border-neutral-700/60"></div>
-                                    <button
-                                        onClick={handleSwapLocations}
-                                        className="p-0.5 rounded-full hover:bg-neutral-700/50 transition-all active:scale-90 group"
-                                        title="Swap From and To"
-                                    >
-                                        <ArrowUpDown className="w-3 h-3 text-neutral-600 group-hover:text-primary-400 transition-colors" />
-                                    </button>
-                                    <div className="flex-1 border-t border-dashed border-neutral-700/60"></div>
-                                </div>
-                                <PlacesAutocomplete
-                                    label="To"
-                                    placeholder="e.g. Megenagna"
-                                    onPlaceSelected={handleDestinationSelected}
-                                    accentColor="primary"
-                                    compact
-                                    externalInputRef={toInputRef}
-                                    mapsReady={mapsReady}
-                                    defaultValue={destination ? destination.description || destination.address || destination.name : ''}
-                                />
+                                <p className="font-bold text-primary-400 text-xs pt-1">Map</p>
+                                <p>🗺️  <strong className="text-white">View Map:</strong> When both From and To are set, tap "Map" for a full-screen interactive map with traffic-colored polylines (blue = normal, yellow = slow, red = jam).</p>
+                                <p>🔀 <strong className="text-white">Alternate Routes:</strong> Grey lines on the map show alternative Routes —  tap one to switch. The selected route's distance and time sync back to the calculator automatically.</p>
+                                <p>🧭 <strong className="text-white">Turn-by-Turn:</strong> Expand the bottom sheet on the map view for step-by-step navigation directions.</p>
+                                <p>⇅ <strong className="text-white">Swap:</strong> Use the swap button between From/To to instantly reverse your route.</p>
                             </>
-                        ) : (
-                            <>
-                                {/* Stopovers with interspersed leg badges */}
-                                {stops.map((stop, index) => {
-                                    const leg = legsData[index];
-                                    return (
-                                        <React.Fragment key={stop.id}>
-                                            {/* Leg Spacer Connector Row (between previous point and this stopover) */}
-                                            <div className="relative pl-6 py-3">
-                                                <div className="absolute left-[13px] top-[-10px] bottom-[-10px] border-l border-dashed border-neutral-700/60 z-0"></div>
-                                                {leg && (
-                                                    <div className="absolute left-[20px] top-[50%] translate-y-[-50%] bg-neutral-900 ring-1 ring-neutral-800 text-[10px] font-mono font-bold text-primary-400 px-1.5 py-0.5 rounded shadow z-10 whitespace-nowrap">
-                                                        {leg.loading ? (
-                                                            <span className="flex items-center gap-1">
-                                                                <Loader2 className="w-2.5 h-2.5 animate-spin" /> Loading
-                                                            </span>
-                                                        ) : (
-                                                            `🚗 ${leg.distance.toFixed(1)} km • ${leg.durationText || '0 min'}`
-                                                        )}
+                        )}
+                    </div>
+                )}
+
+                {/* Mode Selectors */}
+                <div className="flex bg-neutral-900/70 rounded-lg p-0.5 ring-1 ring-neutral-800 mb-1.5 gap-1 shrink-0">
+                    <button
+                        onClick={() => { if (mode !== 'forward') { setMode('forward'); setResults(null); } }}
+                        className={`flex-1 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded transition-all ${mode === 'forward' ? 'bg-primary-600/25 text-primary-400 ring-1 ring-primary-500/40' : 'text-neutral-500 hover:text-neutral-300'}`}
+                    >
+                        Input→Price
+                    </button>
+                    <button
+                        onClick={() => { if (mode !== 'reverse') { setMode('reverse'); setResults(null); } }}
+                        className={`flex-1 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded transition-all ${mode === 'reverse' ? 'bg-emerald-600/25 text-emerald-400 ring-1 ring-emerald-500/40' : 'text-neutral-500 hover:text-neutral-300'}`}
+                    >
+                        Price→Split
+                    </button>
+                </div>
+
+                {/* Route Card - From/To combined into one compact card */}
+                {mapsAvailable && (
+                    <div className="bg-neutral-800/30 rounded-xl p-2 mb-1.5 border border-neutral-700/40">
+                        <div className="space-y-0">
+                            <PlacesAutocomplete
+                                label="From"
+                                placeholder="e.g. Bole Airport"
+                                onPlaceSelected={handleOriginSelected}
+                                accentColor="primary"
+                                compact
+                                onUseCurrentLocation={useCurrentLocation}
+                                locationLoading={locationLoading}
+                                externalInputRef={fromInputRef}
+                                mapsReady={mapsReady}
+                                locationError={locationError}
+                                defaultValue={origin ? origin.description || origin.address || origin.name : ''}
+                            />
+                            {tripType === 'single' ? (
+                                <>
+                                    <div className="flex items-center gap-2 py-0.5 px-4">
+                                        <div className="flex-1 border-t border-dashed border-neutral-700/60"></div>
+                                        <button
+                                            onClick={handleSwapLocations}
+                                            className="p-0.5 rounded-full hover:bg-neutral-700/50 transition-all active:scale-90 group"
+                                            title="Swap From and To"
+                                        >
+                                            <ArrowUpDown className="w-3 h-3 text-neutral-600 group-hover:text-primary-400 transition-colors" />
+                                        </button>
+                                        <div className="flex-1 border-t border-dashed border-neutral-700/60"></div>
+                                    </div>
+                                    <PlacesAutocomplete
+                                        label="To"
+                                        placeholder="e.g. Megenagna"
+                                        onPlaceSelected={handleDestinationSelected}
+                                        accentColor="primary"
+                                        compact
+                                        externalInputRef={toInputRef}
+                                        mapsReady={mapsReady}
+                                        defaultValue={destination ? destination.description || destination.address || destination.name : ''}
+                                    />
+                                </>
+                            ) : (
+                                <>
+                                    {/* Stopovers with interspersed leg badges */}
+                                    {stops.map((stop, index) => {
+                                        const leg = legsData[index];
+                                        return (
+                                            <React.Fragment key={stop.id}>
+                                                {/* Leg Spacer Connector Row (between previous point and this stopover) */}
+                                                <div className="relative pl-6 py-3">
+                                                    <div className="absolute left-[13px] top-[-10px] bottom-[-10px] border-l border-dashed border-neutral-700/60 z-0"></div>
+                                                    {leg && (
+                                                        <div className="absolute left-[20px] top-[50%] translate-y-[-50%] bg-neutral-900 ring-1 ring-neutral-800 text-[10px] font-mono font-bold text-primary-400 px-1.5 py-0.5 rounded shadow z-10 whitespace-nowrap">
+                                                            {leg.loading ? (
+                                                                <span className="flex items-center gap-1">
+                                                                    <Loader2 className="w-2.5 h-2.5 animate-spin" /> Loading
+                                                                </span>
+                                                            ) : (
+                                                                `🚗 ${leg.distance.toFixed(1)} km • ${leg.durationText || '0 min'}`
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {/* Stopover input box itself */}
+                                                <div className="relative pl-6">
+                                                    <div className="absolute left-[13px] top-[-10px] bottom-[-10px] border-l border-dashed border-neutral-700/60 z-0"></div>
+                                                    <div className="flex items-center gap-1.5 bg-neutral-900/40 rounded-lg p-1 border border-neutral-800 relative z-1">
+                                                        <div className="flex-1 min-w-0">
+                                                            <PlacesAutocomplete
+                                                                label={`Stop ${index + 1}`}
+                                                                placeholder="Search stopover..."
+                                                                onPlaceSelected={(place) => handleStopSelected(index, place)}
+                                                                accentColor="primary"
+                                                                compact
+                                                                mapsReady={mapsReady}
+                                                                defaultValue={stop.place ? stop.place.description || stop.place.address || stop.place.name : ''}
+                                                            />
+                                                        </div>
+                                                        <button
+                                                            onClick={() => removeStop(index)}
+                                                            className="p-1 rounded-md text-neutral-500 hover:text-rose-400 hover:bg-rose-500/10 transition-all active:scale-90 shrink-0"
+                                                            title="Remove Stopover"
+                                                        >
+                                                            <Trash2 className="w-3.5 h-3.5" />
+                                                        </button>
                                                     </div>
+                                                </div>
+                                            </React.Fragment>
+                                        );
+                                    })}
+
+                                    {/* Add Stopover button row */}
+                                    {stops.length < 5 && (
+                                        <div className="relative pl-6 py-2">
+                                            <div className="absolute left-[13px] top-[-10px] bottom-[-10px] border-l border-dashed border-neutral-700/60 z-0"></div>
+                                            <button
+                                                onClick={addStop}
+                                                className="relative z-1 flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary-500/10 hover:bg-primary-500/20 border border-primary-500/30 text-primary-400 font-bold text-[9px] uppercase tracking-wider transition-all active:scale-[0.97]"
+                                            >
+                                                <span>+</span> Add Stopover ({stops.length}/5)
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    {/* Final leg spacer connector row */}
+                                    <div className="relative pl-6 py-3">
+                                        <div className="absolute left-[13px] top-[-10px] bottom-[-10px] border-l border-dashed border-neutral-700/60 z-0"></div>
+                                        {legsData[stops.length] && (
+                                            <div className="absolute left-[20px] top-[50%] translate-y-[-50%] bg-neutral-900 ring-1 ring-neutral-800 text-[10px] font-mono font-bold text-emerald-400 px-1.5 py-0.5 rounded shadow z-10 whitespace-nowrap">
+                                                {legsData[stops.length].loading ? (
+                                                    <span className="flex items-center gap-1">
+                                                        <Loader2 className="w-2.5 h-2.5 animate-spin" /> Loading
+                                                    </span>
+                                                ) : (
+                                                    `🚗 ${legsData[stops.length].distance.toFixed(1)} km • ${legsData[stops.length].durationText || '0 min'}`
                                                 )}
                                             </div>
+                                        )}
+                                    </div>
 
-                                            {/* Stopover input box itself */}
-                                            <div className="relative pl-6">
-                                                <div className="absolute left-[13px] top-[-10px] bottom-[-10px] border-l border-dashed border-neutral-700/60 z-0"></div>
-                                                <div className="flex items-center gap-1.5 bg-neutral-900/40 rounded-lg p-1 border border-neutral-800 relative z-1">
-                                                    <div className="flex-1 min-w-0">
-                                                        <PlacesAutocomplete
-                                                            label={`Stop ${index + 1}`}
-                                                            placeholder="Search stopover..."
-                                                            onPlaceSelected={(place) => handleStopSelected(index, place)}
-                                                            accentColor="primary"
-                                                            compact
-                                                            mapsReady={mapsReady}
-                                                            defaultValue={stop.place ? stop.place.description || stop.place.address || stop.place.name : ''}
-                                                        />
-                                                    </div>
-                                                    <button
-                                                        onClick={() => removeStop(index)}
-                                                        className="p-1 rounded-md text-neutral-500 hover:text-rose-400 hover:bg-rose-500/10 transition-all active:scale-90 shrink-0"
-                                                        title="Remove Stopover"
-                                                    >
-                                                        <Trash2 className="w-3.5 h-3.5" />
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </React.Fragment>
-                                    );
-                                })}
-
-                                {/* Add Stopover button row */}
-                                {stops.length < 5 && (
-                                    <div className="relative pl-6 py-2">
-                                        <div className="absolute left-[13px] top-[-10px] bottom-[-10px] border-l border-dashed border-neutral-700/60 z-0"></div>
+                                    <PlacesAutocomplete
+                                        label="To"
+                                        placeholder="e.g. Megenagna"
+                                        onPlaceSelected={handleDestinationSelected}
+                                        accentColor="primary"
+                                        compact
+                                        externalInputRef={toInputRef}
+                                        mapsReady={mapsReady}
+                                        defaultValue={destination ? destination.description || destination.address || destination.name : ''}
+                                    />
+                                </>
+                            )}
+                            <div className="flex gap-1.5 mt-2 pt-2 border-t border-neutral-700/40">
+                                {origin && destination && (
+                                    <>
                                         <button
-                                            onClick={addStop}
-                                            className="relative z-1 flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary-500/10 hover:bg-primary-500/20 border border-primary-500/30 text-primary-400 font-bold text-[9px] uppercase tracking-wider transition-all active:scale-[0.97]"
+                                            onClick={() => setShowMap(true)}
+                                            className="flex-1 bg-primary-500/10 hover:bg-primary-500/20 text-primary-400 font-bold text-xs py-2 rounded-lg transition-colors flex items-center justify-center gap-2 border border-primary-500/30 active:scale-[0.98]"
                                         >
-                                            <span>+</span> Add Stopover ({stops.length}/5)
+                                            <MapIcon className="w-4 h-4 text-primary-400" />
+                                            Map
                                         </button>
+                                        <button
+                                            onClick={openInGoogleMaps}
+                                            className="bg-neutral-800/80 hover:bg-neutral-700 text-neutral-300 hover:text-white font-bold text-xs py-2 px-3 rounded-lg transition-all flex items-center justify-center gap-1.5 border border-neutral-700/50 active:scale-[0.98] shrink-0"
+                                            title="Open in Google Maps app"
+                                        >
+                                            <Navigation className="w-3.5 h-3.5 text-primary-400" />
+                                            Navigate
+                                        </button>
+                                    </>
+                                )}
+                                <button
+                                    onClick={() => setShowLiveTracker(true)}
+                                    className={`flex items-center gap-1.5 bg-gradient-to-r from-amber-600/30 to-amber-500/20 hover:from-amber-600/50 hover:to-amber-500/35 text-amber-400 font-bold text-xs py-2 px-3 rounded-lg transition-all border border-amber-500/40 active:scale-[0.97] shrink-0 ${!origin || !destination ? 'flex-1' : ''}`}
+                                    title="Live fare tracking"
+                                >
+                                    <Zap className="w-3.5 h-3.5" />
+                                    <span>Live</span>
+                                </button>
+                                <button
+                                    onClick={() => setShowTripLog(true)}
+                                    className={`flex items-center gap-1.5 bg-neutral-800 hover:bg-neutral-700 text-primary-400 font-bold text-xs py-2 px-3 rounded-lg transition-all border border-neutral-700/50 active:scale-[0.97] shrink-0 ${!origin || !destination ? 'flex-1' : ''}`}
+                                    title="Manual trip logging"
+                                >
+                                    <ClipboardList className="w-3.5 h-3.5" />
+                                    <span>Log</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Inputs - 2 column grid */}
+                <div className="grid grid-cols-2 gap-1.5 mb-1.5">
+                    {/* Distance */}
+                    <div className={`rounded-xl p-1.5 border ${distanceSource === 'maps' ? 'bg-emerald-900/10 border-emerald-500/40' : 'bg-neutral-800/40 border-primary-500/40'}`}>
+                        <div className="flex justify-between items-center mb-0.5">
+                            <label 
+                                onClick={focusDistance}
+                                className={`text-[10px] uppercase tracking-wider font-bold block cursor-pointer hover:text-white transition-colors ${distanceSource === 'maps' ? 'text-emerald-400' : 'text-primary-400'}`}
+                                title="Click to Clear"
+                            >
+                                Distance (Km)
+                            </label>
+                            <div className="flex bg-neutral-900/60 rounded-md p-0.5 ring-1 ring-neutral-700/50">
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); setRoundTrip(false); setResults(null); }}
+                                    className={`px-1.5 py-0.5 text-[8px] font-bold rounded-sm transition-all ${!roundTrip ? 'bg-amber-500 text-neutral-900' : 'text-neutral-500'}`}
+                                >
+                                    1×
+                                </button>
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); setRoundTrip(true); setResults(null); }}
+                                    className={`px-1.5 py-0.5 text-[8px] font-bold rounded-sm transition-all ${roundTrip ? 'bg-amber-500 text-neutral-900' : 'text-neutral-500'}`}
+                                >
+                                    2×
+                                </button>
+                            </div>
+                        </div>
+                        <div className="flex items-end justify-between gap-1">
+                            <span className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold shrink-0 mb-1">
+                                {distanceSource === 'maps' ? '✓ Google Maps' : 'Trip Length'}
+                            </span>
+                            {fetchingDistance ? (
+                                <div className="flex items-center gap-1 text-primary-400 text-xs py-1">
+                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                </div>
+                            ) : (
+                                <FormattedNumberInput
+                                    ref={distanceRef}
+                                    value={values.distance}
+                                    onChange={(e) => handleChange('distance', e.target.value)}
+                                    decimals={2}
+                                    className={`bg-transparent text-right text-base font-mono focus:outline-none font-black w-full ${distanceSource === 'maps' ? 'text-emerald-400' : 'text-primary-400'}`}
+                                />
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Fuel Cost */}
+                    <div className="bg-neutral-800/40 rounded-xl p-1.5 border border-neutral-700/50">
+                        <div className="flex justify-between items-center mb-0.5 h-[18px]">
+                            <label 
+                                onClick={focusCostPerLiter}
+                                className="text-[10px] uppercase tracking-wider font-bold text-white block cursor-pointer hover:text-primary-400 transition-colors"
+                                title="Click to Clear"
+                            >
+                                Fuel Cost / Liter
+                            </label>
+                        </div>
+                        <div className="flex items-end justify-between gap-1">
+                            <span className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold shrink-0 mb-1">Current Price</span>
+                            <FormattedNumberInput
+                                ref={costPerLiterRef}
+                                value={values.costPerLiter}
+                                onChange={(e) => handleChange('costPerLiter', e.target.value)}
+                                decimals={2}
+                                className="bg-transparent text-right text-base font-mono focus:outline-none text-white w-full"
+                                placeholder="170.00"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Wait Multiplier */}
+                    <div className="bg-neutral-800/40 rounded-xl p-1.5 border border-neutral-700/50">
+                        <div className="flex justify-between items-center mb-0.5 h-[18px]">
+                            <label 
+                                onClick={focusWaitMultiplier}
+                                className="text-[10px] uppercase tracking-wider font-bold text-amber-400 block cursor-pointer hover:text-white transition-colors"
+                                title="Click to Clear"
+                            >
+                                Wait Multiplier
+                            </label>
+                        </div>
+                        <div className="flex items-end justify-between gap-1">
+                            <span className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold shrink-0 mb-1">Time Factor</span>
+                            <FormattedNumberInput
+                                ref={waitMultiplierRef}
+                                value={waitMultiplier}
+                                onChange={(e) => {
+                                    const val = e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0);
+                                    setWaitMultiplier(val);
+                                    setResults(null);
+                                }}
+                                decimals={1}
+                                className="bg-transparent text-right text-base font-mono focus:outline-none text-amber-400 font-black w-full"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Service Factor or Price to Charge */}
+                    {mode === 'forward' ? (
+                        <div className="bg-neutral-800/40 rounded-xl p-1.5 border border-neutral-700/50">
+                            <div className="flex justify-between items-center mb-0.5 h-[18px]">
+                                <label 
+                                    onClick={focusServiceMultiplier}
+                                    className="text-[10px] uppercase tracking-wider font-bold text-white block cursor-pointer hover:text-primary-400 transition-colors"
+                                    title="Click to Clear"
+                                >
+                                    Service Multiplier
+                                </label>
+                            </div>
+                            <div className="flex items-end justify-between gap-1">
+                                <span className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold shrink-0 mb-1">Multiplier Range</span>
+                                <FormattedNumberInput
+                                    ref={serviceMultiplierRef}
+                                    value={values.serviceMultiplier}
+                                    onChange={(e) => handleChange('serviceMultiplier', e.target.value)}
+                                    decimals={1}
+                                    className="bg-transparent text-right text-base font-mono focus:outline-none text-white w-full"
+                                />
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="bg-neutral-800/40 rounded-xl p-1.5 border border-emerald-500/40">
+                            <div className="flex justify-between items-center mb-0.5 h-[18px]">
+                                <label 
+                                    onClick={focusPriceToCharge}
+                                    className="text-[10px] uppercase tracking-wider font-bold text-emerald-400 block cursor-pointer hover:text-white transition-colors"
+                                    title="Click to Clear"
+                                >
+                                    Price to Charge
+                                </label>
+                            </div>
+                            <div className="flex items-end justify-between gap-1">
+                                <span className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold shrink-0 mb-1">Known Fare</span>
+                                <FormattedNumberInput
+                                    ref={priceToChargeRef}
+                                    value={priceToCharge}
+                                    onChange={(e) => {
+                                        const val = e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0);
+                                        setPriceToCharge(val);
+                                        setResults(null);
+                                    }}
+                                    decimals={2}
+                                    className="bg-transparent text-right text-base font-mono focus:outline-none text-emerald-400 font-black w-full"
+                                />
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+
+                {/* Results */}
+                {
+                    results && (
+                        <div className="bg-gradient-to-br from-primary-900/30 to-neutral-800/50 border border-primary-500/30 rounded-xl p-2 space-y-1 mb-1.5">
+                            <div className="flex justify-between items-center">
+                                <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Results</span>
+                                <button
+                                    onClick={() => setShowHistory(true)}
+                                    className="text-[9px] text-primary-500 font-bold uppercase tracking-wider flex items-center gap-1 hover:text-primary-400 transition-colors"
+                                >
+                                    <History size={10} /> History
+                                </button>
+                            </div>
+
+                            {/* Route & drive time */}
+                            {tripType === 'single' ? (
+                                durationText && origin && destination && (
+                                    <div className="flex items-center gap-1.5 text-[10px] text-neutral-400 bg-neutral-900/40 rounded-md px-2 py-1">
+                                        <Clock className="w-3 h-3 text-primary-400 shrink-0" />
+                                        <span className="truncate">
+                                            {origin.name?.replace('📍 ', '')} → {destination.name?.replace('📍 ', '')}
+                                        </span>
+                                        <span className="text-primary-400 font-bold whitespace-nowrap ml-auto">~{durationText}</span>
+                                    </div>
+                                )
+                            ) : (
+                                origin && destination && (
+                                    <div className="text-[10px] text-neutral-400 bg-neutral-900/40 rounded-lg p-2 space-y-1.5 text-left leading-relaxed">
+                                        <div className="flex items-center gap-1.5 border-b border-neutral-800/80 pb-1.5">
+                                            <Clock className="w-3.5 h-3.5 text-primary-400 shrink-0" />
+                                            <span className="font-bold text-neutral-300">Multi-Stop Summary</span>
+                                            <span className="text-primary-400 font-black whitespace-nowrap ml-auto">
+                                                {formatDuration(totalDurationMulti)} ({totalDistanceMulti.toFixed(2)} km)
+                                            </span>
+                                        </div>
+                                        <div className="space-y-1.5 max-h-[100px] overflow-y-auto pr-1">
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-primary-400 shrink-0"></span>
+                                                <span className="truncate font-semibold text-neutral-200">Origin: {origin.name?.replace('📍 ', '')}</span>
+                                            </div>
+                                            {stops.map((stop, i) => {
+                                                const leg = legsData[i];
+                                                return (
+                                                    <div key={stop.id} className="flex items-center gap-1.5 pl-3 border-l border-neutral-800">
+                                                        <span className="text-neutral-500 font-bold text-[8px]">{i + 1}.</span>
+                                                        <span className="truncate text-neutral-300 font-medium">{stop.place?.name || `Stopover ${i + 1}`}</span>
+                                                        {leg && !leg.loading && (
+                                                            <span className="text-[8px] text-neutral-500 font-mono ml-auto">
+                                                                +{leg.distance.toFixed(1)} km (~{leg.durationText || '0 min'})
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0"></span>
+                                                <span className="truncate font-semibold text-neutral-200">Destination: {destination.name?.replace('📍 ', '')}</span>
+                                                {legsData[stops.length] && !legsData[stops.length].loading && (
+                                                    <span className="text-[8px] text-neutral-500 font-mono ml-auto">
+                                                        +{legsData[stops.length].distance.toFixed(1)} km (~{legsData[stops.length].durationText || '0 min'})
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )
+                            )}
+
+
+                            {/* Main result row */}
+                            <div className="bg-neutral-900/80 rounded-lg p-2 border border-primary-500/30">
+                                <div className="flex justify-between items-end">
+                                    <div>
+                                        <p className="text-[8px] font-bold text-neutral-500 uppercase tracking-wider">Total to Charge</p>
+                                        <p className="text-xl font-black text-primary-400">{formatNum(results.totalToCharge)}</p>
+                                        {results.waitTime > 0 && (
+                                            <p className="text-[8px] text-neutral-600">{formatNum(results.reasonablePrice)} + {formatNum(results.waitTime)}</p>
+                                        )}
+                                    </div>
+                                    {results.waitTime > 0 && (
+                                        <div className="text-center">
+                                            <p className="text-[8px] font-bold text-amber-400 uppercase tracking-wider">Wait Time Charge</p>
+                                            <p className="text-base font-black text-amber-400">{formatNum(results.waitTime)}</p>
+                                        </div>
+                                    )}
+                                    <div className="text-right">
+                                        <p className="text-[8px] font-bold text-neutral-500 uppercase tracking-wider">Per Head</p>
+                                        <p className="text-base font-black text-primary-300">{formatNum(results.perHead)}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Secondary metrics */}
+                            <div className="grid grid-cols-2 gap-1.5">
+                                <div className="bg-neutral-900/50 rounded-lg p-1.5">
+                                    <p className="text-[8px] font-bold text-neutral-500 uppercase tracking-wider">Total Fuel Cost</p>
+                                    <p className="text-base font-black text-amber-400">{formatNum(results.totalFuelCost)}</p>
+                                </div>
+                                <div className="bg-neutral-900/50 rounded-lg p-1.5">
+                                    <p className="text-[8px] font-bold text-neutral-500 uppercase tracking-wider">Net Gain</p>
+                                    <p className="text-base font-black text-emerald-400">
+                                        {!roundTrip ? (
+                                            <>{formatNum(results.netGainSingle)} <span className="text-neutral-500 font-medium">/</span> {formatNum(results.netGainRound)}</>
+                                        ) : (
+                                            formatNum(results.netGain)
+                                        )}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Per-km breakdown */}
+                            <div className={`grid ${mode === 'reverse' && results.serviceMultiplier !== undefined ? 'grid-cols-4' : 'grid-cols-3'} gap-1.5 pt-1.5 border-t border-neutral-700/50`}>
+                                <div>
+                                    <p className="text-[8px] font-bold text-neutral-500 uppercase">Fuel / Km</p>
+                                    <p className="text-[10px] font-bold text-white">{formatNum(results.fuelPerKm)}</p>
+                                </div>
+                                <div>
+                                    <p className="text-[8px] font-bold text-neutral-500 uppercase">Rev / Km</p>
+                                    <p className="text-[10px] font-bold text-white">{formatNum(results.revenuePerKm)}</p>
+                                </div>
+                                <div>
+                                    <p className="text-[8px] font-bold text-neutral-500 uppercase">Gain / Km</p>
+                                    <p className="text-[10px] font-bold text-white">{formatNum(results.netGainPerKm)}</p>
+                                </div>
+                                {mode === 'reverse' && results.serviceMultiplier !== undefined && (
+                                    <div>
+                                        <p className="text-[8px] font-bold text-neutral-500 uppercase">Implied Mult</p>
+                                        <p className="text-[10px] font-bold text-white">{results.serviceMultiplier.toFixed(2)}x</p>
                                     </div>
                                 )}
+                            </div>
+                        </div>
+                    )
+                }
 
-                                {/* Final leg spacer connector row */}
-                                <div className="relative pl-6 py-3">
-                                    <div className="absolute left-[13px] top-[-10px] bottom-[-10px] border-l border-dashed border-neutral-700/60 z-0"></div>
-                                    {legsData[stops.length] && (
-                                        <div className="absolute left-[20px] top-[50%] translate-y-[-50%] bg-neutral-900 ring-1 ring-neutral-800 text-[10px] font-mono font-bold text-emerald-400 px-1.5 py-0.5 rounded shadow z-10 whitespace-nowrap">
-                                            {legsData[stops.length].loading ? (
-                                                <span className="flex items-center gap-1">
-                                                    <Loader2 className="w-2.5 h-2.5 animate-spin" /> Loading
-                                                </span>
-                                            ) : (
-                                                `🚗 ${legsData[stops.length].distance.toFixed(1)} km • ${legsData[stops.length].durationText || '0 min'}`
-                                            )}
+                {/* Market Comparison (Expandable) */}
+                {dist > 0 && (
+                    <div className="mb-1.5">
+                        <button
+                            onClick={() => setShowMarketComparison(!showMarketComparison)}
+                            className={`w-full flex items-center justify-between p-2.5 rounded-xl border transition-all ${
+                                showMarketComparison 
+                                ? 'bg-neutral-800/60 border-neutral-700/50 rounded-b-none' 
+                                : 'bg-neutral-800/30 border-neutral-700/30 hover:bg-neutral-800/50'
+                            }`}
+                        >
+                            <div className="flex items-center gap-2">
+                                <Car className={`w-3.5 h-3.5 ${showMarketComparison ? 'text-primary-400' : 'text-neutral-500'}`} />
+                                <span className="text-[9px] font-bold text-neutral-300 uppercase tracking-widest">Market Comparison</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                {!showMarketComparison && (
+                                    <div className="flex items-center gap-2">
+                                        <div className="flex flex-col items-end">
+                                            <span className="text-[6px] text-neutral-500 font-bold uppercase leading-none">Ride</span>
+                                            <span className="text-[8px] font-black text-primary-400">{formatNum(rideFare)}</span>
+                                        </div>
+                                        <div className="w-px h-3 bg-neutral-700 mx-0.5"></div>
+                                        <div className="flex flex-col items-end">
+                                            <span className="text-[6px] text-neutral-500 font-bold uppercase leading-none">Feres</span>
+                                            <span className="text-[8px] font-black text-emerald-400">{formatNum(feresFare)}</span>
+                                        </div>
+                                    </div>
+                                )}
+                                {showMarketComparison ? <ChevronUp className="w-3.5 h-3.5 text-neutral-500" /> : <ChevronDown className="w-3.5 h-3.5 text-neutral-500" />}
+                            </div>
+                        </button>
+
+                        {showMarketComparison && (
+                            <div className="bg-neutral-800/40 rounded-b-xl border-x border-b border-neutral-700/50 overflow-hidden animate-in fade-in slide-in-from-top-1 duration-200">
+                                {/* Ride Card */}
+                                <div className="p-2.5 space-y-2">
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <p className="text-[8px] font-bold text-primary-400 uppercase tracking-widest">Ride App</p>
+                                            <p className="text-[6px] text-neutral-500 font-bold uppercase tracking-tight">Market Standard</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-base font-black text-white">{formatNum(rideFare)}</p>
+                                            <p className="text-[6px] text-neutral-500 font-bold uppercase">ETB</p>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-1 py-1 border-t border-neutral-700/30">
+                                        <div>
+                                            <p className="text-[6px] font-bold text-neutral-500 uppercase">Flag</p>
+                                            <p className="text-[8px] font-black text-neutral-400">260</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-[6px] font-bold text-neutral-500 uppercase">Dist</p>
+                                            <p className="text-[8px] font-black text-neutral-400">{formatNum(dist * 24)}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-[6px] font-bold text-neutral-500 uppercase">Wait</p>
+                                            <p className="text-[8px] font-black text-neutral-400">{formatNum(waitMin * 5)}</p>
+                                        </div>
+                                    </div>
+                                    {results && (
+                                        <div className="pt-1.5 border-t border-neutral-700/30 flex items-center justify-between">
+                                            <span className="text-[7px] font-bold text-neutral-500 uppercase">Savings vs Ride</span>
+                                            <span className={`text-[8px] font-black ${rideFare - results.totalToCharge > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                {rideFare - results.totalToCharge > 0 ? '+' : ''}{formatNum(rideFare - results.totalToCharge)} ETB
+                                            </span>
                                         </div>
                                     )}
                                 </div>
 
-                                <PlacesAutocomplete
-                                    label="To"
-                                    placeholder="e.g. Megenagna"
-                                    onPlaceSelected={handleDestinationSelected}
-                                    accentColor="primary"
-                                    compact
-                                    externalInputRef={toInputRef}
-                                    mapsReady={mapsReady}
-                                    defaultValue={destination ? destination.description || destination.address || destination.name : ''}
-                                />
-                            </>
-                        )}
-                        <div className="flex gap-1.5 mt-2 pt-2 border-t border-neutral-700/40">
-                            {origin && destination && (
-                                <>
-                                    <button
-                                        onClick={() => setShowMap(true)}
-                                        className="flex-1 bg-primary-500/10 hover:bg-primary-500/20 text-primary-400 font-bold text-xs py-2 rounded-lg transition-colors flex items-center justify-center gap-2 border border-primary-500/30 active:scale-[0.98]"
-                                    >
-                                        <MapIcon className="w-4 h-4 text-primary-400" />
-                                        Map
-                                    </button>
-                                    <button
-                                        onClick={openInGoogleMaps}
-                                        className="bg-neutral-800/80 hover:bg-neutral-700 text-neutral-300 hover:text-white font-bold text-xs py-2 px-3 rounded-lg transition-all flex items-center justify-center gap-1.5 border border-neutral-700/50 active:scale-[0.98] shrink-0"
-                                        title="Open in Google Maps app"
-                                    >
-                                        <Navigation className="w-3.5 h-3.5 text-primary-400" />
-                                        Navigate
-                                    </button>
-                                </>
-                            )}
-                            <button
-                                onClick={() => setShowLiveTracker(true)}
-                                className={`flex items-center gap-1.5 bg-gradient-to-r from-amber-600/30 to-amber-500/20 hover:from-amber-600/50 hover:to-amber-500/35 text-amber-400 font-bold text-xs py-2 px-3 rounded-lg transition-all border border-amber-500/40 active:scale-[0.97] shrink-0 ${!origin || !destination ? 'flex-1' : ''}`}
-                                title="Live fare tracking"
-                            >
-                                <Zap className="w-3.5 h-3.5" />
-                                <span>Live</span>
-                            </button>
-                            <button
-                                onClick={() => setShowTripLog(true)}
-                                className={`flex items-center gap-1.5 bg-neutral-800 hover:bg-neutral-700 text-primary-400 font-bold text-xs py-2 px-3 rounded-lg transition-all border border-neutral-700/50 active:scale-[0.97] shrink-0 ${!origin || !destination ? 'flex-1' : ''}`}
-                                title="Manual trip logging"
-                            >
-                                <ClipboardList className="w-3.5 h-3.5" />
-                                <span>Log</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Inputs - 2 column grid */}
-            <div className="grid grid-cols-2 gap-1.5 mb-1.5">
-                {/* Distance */}
-                <div className={`rounded-xl p-1.5 border ${distanceSource === 'maps' ? 'bg-emerald-900/10 border-emerald-500/40' : 'bg-neutral-800/40 border-primary-500/40'}`}>
-                    <div className="flex justify-between items-center mb-0.5">
-                        <label 
-                            onClick={focusDistance}
-                            className={`text-[10px] uppercase tracking-wider font-bold block cursor-pointer hover:text-white transition-colors ${distanceSource === 'maps' ? 'text-emerald-400' : 'text-primary-400'}`}
-                            title="Click to Clear"
-                        >
-                            Distance (Km)
-                        </label>
-                        <div className="flex bg-neutral-900/60 rounded-md p-0.5 ring-1 ring-neutral-700/50">
-                            <button
-                                onClick={(e) => { e.stopPropagation(); setRoundTrip(false); setResults(null); }}
-                                className={`px-1.5 py-0.5 text-[8px] font-bold rounded-sm transition-all ${!roundTrip ? 'bg-amber-500 text-neutral-900' : 'text-neutral-500'}`}
-                            >
-                                1×
-                            </button>
-                            <button
-                                onClick={(e) => { e.stopPropagation(); setRoundTrip(true); setResults(null); }}
-                                className={`px-1.5 py-0.5 text-[8px] font-bold rounded-sm transition-all ${roundTrip ? 'bg-amber-500 text-neutral-900' : 'text-neutral-500'}`}
-                            >
-                                2×
-                            </button>
-                        </div>
-                    </div>
-                    <div className="flex items-end justify-between gap-1">
-                        <span className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold shrink-0 mb-1">
-                            {distanceSource === 'maps' ? '✓ Google Maps' : 'Trip Length'}
-                        </span>
-                        {fetchingDistance ? (
-                            <div className="flex items-center gap-1 text-primary-400 text-xs py-1">
-                                <Loader2 className="w-3 h-3 animate-spin" />
+                                {/* Feres Card */}
+                                <div className="p-2.5 bg-neutral-900/30 border-t border-neutral-700/50 space-y-2">
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <p className="text-[8px] font-bold text-emerald-400 uppercase tracking-widest">Feres</p>
+                                            <p className="text-[6px] text-neutral-500 font-bold uppercase tracking-tight">Value Option</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-base font-black text-white">{formatNum(feresFare)}</p>
+                                            <p className="text-[6px] text-neutral-500 font-bold uppercase">ETB</p>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-4 gap-1 py-1 border-t border-neutral-700/30">
+                                        <div>
+                                            <p className="text-[6px] font-bold text-neutral-500 uppercase">Flag</p>
+                                            <p className="text-[8px] font-black text-neutral-400">110</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-[6px] font-bold text-neutral-500 uppercase">Dist</p>
+                                            <p className="text-[8px] font-black text-neutral-400">{formatNum(dist * 16)}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-[6px] font-bold text-neutral-500 uppercase">Wait</p>
+                                            <p className="text-[8px] font-black text-neutral-400">{formatNum(waitMin * 1)}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-[6px] font-bold text-neutral-500 uppercase">Fee(7%)</p>
+                                            <p className="text-[8px] font-black text-neutral-400">{formatNum(feresSubtotal * 0.07)}</p>
+                                        </div>
+                                    </div>
+                                    {results && (
+                                        <div className="pt-1.5 border-t border-neutral-700/30 flex items-center justify-between">
+                                            <span className="text-[7px] font-bold text-neutral-500 uppercase">Savings vs Feres</span>
+                                            <span className={`text-[8px] font-black ${feresFare - results.totalToCharge > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                {feresFare - results.totalToCharge > 0 ? '+' : ''}{formatNum(feresFare - results.totalToCharge)} ETB
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
-                        ) : (
-                            <FormattedNumberInput
-                                ref={distanceRef}
-                                value={values.distance}
-                                onChange={(e) => handleChange('distance', e.target.value)}
-                                decimals={2}
-                                className={`bg-transparent text-right text-base font-mono focus:outline-none font-black w-full ${distanceSource === 'maps' ? 'text-emerald-400' : 'text-primary-400'}`}
-                            />
                         )}
-                    </div>
-                </div>
-
-                {/* Fuel Cost */}
-                <div className="bg-neutral-800/40 rounded-xl p-1.5 border border-neutral-700/50">
-                    <div className="flex justify-between items-center mb-0.5 h-[18px]">
-                        <label 
-                            onClick={focusCostPerLiter}
-                            className="text-[10px] uppercase tracking-wider font-bold text-white block cursor-pointer hover:text-primary-400 transition-colors"
-                            title="Click to Clear"
-                        >
-                            Fuel Cost / Liter
-                        </label>
-                    </div>
-                    <div className="flex items-end justify-between gap-1">
-                        <span className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold shrink-0 mb-1">Current Price</span>
-                        <FormattedNumberInput
-                            ref={costPerLiterRef}
-                            value={values.costPerLiter}
-                            onChange={(e) => handleChange('costPerLiter', e.target.value)}
-                            decimals={2}
-                            className="bg-transparent text-right text-base font-mono focus:outline-none text-white w-full"
-                            placeholder="170.00"
-                        />
-                    </div>
-                </div>
-
-                {/* Wait Multiplier */}
-                <div className="bg-neutral-800/40 rounded-xl p-1.5 border border-neutral-700/50">
-                    <div className="flex justify-between items-center mb-0.5 h-[18px]">
-                        <label 
-                            onClick={focusWaitMultiplier}
-                            className="text-[10px] uppercase tracking-wider font-bold text-amber-400 block cursor-pointer hover:text-white transition-colors"
-                            title="Click to Clear"
-                        >
-                            Wait Multiplier
-                        </label>
-                    </div>
-                    <div className="flex items-end justify-between gap-1">
-                        <span className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold shrink-0 mb-1">Time Factor</span>
-                        <FormattedNumberInput
-                            ref={waitMultiplierRef}
-                            value={waitMultiplier}
-                            onChange={(e) => {
-                                const val = e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0);
-                                setWaitMultiplier(val);
-                                setResults(null);
-                            }}
-                            decimals={1}
-                            className="bg-transparent text-right text-base font-mono focus:outline-none text-amber-400 font-black w-full"
-                        />
-                    </div>
-                </div>
-
-                {/* Service Factor or Price to Charge */}
-                {mode === 'forward' ? (
-                    <div className="bg-neutral-800/40 rounded-xl p-1.5 border border-neutral-700/50">
-                        <div className="flex justify-between items-center mb-0.5 h-[18px]">
-                            <label 
-                                onClick={focusServiceMultiplier}
-                                className="text-[10px] uppercase tracking-wider font-bold text-white block cursor-pointer hover:text-primary-400 transition-colors"
-                                title="Click to Clear"
-                            >
-                                Service Multiplier
-                            </label>
-                        </div>
-                        <div className="flex items-end justify-between gap-1">
-                            <span className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold shrink-0 mb-1">Multiplier Range</span>
-                            <FormattedNumberInput
-                                ref={serviceMultiplierRef}
-                                value={values.serviceMultiplier}
-                                onChange={(e) => handleChange('serviceMultiplier', e.target.value)}
-                                decimals={1}
-                                className="bg-transparent text-right text-base font-mono focus:outline-none text-white w-full"
-                            />
-                        </div>
-                    </div>
-                ) : (
-                    <div className="bg-neutral-800/40 rounded-xl p-1.5 border border-emerald-500/40">
-                        <div className="flex justify-between items-center mb-0.5 h-[18px]">
-                            <label 
-                                onClick={focusPriceToCharge}
-                                className="text-[10px] uppercase tracking-wider font-bold text-emerald-400 block cursor-pointer hover:text-white transition-colors"
-                                title="Click to Clear"
-                            >
-                                Price to Charge
-                            </label>
-                        </div>
-                        <div className="flex items-end justify-between gap-1">
-                            <span className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold shrink-0 mb-1">Known Fare</span>
-                            <FormattedNumberInput
-                                ref={priceToChargeRef}
-                                value={priceToCharge}
-                                onChange={(e) => {
-                                    const val = e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0);
-                                    setPriceToCharge(val);
-                                    setResults(null);
-                                }}
-                                decimals={2}
-                                className="bg-transparent text-right text-base font-mono focus:outline-none text-emerald-400 font-black w-full"
-                            />
-                        </div>
                     </div>
                 )}
             </div>
 
-
-            {/* Results */}
-            {
-                results && (
-                    <div className="bg-gradient-to-br from-primary-900/30 to-neutral-800/50 border border-primary-500/30 rounded-xl p-2 space-y-1 mb-1.5">
-                        <div className="flex justify-between items-center">
-                            <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Results</span>
-                            <button
-                                onClick={() => setShowHistory(true)}
-                                className="text-[9px] text-primary-500 font-bold uppercase tracking-wider flex items-center gap-1 hover:text-primary-400 transition-colors"
-                            >
-                                <History size={10} /> History
-                            </button>
-                        </div>
-
-                        {/* Route & drive time */}
-                        {tripType === 'single' ? (
-                            durationText && origin && destination && (
-                                <div className="flex items-center gap-1.5 text-[10px] text-neutral-400 bg-neutral-900/40 rounded-md px-2 py-1">
-                                    <Clock className="w-3 h-3 text-primary-400 shrink-0" />
-                                    <span className="truncate">
-                                        {origin.name?.replace('📍 ', '')} → {destination.name?.replace('📍 ', '')}
-                                    </span>
-                                    <span className="text-primary-400 font-bold whitespace-nowrap ml-auto">~{durationText}</span>
-                                </div>
-                            )
-                        ) : (
-                            origin && destination && (
-                                <div className="text-[10px] text-neutral-400 bg-neutral-900/40 rounded-lg p-2 space-y-1.5 text-left leading-relaxed">
-                                    <div className="flex items-center gap-1.5 border-b border-neutral-800/80 pb-1.5">
-                                        <Clock className="w-3.5 h-3.5 text-primary-400 shrink-0" />
-                                        <span className="font-bold text-neutral-300">Multi-Stop Summary</span>
-                                        <span className="text-primary-400 font-black whitespace-nowrap ml-auto">
-                                            {formatDuration(totalDurationMulti)} ({totalDistanceMulti.toFixed(2)} km)
-                                        </span>
-                                    </div>
-                                    <div className="space-y-1.5 max-h-[100px] overflow-y-auto pr-1">
-                                        <div className="flex items-center gap-1.5">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-primary-400 shrink-0"></span>
-                                            <span className="truncate font-semibold text-neutral-200">Origin: {origin.name?.replace('📍 ', '')}</span>
-                                        </div>
-                                        {stops.map((stop, i) => {
-                                            const leg = legsData[i];
-                                            return (
-                                                <div key={stop.id} className="flex items-center gap-1.5 pl-3 border-l border-neutral-800">
-                                                    <span className="text-neutral-500 font-bold text-[8px]">{i + 1}.</span>
-                                                    <span className="truncate text-neutral-300 font-medium">{stop.place?.name || `Stopover ${i + 1}`}</span>
-                                                    {leg && !leg.loading && (
-                                                        <span className="text-[8px] text-neutral-500 font-mono ml-auto">
-                                                            +{leg.distance.toFixed(1)} km (~{leg.durationText || '0 min'})
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            );
-                                        })}
-                                        <div className="flex items-center gap-1.5">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0"></span>
-                                            <span className="truncate font-semibold text-neutral-200">Destination: {destination.name?.replace('📍 ', '')}</span>
-                                            {legsData[stops.length] && !legsData[stops.length].loading && (
-                                                <span className="text-[8px] text-neutral-500 font-mono ml-auto">
-                                                    +{legsData[stops.length].distance.toFixed(1)} km (~{legsData[stops.length].durationText || '0 min'})
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            )
-                        )}
-
-
-                        {/* Main result row */}
-                        <div className="bg-neutral-900/80 rounded-lg p-2 border border-primary-500/30">
-                            <div className="flex justify-between items-end">
-                                <div>
-                                    <p className="text-[8px] font-bold text-neutral-500 uppercase tracking-wider">Total to Charge</p>
-                                    <p className="text-xl font-black text-primary-400">{formatNum(results.totalToCharge)}</p>
-                                    {results.waitTime > 0 && (
-                                        <p className="text-[8px] text-neutral-600">{formatNum(results.reasonablePrice)} + {formatNum(results.waitTime)}</p>
-                                    )}
-                                </div>
-                                {results.waitTime > 0 && (
-                                    <div className="text-center">
-                                        <p className="text-[8px] font-bold text-amber-400 uppercase tracking-wider">Wait Time Charge</p>
-                                        <p className="text-base font-black text-amber-400">{formatNum(results.waitTime)}</p>
-                                    </div>
-                                )}
-                                <div className="text-right">
-                                    <p className="text-[8px] font-bold text-neutral-500 uppercase tracking-wider">Per Head</p>
-                                    <p className="text-base font-black text-primary-300">{formatNum(results.perHead)}</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Secondary metrics */}
-                        <div className="grid grid-cols-2 gap-1.5">
-                            <div className="bg-neutral-900/50 rounded-lg p-1.5">
-                                <p className="text-[8px] font-bold text-neutral-500 uppercase tracking-wider">Total Fuel Cost</p>
-                                <p className="text-base font-black text-amber-400">{formatNum(results.totalFuelCost)}</p>
-                            </div>
-                            <div className="bg-neutral-900/50 rounded-lg p-1.5">
-                                <p className="text-[8px] font-bold text-neutral-500 uppercase tracking-wider">Net Gain</p>
-                                <p className="text-base font-black text-emerald-400">
-                                    {!roundTrip ? (
-                                        <>{formatNum(results.netGainSingle)} <span className="text-neutral-500 font-medium">/</span> {formatNum(results.netGainRound)}</>
-                                    ) : (
-                                        formatNum(results.netGain)
-                                    )}
-                                </p>
-                            </div>
-                        </div>
-
-                        {/* Per-km breakdown */}
-                        <div className={`grid ${mode === 'reverse' && results.serviceMultiplier !== undefined ? 'grid-cols-4' : 'grid-cols-3'} gap-1.5 pt-1.5 border-t border-neutral-700/50`}>
-                            <div>
-                                <p className="text-[8px] font-bold text-neutral-500 uppercase">Fuel / Km</p>
-                                <p className="text-[10px] font-bold text-white">{formatNum(results.fuelPerKm)}</p>
-                            </div>
-                            <div>
-                                <p className="text-[8px] font-bold text-neutral-500 uppercase">Rev / Km</p>
-                                <p className="text-[10px] font-bold text-white">{formatNum(results.revenuePerKm)}</p>
-                            </div>
-                            <div>
-                                <p className="text-[8px] font-bold text-neutral-500 uppercase">Gain / Km</p>
-                                <p className="text-[10px] font-bold text-white">{formatNum(results.netGainPerKm)}</p>
-                            </div>
-                            {mode === 'reverse' && results.serviceMultiplier !== undefined && (
-                                <div>
-                                    <p className="text-[8px] font-bold text-neutral-500 uppercase">Implied Mult</p>
-                                    <p className="text-[10px] font-bold text-white">{results.serviceMultiplier.toFixed(2)}x</p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                )
-            }
-
-            {/* Market Comparison (Expandable) */}
-            {dist > 0 && (
-                <div className="mb-1.5">
-                    <button
-                        onClick={() => setShowMarketComparison(!showMarketComparison)}
-                        className={`w-full flex items-center justify-between p-2.5 rounded-xl border transition-all ${
-                            showMarketComparison 
-                            ? 'bg-neutral-800/60 border-neutral-700/50 rounded-b-none' 
-                            : 'bg-neutral-800/30 border-neutral-700/30 hover:bg-neutral-800/50'
-                        }`}
-                    >
-                        <div className="flex items-center gap-2">
-                            <Car className={`w-3.5 h-3.5 ${showMarketComparison ? 'text-primary-400' : 'text-neutral-500'}`} />
-                            <span className="text-[9px] font-bold text-neutral-300 uppercase tracking-widest">Market Comparison</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            {!showMarketComparison && (
-                                <div className="flex items-center gap-2">
-                                    <div className="flex flex-col items-end">
-                                        <span className="text-[6px] text-neutral-500 font-bold uppercase leading-none">Ride</span>
-                                        <span className="text-[8px] font-black text-primary-400">{formatNum(rideFare)}</span>
-                                    </div>
-                                    <div className="w-px h-3 bg-neutral-700 mx-0.5"></div>
-                                    <div className="flex flex-col items-end">
-                                        <span className="text-[6px] text-neutral-500 font-bold uppercase leading-none">Feres</span>
-                                        <span className="text-[8px] font-black text-emerald-400">{formatNum(feresFare)}</span>
-                                    </div>
-                                </div>
-                            )}
-                            {showMarketComparison ? <ChevronUp className="w-3.5 h-3.5 text-neutral-500" /> : <ChevronDown className="w-3.5 h-3.5 text-neutral-500" />}
-                        </div>
-                    </button>
-
-                    {showMarketComparison && (
-                        <div className="bg-neutral-800/40 rounded-b-xl border-x border-b border-neutral-700/50 overflow-hidden animate-in fade-in slide-in-from-top-1 duration-200">
-                            {/* Ride Card */}
-                            <div className="p-2.5 space-y-2">
-                                <div className="flex justify-between items-start">
-                                    <div>
-                                        <p className="text-[8px] font-bold text-primary-400 uppercase tracking-widest">Ride App</p>
-                                        <p className="text-[6px] text-neutral-500 font-bold uppercase tracking-tight">Market Standard</p>
-                                    </div>
-                                    <div className="text-right">
-                                        <p className="text-base font-black text-white">{formatNum(rideFare)}</p>
-                                        <p className="text-[6px] text-neutral-500 font-bold uppercase">ETB</p>
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-3 gap-1 py-1 border-t border-neutral-700/30">
-                                    <div>
-                                        <p className="text-[6px] font-bold text-neutral-500 uppercase">Flag</p>
-                                        <p className="text-[8px] font-black text-neutral-400">260</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-[6px] font-bold text-neutral-500 uppercase">Dist</p>
-                                        <p className="text-[8px] font-black text-neutral-400">{formatNum(dist * 24)}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-[6px] font-bold text-neutral-500 uppercase">Wait</p>
-                                        <p className="text-[8px] font-black text-neutral-400">{formatNum(waitMin * 5)}</p>
-                                    </div>
-                                </div>
-                                {results && (
-                                    <div className="pt-1.5 border-t border-neutral-700/30 flex items-center justify-between">
-                                        <span className="text-[7px] font-bold text-neutral-500 uppercase">Savings vs Ride</span>
-                                        <span className={`text-[8px] font-black ${rideFare - results.totalToCharge > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                            {rideFare - results.totalToCharge > 0 ? '+' : ''}{formatNum(rideFare - results.totalToCharge)} ETB
-                                        </span>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Feres Card */}
-                            <div className="p-2.5 bg-neutral-900/30 border-t border-neutral-700/50 space-y-2">
-                                <div className="flex justify-between items-start">
-                                    <div>
-                                        <p className="text-[8px] font-bold text-emerald-400 uppercase tracking-widest">Feres</p>
-                                        <p className="text-[6px] text-neutral-500 font-bold uppercase tracking-tight">Value Option</p>
-                                    </div>
-                                    <div className="text-right">
-                                        <p className="text-base font-black text-white">{formatNum(feresFare)}</p>
-                                        <p className="text-[6px] text-neutral-500 font-bold uppercase">ETB</p>
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-4 gap-1 py-1 border-t border-neutral-700/30">
-                                    <div>
-                                        <p className="text-[6px] font-bold text-neutral-500 uppercase">Flag</p>
-                                        <p className="text-[8px] font-black text-neutral-400">110</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-[6px] font-bold text-neutral-500 uppercase">Dist</p>
-                                        <p className="text-[8px] font-black text-neutral-400">{formatNum(dist * 16)}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-[6px] font-bold text-neutral-500 uppercase">Wait</p>
-                                        <p className="text-[8px] font-black text-neutral-400">{formatNum(waitMin * 1)}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-[6px] font-bold text-neutral-500 uppercase">Fee(7%)</p>
-                                        <p className="text-[8px] font-black text-neutral-400">{formatNum(feresSubtotal * 0.07)}</p>
-                                    </div>
-                                </div>
-                                {results && (
-                                    <div className="pt-1.5 border-t border-neutral-700/30 flex items-center justify-between">
-                                        <span className="text-[7px] font-bold text-neutral-500 uppercase">Savings vs Feres</span>
-                                        <span className={`text-[8px] font-black ${feresFare - results.totalToCharge > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                            {feresFare - results.totalToCharge > 0 ? '+' : ''}{formatNum(feresFare - results.totalToCharge)} ETB
-                                        </span>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    )}
-                </div>
-            )}
-
             {/* Action Buttons */}
-            <div className="mt-auto flex gap-1.5 pt-1">
+            <div className="flex gap-1.5 pt-1">
                 <button
                     onClick={handleClear}
                     className="w-[12%] bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-xs py-2.5 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center gap-1 uppercase tracking-wider"
@@ -1294,6 +1294,9 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                     onOpenLiveTracker={() => setShowLiveTracker(true)} 
                     tripType={tripType}
                     stops={stops}
+                    legsData={legsData}
+                    roundTrip={roundTrip}
+                    mode={mode}
                 />
             </div>
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MapPin, Navigation, Info, Loader2, ArrowLeft, ExternalLink, MessageSquare, Zap, Sun, Moon } from 'lucide-react';
+import { MapPin, Navigation, Info, Loader2, ArrowLeft, ExternalLink, MessageSquare, Zap, Sun, Moon, ChevronUp, Clock } from 'lucide-react';
 import { useTransport } from '../../context/TransportContext';
 
 const nightStyles = [
@@ -50,7 +50,16 @@ const dayStyles = [
     { featureType: 'water', elementType: 'labels.text.fill', stylers: [{ color: '#92998d' }] }
 ];
 
-const DrivingView = ({ onClose, fareData, onOpenLiveTracker, tripType = 'single', stops = [] }) => {
+const formatDuration = (mins) => {
+    if (!mins) return '0 min';
+    const hrs = Math.floor(mins / 60);
+    const rem = Math.round(mins % 60);
+    return hrs > 0 ? `${hrs} hr${hrs > 1 ? 's' : ''} ${rem} min${rem !== 1 ? 's' : ''}` : `${rem} min${rem !== 1 ? 's' : ''}`;
+};
+
+const formatNum = (num) => num != null ? num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00';
+
+const DrivingView = ({ onClose, fareData, onOpenLiveTracker, tripType = 'single', stops = [], legsData = [], roundTrip = false, mode = 'forward' }) => {
     const {
         origin, destination,
         setDistanceKm, setDurationValue, setDurationText, setRouteVersion,
@@ -66,6 +75,7 @@ const DrivingView = ({ onClose, fareData, onOpenLiveTracker, tripType = 'single'
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [showSteps, setShowSteps] = useState(false);
+    const [bottomSheetTab, setBottomSheetTab] = useState('steps'); // 'steps' | 'fare'
     
     // Day/Night Mode Logic
     const isNightTime = () => {
@@ -435,6 +445,14 @@ const DrivingView = ({ onClose, fareData, onOpenLiveTracker, tripType = 'single'
 
     }, [cachedRoutesData, cachedActiveRouteIndex, mapInstance, origin, destination, setDistanceKm, setDurationValue, setDurationText, setRouteVersion, tripType, stops]);
 
+    const isMulti = tripType === 'multi';
+    const totalDistanceMulti = isMulti && legsData
+        ? legsData.reduce((sum, leg) => sum + (leg?.distance || 0), 0)
+        : 0;
+    const totalDurationMulti = isMulti && legsData
+        ? legsData.reduce((sum, leg) => sum + (leg?.durationValue || 0), 0)
+        : 0;
+
     const hasRoute = origin && destination;
 
     return (
@@ -654,48 +672,211 @@ const DrivingView = ({ onClose, fareData, onOpenLiveTracker, tripType = 'single'
                         {/* Divider */}
                         <div className="w-px h-7 bg-neutral-700/60 shrink-0" />
 
-                        {/* Turn-by-turn toggle */}
+                        {/* Trip Details toggle */}
                         <div
                             className="flex-1 flex items-center justify-between cursor-pointer hover:bg-neutral-800/50 rounded-lg px-2 py-1.5 transition-colors"
                             onClick={() => setShowSteps(!showSteps)}
                         >
                             <div className="flex items-center gap-2">
-                                <div className="bg-primary-500/20 p-1 rounded-md border border-primary-500/30">
-                                    <Navigation className="w-3 h-3 text-primary-400" />
+                                <div className="bg-primary-500/20 p-1 rounded-md border border-primary-500/30 shrink-0">
+                                    <Info className="w-3 h-3 text-primary-400" />
                                 </div>
-                                <span className="text-xs font-bold text-white">Steps</span>
+                                <span className="text-xs font-bold text-white whitespace-nowrap">Trip Info</span>
                             </div>
+                            <ChevronUp className={`w-3.5 h-3.5 text-neutral-400 transition-transform duration-300 ${showSteps ? 'rotate-180' : ''}`} />
                         </div>
                     </div>
 
                     {showSteps && (
-                        <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-hide">
-                            {routeInfo.steps.map((step, index) => (
-                                <div key={index} className="flex gap-3 group">
-                                    <div className="flex flex-col items-center">
-                                        <div className="w-6 h-6 rounded-full bg-neutral-800 border border-neutral-600 flex items-center justify-center text-[10px] font-bold text-neutral-400 group-hover:bg-primary-500/20 group-hover:text-primary-400 group-hover:border-primary-500/50 transition-colors shrink-0">
-                                            {index + 1}
-                                        </div>
-                                        {index < routeInfo.steps.length - 1 && (
-                                            <div className="w-0.5 h-full bg-neutral-800 my-1 group-hover:bg-neutral-700 transition-colors" />
-                                        )}
-                                    </div>
-                                    <div className="flex-1 pb-4">
-                                        <div
-                                            className="text-xs text-neutral-300 leading-relaxed font-medium [&>b]:text-white [&>b]:font-black"
-                                            dangerouslySetInnerHTML={{ __html: step.instructions }}
-                                        />
-                                        <div className="text-[10px] font-bold text-neutral-500 tracking-wider mt-1.5 bg-neutral-800/50 inline-block px-1.5 py-0.5 rounded">
-                                            {step.distance.text} • {step.duration.text}
-                                        </div>
-                                    </div>
+                        <div className="flex-1 flex flex-col min-h-0">
+                            {/* Segmented Tab Selector */}
+                            <div className="px-4 pt-3 pb-2 shrink-0 border-b border-neutral-800 bg-neutral-900">
+                                <div className="flex bg-neutral-800 p-0.5 rounded-lg border border-neutral-700/60 select-none">
+                                    <button
+                                        onClick={() => setBottomSheetTab('steps')}
+                                        className={`flex-1 text-center py-1.5 rounded-md text-xs font-bold transition-all ${
+                                            bottomSheetTab === 'steps'
+                                                ? 'bg-primary-500 text-neutral-900 shadow-md shadow-primary-500/10'
+                                                : 'text-neutral-400 hover:text-white hover:bg-neutral-700/30'
+                                        }`}
+                                    >
+                                        Directions
+                                    </button>
+                                    <button
+                                        onClick={() => setBottomSheetTab('fare')}
+                                        className={`flex-1 text-center py-1.5 rounded-md text-xs font-bold transition-all ${
+                                            bottomSheetTab === 'fare'
+                                                ? 'bg-primary-500 text-neutral-900 shadow-md shadow-primary-500/10'
+                                                : 'text-neutral-400 hover:text-white hover:bg-neutral-700/30'
+                                        }`}
+                                    >
+                                        Fare Summary
+                                    </button>
                                 </div>
-                            ))}
-                            <div className="flex gap-3">
-                                <MapPin className="w-6 h-6 p-1 text-rose-500 shrink-0" />
-                                <div className="text-xs font-bold text-white pt-1">
-                                    Arrive at {destination?.name || 'Destination'}
-                                </div>
+                            </div>
+
+                            {/* Tab Content */}
+                            <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-hide">
+                                {bottomSheetTab === 'steps' ? (
+                                    <>
+                                        {routeInfo.steps.map((step, index) => (
+                                            <div key={index} className="flex gap-3 group text-left">
+                                                <div className="flex flex-col items-center">
+                                                    <div className="w-6 h-6 rounded-full bg-neutral-800 border border-neutral-600 flex items-center justify-center text-[10px] font-bold text-neutral-400 group-hover:bg-primary-500/20 group-hover:text-primary-400 group-hover:border-primary-500/50 transition-colors shrink-0">
+                                                        {index + 1}
+                                                    </div>
+                                                    {index < routeInfo.steps.length - 1 && (
+                                                        <div className="w-0.5 h-full bg-neutral-800 my-1 group-hover:bg-neutral-700 transition-colors" />
+                                                    )}
+                                                </div>
+                                                <div className="flex-1 pb-4">
+                                                    <div
+                                                        className="text-xs text-neutral-300 leading-relaxed font-medium [&>b]:text-white [&>b]:font-black"
+                                                        dangerouslySetInnerHTML={{ __html: step.instructions }}
+                                                    />
+                                                    <div className="text-[10px] font-bold text-neutral-500 tracking-wider mt-1.5 bg-neutral-800/50 inline-block px-1.5 py-0.5 rounded">
+                                                        {step.distance.text} • {step.duration.text}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                        <div className="flex gap-3 text-left pb-2">
+                                            <MapPin className="w-6 h-6 p-1 text-rose-500 shrink-0" />
+                                            <div className="text-xs font-bold text-white pt-1">
+                                                Arrive at {destination?.name || 'Destination'}
+                                            </div>
+                                        </div>
+                                    </>
+                                ) : (
+                                    /* Render Fare Summary */
+                                    <div className="space-y-3 pb-2">
+                                        <div className="bg-gradient-to-br from-primary-900/30 to-neutral-800/50 border border-primary-500/30 rounded-xl p-3 space-y-3 text-left">
+                                            <div className="flex justify-between items-center pb-1.5 border-b border-neutral-700/50">
+                                                <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Pricing Results</span>
+                                                <span className="text-[9px] text-primary-400 font-bold bg-primary-500/10 px-1.5 py-0.5 rounded border border-primary-500/20 uppercase">
+                                                    {mode === 'forward' ? 'Standard' : 'Target Price'}
+                                                </span>
+                                            </div>
+
+                                            {/* Route & drive time */}
+                                            {tripType === 'single' ? (
+                                                routeInfo.duration && origin && destination && (
+                                                    <div className="flex items-center gap-1.5 text-[10px] text-neutral-400 bg-neutral-900/40 rounded-md px-2 py-1">
+                                                        <Clock className="w-3 h-3 text-primary-400 shrink-0" />
+                                                        <span className="truncate">
+                                                            {origin.name?.replace('📍 ', '')} → {destination.name?.replace('📍 ', '')}
+                                                        </span>
+                                                        <span className="text-primary-400 font-bold whitespace-nowrap ml-auto">~{routeInfo.duration}</span>
+                                                    </div>
+                                                )
+                                            ) : (
+                                                origin && destination && (
+                                                    <div className="text-[10px] text-neutral-400 bg-neutral-900/40 rounded-lg p-2 space-y-1.5 text-left leading-relaxed">
+                                                        <div className="flex items-center gap-1.5 border-b border-neutral-800/80 pb-1.5">
+                                                            <Clock className="w-3.5 h-3.5 text-primary-400 shrink-0" />
+                                                            <span className="font-bold text-neutral-300">Multi-Stop Summary</span>
+                                                            <span className="text-primary-400 font-black whitespace-nowrap ml-auto">
+                                                                {formatDuration(totalDurationMulti)} ({totalDistanceMulti.toFixed(2)} km)
+                                                            </span>
+                                                        </div>
+                                                        <div className="space-y-1.5 max-h-[120px] overflow-y-auto pr-1">
+                                                            <div className="flex items-center gap-1.5">
+                                                                <span className="w-1.5 h-1.5 rounded-full bg-primary-400 shrink-0"></span>
+                                                                <span className="truncate font-semibold text-neutral-200 text-[10px]">Origin: {origin.name?.replace('📍 ', '')}</span>
+                                                            </div>
+                                                            {stops.map((stop, i) => {
+                                                                const leg = legsData[i];
+                                                                return (
+                                                                    <div key={stop.id} className="flex items-center gap-1.5 pl-3 border-l border-neutral-800">
+                                                                        <span className="text-neutral-500 font-bold text-[8px]">{i + 1}.</span>
+                                                                        <span className="truncate text-neutral-300 font-medium text-[10px]">{stop.place?.name || `Stopover ${i + 1}`}</span>
+                                                                        {leg && !leg.loading && (
+                                                                            <span className="text-[8px] text-neutral-500 font-mono ml-auto">
+                                                                                +{leg.distance.toFixed(1)} km (~{leg.durationText || '0 min'})
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                            <div className="flex items-center gap-1.5">
+                                                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0"></span>
+                                                                <span className="truncate font-semibold text-neutral-200 text-[10px]">Destination: {destination.name?.replace('📍 ', '')}</span>
+                                                                {legsData[stops.length] && !legsData[stops.length].loading && (
+                                                                    <span className="text-[8px] text-neutral-500 font-mono ml-auto">
+                                                                        +{legsData[stops.length].distance.toFixed(1)} km (~{legsData[stops.length].durationText || '0 min'})
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )
+                                            )}
+
+                                            {/* Main result row */}
+                                            <div className="bg-neutral-900/80 rounded-lg p-2.5 border border-primary-500/20">
+                                                <div className="flex justify-between items-end">
+                                                    <div>
+                                                        <p className="text-[8px] font-bold text-neutral-400 uppercase tracking-wider">Total to Charge</p>
+                                                        <p className="text-xl font-black text-primary-400">{formatNum(fareData.totalToCharge)}</p>
+                                                        {fareData.waitTime > 0 && (
+                                                            <p className="text-[8px] text-neutral-500">{formatNum(fareData.reasonablePrice)} + {formatNum(fareData.waitTime)}</p>
+                                                        )}
+                                                    </div>
+                                                    {fareData.waitTime > 0 && (
+                                                        <div className="text-center">
+                                                            <p className="text-[8px] font-bold text-amber-400 uppercase tracking-wider">Wait Time Charge</p>
+                                                            <p className="text-xs font-black text-amber-400">{formatNum(fareData.waitTime)}</p>
+                                                        </div>
+                                                    )}
+                                                    <div className="text-right">
+                                                        <p className="text-[8px] font-bold text-neutral-400 uppercase tracking-wider">Per Head (Split)</p>
+                                                        <p className="text-sm font-black text-primary-300">{formatNum(fareData.perHead)}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Secondary metrics */}
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <div className="bg-neutral-900/50 rounded-lg p-2 border border-neutral-800">
+                                                    <p className="text-[8px] font-bold text-neutral-400 uppercase tracking-wider">Total Fuel Cost</p>
+                                                    <p className="text-sm font-black text-amber-400">{formatNum(fareData.totalFuelCost)}</p>
+                                                </div>
+                                                <div className="bg-neutral-900/50 rounded-lg p-2 border border-neutral-800">
+                                                    <p className="text-[8px] font-bold text-neutral-400 uppercase tracking-wider">Net Gain</p>
+                                                    <p className="text-sm font-black text-emerald-400">
+                                                        {!roundTrip ? (
+                                                            <>{formatNum(fareData.netGainSingle)} <span className="text-neutral-500 font-medium">/</span> {formatNum(fareData.netGainRound)}</>
+                                                        ) : (
+                                                            formatNum(fareData.netGain)
+                                                        )}
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            {/* Per-km breakdown */}
+                                            <div className={`grid ${mode === 'reverse' && fareData.serviceMultiplier !== undefined ? 'grid-cols-4' : 'grid-cols-3'} gap-2 pt-2 border-t border-neutral-700/30`}>
+                                                <div>
+                                                    <p className="text-[8px] font-bold text-neutral-400 uppercase">Fuel / Km</p>
+                                                    <p className="text-[10px] font-bold text-white">{formatNum(fareData.fuelPerKm)}</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-[8px] font-bold text-neutral-400 uppercase">Rev / Km</p>
+                                                    <p className="text-[10px] font-bold text-white">{formatNum(fareData.revenuePerKm)}</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-[8px] font-bold text-neutral-400 uppercase">Gain / Km</p>
+                                                    <p className="text-[10px] font-bold text-white">{formatNum(fareData.netGainPerKm)}</p>
+                                                </div>
+                                                {mode === 'reverse' && fareData.serviceMultiplier !== undefined && (
+                                                    <div>
+                                                        <p className="text-[8px] font-bold text-neutral-400 uppercase">Implied Mult</p>
+                                                        <p className="text-[10px] font-bold text-white">{fareData.serviceMultiplier.toFixed(2)}x</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}
