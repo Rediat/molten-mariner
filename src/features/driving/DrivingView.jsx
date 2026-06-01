@@ -837,9 +837,15 @@ const DrivingView = ({ onClose, fareData, onOpenLiveTracker, tripType = 'single'
 
                                             {/* Secondary metrics */}
                                             <div className="grid grid-cols-2 gap-2">
-                                                <div className="bg-neutral-900/50 rounded-lg p-2 border border-neutral-800">
+                                                <div className="bg-neutral-900/50 rounded-lg p-2 border border-neutral-800 text-left">
                                                     <p className="text-[8px] font-bold text-neutral-400 uppercase tracking-wider">Total Fuel Cost</p>
-                                                    <p className="text-sm font-black text-amber-400">{formatNum(fareData.totalFuelCost)}</p>
+                                                    <p className="text-sm font-black text-amber-400">
+                                                        {!roundTrip ? (
+                                                            <>{formatNum(fareData.oneWayFuelCost)} <span className="text-neutral-500 font-medium">/</span> {formatNum(fareData.totalFuelCost)}</>
+                                                        ) : (
+                                                            formatNum(fareData.totalFuelCost)
+                                                        )}
+                                                    </p>
                                                 </div>
                                                 <div className="bg-neutral-900/50 rounded-lg p-2 border border-neutral-800">
                                                     <p className="text-[8px] font-bold text-neutral-400 uppercase tracking-wider">Net Gain</p>

@@ -495,7 +495,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
             const perHead = totalToCharge / 4;
             const netGainSingle = totalToCharge - oneWayFuelCost;
             const netGainRound = totalToCharge - totalFuelCost;
-            return { totalFuelCost, reasonablePrice: basePrice, totalToCharge, waitTime, revenuePerKm, netGain, netGainPerKm, fuelPerKm, perHead, netGainSingle, netGainRound };
+            return { oneWayFuelCost, totalFuelCost, reasonablePrice: basePrice, totalToCharge, waitTime, revenuePerKm, netGain, netGainPerKm, fuelPerKm, perHead, netGainSingle, netGainRound };
         } else {
             const totalToCharge = chargingPrice;
             const basePrice = Math.max(0, totalToCharge - waitTime);
@@ -507,7 +507,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
             const serviceMultiplierValue = chargingFuelCost > 0 ? (totalToCharge - waitTime) / chargingFuelCost : 0;
             const netGainSingle = totalToCharge - oneWayFuelCost;
             const netGainRound = totalToCharge - totalFuelCost;
-            return { totalFuelCost, reasonablePrice: basePrice, totalToCharge, waitTime, revenuePerKm, netGain, netGainPerKm, fuelPerKm, perHead, serviceMultiplier: serviceMultiplierValue, netGainSingle, netGainRound };
+            return { oneWayFuelCost, totalFuelCost, reasonablePrice: basePrice, totalToCharge, waitTime, revenuePerKm, netGain, netGainPerKm, fuelPerKm, perHead, serviceMultiplier: serviceMultiplierValue, netGainSingle, netGainRound };
         }
     }, [values, waitMultiplier, priceToCharge, durationValue, roundTrip, mode, tripType, legsData]);
 
@@ -1086,9 +1086,15 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
 
                             {/* Secondary metrics */}
                             <div className="grid grid-cols-2 gap-1.5">
-                                <div className="bg-neutral-900/50 rounded-lg p-1.5">
+                                <div className="bg-neutral-900/50 rounded-lg p-1.5 text-left">
                                     <p className="text-[8px] font-bold text-neutral-500 uppercase tracking-wider">Total Fuel Cost</p>
-                                    <p className="text-base font-black text-amber-400">{formatNum(results.totalFuelCost)}</p>
+                                    <p className="text-base font-black text-amber-400">
+                                        {!roundTrip ? (
+                                            <>{formatNum(results.oneWayFuelCost)} <span className="text-neutral-500 font-medium">/</span> {formatNum(results.totalFuelCost)}</>
+                                        ) : (
+                                            formatNum(results.totalFuelCost)
+                                        )}
+                                    </p>
                                 </div>
                                 <div className="bg-neutral-900/50 rounded-lg p-1.5">
                                     <p className="text-[8px] font-bold text-neutral-500 uppercase tracking-wider">Net Gain</p>
