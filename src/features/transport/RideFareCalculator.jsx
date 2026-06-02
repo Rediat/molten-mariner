@@ -758,12 +758,21 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                                         <div className="relative pl-6 py-1 flex items-center justify-between">
                                             <div className="absolute left-[13px] top-[-10px] bottom-[-10px] border-l border-dashed border-neutral-700/60 z-0"></div>
                                             <span className="relative z-1 text-[8px] font-bold text-neutral-500 uppercase tracking-wider">Stopovers ({stops.length})</span>
-                                            <button
-                                                onClick={() => setStopsExpanded(!stopsExpanded)}
-                                                className="relative z-1 text-[8px] font-extrabold text-primary-400 hover:text-primary-300 transition-colors uppercase tracking-wider flex items-center gap-0.5"
-                                            >
-                                                {stopsExpanded ? 'Collapse' : 'Expand'}
-                                            </button>
+                                            <div className="flex gap-2.5">
+                                                <button
+                                                    onClick={handleSwapLocations}
+                                                    className="relative z-1 text-[8px] font-extrabold text-amber-400 hover:text-amber-300 transition-colors uppercase tracking-wider flex items-center gap-1 active:scale-95"
+                                                    title="Swap Origin and Destination"
+                                                >
+                                                    <ArrowUpDown className="w-2.5 h-2.5" /> Swap Origin/Dest
+                                                </button>
+                                                <button
+                                                    onClick={() => setStopsExpanded(!stopsExpanded)}
+                                                    className="relative z-1 text-[8px] font-extrabold text-primary-400 hover:text-primary-300 transition-colors uppercase tracking-wider flex items-center gap-0.5"
+                                                >
+                                                    {stopsExpanded ? 'Collapse' : 'Expand'}
+                                                </button>
+                                            </div>
                                         </div>
                                     )}
 
