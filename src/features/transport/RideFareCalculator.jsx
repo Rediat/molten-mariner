@@ -74,7 +74,42 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
 
     const moveStop = useCallback((index, direction) => {
         const nextIndex = index + direction;
-        if (nextIndex < 0 || nextIndex >= stops.length) return;
+        
+        if (nextIndex < 0) {
+            // Swap first stop with Origin
+            const firstStopPlace = stops[0].place;
+            const currentOrigin = origin;
+            setOrigin(firstStopPlace);
+            setStops(prev => {
+                const next = [...prev];
+                next[0] = { ...next[0], place: currentOrigin };
+                return next;
+            });
+            if (fromInputRef.current) {
+                fromInputRef.current.value = firstStopPlace ? firstStopPlace.description || firstStopPlace.address || firstStopPlace.name : '';
+            }
+            setResults(null);
+            return;
+        }
+
+        if (nextIndex >= stops.length) {
+            // Swap last stop with Destination
+            const lastIndex = stops.length - 1;
+            const lastStopPlace = stops[lastIndex].place;
+            const currentDest = destination;
+            setDestination(lastStopPlace);
+            setStops(prev => {
+                const next = [...prev];
+                next[lastIndex] = { ...next[lastIndex], place: currentDest };
+                return next;
+            });
+            if (toInputRef.current) {
+                toInputRef.current.value = lastStopPlace ? lastStopPlace.description || lastStopPlace.address || lastStopPlace.name : '';
+            }
+            setResults(null);
+            return;
+        }
+
         setStops(prev => {
             const next = [...prev];
             const temp = next[index];
@@ -83,7 +118,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
             return next;
         });
         setResults(null);
-    }, [stops.length]);
+    }, [stops, origin, destination, setOrigin, setDestination]);
 
     const handleStopSelected = useCallback((index, place) => {
         setStops(prev => {
@@ -773,17 +808,17 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                                                                 <div className="flex items-center gap-1 shrink-0">
                                                                     <button
                                                                         onClick={() => moveStop(index, -1)}
-                                                                        disabled={index === 0}
+                                                                        disabled={index === 0 ? (!origin && !stop.place) : false}
                                                                         className="p-1 rounded-md text-neutral-500 hover:text-primary-400 hover:bg-primary-500/10 disabled:opacity-20 disabled:hover:bg-transparent disabled:hover:text-neutral-500 transition-all active:scale-90"
-                                                                        title="Move Up"
+                                                                        title={index === 0 ? "Swap with Origin" : "Move Up"}
                                                                     >
                                                                         <ChevronUp className="w-3.5 h-3.5" />
                                                                     </button>
                                                                     <button
                                                                         onClick={() => moveStop(index, 1)}
-                                                                        disabled={index === stops.length - 1}
+                                                                        disabled={index === stops.length - 1 ? (!destination && !stop.place) : false}
                                                                         className="p-1 rounded-md text-neutral-500 hover:text-primary-400 hover:bg-primary-500/10 disabled:opacity-20 disabled:hover:bg-transparent disabled:hover:text-neutral-500 transition-all active:scale-90"
-                                                                        title="Move Down"
+                                                                        title={index === stops.length - 1 ? "Swap with Destination" : "Move Down"}
                                                                     >
                                                                         <ChevronDown className="w-3.5 h-3.5" />
                                                                     </button>
