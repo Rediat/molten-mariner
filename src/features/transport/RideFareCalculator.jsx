@@ -72,6 +72,19 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
         setResults(null);
     }, []);
 
+    const moveStop = useCallback((index, direction) => {
+        const nextIndex = index + direction;
+        if (nextIndex < 0 || nextIndex >= stops.length) return;
+        setStops(prev => {
+            const next = [...prev];
+            const temp = next[index];
+            next[index] = next[nextIndex];
+            next[nextIndex] = temp;
+            return next;
+        });
+        setResults(null);
+    }, [stops.length]);
+
     const handleStopSelected = useCallback((index, place) => {
         setStops(prev => {
             const next = [...prev];
@@ -757,13 +770,31 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                                                                         defaultValue={stop.place ? stop.place.description || stop.place.address || stop.place.name : ''}
                                                                     />
                                                                 </div>
-                                                                <button
-                                                                    onClick={() => removeStop(index)}
-                                                                    className="p-1 rounded-md text-neutral-500 hover:text-rose-400 hover:bg-rose-500/10 transition-all active:scale-90 shrink-0"
-                                                                    title="Remove Stopover"
-                                                                >
-                                                                    <Trash2 className="w-3.5 h-3.5" />
-                                                                </button>
+                                                                <div className="flex items-center gap-1 shrink-0">
+                                                                    <button
+                                                                        onClick={() => moveStop(index, -1)}
+                                                                        disabled={index === 0}
+                                                                        className="p-1 rounded-md text-neutral-500 hover:text-primary-400 hover:bg-primary-500/10 disabled:opacity-20 disabled:hover:bg-transparent disabled:hover:text-neutral-500 transition-all active:scale-90"
+                                                                        title="Move Up"
+                                                                    >
+                                                                        <ChevronUp className="w-3.5 h-3.5" />
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => moveStop(index, 1)}
+                                                                        disabled={index === stops.length - 1}
+                                                                        className="p-1 rounded-md text-neutral-500 hover:text-primary-400 hover:bg-primary-500/10 disabled:opacity-20 disabled:hover:bg-transparent disabled:hover:text-neutral-500 transition-all active:scale-90"
+                                                                        title="Move Down"
+                                                                    >
+                                                                        <ChevronDown className="w-3.5 h-3.5" />
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => removeStop(index)}
+                                                                        className="p-1 rounded-md text-neutral-500 hover:text-rose-400 hover:bg-rose-500/10 transition-all active:scale-90 shrink-0"
+                                                                        title="Remove Stopover"
+                                                                    >
+                                                                        <Trash2 className="w-3.5 h-3.5" />
+                                                                    </button>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </React.Fragment>
