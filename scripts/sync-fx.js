@@ -164,14 +164,26 @@ async function syncFxData() {
                 addedCount++;
             } else {
                 const oldItem = mergedMonthlyPrices[idx];
-                const updatedItem = { ...oldItem };
+                const updatedItem = { 
+                    ...oldItem,
+                    value: { ...oldItem.value }
+                };
                 let hasChanges = false;
 
                 for (let key in newItem) {
                     if (newItem[key] !== null && newItem[key] !== undefined) {
-                        if (updatedItem[key] !== newItem[key]) {
-                            updatedItem[key] = newItem[key];
-                            hasChanges = true;
+                        if (key === 'value') {
+                            for (let currKey in newItem.value) {
+                                if (updatedItem.value[currKey] !== newItem.value[currKey]) {
+                                    updatedItem.value[currKey] = newItem.value[currKey];
+                                    hasChanges = true;
+                                }
+                            }
+                        } else {
+                            if (updatedItem[key] !== newItem[key]) {
+                                updatedItem[key] = newItem[key];
+                                hasChanges = true;
+                            }
                         }
                     }
                 }
