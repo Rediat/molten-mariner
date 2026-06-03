@@ -101,18 +101,18 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
     const [resultData, setResultData] = useState(null);
     const [showExplanation, setShowExplanation] = useState(false);
     const [mode, setMode] = useState('leverage'); // 'leverage' or 'rolling' or 'single'
-    const [selectedTenure, setSelectedTenure] = useState(182);
+    const [selectedTenure, setSelectedTenure] = useState(364);
     const [rollingResult, setRollingResult] = useState(null);
     const [leverageResult, setLeverageResult] = useState(null);
     const [loanRate, setLoanRate] = useState(12.5);
     const [loanYears, setLoanYears] = useState(7);
     const [loanFrequency, setLoanFrequency] = useState(12);
-    const [customTbillRate, setCustomTbillRate] = useState(14.0);
+    const [customTbillRate, setCustomTbillRate] = useState(22.5);
     const [expandedRounds, setExpandedRounds] = useState(false);
     const [auctionSearch, setAuctionSearch] = useState('');
     const [currencySearch, setCurrencySearch] = useState('');
     const [showAllModal, setShowAllModal] = useState(false);
-    const [leverageAsset, setLeverageAsset] = useState('tbill'); // 'tbill' or 'deposit'
+    const [leverageAsset, setLeverageAsset] = useState('deposit'); // Default to deposit
     
     // Refs for input focus
     const budgetRef = useRef(null);
@@ -690,21 +690,11 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                         <div className="flex items-center gap-1.5">
                              {mode === 'leverage' && (
                                 <div className="flex bg-neutral-900/70 rounded-md p-0.5 ring-1 ring-neutral-800 shrink-0">
-                                    <button
-                                        onClick={() => {
-                                            if (leverageAsset !== 'tbill') {
-                                                setLeverageAsset('tbill');
-                                                handleClear();
-                                            }
-                                        }}
-                                        className={`px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded transition-all ${leverageAsset === 'tbill' ? 'bg-emerald-600/25 text-emerald-400 ring-1 ring-emerald-500/40' : 'text-neutral-500 hover:text-neutral-300'}`}
-                                    >
-                                        T-Bill
-                                    </button>
-                                    <button
+                                     <button
                                         onClick={() => {
                                             if (leverageAsset !== 'deposit') {
                                                 setLeverageAsset('deposit');
+                                                setCustomTbillRate(22.5);
                                                 if (selectedTenure === 28) {
                                                     setSelectedTenure(182); // Default to 6M
                                                 }
@@ -714,6 +704,18 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                                         className={`px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded transition-all ${leverageAsset === 'deposit' ? 'bg-emerald-600/25 text-emerald-400 ring-1 ring-emerald-500/40' : 'text-neutral-500 hover:text-neutral-300'}`}
                                     >
                                         Deposits
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            if (leverageAsset !== 'tbill') {
+                                                setLeverageAsset('tbill');
+                                                setCustomTbillRate(14.0);
+                                                handleClear();
+                                            }
+                                        }}
+                                        className={`px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded transition-all ${leverageAsset === 'tbill' ? 'bg-emerald-600/25 text-emerald-400 ring-1 ring-emerald-500/40' : 'text-neutral-500 hover:text-neutral-300'}`}
+                                    >
+                                        T-Bill
                                     </button>
                                 </div>
                             )}
