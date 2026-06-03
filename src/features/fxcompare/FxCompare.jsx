@@ -717,9 +717,6 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                                     </button>
                                 </div>
                             )}
-                            <label className="text-[11px] uppercase tracking-wider text-neutral-500 font-bold text-left">
-                                {mode === 'leverage' && leverageAsset === 'deposit' ? 'Term' : 'Tenure'}
-                            </label>
                         </div>
                         <div className="flex bg-neutral-900/50 rounded-lg p-0.5 ring-1 ring-neutral-800">
                             {leverageAsset === 'deposit' && mode === 'leverage' ? (
