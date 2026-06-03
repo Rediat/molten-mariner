@@ -628,7 +628,7 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                                 onClick={focusTbillRate}
                                 className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold mb-1 cursor-pointer hover:text-emerald-400 transition-colors select-none"
                             >
-                                {leverageAsset === 'tbill' ? 'T-Bill Rate (%)' : 'Deposit (%)'}
+                                {leverageAsset === 'tbill' ? 'T-Bill (%)' : 'Deposit (%)'}
                             </label>
                             <FormattedNumberInput
                                 ref={tbillRateRef}
@@ -643,7 +643,7 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                                 onClick={focusLoanRate}
                                 className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold mb-1 cursor-pointer hover:text-emerald-400 transition-colors select-none"
                             >
-                                Loan Rate (%)
+                                Loan (%)
                             </label>
                             <FormattedNumberInput
                                 ref={loanRateRef}
@@ -658,7 +658,7 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                                 onClick={focusLoanYears}
                                 className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold mb-1 cursor-pointer hover:text-emerald-400 transition-colors select-none"
                             >
-                                Term (Years)
+                                Term (YR)
                             </label>
                             <FormattedNumberInput
                                 ref={loanYearsRef}
