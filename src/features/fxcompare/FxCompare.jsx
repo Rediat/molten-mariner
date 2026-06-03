@@ -112,6 +112,7 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
     const [auctionSearch, setAuctionSearch] = useState('');
     const [currencySearch, setCurrencySearch] = useState('');
     const [showAllModal, setShowAllModal] = useState(false);
+    const [leverageAsset, setLeverageAsset] = useState('tbill'); // 'tbill' or 'deposit'
     
     // Refs for input focus
     const budgetRef = useRef(null);
@@ -165,7 +166,8 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                 loanFrequency || 12,
                 customTbillRate || 0,
                 brokerageRate,
-                selectedTenure
+                selectedTenure,
+                leverageAsset
             );
             setLeverageResult(res);
         }
@@ -187,9 +189,9 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
     const downloadLeverageCSV = () => {
         if (!leverageResult || !leverageResult.rounds) return;
         const rows = [
-            ['Leverage Parameters'],
+            [`${leverageAsset === 'tbill' ? 'T-Bill' : 'Time Deposit'} Leverage Parameters`],
             ['Budget', formatCurrency(budget)],
-            ['T-Bill Rate', `${customTbillRate}%`],
+            [leverageAsset === 'tbill' ? 'T-Bill Rate' : 'Deposit', `${customTbillRate}%`],
             ['Loan Rate', `${loanRate}%`],
             ['Term (Years)', loanYears],
             ['Frequency', loanFrequency],
@@ -199,18 +201,34 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
             ['Total Profit', formatCurrency(leverageResult.tbillTotalProfit)],
             ['Total ROI', `${leverageResult.tbillTotalROI.toFixed(2)}%`],
             [],
-            ['Round', 'Quantity', 'Invested', 'End Value', 'Profit', 'Leftover']
+            leverageAsset === 'tbill'
+                ? ['Round', 'Auction Date', 'Maturity', 'Quantity', 'Invested', 'End Value', 'Profit', 'Leftover']
+                : ['Round', 'Deposit Date', 'Maturity', 'Quantity', 'Invested', 'End Value', 'Interest']
         ];
         
         leverageResult.rounds.forEach((r, i) => {
-            rows.push([
-                i + 1,
-                r.quantity,
-                r.invested.toFixed(2),
-                r.endValue.toFixed(2),
-                r.profit.toFixed(2),
-                r.leftover.toFixed(2)
-            ]);
+            if (leverageAsset === 'tbill') {
+                rows.push([
+                    i + 1,
+                    r.auctionDate,
+                    r.maturityDate,
+                    r.quantity,
+                    r.invested.toFixed(2),
+                    r.endValue.toFixed(2),
+                    r.profit.toFixed(2),
+                    r.leftover.toFixed(2)
+                ]);
+            } else {
+                rows.push([
+                    i + 1,
+                    r.auctionDate,
+                    r.maturityDate,
+                    r.quantity,
+                    r.invested.toFixed(2),
+                    r.endValue.toFixed(2),
+                    r.profit.toFixed(2)
+                ]);
+            }
         });
 
         const csvContent = rows.map(e => e.join(',')).join('\n');
@@ -234,37 +252,75 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
     const downloadLeveragePDF = async () => {
         if (!leverageResult || !leverageResult.rounds) return;
         
+        const getPeriodLabel = (days) => {
+            if (days === 91) return "3 Months";
+            if (days === 182) return "6 Months";
+            if (days === 364) return "1 Year";
+            return `${days} Days`;
+        };
+        const termText = leverageAsset === 'tbill' ? `Tenure: ${selectedTenure}d` : `Term: ${getPeriodLabel(selectedTenure)}`;
+        
         const summaryLines = [
             `Loan: ${formatCurrency(budget)} | Rate: ${loanRate.toFixed(2)}% | Term: ${loanYears}y | Freq: ${loanFrequency} | Total Interest: ${formatCurrency(leverageResult.loanResult.totalInterest)}`,
-            `T-Bill: ${customTbillRate.toFixed(2)}% | Tenure: ${selectedTenure}d | ROI: ${leverageResult.tbillTotalROI.toFixed(2)}% | Final: ${formatCurrency(leverageResult.tbillFinalValue)} | Net Profit: ${formatCurrency(leverageResult.netProfit)}`
+            `${leverageAsset === 'tbill' ? 'T-Bill' : 'Deposit'}: ${customTbillRate.toFixed(2)}% | ${termText} | ROI: ${leverageResult.tbillTotalROI.toFixed(2)}% | Final: ${formatCurrency(leverageResult.tbillFinalValue)} | Net Profit: ${formatCurrency(leverageResult.netProfit)}`
         ];
 
-        const doc = createStandardPDF("T-Bill Leverage Analysis", summaryLines);
+        const doc = createStandardPDF(`${leverageAsset === 'tbill' ? 'T-Bill' : 'Time Deposit'} Leverage Analysis`, summaryLines);
+
+        const head = leverageAsset === 'tbill'
+            ? [["Round", "Auction Date", "Maturity", "Quantity", "Invested", "End Value", "Profit", "Leftover"]]
+            : [["Round", "Deposit Date", "Maturity", "Quantity", "Invested", "End Value", "Interest"]];
+
+        const body = leverageResult.rounds.map((r, i) => {
+            if (leverageAsset === 'tbill') {
+                return [
+                    i + 1,
+                    r.auctionDate,
+                    r.maturityDate,
+                    r.quantity,
+                    `${formatCurrency(r.invested)}`,
+                    `${formatCurrency(r.endValue)}`,
+                    `${r.profit >= 0 ? '+' : ''}${formatCurrency(r.profit)}`,
+                    `${formatCurrency(r.leftover)}`
+                ];
+            } else {
+                return [
+                    i + 1,
+                    r.auctionDate,
+                    r.maturityDate,
+                    r.quantity,
+                    `${formatCurrency(r.invested)}`,
+                    `${formatCurrency(r.endValue)}`,
+                    `${r.profit >= 0 ? '+' : ''}${formatCurrency(r.profit)}`
+                ];
+            }
+        });
 
         autoTable(doc, {
             ...STANDARD_TABLE_STYLES,
             startY: 44,
-            head: [["Round", "Auction Date", "Maturity", "Quantity", "Invested", "End Value", "Profit", "Leftover"]],
-            body: leverageResult.rounds.map((r, i) => [
-                i + 1,
-                r.auctionDate,
-                r.maturityDate,
-                r.quantity,
-                `${formatCurrency(r.invested)}`,
-                `${formatCurrency(r.endValue)}`,
-                `${r.profit >= 0 ? '+' : ''}${formatCurrency(r.profit)}`,
-                `${formatCurrency(r.leftover)}`
-            ]),
-            columnStyles: {
-                0: { halign: 'right' },
-                1: { halign: 'right' },
-                2: { halign: 'right' },
-                3: { halign: 'right' },
-                4: { halign: 'right' },
-                5: { halign: 'right' },
-                6: { halign: 'right' },
-                7: { halign: 'right' },
-            },
+            head,
+            body,
+            columnStyles: leverageAsset === 'tbill'
+                ? {
+                    0: { halign: 'right' },
+                    1: { halign: 'right' },
+                    2: { halign: 'right' },
+                    3: { halign: 'right' },
+                    4: { halign: 'right' },
+                    5: { halign: 'right' },
+                    6: { halign: 'right' },
+                    7: { halign: 'right' },
+                }
+                : {
+                    0: { halign: 'right' },
+                    1: { halign: 'right' },
+                    2: { halign: 'right' },
+                    3: { halign: 'right' },
+                    4: { halign: 'right' },
+                    5: { halign: 'right' },
+                    6: { halign: 'right' },
+                },
         });
         
         addStandardFooter(doc);
@@ -279,9 +335,9 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
         
         // Prepare data for XLSX
         const data = [
-            ["Leverage Parameters"],
+            [`${leverageAsset === 'tbill' ? 'T-Bill' : 'Time Deposit'} Leverage Parameters`],
             ["Budget", budget],
-            ["T-Bill Rate", `${customTbillRate}%`],
+            [leverageAsset === 'tbill' ? "T-Bill Rate" : "Deposit", `${customTbillRate}%`],
             ["Loan Rate", `${loanRate}%`],
             ["Term (Years)", loanYears],
             ["Frequency", loanFrequency],
@@ -291,18 +347,34 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
             ["Total Profit", leverageResult.tbillTotalProfit],
             ["Total ROI", `${leverageResult.tbillTotalROI.toFixed(2)}%`],
             [],
-            ["Round", "Quantity", "Invested", "End Value", "Profit", "Leftover"]
+            leverageAsset === 'tbill'
+                ? ["Round", "Auction Date", "Maturity", "Quantity", "Invested", "End Value", "Profit", "Leftover"]
+                : ["Round", "Deposit Date", "Maturity", "Quantity", "Invested", "End Value", "Interest"]
         ];
         
         leverageResult.rounds.forEach((r, i) => {
-            data.push([
-                i + 1,
-                r.quantity,
-                r.invested,
-                r.endValue,
-                r.profit,
-                r.leftover
-            ]);
+            if (leverageAsset === 'tbill') {
+                data.push([
+                    i + 1,
+                    r.auctionDate,
+                    r.maturityDate,
+                    r.quantity,
+                    r.invested,
+                    r.endValue,
+                    r.profit,
+                    r.leftover
+                ]);
+            } else {
+                data.push([
+                    i + 1,
+                    r.auctionDate,
+                    r.maturityDate,
+                    r.quantity,
+                    r.invested,
+                    r.endValue,
+                    r.profit
+                ]);
+            }
         });
 
         const worksheet = XLSX.utils.aoa_to_sheet(data);
@@ -314,6 +386,7 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
         
         XLSX.writeFile(workbook, fileName);
     };
+
 
     return (
         <div className="flex flex-col h-full">
@@ -555,7 +628,7 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                                 onClick={focusTbillRate}
                                 className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold mb-1 cursor-pointer hover:text-emerald-400 transition-colors select-none"
                             >
-                                T-Bill Rate (%)
+                                {leverageAsset === 'tbill' ? 'T-Bill Rate (%)' : 'Deposit (%)'}
                             </label>
                             <FormattedNumberInput
                                 ref={tbillRateRef}
@@ -595,42 +668,85 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                                 className="bg-neutral-900 border border-neutral-700 rounded-md text-white text-[11px] p-1.5 focus:outline-none focus:border-emerald-500 w-full font-mono text-right"
                             />
                         </div>
-                            <div className="flex flex-col">
-                                <label className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold mb-1">Frequency</label>
-                                <select
-                                    value={loanFrequency}
-                                    onChange={(e) => setLoanFrequency(parseInt(e.target.value))}
-                                    className="bg-neutral-900 border border-neutral-700 rounded-md text-white text-[10px] p-1.5 focus:outline-none focus:border-emerald-500 w-full"
-                                >
-                                    <option value={1}>Annually</option>
-                                    <option value={2}>Semi-Annually</option>
-                                    <option value={4}>Quarterly</option>
-                                    <option value={12}>Monthly</option>
-                                </select>
-                            </div>
+                        <div className="flex flex-col">
+                            <label className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold mb-1">Frequency</label>
+                            <select
+                                value={loanFrequency}
+                                onChange={(e) => setLoanFrequency(parseInt(e.target.value))}
+                                className="bg-neutral-900 border border-neutral-700 rounded-md text-white text-[10px] p-1.5 focus:outline-none focus:border-emerald-500 w-full"
+                            >
+                                <option value={1}>Annually</option>
+                                <option value={2}>Semi-Annually</option>
+                                <option value={4}>Quarterly</option>
+                                <option value={12}>Monthly</option>
+                            </select>
                         </div>
-                    )}
+                    </div>
+                )}
 
                 {/* Tenure Selector */}
                 {(mode === 'rolling' || mode === 'leverage') && (
-                    <div className="bg-neutral-800/40 rounded-xl p-1.5 border border-transparent hover:border-neutral-700 text-left">
-                        <label className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold block mb-0.5">Tenure Strategy</label>
-                        <div className="grid grid-cols-4 gap-1">
-                            {TENURE_OPTIONS.map(t => (
-                                <button
-                                    key={t.days}
-                                    onClick={() => setSelectedTenure(t.days)}
-                                    className={`py-1.5 px-1 rounded-lg transition-all flex flex-col items-center justify-center gap-0.5 ${selectedTenure === t.days
-                                        ? 'bg-emerald-600/20 text-emerald-400 ring-1 ring-emerald-500/50'
-                                        : 'bg-neutral-900/50 text-neutral-500 hover:bg-neutral-900'
-                                        }`}
-                                >
-                                    <span className="text-sm font-black leading-none">{t.days}</span>
-                                    <span className={`text-[8px] font-bold uppercase tracking-tight ${selectedTenure === t.days ? 'text-emerald-400/80' : 'text-neutral-500'}`}>
-                                        {t.sub}
-                                    </span>
-                                </button>
-                            ))}
+                    <div className="bg-neutral-800/40 rounded-xl px-3 py-1 border border-transparent hover:border-neutral-700 transition-all flex justify-between items-center gap-2 h-[42px]">
+                        <div className="flex items-center gap-1.5">
+                             {mode === 'leverage' && (
+                                <div className="flex bg-neutral-900/70 rounded-md p-0.5 ring-1 ring-neutral-800 shrink-0">
+                                    <button
+                                        onClick={() => {
+                                            if (leverageAsset !== 'tbill') {
+                                                setLeverageAsset('tbill');
+                                                handleClear();
+                                            }
+                                        }}
+                                        className={`px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded transition-all ${leverageAsset === 'tbill' ? 'bg-emerald-600/25 text-emerald-400 ring-1 ring-emerald-500/40' : 'text-neutral-500 hover:text-neutral-300'}`}
+                                    >
+                                        T-Bill
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            if (leverageAsset !== 'deposit') {
+                                                setLeverageAsset('deposit');
+                                                if (selectedTenure === 28) {
+                                                    setSelectedTenure(182); // Default to 6M
+                                                }
+                                                handleClear();
+                                            }
+                                        }}
+                                        className={`px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded transition-all ${leverageAsset === 'deposit' ? 'bg-emerald-600/25 text-emerald-400 ring-1 ring-emerald-500/40' : 'text-neutral-500 hover:text-neutral-300'}`}
+                                    >
+                                        Deposits
+                                    </button>
+                                </div>
+                            )}
+                            <label className="text-[11px] uppercase tracking-wider text-neutral-500 font-bold text-left">
+                                {mode === 'leverage' && leverageAsset === 'deposit' ? 'Term' : 'Tenure'}
+                            </label>
+                        </div>
+                        <div className="flex bg-neutral-900/50 rounded-lg p-0.5 ring-1 ring-neutral-800">
+                            {leverageAsset === 'deposit' && mode === 'leverage' ? (
+                                [
+                                    { days: 91, label: '3M' },
+                                    { days: 182, label: '6M' },
+                                    { days: 364, label: '1Y' }
+                                ].map(t => (
+                                    <button
+                                        key={t.days}
+                                        onClick={() => setSelectedTenure(t.days)}
+                                        className={`px-3 py-1 text-[11px] font-bold rounded-md transition-all ${selectedTenure === t.days ? 'bg-emerald-600 text-neutral-900 shadow-lg shadow-emerald-900/20' : 'text-neutral-500 hover:text-neutral-300'}`}
+                                    >
+                                        {t.label}
+                                    </button>
+                                ))
+                            ) : (
+                                TENURE_OPTIONS.map(t => (
+                                    <button
+                                        key={t.days}
+                                        onClick={() => setSelectedTenure(t.days)}
+                                        className={`px-3 py-1 text-[11px] font-bold rounded-md transition-all ${selectedTenure === t.days ? 'bg-emerald-600 text-neutral-900 shadow-lg shadow-emerald-900/20' : 'text-neutral-500 hover:text-neutral-300'}`}
+                                    >
+                                        {t.days}D
+                                    </button>
+                                ))
+                            )}
                         </div>
                     </div>
                 )}
@@ -868,8 +984,10 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                                 <div className="bg-neutral-900/60 border border-neutral-700 rounded-xl p-3">
                                     <div className="flex justify-between items-stretch mb-2.5">
                                         <div className="text-left">
-                                            <h3 className="text-sm font-bold text-white leading-none">{loanYears} Year (Rolling {selectedTenure} Days)</h3>
-                                            <p className="text-[9px] text-neutral-500 uppercase mt-1">Total {leverageResult.totalRounds} T-Bill Rounds</p>
+                                            <h3 className="text-sm font-bold text-white leading-none">
+                                                {loanYears} Year ({leverageAsset === 'tbill' ? `Rolling ${selectedTenure} Days` : `Rolling ${selectedTenure === 91 ? '3 Months' : selectedTenure === 182 ? '6 Months' : selectedTenure === 364 ? '1 Year' : `${selectedTenure} Days`}`})
+                                            </h3>
+                                            <p className="text-[9px] text-neutral-500 uppercase mt-1">Total {leverageResult.totalRounds} {leverageAsset === 'tbill' ? 'T-Bill' : 'Deposit'} Rounds</p>
                                         </div>
                                         <div className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider flex items-center text-right ${leverageResult.isProfitable ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
                                             {leverageResult.isProfitable ? 'Profitable' : 'Not Profitable'}
@@ -887,12 +1005,12 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                                                 <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase">Total Repayment</span><span className="text-[10px] text-red-400 font-black font-mono">{formatCurrency(leverageResult.loanResult.totalPayment)}</span></div>
                                             </div>
                                         </div>
-                                        {/* T-Bill Summary */}
+                                        {/* Asset Summary */}
                                         <div className="rounded-lg p-2.5 border border-emerald-500/40 bg-emerald-900/10">
-                                            <p className="text-[10px] font-bold text-emerald-400 uppercase text-center mb-2 tracking-wider">T-Bill Returns</p>
+                                            <p className="text-[10px] font-bold text-emerald-400 uppercase text-center mb-2 tracking-wider">{leverageAsset === 'tbill' ? 'T-Bill' : 'Deposit'} Returns</p>
                                             <div className="space-y-1.5">
                                                 <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase">Invested</span><span className="text-[10px] text-white font-mono">{formatCurrency(budget)}</span></div>
-                                                <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase">Yield</span><span className="text-[10px] text-white font-mono">{leverageResult.rounds[0].yield.toFixed(3)}%</span></div>
+                                                <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase">Rate</span><span className="text-[10px] text-white font-mono">{leverageResult.rounds[0].yield.toFixed(3)}%</span></div>
                                                 <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase">Rounds</span><span className="text-[10px] text-neutral-400 font-mono">{leverageResult.totalRounds}</span></div>
                                                 <div className="flex justify-between pt-1 border-t border-neutral-700/50"><span className="text-[9px] text-neutral-500 uppercase">Total Profit</span><span className="text-[10px] font-bold font-mono text-green-400">+{formatCurrency(leverageResult.tbillTotalProfit)}</span></div>
                                                 <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase">Final Value</span><span className="text-[10px] text-emerald-400 font-black font-mono">{formatCurrency(leverageResult.tbillFinalValue)}</span></div>
@@ -913,7 +1031,7 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                                                  </span>
                                              </div>
                                              <div className="flex justify-between items-center mt-1.5 pt-1.5 border-t border-neutral-700/30">
-                                                 <span className="text-[9px] text-neutral-500 uppercase">Break-even T-Bill Rate</span>
+                                                 <span className="text-[9px] text-neutral-500 uppercase">Break-even {leverageAsset === 'tbill' ? 'T-Bill' : 'Deposit'} Rate</span>
                                                  <span className="text-[10px] font-bold font-mono text-amber-400">
                                                      {leverageResult.breakEvenTbillRate.toFixed(3)}%
                                                  </span>
@@ -926,7 +1044,7 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                                     <div className="w-full flex justify-between items-center p-2 pr-3 bg-neutral-900/40">
                                         <button onClick={() => setExpandedRounds(!expandedRounds)} className="flex-1 flex items-center gap-2 hover:opacity-80 transition-opacity">
                                             {expandedRounds ? <ChevronUp className="w-3.5 h-3.5 text-neutral-500" /> : <ChevronDown className="w-3.5 h-3.5 text-neutral-500" />}
-                                            <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">T-Bill Reinvestment ({leverageResult.totalRounds} rounds)</span>
+                                            <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">{leverageAsset === 'tbill' ? 'T-Bill Reinvestment' : 'Deposit Rollover'} ({leverageResult.totalRounds} rounds)</span>
                                         </button>
                                         <div className="flex items-center gap-1">
                                             <button onClick={downloadLeverageCSV} className="p-1.5 hover:bg-neutral-800 rounded-lg transition-colors text-neutral-400 hover:text-cyan-500" title="Export CSV"><Download size={14} /></button>
@@ -945,11 +1063,15 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                                                         </span>
                                                     </div>
                                                     <div className="grid grid-cols-3 gap-x-3 gap-y-0.5 text-[9px]">
-                                                        <div className="flex justify-between"><span className="text-neutral-500">Qty</span><span className="text-white font-mono">{r.quantity}</span></div>
+                                                        {leverageAsset === 'tbill' && (
+                                                            <div className="flex justify-between"><span className="text-neutral-500">Qty</span><span className="text-white font-mono">{r.quantity}</span></div>
+                                                        )}
                                                         <div className="flex justify-between"><span className="text-neutral-500">Invested</span><span className="text-white font-mono">{formatCurrency(r.invested)}</span></div>
                                                         <div className="flex justify-between"><span className="text-neutral-500">End Val</span><span className="text-white font-mono">{formatCurrency(r.endValue)}</span></div>
-                                                        <div className="flex justify-between"><span className="text-neutral-500">Profit</span><span className={`font-mono font-bold ${r.profit >= 0 ? 'text-green-400' : 'text-red-400'}`}>{r.profit >= 0 ? '+' : ''}{formatCurrency(r.profit)}</span></div>
-                                                        <div className="flex justify-between"><span className="text-neutral-500">Leftover</span><span className="text-amber-400/80 font-mono">{formatCurrency(r.leftover)}</span></div>
+                                                        <div className="flex justify-between"><span className="text-neutral-500">{leverageAsset === 'tbill' ? 'Profit' : 'Interest'}</span><span className={`font-mono font-bold ${r.profit >= 0 ? 'text-green-400' : 'text-red-400'}`}>{r.profit >= 0 ? '+' : ''}{formatCurrency(r.profit)}</span></div>
+                                                        {leverageAsset === 'tbill' && (
+                                                            <div className="flex justify-between"><span className="text-neutral-500">Leftover</span><span className="text-amber-400/80 font-mono">{formatCurrency(r.leftover)}</span></div>
+                                                        )}
                                                     </div>
                                                 </div>
                                             ))}
