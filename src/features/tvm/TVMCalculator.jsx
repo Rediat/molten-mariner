@@ -6,6 +6,7 @@ import { Settings2, Info, HelpCircle, Trash2, Settings, History, X, Calculator }
 import FormattedNumberInput from '../../components/FormattedNumberInput';
 import { CalculateIcon } from '../../components/Icons';
 import HistoryOverlay from '../../components/HistoryOverlay';
+import AwaitingCalculation from '../../components/AwaitingCalculation';
 
 // Constants
 const FREQUENCIES = [
@@ -24,7 +25,8 @@ const DEFAULT_VALUES = {
     i: 6.975,
     pv: -3000000,
     pmt: 0,
-    fv: 0
+    fv: 0,
+    deductionPercent: 10
 };
 
 // Helper: Calculate TVM factors for algebraic solving
@@ -73,6 +75,7 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
         pmt: useRef(null),
         fv: useRef(null),
         totalInterest: useRef(null),
+        deductionPercent: useRef(null),
     };
 
     const clearResults = useCallback(() => {
@@ -85,6 +88,7 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
     const focusPMT = useInputFocus((val) => setValues(prev => ({ ...prev, pmt: val })), inputRefs.pmt, clearResults);
     const focusFV = useInputFocus((val) => setValues(prev => ({ ...prev, fv: val })), inputRefs.fv, clearResults);
     const focusTI = useInputFocus(setTotalInterest, inputRefs.totalInterest, clearResults);
+    const focusDP = useInputFocus((val) => setValues(prev => ({ ...prev, deductionPercent: val })), inputRefs.deductionPercent, clearResults);
 
     const focusHandlers = {
         n: focusN,
@@ -92,7 +96,8 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
         pv: focusPV,
         pmt: focusPMT,
         fv: focusFV,
-        totalInterest: focusTI
+        totalInterest: focusTI,
+        deductionPercent: focusDP
     };
 
     // Determine effective sign for TI based on context
@@ -256,6 +261,41 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
         }
     };
 
+    // Calculate Total PMT - when PV and PMT have different signs, use only PMT × N
+    const pv = values.pv || 0;
+    const pmt = values.pmt || 0;
+    const n = values.n || 0;
+    const pvPmtDifferentSigns = (pv > 0 && pmt < 0) || (pv < 0 && pmt > 0);
+    const totalPMT = pvPmtDifferentSigns ? (pmt * n) : (pv + (pmt * n));
+
+    // Tax Deduction Calculations
+    const taxRate = values.deductionPercent || 0;
+    const currentFV = (target === 'fv' && typeof calculatedValue === 'number') ? calculatedValue : (values.fv || 0);
+
+    let netFV = currentFV;
+    let netInterest = totalInterest;
+
+    if (taxRate > 0) {
+        const effectiveCY = showAdvanced ? compoundingFrequency : frequency;
+        const netValues = {
+            n: values.n || 0,
+            i: (values.i || 0) * (1 - taxRate / 100),
+            pv: values.pv || 0,
+            pmt: values.pmt || 0,
+            fv: values.fv || 0
+        };
+        if (target !== 'fv' && calculatedValue !== null && typeof calculatedValue === 'number') {
+            netValues[target] = calculatedValue;
+        }
+        const netFVResult = calculateTVM('fv', netValues, mode, frequency, interestType, effectiveCY);
+        if (typeof netFVResult === 'number' && !isNaN(netFVResult)) {
+            netFV = netFVResult;
+            netInterest = (netValues.pv || 0) + (netValues.pmt || 0) * (netValues.n || 0) + netFV;
+        }
+    }
+
+    const taxAmount = totalInterest > netInterest ? totalInterest - netInterest : 0;
+
     const getDisplayValue = (field) => {
         if (field === 'n' && nMode === 'YEARS') {
             return values.n === null ? null : values.n / frequency;
@@ -265,13 +305,6 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
         return values[field];
     };
 
-    // Calculate Total PMT - when PV and PMT have different signs, use only PMT × N
-    const pv = values.pv || 0;
-    const pmt = values.pmt || 0;
-    const n = values.n || 0;
-    const pvPmtDifferentSigns = (pv > 0 && pmt < 0) || (pv < 0 && pmt > 0);
-    const totalPMT = pvPmtDifferentSigns ? (pmt * n) : (pv + (pmt * n));
-
     // Field definitions
     const fields = [
         { id: 'n', label: nMode === 'YEARS' ? 'Years' : 'N', sub: nMode === 'YEARS' ? 'N / Frequency' : 'Total Periods', hasNToggle: true },
@@ -279,8 +312,8 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
         { id: 'pv', label: 'PV', sub: 'Pres Val' },
         { id: 'pmt', label: 'PMT', sub: 'Payment' },
         { id: 'fv', label: 'FV', sub: 'Fut Val' },
-        { id: 'totalInterest', label: 'TI', sub: 'Total Interest' },
-        { id: 'totalPMT', label: 'ΣPmt', sub: pvPmtDifferentSigns ? 'Total PMT (PMT × N)' : 'Total PMT (PV + PMT × N)', isReadOnly: true },
+        { id: 'deductionPercent', label: 'Deduction %', sub: 'Deduction / Tax Rate' },
+        { id: 'totalInterest', label: 'TI', sub: 'Total Interest' }
     ];
 
     const renderField = (field, isHalfRow = false) => {
@@ -426,7 +459,7 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
                 </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto pr-2 -mr-2 space-y-4">
+            <div className="flex-1 overflow-y-auto pr-2 -mr-2 space-y-4 scrollbar-hide">
                 {/* Explanation Panel */}
                 {showExplanation && (
                     <div className="bg-gradient-to-r from-primary-900/30 to-neutral-800/50 border border-primary-500/30 rounded-xl p-3 mb-4 text-xs text-neutral-300 text-left">
@@ -441,7 +474,7 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
 
                 {/* Target Selector */}
                 <div className="flex gap-1 bg-neutral-900/50 p-1 rounded-xl mb-4 overflow-x-auto scrollbar-hide">
-                    {fields.filter(f => !f.isReadOnly && f.id !== 'totalInterest').map(field => (
+                    {fields.filter(f => !f.isReadOnly && f.id !== 'totalInterest' && f.id !== 'deductionPercent').map(field => (
                         <button
                             key={field.id}
                             onClick={() => setTarget(field.id)}
@@ -461,14 +494,98 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
                     {fields.filter(f => f.id !== 'n' && f.id !== 'i').map(field => renderField(field, false))}
                 </div>
 
-                {/* View History Link */}
-                <div className="mt-3 flex justify-end">
-                    <button
-                        onClick={() => setShowHistory(true)}
-                        className="text-[9px] text-primary-500 font-bold uppercase tracking-wider flex items-center gap-1 hover:text-primary-400 transition-colors"
-                    >
-                        <History size={12} /> View History
-                    </button>
+                {/* Results Section */}
+                <div className="mt-4 bg-gradient-to-br from-primary-900/30 to-neutral-800/50 border border-primary-500/30 rounded-2xl p-3.5 space-y-2">
+                    <div className="flex justify-between items-center mb-1">
+                        <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Results</span>
+                        <button
+                            onClick={() => setShowHistory(true)}
+                            className="text-[9px] text-primary-500 font-bold uppercase tracking-wider flex items-center gap-1 hover:text-primary-400 transition-colors"
+                        >
+                            <History size={12} /> View History
+                        </button>
+                    </div>
+
+                    {calculatedValue !== null ? (
+                        <>
+                            {/* Calculated Target Card */}
+                            <div className="bg-neutral-900/50 rounded-lg p-2.5 border border-neutral-700/50 flex justify-between items-center relative group">
+                                <div className="flex flex-col text-left">
+                                    <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider mb-0.5">Calculated Target</p>
+                                    <span className="text-xs font-bold text-primary-400">
+                                        {target === 'n' ? (nMode === 'YEARS' ? 'Term (Years)' : 'Term (Periods)') :
+                                            target === 'i' ? 'Annual Interest Rate' :
+                                                target === 'pv' ? 'Present Value (PV)' :
+                                                    target === 'pmt' ? 'Periodic Payment (PMT)' :
+                                                        target === 'fv' ? 'Future Value (FV)' :
+                                                            'Total Interest'}
+                                    </span>
+                                </div>
+                                <div className="text-right">
+                                    <span className="block text-lg font-black text-white font-mono">
+                                        {calculatedValue === 'INVALID_SIGN' ? 'Sign Error' :
+                                            calculatedValue === 'Error' ? 'Error' :
+                                                (typeof calculatedValue === 'number' && isNaN(calculatedValue)) ? 'Error' :
+                                                    target === 'n' ? (nMode === 'YEARS' ? `${(calculatedValue / frequency).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 2 })} Years` : `${Math.round(calculatedValue).toLocaleString('en-US')} Periods`) :
+                                                        target === 'i' ? `${calculatedValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 3 })}%` :
+                                                            calculatedValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Additional standard metrics */}
+                            <div className="grid grid-cols-2 gap-2">
+                                <div className="bg-neutral-900/50 rounded-lg p-2 border border-neutral-700/50 text-left">
+                                    <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider mb-1">Total Interest (TI)</p>
+                                    <p className="text-base font-bold text-white font-mono">
+                                        {totalInterest.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    </p>
+                                </div>
+                                <div className="bg-neutral-900/50 rounded-lg p-2 border border-neutral-700/50 text-right">
+                                    <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider mb-1">Total Payments (ΣPmt)</p>
+                                    <p className="text-base font-bold text-white font-mono">
+                                        {totalPMT.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Tax Withholding & Net Returns */}
+                            {taxRate > 0 && (
+                                <div className="mt-2 pt-2 border-t border-neutral-800/80 space-y-2 animate-in fade-in slide-in-from-top-1 duration-200">
+                                    <div className="flex justify-between items-center px-1">
+                                        <span className="text-[9px] font-black text-indigo-400 uppercase tracking-wider">Deduction & Net Return</span>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div className="bg-neutral-900/50 rounded-lg p-2 border border-neutral-700/50 text-left">
+                                            <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider mb-1">Tax Paid ({taxRate}%)</p>
+                                            <p className="text-base font-bold text-red-400 font-mono">
+                                                {taxAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                            </p>
+                                        </div>
+                                        <div className="bg-neutral-900/50 rounded-lg p-2 border border-neutral-700/50 text-right">
+                                            <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider mb-1">Net Interest</p>
+                                            <p className="text-base font-bold text-emerald-400 font-mono">
+                                                {netInterest.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="bg-neutral-900/80 rounded-lg p-2.5 border border-indigo-500/30 text-left flex justify-between items-center relative group">
+                                        <div className="flex flex-col">
+                                            <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider mb-0.5">Actual Net Future Value</span>
+                                            <span className="text-[8px] font-medium text-neutral-500 uppercase tracking-wider">Compounded at Net Rate</span>
+                                        </div>
+                                        <span className="text-lg font-black text-white font-mono">
+                                            {netFV.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                        </span>
+                                    </div>
+                                </div>
+                            )}
+                        </>
+                    ) : (
+                        <div className="h-[90px] shrink-0 flex items-center justify-center">
+                            <AwaitingCalculation Icon={Calculator} />
+                        </div>
+                    )}
                 </div>
 
             </div>
@@ -477,7 +594,7 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
             <div className="flex gap-1.5 mt-1 pt-1">
                 <button
                     onClick={() => {
-                        setValues({ n: 0, i: 0, pv: 0, pmt: 0, fv: 0 });
+                        setValues(prev => ({ ...prev, deductionPercent: 0 }));
                         setTotalInterest(0);
                         setCalculatedValue(null);
                     }}
