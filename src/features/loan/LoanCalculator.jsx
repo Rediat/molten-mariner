@@ -402,7 +402,7 @@ const LoanCalculator = ({ toggleHelp, toggleSettings }) => {
                                                 value={values[field.id]} 
                                                 onChange={(e) => handleChange(field.id, e.target.value)} 
                                                 decimals={field.decimals} 
-                                                className="bg-transparent text-right text-lg font-mono text-white focus:outline-none w-full flex-1" 
+                                                className="bg-transparent text-right text-base font-mono text-white focus:outline-none w-full flex-1" 
                                             />
                                         </div>
                                     </div>
