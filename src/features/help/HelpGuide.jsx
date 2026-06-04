@@ -325,9 +325,9 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                         <li>• <strong>Total Interest:</strong> Total interest paid over the life of the loan.</li>
                         <li>• <strong>Total Cost:</strong> Total principal plus interest paid.</li>
                         <li>• <strong>Periods (Paid / Left):</strong> Shows the number of payments made to date and the remaining periods left on the loan in a slash format (`Paid / Left`).</li>
-                        <li>• <strong>Interest Paid to Date:</strong> Total interest paid up to the selected tracking period/date (only shown if payments made > 0).</li>
-                        <li>• <strong>Principal Paid to Date:</strong> Total principal paid up to the selected tracking period/date (only shown if payments made > 0).</li>
-                        <li>• <strong>Interest to Pay Forward:</strong> The remaining interest yet to be paid over the rest of the loan term (only shown if payments made > 0).</li>
+                        <li>• <strong>Interest Paid to Date:</strong> Total interest paid up to the selected tracking period/date (only shown if payments made &gt; 0).</li>
+                        <li>• <strong>Principal Paid to Date:</strong> Total principal paid up to the selected tracking period/date (only shown if payments made &gt; 0).</li>
+                        <li>• <strong>Interest to Pay Forward:</strong> The remaining interest yet to be paid over the rest of the loan term (only shown if payments made &gt; 0).</li>
                         <li>• <strong>Outstanding Balance:</strong> The remaining principal amount yet to be paid at the selected future date.</li>
                     </ul>
                 </div>
