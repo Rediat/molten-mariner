@@ -2,7 +2,7 @@ import React, { useState, useRef, useCallback } from 'react';
 import { useInputFocus } from '../../hooks/useInputFocus';
 import { calculateLoan, getAmortizationSchedule, calculateEAR } from '../../utils/financial-utils';
 import { useHistory } from '../../context/HistoryContext';
-import { List, X, FileText, FileSpreadsheet, Info, HelpCircle, Trash2, Settings, History, DollarSign, Download } from 'lucide-react';
+import { List, X, FileText, FileSpreadsheet, Info, HelpCircle, Trash2, Settings, History, DollarSign, Download, Copy } from 'lucide-react';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
 import { CalculateIcon } from '../../components/Icons';
 import HistoryOverlay from '../../components/HistoryOverlay';
@@ -11,6 +11,8 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { createStandardPDF, addStandardFooter, STANDARD_TABLE_STYLES } from '../../utils/pdf-utils';
 import * as XLSX from 'xlsx';
+import { amountToWords } from '../../utils/text-utils';
+import { copyToClipboard } from '../../utils/clipboard';
 
 const FREQUENCIES = [
     { value: 1, label: 'Annually (1)' },
@@ -320,7 +322,7 @@ const LoanCalculator = ({ toggleHelp, toggleSettings }) => {
         XLSX.writeFile(workbook, fileName);
     };
 
-    const formatCurrency = (val) => val.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+    const formatCurrency = (val) => val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
     return (
         <div className="flex flex-col h-full relative">
@@ -472,47 +474,83 @@ const LoanCalculator = ({ toggleHelp, toggleSettings }) => {
                         </div>
 
                         {result ? (
-                            <div className="bg-neutral-900/50 rounded-2xl p-4 border border-emerald-500/30 mb-4 mt-4 space-y-3">
+                            <div className="mt-1.5 mb-5 bg-gradient-to-br from-emerald-900/30 to-neutral-800/50 border border-emerald-500/30 rounded-xl p-2.5 space-y-2">
                                 <div className="flex justify-between items-center mb-1">
-                                    <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Results</span>
-                                    <button
-                                        onClick={() => setShowHistory(true)}
-                                        className="text-[9px] text-primary-500 font-bold uppercase tracking-wider flex items-center gap-1 hover:text-primary-400 transition-colors"
-                                    >
-                                        <History size={12} /> View History
-                                    </button>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Results</span>
+                                        <div className="flex items-center gap-1.5 text-[8px] font-bold uppercase tracking-tight text-emerald-400">
+                                            <div className="w-1 h-1 rounded-full bg-emerald-500" />
+                                            Amortization Base
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-3">
+                                        <button onClick={() => setShowSchedule(true)} className="text-[9px] text-primary-500 font-bold uppercase tracking-wider flex items-center gap-1.5 hover:text-primary-400 transition-colors"><List size={11} /> View Schedule</button>
+                                        <button onClick={() => setShowHistory(true)} className="text-[9px] text-primary-500 font-bold uppercase tracking-wider flex items-center gap-1.5 hover:text-primary-400 transition-colors"><History size={11} /> View History</button>
+                                    </div>
                                 </div>
 
-                                <div className="flex justify-between items-end">
-                                    <div className="flex flex-col">
-                                        <span className="text-sm font-medium text-neutral-400">Periodic Payment</span>
-                                        <button onClick={() => setShowSchedule(true)} className="text-[10px] text-primary-500 font-bold uppercase tracking-tighter flex items-center gap-1 mt-1 hover:text-primary-400">
-                                            <List size={12} /> View Schedule
-                                        </button>
-                                    </div>
-                                    <div className="text-right">
-                                        <span className="block text-3xl font-bold text-primary-500">{formatCurrency(result.monthlyPayment)}</span>
-                                        {useDates && <span className="text-[10px] text-neutral-500 uppercase font-bold tracking-wider">Based on {result.calculatedPayments} periods</span>}
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-2 gap-2 text-xs">
-                                    <div className="flex flex-col gap-1"><span className="text-neutral-500">Total Interest</span><span className="text-white font-mono">{formatCurrency(result.totalInterest)}</span></div>
-                                    <div className="flex flex-col gap-1 text-right"><span className="text-neutral-500">Total Cost</span><span className="text-white font-mono">{formatCurrency(result.totalPayment)}</span></div>
-                                    {result.outstandingBalance > 0 && (
-                                        <div className="col-span-2 pt-2 border-t border-neutral-800 flex justify-between items-center mt-1">
-                                            <span className="text-neutral-400">Outstanding Balance</span>
-                                            <span className="text-white font-mono font-bold text-base">{formatCurrency(result.outstandingBalance)}</span>
+                                <div className="grid grid-cols-2 gap-2 mb-1">
+                                    <div className="bg-neutral-900/50 rounded-lg p-2 border border-neutral-700/50 relative group text-left">
+                                        <div className="flex justify-between items-start">
+                                            <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Total Interest</p>
+                                            <button onClick={(e) => copyToClipboard(amountToWords(result.totalInterest), e.currentTarget)} className="opacity-40 hover:opacity-100 transition-opacity p-0.5 hover:bg-white/10 rounded text-neutral-500 hover:text-white" title="Copy in Words"><Copy size={9} /></button>
                                         </div>
-                                    )}
+                                        <p className="text-base font-bold text-white font-mono mt-0.5">{formatCurrency(result.totalInterest)}</p>
+                                    </div>
+                                    <div className="bg-neutral-900/50 rounded-lg p-2 border border-neutral-700/50 relative group text-left">
+                                        <div className="flex justify-between items-start">
+                                            <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Total Cost</p>
+                                            <button onClick={(e) => copyToClipboard(amountToWords(result.totalPayment), e.currentTarget)} className="opacity-40 hover:opacity-100 transition-opacity p-0.5 hover:bg-white/10 rounded text-neutral-500 hover:text-white" title="Copy in Words"><Copy size={9} /></button>
+                                        </div>
+                                        <p className="text-base font-bold text-white font-mono mt-0.5">{formatCurrency(result.totalPayment)}</p>
+                                    </div>
                                 </div>
+
+                                <div className="bg-neutral-900/80 rounded-lg p-2.5 border border-emerald-500/30 relative group text-left">
+                                    <div className="flex justify-between items-center">
+                                        <div>
+                                            <div className="flex items-center gap-2">
+                                                <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Periodic Payment</p>
+                                                <button onClick={(e) => copyToClipboard(amountToWords(result.monthlyPayment), e.currentTarget)} className="opacity-40 hover:opacity-100 transition-opacity p-0.5 hover:bg-white/10 rounded text-neutral-500 hover:text-white" title="Copy in Words"><Copy size={9} /></button>
+                                            </div>
+                                            <p className="text-2xl font-black text-white mt-0.5 leading-none">{formatCurrency(result.monthlyPayment)}</p>
+                                        </div>
+                                        {useDates && (
+                                            <div className="text-right">
+                                                <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Calculated Periods</p>
+                                                <p className="text-xs font-bold text-primary-400">{result.calculatedPayments} Periods</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {result.outstandingBalance > 0 && (
+                                    <div className="grid grid-cols-2 gap-2 pt-2 border-t border-neutral-700 mt-1 text-left">
+                                        <div className="relative group">
+                                            <div className="flex justify-between items-start">
+                                                <p className="text-[9px] font-bold text-neutral-500 uppercase">Outstanding Balance</p>
+                                                <button onClick={(e) => copyToClipboard(amountToWords(result.outstandingBalance), e.currentTarget)} className="opacity-40 hover:opacity-100 transition-opacity p-0.5 hover:bg-white/10 rounded text-neutral-500 hover:text-white" title="Copy in Words"><Copy size={9} /></button>
+                                            </div>
+                                            <p className="text-sm font-bold text-rose-400 font-mono mt-0.5">{formatCurrency(result.outstandingBalance)}</p>
+                                        </div>
+                                        {useDates && (
+                                            <div className="text-right">
+                                                <p className="text-[9px] font-bold text-neutral-500 uppercase">Remaining Periods</p>
+                                                <p className="text-sm font-bold text-neutral-400">
+                                                    {((values.years || 0) * (values.frequency || 12)) - (result?.calculatedPayments ?? values.paymentsMade ?? 0)}
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         ) : (
-                            <div className="mt-2.5 h-[140px] shrink-0">
+                            <div className="mt-1.5 mb-5 h-[140px] shrink-0">
                                 <AwaitingCalculation Icon={DollarSign} />
                             </div>
                         )}
 
-                        <div className="flex gap-1.5">
+                        <div className="flex gap-1.5 mt-1.5">
                             <button
                                 onClick={() => setResult(null)}
                                 className="w-[12%] bg-neutral-800 border border-neutral-700 text-neutral-400 font-bold text-xs py-2.5 rounded-xl active:scale-[0.98] transition-all hover:bg-neutral-700 hover:text-white hover:border-neutral-600 flex items-center justify-center gap-1 uppercase tracking-wider"
