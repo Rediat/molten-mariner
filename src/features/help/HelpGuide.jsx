@@ -324,13 +324,16 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                         <li>• <strong>Periodic Payment:</strong> The periodic installment amount required.</li>
                         <li>• <strong>Total Interest:</strong> Total interest paid over the life of the loan.</li>
                         <li>• <strong>Total Cost:</strong> Total principal plus interest paid.</li>
-                        <li>• <strong>Outstanding Balance:</strong> The remaining principal amount at the selected future date.</li>
-                        <li>• <strong>Remaining Periods:</strong> Calculated as `(Years × Frequency) - Paid Periods` when tracking by dates.</li>
+                        <li>• <strong>Periods (Paid / Left):</strong> Shows the number of payments made to date and the remaining periods left on the loan in a slash format (`Paid / Left`).</li>
+                        <li>• <strong>Interest Paid to Date:</strong> Total interest paid up to the selected tracking period/date (only shown if payments made > 0).</li>
+                        <li>• <strong>Principal Paid to Date:</strong> Total principal paid up to the selected tracking period/date (only shown if payments made > 0).</li>
+                        <li>• <strong>Interest to Pay Forward:</strong> The remaining interest yet to be paid over the rest of the loan term (only shown if payments made > 0).</li>
+                        <li>• <strong>Outstanding Balance:</strong> The remaining principal amount yet to be paid at the selected future date.</li>
                     </ul>
                 </div>
 
                 <InfoBox type="tip">
-                    <strong>Premium Results & Copy in Words:</strong> The Results box features a premium emerald gradient theme. Next to **Total Interest**, **Total Cost**, **Periodic Payment**, and **Outstanding Balance**, you can click the copy icon to instantly convert that currency amount into formal English words and copy it to your clipboard.
+                    <strong>Premium Results & Copy in Words:</strong> The Results box features a premium emerald gradient theme. Next to **Total Interest**, **Total Cost**, **Periodic Payment**, **Interest Paid to Date**, **Principal Paid to Date**, **Interest to Pay Forward**, and **Outstanding Balance**, you can click the copy icon to instantly convert that currency amount into formal English words and copy it to your clipboard.
                 </InfoBox>
 
                 <InfoBox type="note">
