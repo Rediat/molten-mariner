@@ -368,7 +368,7 @@ const InflationCalculator = ({ toggleHelp, toggleSettings }) => {
 
                 {/* Results */}
                 {result && !result.error && (
-                    <div className="mt-3 bg-gradient-to-br from-primary-900/30 to-neutral-800/50 border border-primary-500/30 rounded-xl p-2 space-y-1">
+                    <div className="mt-3 bg-gradient-to-br from-primary-900/30 to-neutral-800/50 border border-emerald-500/30 rounded-xl p-2 space-y-1">
                         <div className="flex justify-between items-center">
                             <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">
                                 Results {result.isPredicted && <span className="text-amber-400">(ARIMA predicted)</span>}
@@ -382,7 +382,7 @@ const InflationCalculator = ({ toggleHelp, toggleSettings }) => {
                         </div>
 
                         {/* Adjusted Value - Compact */}
-                        <div className="bg-neutral-900/80 rounded-lg p-1.5 border border-primary-500/30 text-center">
+                        <div className="bg-neutral-900/80 rounded-lg p-1.5 border border-emerald-500/30 text-center">
                             <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider leading-tight">
                                 {formatCurrency(result.amount)} Birr on Jan 1, {result.startYear} equals
                             </p>

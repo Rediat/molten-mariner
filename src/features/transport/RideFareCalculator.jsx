@@ -1100,7 +1100,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                 {/* Results */}
                 {
                     results && (
-                        <div className="bg-gradient-to-br from-primary-900/30 to-neutral-800/50 border border-primary-500/30 rounded-xl p-2 space-y-1 mb-1.5">
+                        <div className="bg-gradient-to-br from-primary-900/30 to-neutral-800/50 border border-emerald-500/30 rounded-xl p-2 space-y-1 mb-1.5">
                             <div className="flex justify-between items-center">
                                 <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Results</span>
                                 <button
@@ -1167,7 +1167,7 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
 
 
                             {/* Main result row */}
-                            <div className="bg-neutral-900/80 rounded-lg p-2 border border-primary-500/30">
+                            <div className="bg-neutral-900/80 rounded-lg p-2 border border-emerald-500/30">
                                 <div className="flex justify-between items-end">
                                     <div>
                                         <p className="text-[8px] font-bold text-neutral-500 uppercase tracking-wider">Total to Charge</p>

@@ -234,7 +234,7 @@ const PensionCalculator = ({ toggleHelp, toggleSettings }) => {
 
             {/* Results */}
             {result ? (
-                <div className="mt-2 bg-gradient-to-br from-primary-900/30 to-neutral-800/50 border border-primary-500/30 rounded-xl p-3 space-y-2">
+                <div className="mt-2 bg-gradient-to-br from-primary-900/30 to-neutral-800/50 border border-emerald-500/30 rounded-xl p-3 space-y-2">
                     <div className="flex justify-between items-center mb-1">
                         <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Results</span>
                         <button
@@ -253,7 +253,7 @@ const PensionCalculator = ({ toggleHelp, toggleSettings }) => {
                     ) : (
                         <>
                             {/* Monthly Pension - Main Result */}
-                            <div className="bg-neutral-900/80 rounded-lg p-3 border border-primary-500/30">
+                            <div className="bg-neutral-900/80 rounded-lg p-3 border border-emerald-500/30">
                                 <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Monthly Pension</p>
                                 <p className="text-2xl font-black text-primary-400">
                                     {formatCurrency(result.monthlyPension)}

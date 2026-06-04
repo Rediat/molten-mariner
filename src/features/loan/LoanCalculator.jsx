@@ -472,7 +472,7 @@ const LoanCalculator = ({ toggleHelp, toggleSettings }) => {
                         </div>
 
                         {result ? (
-                            <div className="bg-neutral-900/50 rounded-2xl p-4 border border-primary-900/30 mb-4 mt-4 space-y-3">
+                            <div className="bg-neutral-900/50 rounded-2xl p-4 border border-emerald-500/30 mb-4 mt-4 space-y-3">
                                 <div className="flex justify-between items-center mb-1">
                                     <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Results</span>
                                     <button

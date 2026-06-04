@@ -750,7 +750,7 @@ const DrivingView = ({ onClose, fareData, onOpenLiveTracker, tripType = 'single'
                                 ) : (
                                     /* Render Fare Summary */
                                     <div className="space-y-3 pb-2">
-                                        <div className="bg-gradient-to-br from-primary-900/30 to-neutral-800/50 border border-primary-500/30 rounded-xl p-3 space-y-3 text-left">
+                                        <div className="bg-gradient-to-br from-primary-900/30 to-neutral-800/50 border border-emerald-500/30 rounded-xl p-3 space-y-3 text-left">
                                             <div className="flex justify-between items-center pb-1.5 border-b border-neutral-700/50">
                                                 <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Pricing Results</span>
                                                 <span className="text-[9px] text-primary-400 font-bold bg-primary-500/10 px-1.5 py-0.5 rounded border border-primary-500/20 uppercase">

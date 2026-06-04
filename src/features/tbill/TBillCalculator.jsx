@@ -509,7 +509,7 @@ const TBillCalculator = ({
             {result ? (() => {
                 const isReverse = result.mode === 'reverse';
                 return (
-                    <div className={`mt-1.5 mb-1.5 bg-gradient-to-br ${isReverse ? 'from-emerald-900/30' : 'from-primary-900/30'} to-neutral-800/50 border ${isReverse ? 'border-emerald-500/30' : 'border-primary-500/30'} rounded-xl p-2.5 space-y-2`}>
+                    <div className="mt-1.5 mb-1.5 bg-gradient-to-br from-emerald-900/30 to-neutral-800/50 border border-emerald-500/30 rounded-xl p-2.5 space-y-2">
                         <div className="flex justify-between items-center mb-1">
                             <div className="flex items-center gap-2">
                                 <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Results</span>
@@ -596,7 +596,7 @@ const TBillCalculator = ({
                                 <p className="text-lg font-bold text-amber-400">{formatCurrency(result.brokerage)}</p>
                             </div>
                         </div>
-                        <div className={`bg-neutral-900/80 rounded-lg p-2 border ${isReverse ? 'border-emerald-500/30' : 'border-primary-500/30'} relative group`}>
+                        <div className="bg-neutral-900/80 rounded-lg p-2 border border-emerald-500/30 relative group">
                             <div className="flex justify-between items-center">
                                 <div>
                                     <div className="flex items-center gap-2">

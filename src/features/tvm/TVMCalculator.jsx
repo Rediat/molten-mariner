@@ -496,7 +496,7 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
 
                 {/* Results Section */}
                 {calculatedValue !== null ? (
-                    <div className="mt-4 bg-gradient-to-br from-primary-900/30 to-neutral-800/50 border border-primary-500/30 rounded-xl p-4 space-y-3 shrink-0">
+                    <div className="mt-4 bg-gradient-to-br from-primary-900/30 to-neutral-800/50 border border-emerald-500/30 rounded-xl p-4 space-y-3 shrink-0">
                         <div className="flex justify-between items-center mb-2">
                             <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Results</span>
                             <button
