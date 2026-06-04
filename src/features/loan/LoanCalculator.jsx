@@ -176,6 +176,17 @@ const LoanCalculator = ({ toggleHelp, toggleSettings }) => {
     const schedule = result ? getAmortizationSchedule(values.amount, values.rate, values.years, values.frequency, values.startDate) : [];
     const usedPayments = result?.calculatedPayments ?? values.paymentsMade;
 
+    const interestPaidToDate = schedule
+        .filter(row => row.month <= usedPayments)
+        .reduce((sum, row) => sum + row.interest, 0);
+    const principalPaidToDate = schedule
+        .filter(row => row.month <= usedPayments)
+        .reduce((sum, row) => sum + row.principal, 0);
+
+    const interestToPayForward = Math.max(0, (result?.totalInterest ?? 0) - interestPaidToDate);
+    const principalToPayForward = Math.max(0, (values.amount ?? 0) - principalPaidToDate);
+
+
     // Detect if running on Windows desktop (to skip Web Share API which freezes in Edge)
     const isWindowsDesktop = () => {
         const ua = navigator.userAgent;
@@ -366,38 +377,72 @@ const LoanCalculator = ({ toggleHelp, toggleSettings }) => {
                 </div>
             )}
 
-            <div className="relative flex-1 min-h-0">
+            <div className={`relative flex-1 min-h-0 ${!showExplanation ? 'mt-3' : ''}`}>
                 {!showSchedule ? (
                     <div className="flex flex-col h-full">
                         <div className="space-y-2 flex-1 overflow-y-auto pr-1 scrollbar-hide">
-                            {INPUT_FIELDS.map(field => (
-                                <div key={field.id} className="bg-neutral-800/50 rounded-xl p-3 border border-transparent hover:border-neutral-700 transition-all">
-                                    <div className="flex justify-between items-center gap-4">
-                                        <div className="flex flex-col shrink-0 items-start text-left">
-                                            <label 
-                                                onClick={focusHandlers[field.id]}
-                                                className="text-base font-bold text-neutral-300 cursor-pointer hover:text-primary-400 transition-colors"
-                                                title="Click to Clear"
-                                            >
-                                                {field.label}
-                                            </label>
-                                            <span className="text-[10px] uppercase tracking-wider text-neutral-500 font-semibold">{field.sub}</span>
+                            {/* Loan Amount */}
+                            {(() => {
+                                const field = INPUT_FIELDS.find(f => f.id === 'amount');
+                                return (
+                                    <div className="bg-neutral-800/50 rounded-xl p-2.5 border border-transparent hover:border-neutral-700 transition-all">
+                                        <div className="flex justify-between items-center gap-4">
+                                            <div className="flex flex-col shrink-0 items-start text-left">
+                                                <label 
+                                                    onClick={focusHandlers[field.id]}
+                                                    className="text-sm font-bold text-neutral-300 cursor-pointer hover:text-primary-400 transition-colors"
+                                                    title="Click to Clear"
+                                                >
+                                                    {field.label}
+                                                </label>
+                                                <span className="text-[9px] uppercase tracking-wider text-neutral-500 font-semibold">{field.sub}</span>
+                                            </div>
+                                            <FormattedNumberInput 
+                                                ref={inputRefs[field.id]}
+                                                value={values[field.id]} 
+                                                onChange={(e) => handleChange(field.id, e.target.value)} 
+                                                decimals={field.decimals} 
+                                                className="bg-transparent text-right text-lg font-mono text-white focus:outline-none w-full flex-1" 
+                                            />
                                         </div>
-                                        <FormattedNumberInput 
-                                            ref={inputRefs[field.id]}
-                                            value={values[field.id]} 
-                                            onChange={(e) => handleChange(field.id, e.target.value)} 
-                                            decimals={field.decimals} 
-                                            className="bg-transparent text-right text-xl font-mono text-white focus:outline-none w-full flex-1" 
-                                        />
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })()}
+
+                            {/* Interest Rate & Loan Term Side-by-Side */}
+                            <div className="grid grid-cols-2 gap-2">
+                                {['rate', 'years'].map(id => {
+                                    const field = INPUT_FIELDS.find(f => f.id === id);
+                                    return (
+                                        <div key={field.id} className="bg-neutral-800/50 rounded-xl p-2.5 border border-transparent hover:border-neutral-700 transition-all">
+                                            <div className="flex justify-between items-center gap-2">
+                                                <div className="flex flex-col shrink-0 items-start text-left">
+                                                    <label 
+                                                        onClick={focusHandlers[field.id]}
+                                                        className="text-sm font-bold text-neutral-300 cursor-pointer hover:text-primary-400 transition-colors"
+                                                        title="Click to Clear"
+                                                    >
+                                                        {field.label}
+                                                    </label>
+                                                    <span className="text-[9px] uppercase tracking-wider text-neutral-500 font-semibold">{field.sub}</span>
+                                                </div>
+                                                <FormattedNumberInput 
+                                                    ref={inputRefs[field.id]}
+                                                    value={values[field.id]} 
+                                                    onChange={(e) => handleChange(field.id, e.target.value)} 
+                                                    decimals={field.decimals} 
+                                                    className="bg-transparent text-right text-base font-mono text-white focus:outline-none w-full flex-1 min-w-0" 
+                                                />
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
 
                             {/* Tracking Method Segmented Control */}
                             <div className="flex items-center justify-between mt-3 mb-2 px-1">
                                 <span className="text-[10px] uppercase tracking-wider text-neutral-500 font-extrabold">Track Payments By</span>
-                                <div className="flex bg-neutral-900 border border-neutral-800 p-0.5 rounded-lg">
+                                <div className="flex bg-neutral-900 border border-neutral-800 p-0.5 rounded-lg mt-4 mb-3">
                                     <button 
                                         type="button"
                                         onClick={() => setUseDates(true)}
@@ -449,24 +494,24 @@ const LoanCalculator = ({ toggleHelp, toggleSettings }) => {
                                     ))}
                                 </div>
                             ) : (
-                                <div className="bg-neutral-800/50 rounded-xl p-3 border border-transparent hover:border-neutral-700 transition-all">
+                                <div className="bg-neutral-800/50 rounded-xl p-2.5 border border-transparent hover:border-neutral-700 transition-all">
                                     <div className="flex justify-between items-center gap-4">
                                         <div className="flex flex-col shrink-0 items-start text-left">
                                             <label 
                                                 onClick={focusPaymentsMade}
-                                                className="text-base font-bold text-neutral-300 cursor-pointer hover:text-primary-400 transition-colors"
+                                                className="text-sm font-bold text-neutral-300 cursor-pointer hover:text-primary-400 transition-colors"
                                                 title="Click to Clear"
                                             >
                                                 Payments Made
                                             </label>
-                                            <span className="text-[10px] uppercase tracking-wider text-neutral-500 font-semibold">Count</span>
+                                            <span className="text-[9px] uppercase tracking-wider text-neutral-500 font-semibold">Count</span>
                                         </div>
                                         <FormattedNumberInput 
                                             ref={paymentsMadeRef}
                                             value={values.paymentsMade} 
                                             onChange={(e) => handleChange('paymentsMade', e.target.value)} 
                                             decimals={0} 
-                                            className="bg-transparent text-right text-xl font-mono text-white focus:outline-none w-full flex-1" 
+                                            className="bg-transparent text-right text-lg font-mono text-white focus:outline-none w-full flex-1" 
                                         />
                                     </div>
                                 </div>
@@ -517,31 +562,62 @@ const LoanCalculator = ({ toggleHelp, toggleSettings }) => {
                                         </div>
                                         {useDates && (
                                             <div className="text-right">
-                                                <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Calculated Periods</p>
-                                                <p className="text-xs font-bold text-primary-400">{result.calculatedPayments} Periods</p>
+                                                <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Periods (Paid / Left)</p>
+                                                <p className="text-xs font-bold text-primary-400">
+                                                    {result.calculatedPayments} / {((values.years || 0) * (values.frequency || 12)) - result.calculatedPayments}
+                                                </p>
                                             </div>
                                         )}
                                     </div>
                                 </div>
 
-                                {result.outstandingBalance > 0 && (
-                                    <div className="grid grid-cols-2 gap-2 pt-2 border-t border-neutral-700 mt-1 text-left">
-                                        <div className="relative group">
-                                            <div className="flex justify-between items-start">
-                                                <p className="text-[9px] font-bold text-neutral-500 uppercase">Outstanding Balance</p>
-                                                <button onClick={(e) => copyToClipboard(amountToWords(result.outstandingBalance), e.currentTarget)} className="opacity-40 hover:opacity-100 transition-opacity p-0.5 hover:bg-white/10 rounded text-neutral-500 hover:text-white" title="Copy in Words"><Copy size={9} /></button>
+                                {usedPayments > 0 ? (
+                                    <>
+                                        <div className="grid grid-cols-2 gap-2 pt-2 border-t border-neutral-700 mt-1 text-left">
+                                            <div className="relative group">
+                                                <div className="flex justify-between items-start">
+                                                    <p className="text-[9px] font-bold text-neutral-500 uppercase">Interest Paid to Date</p>
+                                                    <button onClick={(e) => copyToClipboard(amountToWords(interestPaidToDate), e.currentTarget)} className="opacity-40 hover:opacity-100 transition-opacity p-0.5 hover:bg-white/10 rounded text-neutral-500 hover:text-white" title="Copy in Words"><Copy size={9} /></button>
+                                                </div>
+                                                <p className="text-sm font-bold text-cyan-400 font-mono mt-0.5">{formatCurrency(interestPaidToDate)}</p>
                                             </div>
-                                            <p className="text-sm font-bold text-rose-400 font-mono mt-0.5">{formatCurrency(result.outstandingBalance)}</p>
+                                            <div className="relative group text-right">
+                                                <div className="flex justify-between items-start justify-end gap-1">
+                                                    <p className="text-[9px] font-bold text-neutral-500 uppercase">Principal Paid to Date</p>
+                                                    <button onClick={(e) => copyToClipboard(amountToWords(principalPaidToDate), e.currentTarget)} className="opacity-40 hover:opacity-100 transition-opacity p-0.5 hover:bg-white/10 rounded text-neutral-500 hover:text-white" title="Copy in Words"><Copy size={9} /></button>
+                                                </div>
+                                                <p className="text-sm font-bold text-emerald-400 font-mono mt-0.5">{formatCurrency(principalPaidToDate)}</p>
+                                            </div>
                                         </div>
-                                        {useDates && (
-                                            <div className="text-right">
-                                                <p className="text-[9px] font-bold text-neutral-500 uppercase">Remaining Periods</p>
-                                                <p className="text-sm font-bold text-neutral-400">
-                                                    {((values.years || 0) * (values.frequency || 12)) - (result?.calculatedPayments ?? values.paymentsMade ?? 0)}
-                                                </p>
+                                        <div className="grid grid-cols-2 gap-2 pt-2 border-t border-neutral-700/50 mt-1 text-left">
+                                            <div className="relative group">
+                                                <div className="flex justify-between items-start">
+                                                    <p className="text-[9px] font-bold text-neutral-500 uppercase">Interest to Pay Forward</p>
+                                                    <button onClick={(e) => copyToClipboard(amountToWords(interestToPayForward), e.currentTarget)} className="opacity-40 hover:opacity-100 transition-opacity p-0.5 hover:bg-white/10 rounded text-neutral-500 hover:text-white" title="Copy in Words"><Copy size={9} /></button>
+                                                </div>
+                                                <p className="text-sm font-bold text-amber-500 font-mono mt-0.5">{formatCurrency(interestToPayForward)}</p>
                                             </div>
-                                        )}
-                                    </div>
+                                            <div className="relative group text-right">
+                                                <div className="flex justify-between items-start justify-end gap-1">
+                                                    <p className="text-[9px] font-bold text-neutral-500 uppercase">Outstanding Balance</p>
+                                                    <button onClick={(e) => copyToClipboard(amountToWords(result.outstandingBalance), e.currentTarget)} className="opacity-40 hover:opacity-100 transition-opacity p-0.5 hover:bg-white/10 rounded text-neutral-500 hover:text-white" title="Copy in Words"><Copy size={9} /></button>
+                                                </div>
+                                                <p className="text-sm font-bold text-rose-400 font-mono mt-0.5">{formatCurrency(result.outstandingBalance)}</p>
+                                            </div>
+                                        </div>
+                                    </>
+                                ) : (
+                                    result.outstandingBalance > 0 && (
+                                        <div className="grid grid-cols-1 gap-2 pt-2 border-t border-neutral-700 mt-1 text-left">
+                                            <div className="relative group">
+                                                <div className="flex justify-between items-start">
+                                                    <p className="text-[9px] font-bold text-neutral-500 uppercase">Outstanding Balance</p>
+                                                    <button onClick={(e) => copyToClipboard(amountToWords(result.outstandingBalance), e.currentTarget)} className="opacity-40 hover:opacity-100 transition-opacity p-0.5 hover:bg-white/10 rounded text-neutral-500 hover:text-white" title="Copy in Words"><Copy size={9} /></button>
+                                                </div>
+                                                <p className="text-sm font-bold text-rose-400 font-mono mt-0.5">{formatCurrency(result.outstandingBalance)}</p>
+                                            </div>
+                                        </div>
+                                    )
                                 )}
                             </div>
                         ) : (
