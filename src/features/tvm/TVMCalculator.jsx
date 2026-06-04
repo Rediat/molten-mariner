@@ -459,6 +459,19 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
                 </div>
             </div>
 
+            {/* Target Selector */}
+            <div className="flex gap-1 bg-neutral-900/50 p-1 rounded-xl mb-4 overflow-x-auto scrollbar-hide shrink-0">
+                {fields.filter(f => !f.isReadOnly && f.id !== 'totalInterest' && f.id !== 'deductionPercent').map(field => (
+                    <button
+                        key={field.id}
+                        onClick={() => setTarget(field.id)}
+                        className={`flex-1 py-2.5 px-2 rounded-lg text-xs font-black transition-all whitespace-nowrap ${target === field.id ? 'bg-primary-600/20 text-primary-400 ring-1 ring-primary-500/50' : 'bg-transparent text-neutral-500 hover:bg-neutral-800'}`}
+                    >
+                        {field.label}
+                    </button>
+                ))}
+            </div>
+
             <div className="flex-1 overflow-y-auto pr-2 -mr-2 space-y-4 scrollbar-hide">
                 {/* Explanation Panel */}
                 {showExplanation && (
@@ -471,19 +484,6 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
                         </p>
                     </div>
                 )}
-
-                {/* Target Selector */}
-                <div className="flex gap-1 bg-neutral-900/50 p-1 rounded-xl mb-4 overflow-x-auto scrollbar-hide">
-                    {fields.filter(f => !f.isReadOnly && f.id !== 'totalInterest' && f.id !== 'deductionPercent').map(field => (
-                        <button
-                            key={field.id}
-                            onClick={() => setTarget(field.id)}
-                            className={`flex-1 py-2.5 px-2 rounded-lg text-xs font-black transition-all whitespace-nowrap ${target === field.id ? 'bg-primary-600/20 text-primary-400 ring-1 ring-primary-500/50' : 'bg-transparent text-neutral-500 hover:bg-neutral-800'}`}
-                        >
-                            {field.label}
-                        </button>
-                    ))}
-                </div>
 
                 {/* Inputs */}
                 <div className="space-y-2 flex flex-col">
