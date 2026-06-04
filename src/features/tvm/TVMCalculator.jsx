@@ -495,98 +495,96 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
                 </div>
 
                 {/* Results Section */}
-                <div className="mt-4 bg-gradient-to-br from-primary-900/30 to-neutral-800/50 border border-primary-500/30 rounded-2xl p-3.5 space-y-2">
-                    <div className="flex justify-between items-center mb-1">
-                        <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Results</span>
-                        <button
-                            onClick={() => setShowHistory(true)}
-                            className="text-[9px] text-primary-500 font-bold uppercase tracking-wider flex items-center gap-1 hover:text-primary-400 transition-colors"
-                        >
-                            <History size={12} /> View History
-                        </button>
-                    </div>
-
-                    {calculatedValue !== null ? (
-                        <>
-                            {/* Calculated Target Card */}
-                            <div className="bg-neutral-900/50 rounded-lg p-2.5 border border-neutral-700/50 flex justify-between items-center relative group">
-                                <div className="flex flex-col text-left">
-                                    <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider mb-0.5">Calculated Target</p>
-                                    <span className="text-xs font-bold text-primary-400">
-                                        {target === 'n' ? (nMode === 'YEARS' ? 'Term (Years)' : 'Term (Periods)') :
-                                            target === 'i' ? 'Annual Interest Rate' :
-                                                target === 'pv' ? 'Present Value (PV)' :
-                                                    target === 'pmt' ? 'Periodic Payment (PMT)' :
-                                                        target === 'fv' ? 'Future Value (FV)' :
-                                                            'Total Interest'}
-                                    </span>
-                                </div>
-                                <div className="text-right">
-                                    <span className="block text-lg font-black text-white font-mono">
-                                        {calculatedValue === 'INVALID_SIGN' ? 'Sign Error' :
-                                            calculatedValue === 'Error' ? 'Error' :
-                                                (typeof calculatedValue === 'number' && isNaN(calculatedValue)) ? 'Error' :
-                                                    target === 'n' ? (nMode === 'YEARS' ? `${(calculatedValue / frequency).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 2 })} Years` : `${Math.round(calculatedValue).toLocaleString('en-US')} Periods`) :
-                                                        target === 'i' ? `${calculatedValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 3 })}%` :
-                                                            calculatedValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                    </span>
-                                </div>
-                            </div>
-
-                            {/* Additional standard metrics */}
-                            <div className="grid grid-cols-2 gap-2">
-                                <div className="bg-neutral-900/50 rounded-lg p-2 border border-neutral-700/50 text-left">
-                                    <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider mb-1">Total Interest (TI)</p>
-                                    <p className="text-base font-bold text-white font-mono">
-                                        {totalInterest.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                    </p>
-                                </div>
-                                <div className="bg-neutral-900/50 rounded-lg p-2 border border-neutral-700/50 text-right">
-                                    <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider mb-1">Total Payments (ΣPmt)</p>
-                                    <p className="text-base font-bold text-white font-mono">
-                                        {totalPMT.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                    </p>
-                                </div>
-                            </div>
-
-                            {/* Tax Withholding & Net Returns */}
-                            {taxRate > 0 && (
-                                <div className="mt-2 pt-2 border-t border-neutral-800/80 space-y-2 animate-in fade-in slide-in-from-top-1 duration-200">
-                                    <div className="flex justify-between items-center px-1">
-                                        <span className="text-[9px] font-black text-indigo-400 uppercase tracking-wider">Deduction & Net Return</span>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-2">
-                                        <div className="bg-neutral-900/50 rounded-lg p-2 border border-neutral-700/50 text-left">
-                                            <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider mb-1">Tax Paid ({taxRate}%)</p>
-                                            <p className="text-base font-bold text-red-400 font-mono">
-                                                {taxAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                            </p>
-                                        </div>
-                                        <div className="bg-neutral-900/50 rounded-lg p-2 border border-neutral-700/50 text-right">
-                                            <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider mb-1">Net Interest</p>
-                                            <p className="text-base font-bold text-emerald-400 font-mono">
-                                                {netInterest.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <div className="bg-neutral-900/80 rounded-lg p-2.5 border border-indigo-500/30 text-left flex justify-between items-center relative group">
-                                        <div className="flex flex-col">
-                                            <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider mb-0.5">Actual Net Future Value</span>
-                                            <span className="text-[8px] font-medium text-neutral-500 uppercase tracking-wider">Compounded at Net Rate</span>
-                                        </div>
-                                        <span className="text-lg font-black text-white font-mono">
-                                            {netFV.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                        </span>
-                                    </div>
-                                </div>
-                            )}
-                        </>
-                    ) : (
-                        <div className="h-[90px] shrink-0 flex items-center justify-center">
-                            <AwaitingCalculation Icon={Calculator} />
+                {calculatedValue !== null ? (
+                    <div className="mt-4 bg-gradient-to-br from-primary-900/30 to-neutral-800/50 border border-primary-500/30 rounded-xl p-4 space-y-3 shrink-0">
+                        <div className="flex justify-between items-center mb-2">
+                            <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Results</span>
+                            <button
+                                onClick={() => setShowHistory(true)}
+                                className="text-[9px] text-primary-500 font-bold uppercase tracking-wider flex items-center gap-1 hover:text-primary-400 transition-colors"
+                            >
+                                <History size={12} /> View History
+                            </button>
                         </div>
-                    )}
-                </div>
+
+                        {/* Calculated Target Card */}
+                        <div className="bg-neutral-900/50 rounded-lg p-2.5 border border-neutral-700/50 flex justify-between items-center relative group">
+                            <div className="flex flex-col text-left">
+                                <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider mb-0.5">Calculated Target</p>
+                                <span className="text-xs font-bold text-primary-400">
+                                    {target === 'n' ? (nMode === 'YEARS' ? 'Term (Years)' : 'Term (Periods)') :
+                                        target === 'i' ? 'Annual Interest Rate' :
+                                            target === 'pv' ? 'Present Value (PV)' :
+                                                target === 'pmt' ? 'Periodic Payment (PMT)' :
+                                                    target === 'fv' ? 'Future Value (FV)' :
+                                                        'Total Interest'}
+                                </span>
+                            </div>
+                            <div className="text-right">
+                                <span className="block text-lg font-black text-white font-mono">
+                                    {calculatedValue === 'INVALID_SIGN' ? 'Sign Error' :
+                                        calculatedValue === 'Error' ? 'Error' :
+                                            (typeof calculatedValue === 'number' && isNaN(calculatedValue)) ? 'Error' :
+                                                target === 'n' ? (nMode === 'YEARS' ? `${(calculatedValue / frequency).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 2 })} Years` : `${Math.round(calculatedValue).toLocaleString('en-US')} Periods`) :
+                                                    target === 'i' ? `${calculatedValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 3 })}%` :
+                                                        calculatedValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* Additional standard metrics */}
+                        <div className="grid grid-cols-2 gap-2">
+                            <div className="bg-neutral-900/50 rounded-lg p-2 border border-neutral-700/50 text-left">
+                                <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider mb-1">Total Interest (TI)</p>
+                                <p className="text-base font-bold text-white font-mono">
+                                    {totalInterest.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </p>
+                            </div>
+                            <div className="bg-neutral-900/50 rounded-lg p-2 border border-neutral-700/50 text-right">
+                                <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider mb-1">Total Payments (ΣPmt)</p>
+                                <p className="text-base font-bold text-white font-mono">
+                                    {totalPMT.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Tax Withholding & Net Returns */}
+                        {taxRate > 0 && (
+                            <div className="mt-2 pt-2 border-t border-neutral-800/80 space-y-2 animate-in fade-in slide-in-from-top-1 duration-200">
+                                <div className="flex justify-between items-center px-1">
+                                    <span className="text-[9px] font-black text-indigo-400 uppercase tracking-wider">Deduction & Net Return</span>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <div className="bg-neutral-900/50 rounded-lg p-2 border border-neutral-700/50 text-left">
+                                        <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider mb-1">Tax Paid ({taxRate}%)</p>
+                                        <p className="text-base font-bold text-red-400 font-mono">
+                                            {taxAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                        </p>
+                                    </div>
+                                    <div className="bg-neutral-900/50 rounded-lg p-2 border border-neutral-700/50 text-right">
+                                        <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider mb-1">Net Interest</p>
+                                        <p className="text-base font-bold text-emerald-400 font-mono">
+                                            {netInterest.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="bg-neutral-900/80 rounded-lg p-2.5 border border-indigo-500/30 text-left flex justify-between items-center relative group">
+                                    <div className="flex flex-col">
+                                        <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider mb-0.5">Actual Net Future Value</span>
+                                        <span className="text-[8px] font-medium text-neutral-500 uppercase tracking-wider">Compounded at Net Rate</span>
+                                    </div>
+                                    <span className="text-lg font-black text-white font-mono">
+                                        {netFV.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    </span>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                ) : (
+                    <div className="mt-4 shrink-0 h-[140px]">
+                        <AwaitingCalculation Icon={Calculator} />
+                    </div>
+                )}
 
             </div>
 
