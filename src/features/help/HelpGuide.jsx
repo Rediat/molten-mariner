@@ -321,12 +321,21 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                 <div className="pt-2">
                     <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Results:</p>
                     <ul className="space-y-1 text-xs">
-                        <li>• Periodic Payment amount</li>
-                        <li>• Total Interest over loan life</li>
-                        <li>• Total Cost (principal + interest)</li>
-                        <li>• Outstanding Balance at specified date</li>
+                        <li>• <strong>Periodic Payment:</strong> The periodic installment amount required.</li>
+                        <li>• <strong>Total Interest:</strong> Total interest paid over the life of the loan.</li>
+                        <li>• <strong>Total Cost:</strong> Total principal plus interest paid.</li>
+                        <li>• <strong>Outstanding Balance:</strong> The remaining principal amount at the selected future date.</li>
+                        <li>• <strong>Remaining Periods:</strong> Calculated as `(Years × Frequency) - Paid Periods` when tracking by dates.</li>
                     </ul>
                 </div>
+
+                <InfoBox type="tip">
+                    <strong>Premium Results & Copy in Words:</strong> The Results box features a premium emerald gradient theme. Next to **Total Interest**, **Total Cost**, **Periodic Payment**, and **Outstanding Balance**, you can click the copy icon to instantly convert that currency amount into formal English words and copy it to your clipboard.
+                </InfoBox>
+
+                <InfoBox type="note">
+                    <strong>Currency Format:</strong> The Results box formats numbers with clean commas and decimal separators but excludes the dollar ($) sign for general locale flexibility.
+                </InfoBox>
 
                 <InfoBox type="tip">
                     <strong>Amortization Schedule:</strong> Click "View Schedule" to see a complete breakdown
@@ -824,9 +833,12 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                             <div>
                                 <span className="font-bold text-white uppercase tracking-tight">Leverage Mode:</span>
                                 <p className="text-neutral-400 mt-1">
-                                    Analyzes the profitability of borrowing money to invest in T-Bills. Calculates compound interest on a loan over a given term and compares it against a <strong>realistic bi-weekly rolling reinvestment strategy</strong>.
-                                    It simulates purchases on scheduled auction dates (Wednesdays every 14 days) and reinvests strictly into the next available auction after maturity.
+                                    Analyzes the profitability of borrowing money to invest in higher-yielding fixed-income assets. Under this mode, you can select two targets:
                                 </p>
+                                <ul className="list-disc pl-5 mt-1 space-y-1 text-neutral-400 text-[11px]">
+                                    <li><strong>T-Bill:</strong> Compares loan cost against a realistic bi-weekly rolling T-Bill reinvestment strategy following the bi-weekly NBE schedule.</li>
+                                    <li><strong>Deposits:</strong> Compares loan cost against fixed retail bank deposits (182-day or 365-day terms). The 1-year deposit term uses a standard <strong>365-day year</strong> calculation rather than 364 days to match standard banking practices.</li>
+                                </ul>
                             </div>
                         </li>
                     </ul>
