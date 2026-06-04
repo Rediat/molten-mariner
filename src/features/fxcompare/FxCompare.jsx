@@ -255,7 +255,7 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
         const getPeriodLabel = (days) => {
             if (days === 91) return "3 Months";
             if (days === 182) return "6 Months";
-            if (days === 364) return "1 Year";
+            if (days === 364 || days === 365) return "1 Year";
             return `${days} Days`;
         };
         const termText = leverageAsset === 'tbill' ? `Tenure: ${selectedTenure}d` : `Term: ${getPeriodLabel(selectedTenure)}`;
@@ -697,6 +697,8 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                                                 setCustomTbillRate(22.5);
                                                 if (selectedTenure === 28) {
                                                     setSelectedTenure(182); // Default to 6M
+                                                } else if (selectedTenure === 364) {
+                                                    setSelectedTenure(365);
                                                 }
                                                 handleClear();
                                             }
@@ -710,6 +712,9 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                                             if (leverageAsset !== 'tbill') {
                                                 setLeverageAsset('tbill');
                                                 setCustomTbillRate(14.0);
+                                                if (selectedTenure === 365) {
+                                                    setSelectedTenure(364);
+                                                }
                                                 handleClear();
                                             }
                                         }}
@@ -725,7 +730,7 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                                 [
                                     { days: 91, label: '3M' },
                                     { days: 182, label: '6M' },
-                                    { days: 364, label: '1Y' }
+                                    { days: 365, label: '1Y' }
                                 ].map(t => (
                                     <button
                                         key={t.days}
