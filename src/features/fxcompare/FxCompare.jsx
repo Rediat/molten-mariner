@@ -101,7 +101,7 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
     const [resultData, setResultData] = useState(null);
     const [showExplanation, setShowExplanation] = useState(false);
     const [mode, setMode] = useState('leverage'); // 'leverage' or 'rolling' or 'single'
-    const [selectedTenure, setSelectedTenure] = useState(364);
+    const [selectedTenure, setSelectedTenure] = useState(365);
     const [rollingResult, setRollingResult] = useState(null);
     const [leverageResult, setLeverageResult] = useState(null);
     const [loanRate, setLoanRate] = useState(12.5);
@@ -406,19 +406,39 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                 <div className="flex items-center gap-1">
                     <div className="flex bg-neutral-900/70 rounded-md p-0.5 ring-1 ring-neutral-800">
                         <button
-                            onClick={() => { setMode('leverage'); handleClear(); }}
+                            onClick={() => {
+                                setMode('leverage');
+                                if (leverageAsset === 'deposit') {
+                                    setSelectedTenure(365);
+                                } else {
+                                    setSelectedTenure(364);
+                                }
+                                handleClear();
+                            }}
                             className={`px-2 py-1 text-[8px] font-bold uppercase tracking-wider rounded transition-all ${mode === 'leverage' ? 'bg-emerald-600/25 text-emerald-400 ring-1 ring-emerald-500/40' : 'text-neutral-500 hover:text-neutral-300'}`}
                         >
                             Leverage
                         </button>
                         <button
-                            onClick={() => { setMode('rolling'); handleClear(); }}
+                            onClick={() => {
+                                setMode('rolling');
+                                if (selectedTenure === 365) {
+                                    setSelectedTenure(364);
+                                }
+                                handleClear();
+                            }}
                             className={`px-2 py-1 text-[8px] font-bold uppercase tracking-wider rounded transition-all ${mode === 'rolling' ? 'bg-emerald-600/25 text-emerald-400 ring-1 ring-emerald-500/40' : 'text-neutral-500 hover:text-neutral-300'}`}
                         >
                             Rolling
                         </button>
                         <button
-                            onClick={() => { setMode('single'); handleClear(); }}
+                            onClick={() => {
+                                setMode('single');
+                                if (selectedTenure === 365) {
+                                    setSelectedTenure(364);
+                                }
+                                handleClear();
+                            }}
                             className={`px-2 py-1 text-[8px] font-bold uppercase tracking-wider rounded transition-all ${mode === 'single' ? 'bg-emerald-600/25 text-emerald-400 ring-1 ring-emerald-500/40' : 'text-neutral-500 hover:text-neutral-300'}`}
                         >
                             Single
