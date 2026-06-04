@@ -404,52 +404,62 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                     </div>
                 </div>
                 <div className="flex items-center gap-1">
-                    <div className="flex bg-neutral-900/70 rounded-md p-0.5 ring-1 ring-neutral-800">
-                        <button
-                            onClick={() => {
-                                setMode('leverage');
-                                if (leverageAsset === 'deposit') {
-                                    setSelectedTenure(365);
-                                } else {
-                                    setSelectedTenure(364);
-                                }
-                                handleClear();
-                            }}
-                            className={`px-2 py-1 text-[8px] font-bold uppercase tracking-wider rounded transition-all ${mode === 'leverage' ? 'bg-emerald-600/25 text-emerald-400 ring-1 ring-emerald-500/40' : 'text-neutral-500 hover:text-neutral-300'}`}
-                        >
-                            Leverage
-                        </button>
-                        <button
-                            onClick={() => {
-                                setMode('rolling');
-                                if (selectedTenure === 365) {
-                                    setSelectedTenure(364);
-                                }
-                                handleClear();
-                            }}
-                            className={`px-2 py-1 text-[8px] font-bold uppercase tracking-wider rounded transition-all ${mode === 'rolling' ? 'bg-emerald-600/25 text-emerald-400 ring-1 ring-emerald-500/40' : 'text-neutral-500 hover:text-neutral-300'}`}
-                        >
-                            Rolling
-                        </button>
-                        <button
-                            onClick={() => {
-                                setMode('single');
-                                if (selectedTenure === 365) {
-                                    setSelectedTenure(364);
-                                }
-                                handleClear();
-                            }}
-                            className={`px-2 py-1 text-[8px] font-bold uppercase tracking-wider rounded transition-all ${mode === 'single' ? 'bg-emerald-600/25 text-emerald-400 ring-1 ring-emerald-500/40' : 'text-neutral-500 hover:text-neutral-300'}`}
-                        >
-                            Single
-                        </button>
-                    </div>
                     <button
                         onClick={() => setShowExplanation(!showExplanation)}
                         className={`flex items-center justify-center p-1 rounded-full transition-all ${showExplanation ? 'bg-emerald-600/20 text-emerald-400 ring-1 ring-emerald-500/50' : 'bg-neutral-800 text-neutral-500 hover:bg-neutral-700'}`}
                         title="Show Info"
                     >
                         <Info className="w-3 h-3" />
+                    </button>
+                </div>
+            </div>
+
+            {/* Mode Selector */}
+            <div className="flex justify-center mb-2.5">
+                <div className="flex w-full bg-neutral-900/70 rounded-md p-0.5 ring-1 ring-neutral-800">
+                    <button
+                        onClick={() => {
+                            setMode('leverage');
+                            if (leverageAsset === 'deposit') {
+                                setSelectedTenure(365);
+                            } else {
+                                setSelectedTenure(364);
+                            }
+                            handleClear();
+                        }}
+                        className={`flex-1 py-1 text-[9px] font-bold uppercase tracking-wider rounded transition-all ${mode === 'leverage' ? 'bg-emerald-600/25 text-emerald-400 ring-1 ring-emerald-500/40' : 'text-neutral-500 hover:text-neutral-300'}`}
+                    >
+                        Leverage
+                    </button>
+                    <button
+                        onClick={() => {
+                            setMode('rolling');
+                            if (selectedTenure === 365) {
+                                setSelectedTenure(364);
+                            }
+                            handleClear();
+                        }}
+                        className={`flex-1 py-1 text-[9px] font-bold uppercase tracking-wider rounded transition-all ${mode === 'rolling' ? 'bg-emerald-600/25 text-emerald-400 ring-1 ring-emerald-500/40' : 'text-neutral-500 hover:text-neutral-300'}`}
+                    >
+                        Rolling
+                    </button>
+                    <button
+                        onClick={() => {
+                            setMode('single');
+                            if (selectedTenure === 365) {
+                                setSelectedTenure(364);
+                            }
+                            handleClear();
+                        }}
+                        className={`flex-1 py-1 text-[9px] font-bold uppercase tracking-wider rounded transition-all ${mode === 'single' ? 'bg-emerald-600/25 text-emerald-400 ring-1 ring-emerald-500/40' : 'text-neutral-500 hover:text-neutral-300'}`}
+                    >
+                        Single
+                    </button>
+                    <button
+                        onClick={() => setShowAllModal(true)}
+                        className="flex-1 py-1 text-[9px] font-bold uppercase tracking-wider rounded transition-all text-neutral-500 hover:text-neutral-300 hover:bg-neutral-800/30"
+                    >
+                        Compare All
                     </button>
                 </div>
             </div>
@@ -1148,7 +1158,13 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                     startAuction={validAuctions[selectedAuctionIdx]}
                     fxData={fxData}
                     budget={budget || 0}
-                    onSelectCurrency={(c) => { setSelectedCurrency(c); setShowAllModal(false); }}
+                    onSelectCurrency={(c) => {
+                        setSelectedCurrency(c);
+                        setShowAllModal(false);
+                        if (mode === 'leverage') {
+                            setMode('single');
+                        }
+                    }}
                     onStartMonthChange={(month) => {
                         const matchingIndices = validAuctions
                             .map((auc, idx) => ({ month: getMonthKey(auc.timestamp), idx }))
