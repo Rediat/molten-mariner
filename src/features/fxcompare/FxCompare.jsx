@@ -777,7 +777,7 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
             </div>
 
             {/* Scrollable Results Section */}
-            <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto pr-1 scrollbar-hide">
                 {/* Awaiting Calculation Placeholder */}
                 {((mode === 'single' && !resultData) || (mode === 'rolling' && !rollingResult) || (mode === 'leverage' && !leverageResult)) && (
                     <div className="mt-2.5 h-[140px] shrink-0">
