@@ -72,6 +72,7 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
     const [calculatedValue, setCalculatedValue] = useState(null);
     const [totalInterest, setTotalInterest] = useState(0);
     const [showHistory, setShowHistory] = useState(false);
+    const [tiMode, setTiMode] = useState('GROSS');
 
     // Refs for each input field to support focusing after "Clear on Label"
     const inputRefs = {
@@ -122,7 +123,8 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
 
     // Solve for PV or PMT using TI constraint
     const solveWithTIConstraint = (targetField, calcValues, effectiveTI, effectiveCY) => {
-        const rate = calcValues.i || 0;
+        const taxRate = calcValues.deductionPercent || 0;
+        const rate = tiMode === 'NET' ? (calcValues.i || 0) * (1 - taxRate / 100) : (calcValues.i || 0);
         const n = calcValues.n || 0;
         const pmt = calcValues.pmt || 0;
         const pv = calcValues.pv || 0;
@@ -156,21 +158,34 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
             let calcValues = { ...values };
             const useTIConstraint = totalInterest !== null && totalInterest !== 0 && target !== 'totalInterest';
 
+            const taxRate = values.deductionPercent || 0;
             if (useTIConstraint) {
                 const effectiveTI = getEffectiveTI(totalInterest, calcValues, target);
 
                 if (target === 'pv' || target === 'pmt') {
                     result = solveWithTIConstraint(target, calcValues, effectiveTI, effectiveCY);
                     calcValues[target] = result;
-                    calcValues.fv = effectiveTI - (calcValues.pv || 0) - (calcValues.pmt || 0) * (calcValues.n || 0);
+                    if (tiMode === 'NET') {
+                        const grossValues = {
+                            n: calcValues.n || 0,
+                            i: calcValues.i || 0,
+                            pv: calcValues.pv || 0,
+                            pmt: calcValues.pmt || 0,
+                            fv: calcValues.fv || 0
+                        };
+                        calcValues.fv = calculateTVM('fv', grossValues, mode, frequency, interestType, effectiveCY);
+                    } else {
+                        calcValues.fv = effectiveTI - (calcValues.pv || 0) - (calcValues.pmt || 0) * (calcValues.n || 0);
+                    }
                 } else {
-                    // Target is I, N, or FV - derive PMT or FV to satisfy TI
-                    const adjustedTI = (calcValues.pv || 0) > 0 && effectiveTI > 0 ? -effectiveTI : effectiveTI;
+                    // Target is I, N, or FV
+                    const grossTI = (tiMode === 'NET' && taxRate < 100) ? effectiveTI / (1 - taxRate / 100) : effectiveTI;
+                    const adjustedTI = (calcValues.pv || 0) > 0 && grossTI > 0 ? -grossTI : grossTI;
 
                     if (Math.abs(calcValues.fv || 0) < 0.01 && (calcValues.n || 0) !== 0) {
                         calcValues.pmt = (adjustedTI - (calcValues.pv || 0) - (calcValues.fv || 0)) / calcValues.n;
                         setValues(prev => ({ ...prev, pmt: parseFloat(calcValues.pmt.toFixed(2)) }));
-                    } else {
+                    } else { 
                         calcValues.fv = adjustedTI - (calcValues.pv || 0) - (calcValues.pmt || 0) * (calcValues.n || 0);
                         setValues(prev => ({ ...prev, fv: parseFloat(calcValues.fv.toFixed(2)) }));
                     }
@@ -224,10 +239,24 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
             } else {
                 const finalValues = { ...calcValues, [target]: result };
                 const currentInterest = (finalValues.pv || 0) + (finalValues.pmt || 0) * (finalValues.n || 0) + (finalValues.fv || 0);
-                setTotalInterest(currentInterest);
+                let interestToStore = currentInterest;
+                if (tiMode === 'NET' && taxRate > 0) {
+                    const netValues = {
+                        n: finalValues.n || 0,
+                        i: (finalValues.i || 0) * (1 - taxRate / 100),
+                        pv: finalValues.pv || 0,
+                        pmt: finalValues.pmt || 0,
+                        fv: 0
+                    };
+                    const netFVResult = calculateTVM('fv', netValues, mode, frequency, interestType, effectiveCY);
+                    if (typeof netFVResult === 'number' && !isNaN(netFVResult)) {
+                        interestToStore = (netValues.pv || 0) + (netValues.pmt || 0) * (netValues.n || 0) + netFVResult;
+                    } 
+                }
+                setTotalInterest(interestToStore);
                 setValues(prev => ({ ...prev, [target]: parseFloat(result.toFixed(6)) }));
                 addToHistory('TVM', { ...calcValues, mode, target, frequency, compoundingFrequency: effectiveCY, interestType },
-                    { [target]: result, totalInterest: currentInterest });
+                    { [target]: result, totalInterest: interestToStore });
             }
         } catch (error) {
             setCalculatedValue("Error");
@@ -253,6 +282,24 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
         // Allow null for empty strings during editing
         const newInterest = (cleanVal === '' || cleanVal === '-') ? null : parseFloat(cleanVal);
         setTotalInterest(newInterest);
+        setCalculatedValue(null);
+    };
+
+    const toggleTiMode = () => {
+        const taxRate = values.deductionPercent || 0;
+        setTiMode(prevMode => {
+            if (prevMode === 'GROSS') {
+                // Convert Gross to Net Interest
+                const newNet = totalInterest !== null ? totalInterest * (1 - taxRate / 100) : null;
+                setTotalInterest(newNet !== null ? parseFloat(newNet.toFixed(2)) : null);
+                return 'NET';
+            } else {
+                // Convert Net to Gross Interest
+                const newGross = (totalInterest !== null && taxRate < 100) ? totalInterest / (1 - taxRate / 100) : totalInterest;
+                setTotalInterest(newGross !== null ? parseFloat(newGross.toFixed(2)) : null);
+                return 'GROSS';
+            }
+        });
         setCalculatedValue(null);
     };
 
@@ -319,7 +366,7 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
         { id: 'pmt', label: 'PMT', sub: 'Payment' },
         { id: 'fv', label: 'FV', sub: 'Fut Val' },
         { id: 'deductionPercent', label: 'Deduction %', sub: 'Deduction / Tax Rate' },
-        { id: 'totalInterest', label: 'TI', sub: 'Total Interest' }
+        { id: 'totalInterest', label: 'TI', sub: tiMode === 'GROSS' ? 'Gross Interest' : 'Net Interest' }
     ];
 
     const renderField = (field, isHalfRow = false) => {
@@ -335,11 +382,6 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
                                 title={!field.isReadOnly ? "Click to Clear" : ""}
                             >
                                 {field.label}
-                                {!isHalfRow && field.id === 'totalInterest' && totalInterest !== 0 && totalInterest !== null && ((values.fv || 0) || (values.pv || 0)) !== 0 && (
-                                    <span className="text-[#00ff00] ml-1 text-xs">
-                                        ({Math.abs((totalInterest / ((values.fv || 0) || (values.pv || 0))) * 100).toFixed(2)}% of {values.fv ? 'FV' : 'PV'})
-                                    </span>
-                                )}
                             </label>
                             {field.hasNToggle && (
                                 <button
@@ -349,8 +391,23 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
                                     {nMode === 'YEARS' ? (isHalfRow ? 'Years' : 'In Years') : (isHalfRow ? 'Periods' : 'In Periods')}
                                 </button>
                             )}
+                            {field.id === 'totalInterest' && (
+                                <button
+                                    onClick={toggleTiMode}
+                                    className={`bg-neutral-900 border border-neutral-700 rounded px-1.5 py-0.5 font-bold text-neutral-400 hover:text-white uppercase tracking-wider ${isHalfRow ? 'text-[8px]' : 'text-[9px]'}`}
+                                >
+                                    {tiMode}
+                                </button>
+                            )}
                         </div>
-                        <span className={`uppercase tracking-tighter text-neutral-500 font-bold truncate w-full ${isHalfRow ? 'text-[8px]' : 'text-[9px]'}`}>{field.sub}</span>
+                        <span className={`uppercase tracking-tighter text-neutral-500 font-bold truncate w-full ${isHalfRow ? 'text-[8px]' : 'text-[9px]'}`}>
+                            {field.sub}
+                            {!isHalfRow && field.id === 'totalInterest' && totalInterest !== 0 && totalInterest !== null && ((values.fv || 0) || (values.pv || 0)) !== 0 && (
+                                <span className="text-[#00ff00] ml-1">
+                                    ({Math.abs((totalInterest / ((values.fv || 0) || (values.pv || 0))) * 100).toFixed(2)}% of {values.fv ? 'FV' : 'PV'})
+                                </span>
+                            )}
+                        </span>
                     </div>
                     <div className="relative flex-1 flex items-center justify-end min-w-0">
                         <div className="w-full">
