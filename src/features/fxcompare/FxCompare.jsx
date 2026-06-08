@@ -107,7 +107,7 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
     const [loanRate, setLoanRate] = useState(12.5);
     const [loanYears, setLoanYears] = useState(7);
     const [loanFrequency, setLoanFrequency] = useState(12);
-    const [customTbillRate, setCustomTbillRate] = useState(22.5);
+    const [customTbillRate, setCustomTbillRate] = useState(23.75);
     const [expandedRounds, setExpandedRounds] = useState(false);
     const [auctionSearch, setAuctionSearch] = useState('');
     const [currencySearch, setCurrencySearch] = useState('');
@@ -724,7 +724,7 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                                         onClick={() => {
                                             if (leverageAsset !== 'deposit') {
                                                 setLeverageAsset('deposit');
-                                                setCustomTbillRate(22.5);
+                                                setCustomTbillRate(23.75);
                                                 if (selectedTenure === 28) {
                                                     setSelectedTenure(182); // Default to 6M
                                                 } else if (selectedTenure === 364) {
