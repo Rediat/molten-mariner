@@ -29,23 +29,29 @@ const DEFAULT_VALUES = {
     deductionPercent: 10
 };
 
-// Helper: Calculate TVM factors for algebraic solving
-const calcTVMFactors = (rate, n, isBeginMode) => {
+const calcTVMFactors = (rate, n, isBeginMode, interestType = 'COMPOUND') => {
     const type = isBeginMode ? 1 : 0;
-    const pow = Math.pow(1 + rate, n);
-
-    let fvFactorPmt = 0;
-    if (Math.abs(rate) < 1e-9) {
-        fvFactorPmt = -n;
+    if (interestType === 'SIMPLE') {
+        const termPV = -rate * n;
+        const termPMT = isBeginMode ? -rate * n * (n + 1) / 2 : -rate * n * (n - 1) / 2;
+        return { termPV, termPMT };
     } else {
-        fvFactorPmt = -((pow - 1) / rate) * (type ? (1 + rate) : 1);
-    }
+        const pow = Math.pow(1 + rate, n);
 
-    return {
-        termPV: 1 - pow,
-        termPMT: n + fvFactorPmt
-    };
+        let fvFactorPmt = 0;
+        if (Math.abs(rate) < 1e-9) {
+            fvFactorPmt = -n;
+        } else {
+            fvFactorPmt = -((pow - 1) / rate) * (type ? (1 + rate) : 1);
+        }
+
+        return {
+            termPV: 1 - pow,
+            termPMT: n + fvFactorPmt
+        };
+    }
 };
+
 
 
 const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
@@ -122,7 +128,7 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
         const pv = calcValues.pv || 0;
 
         const rPeriodic = (rate / 100) / effectiveCY;
-        const { termPV, termPMT } = calcTVMFactors(rPeriodic, n, mode === 'BEGIN');
+        const { termPV, termPMT } = calcTVMFactors(rPeriodic, n, mode === 'BEGIN', interestType);
 
         if (targetField === 'pv') {
             if (Math.abs(termPV) > 1e-9) {
@@ -562,7 +568,7 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
                                         </p>
                                     </div>
                                     <div className="bg-neutral-900/50 rounded-lg p-2 border border-neutral-700/50 text-right">
-                                        <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider mb-1">Net Interest</p>
+                                        <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider mb-1">Net Interest ({100 - taxRate}%)</p>
                                         <p className="text-base font-bold text-emerald-400 font-mono">
                                             {netInterest.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                         </p>
@@ -571,7 +577,9 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
                                 <div className="bg-neutral-900/80 rounded-lg p-2.5 border border-indigo-500/30 text-left flex justify-between items-center relative group">
                                     <div className="flex flex-col">
                                         <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider mb-0.5">Actual Net Future Value</span>
-                                        <span className="text-[8px] font-medium text-neutral-500 uppercase tracking-wider">Compounded at Net Rate</span>
+                                        <span className="text-[9px] font-medium text-emerald-400/80 uppercase tracking-wider">
+                                            {interestType === 'SIMPLE' ? 'Simple Net Rate' : 'Compounded at Net Rate'}: {((values.i || 0) * (1 - taxRate / 100)).toFixed(2)}%
+                                        </span>
                                     </div>
                                     <span className="text-lg font-black text-white font-mono">
                                         {netFV.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}

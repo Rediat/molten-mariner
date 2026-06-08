@@ -219,7 +219,8 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                 <div className="pt-2">
                     <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Advanced Features:</p>
                     <FieldList fields={[
-                        { name: 'Total Interest (TI) Targeting', description: 'You can explicitly set a target Total Interest amount, and the calculator will reverse-solve for PV, PMT, FV, I/Y, or N to match that exact interest amount.' },
+                        { name: 'Total Interest (TI) Targeting', description: 'You can explicitly set a target Total Interest amount, and the calculator will reverse-solve for PV, PMT, FV, I/Y, or N to match that exact interest amount. The constraint solver respects your Simple vs Compound interest selection.' },
+                        { name: 'Tax Deduction & Net Returns', description: 'If a Deduction/Tax % is specified, the calculator shows the Tax Paid, Net Interest (remaining %), and Actual Net Future Value alongside the actual net interest rate (Simple Net Rate or Compounded Net Rate).' },
                         { name: 'Advanced Frequency Mode', description: 'Click the Settings icon to decouple Payment Frequency (Payments) from Compounding Frequency (Compounds) for complex loan or investment scenarios.' },
                         { name: 'Interest Ratio Display', description: 'When Total Interest is calculated, the label shows what percentage of your final/initial value is made up of pure interest.' }
                     ]} />
