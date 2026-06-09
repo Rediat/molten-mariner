@@ -588,28 +588,6 @@ const TimeZoneConverter = ({ toggleHelp, toggleSettings }) => {
                 </div>
                 
                 <div className="flex items-center gap-1.5 shrink-0">
-                    <button
-                        onClick={() => setShowExplanation(!showExplanation)}
-                        className={`flex items-center justify-center p-1.5 rounded-full transition-all ${showExplanation ? 'bg-primary-600/20 text-primary-400 ring-1 ring-primary-500/50' : 'bg-neutral-800 text-neutral-500 hover:bg-neutral-700 hover:text-neutral-300'}`}
-                        title="Show Info"
-                    >
-                        <Info className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                        onClick={toggleHelp}
-                        className="flex items-center justify-center p-1.5 rounded-full bg-neutral-800 text-neutral-500 hover:bg-neutral-700 hover:text-neutral-300 transition-all"
-                        title="Help Guide"
-                    >
-                        <HelpCircle className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                        onClick={toggleSettings}
-                        className="flex items-center justify-center p-1.5 rounded-full bg-neutral-800 text-neutral-500 hover:bg-neutral-700 hover:text-neutral-300 transition-all mr-1"
-                        title="Settings"
-                    >
-                        <Settings className="w-3.5 h-3.5" />
-                    </button>
-
                     {/* Main Mode Toggle: Converter vs Calculator */}
                     <div className="flex bg-neutral-900/70 rounded-md p-0.5 ring-1 ring-neutral-800">
                         <button
@@ -633,6 +611,14 @@ const TimeZoneConverter = ({ toggleHelp, toggleSettings }) => {
                             Calculator
                         </button>
                     </div>
+
+                    <button
+                        onClick={() => setShowExplanation(!showExplanation)}
+                        className={`flex items-center justify-center p-1.5 rounded-full transition-all ${showExplanation ? 'bg-primary-600/20 text-primary-400 ring-1 ring-primary-500/50' : 'bg-neutral-800 text-neutral-500 hover:bg-neutral-700 hover:text-neutral-300'}`}
+                        title="Show Info"
+                    >
+                        <Info className="w-3.5 h-3.5" />
+                    </button>
                 </div>
             </div>
 
@@ -730,7 +716,7 @@ const TimeZoneConverter = ({ toggleHelp, toggleSettings }) => {
                                                             const offset = res.id ? getTimeZoneOffset(referenceDate, res.id) : '';
                                                             return (
                                                                 <button
-                                                                    key={res.id}
+                                                                    key={res.customLabel ? `${res.id}-${res.customLabel}` : (res.label ? `${res.id}-${res.label}` : res.id)}
                                                                     onClick={() => handleSelectTimezone(index, res.id, res.customLabel)}
                                                                     className="w-full text-left px-3 py-2 text-[11px] text-neutral-300 hover:bg-primary-600/20 hover:text-white transition-colors flex justify-between items-center"
                                                                 >
@@ -971,7 +957,7 @@ const TimeZoneConverter = ({ toggleHelp, toggleSettings }) => {
                                                         const offset = res.id ? getTimeZoneOffset(new Date(), res.id) : '';
                                                         return (
                                                             <button
-                                                                key={res.id}
+                                                                key={res.customLabel ? `${res.id}-${res.customLabel}` : (res.label ? `${res.id}-${res.label}` : res.id)}
                                                                 onClick={() => handleSelectCalcTimezone('diffA', res.id)}
                                                                 className="w-full text-left px-3 py-2 text-[11px] text-neutral-300 hover:bg-primary-600/20 hover:text-white transition-colors flex justify-between items-center"
                                                             >
@@ -1048,7 +1034,7 @@ const TimeZoneConverter = ({ toggleHelp, toggleSettings }) => {
                                                         const offset = res.id ? getTimeZoneOffset(new Date(), res.id) : '';
                                                         return (
                                                             <button
-                                                                key={res.id}
+                                                                key={res.customLabel ? `${res.id}-${res.customLabel}` : (res.label ? `${res.id}-${res.label}` : res.id)}
                                                                 onClick={() => handleSelectCalcTimezone('diffB', res.id)}
                                                                 className="w-full text-left px-3 py-2 text-[11px] text-neutral-300 hover:bg-primary-600/20 hover:text-white transition-colors flex justify-between items-center"
                                                             >
@@ -1165,7 +1151,7 @@ const TimeZoneConverter = ({ toggleHelp, toggleSettings }) => {
                                                         const offset = res.id ? getTimeZoneOffset(new Date(), res.id) : '';
                                                         return (
                                                             <button
-                                                                key={res.id}
+                                                                key={res.customLabel ? `${res.id}-${res.customLabel}` : (res.label ? `${res.id}-${res.label}` : res.id)}
                                                                 onClick={() => handleSelectCalcTimezone('math', res.id)}
                                                                 className="w-full text-left px-3 py-2 text-[11px] text-neutral-300 hover:bg-primary-600/20 hover:text-white transition-colors flex justify-between items-center"
                                                             >
@@ -1314,6 +1300,24 @@ const TimeZoneConverter = ({ toggleHelp, toggleSettings }) => {
                     )}
                 </div>
             )}
+
+            {/* Footer with Help Guide and Settings buttons */}
+            <div className="flex justify-end gap-1.5 pt-2 mt-2 border-t border-neutral-800/40 shrink-0">
+                <button
+                    onClick={toggleHelp}
+                    className="flex items-center justify-center p-1.5 rounded-full bg-neutral-800 text-neutral-500 hover:bg-neutral-700 hover:text-neutral-300 transition-all"
+                    title="Help Guide"
+                >
+                    <HelpCircle className="w-3.5 h-3.5" />
+                </button>
+                <button
+                    onClick={toggleSettings}
+                    className="flex items-center justify-center p-1.5 rounded-full bg-neutral-800 text-neutral-500 hover:bg-neutral-700 hover:text-neutral-300 transition-all"
+                    title="Settings"
+                >
+                    <Settings className="w-3.5 h-3.5" />
+                </button>
+            </div>
         </div>
     );
 };

@@ -44,8 +44,7 @@ const TAB_TO_SETTING = {
 function AppContent() {
     const { settings } = useSettings();
     const [activeTab, setActiveTab] = useState(() => {
-        // Initialize to first enabled tab
-        const tabOrder = settings.tabOrder || ['tvm', 'goal', 'loan', 'tax', 'pension', 'inflation', 'tbill', 'fxcompare', 'transport', 'flow', 'bond', 'timezone', 'rates', 'history'];
+        const tabOrder = settings.tabOrder || ['tvm', 'loan', 'tax', 'pension', 'inflation', 'fxcompare', 'transport', 'flow', 'bond', 'timezone', 'rates', 'history'];
         const firstEnabled = tabOrder.find(id => settings[TAB_TO_SETTING[id]]);
         return firstEnabled || 'tvm';
     });
@@ -63,7 +62,7 @@ function AppContent() {
     useEffect(() => {
         const settingKey = TAB_TO_SETTING[activeTab];
         if (settingKey && !settings[settingKey]) {
-            const tabOrder = settings.tabOrder || ['tvm', 'goal', 'loan', 'tax', 'pension', 'inflation', 'tbill', 'fxcompare', 'transport', 'flow', 'bond', 'timezone', 'rates', 'history'];
+            const tabOrder = settings.tabOrder || ['tvm', 'loan', 'tax', 'pension', 'inflation', 'fxcompare', 'transport', 'flow', 'bond', 'timezone', 'rates', 'history'];
             const firstEnabled = tabOrder.find(id => settings[TAB_TO_SETTING[id]]);
             if (firstEnabled) {
                 setActiveTab(firstEnabled);

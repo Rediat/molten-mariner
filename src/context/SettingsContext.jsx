@@ -22,16 +22,16 @@ const DEFAULT_SETTINGS = {
     showFlow: false,
     showBond: false,
     showRates: true,
-    showTBill: true,
+    showTBill: false,
     showPension: false,
     showTax: true,
     showInflation: false,
-    showGoal: true,
+    showGoal: false,
     showTransport: false,
     showHistory: false,
     showFxCompare: true,
     showTimeZone: true,
-    tabOrder: ['tvm', 'goal', 'loan', 'tax', 'pension', 'inflation', 'tbill', 'fxcompare', 'transport', 'flow', 'bond', 'timezone', 'rates', 'history'],
+    tabOrder: ['tvm', 'loan', 'tax', 'pension', 'inflation', 'fxcompare', 'transport', 'flow', 'bond', 'timezone', 'rates', 'history'],
 };
 
 export const SettingsProvider = ({ children }) => {

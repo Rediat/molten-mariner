@@ -290,57 +290,187 @@ try {
     console.error('Failed to query supported timezones:', e);
 }
 
-// Additional popular cities database mapped to IANA timezones (e.g. for flight arrival tracing)
 export const ADDITIONAL_CITIES = [
-    { city: 'Milan', country: 'Italy', timezone: 'Europe/Rome' },
-    { city: 'Frankfurt', country: 'Germany', timezone: 'Europe/Berlin' },
-    { city: 'Munich', country: 'Germany', timezone: 'Europe/Berlin' },
-    { city: 'Dusseldorf', country: 'Germany', timezone: 'Europe/Berlin' },
+    // US & Canada
+    { city: 'New York', country: 'United States', timezone: 'America/New_York' },
+    { city: 'Los Angeles', country: 'United States', timezone: 'America/Los_Angeles' },
+    { city: 'Chicago', country: 'United States', timezone: 'America/Chicago' },
+    { city: 'Houston', country: 'United States', timezone: 'America/Chicago' },
+    { city: 'Phoenix', country: 'United States', timezone: 'America/Phoenix' },
+    { city: 'Philadelphia', country: 'United States', timezone: 'America/New_York' },
+    { city: 'San Antonio', country: 'United States', timezone: 'America/Chicago' },
+    { city: 'San Diego', country: 'United States', timezone: 'America/Los_Angeles' },
+    { city: 'Dallas', country: 'United States', timezone: 'America/Chicago' },
+    { city: 'Dallas-Fort Worth', country: 'United States', timezone: 'America/Chicago' },
+    { city: 'San Jose', country: 'United States', timezone: 'America/Los_Angeles' },
+    { city: 'Austin', country: 'United States', timezone: 'America/Chicago' },
+    { city: 'Jacksonville', country: 'United States', timezone: 'America/New_York' },
+    { city: 'San Francisco', country: 'United States', timezone: 'America/Los_Angeles' },
+    { city: 'Columbus', country: 'United States', timezone: 'America/New_York' },
+    { city: 'Fort Worth', country: 'United States', timezone: 'America/Chicago' },
+    { city: 'Indianapolis', country: 'United States', timezone: 'America/Indiana/Indianapolis' },
+    { city: 'Charlotte', country: 'United States', timezone: 'America/New_York' },
+    { city: 'Seattle', country: 'United States', timezone: 'America/Los_Angeles' },
+    { city: 'Denver', country: 'United States', timezone: 'America/Denver' },
+    { city: 'El Paso', country: 'United States', timezone: 'America/Denver' },
+    { city: 'Washington D.C.', country: 'United States', timezone: 'America/New_York' },
+    { city: 'Boston', country: 'United States', timezone: 'America/New_York' },
+    { city: 'Detroit', country: 'United States', timezone: 'America/Detroit' },
+    { city: 'Nashville', country: 'United States', timezone: 'America/Chicago' },
+    { city: 'Portland', country: 'United States', timezone: 'America/Los_Angeles' },
+    { city: 'Memphis', country: 'United States', timezone: 'America/Chicago' },
+    { city: 'Oklahoma City', country: 'United States', timezone: 'America/Chicago' },
+    { city: 'Las Vegas', country: 'United States', timezone: 'America/Los_Angeles' },
+    { city: 'Louisville', country: 'United States', timezone: 'America/Kentucky/Louisville' },
+    { city: 'Baltimore', country: 'United States', timezone: 'America/New_York' },
+    { city: 'Milwaukee', country: 'United States', timezone: 'America/Chicago' },
+    { city: 'Albuquerque', country: 'United States', timezone: 'America/Denver' },
+    { city: 'Tucson', country: 'United States', timezone: 'America/Phoenix' },
+    { city: 'Fresno', country: 'United States', timezone: 'America/Los_Angeles' },
+    { city: 'Sacramento', country: 'United States', timezone: 'America/Los_Angeles' },
+    { city: 'Kansas City', country: 'United States', timezone: 'America/Chicago' },
+    { city: 'Atlanta', country: 'United States', timezone: 'America/New_York' },
+    { city: 'Omaha', country: 'United States', timezone: 'America/Chicago' },
+    { city: 'Colorado Springs', country: 'United States', timezone: 'America/Denver' },
+    { city: 'Raleigh', country: 'United States', timezone: 'America/New_York' },
+    { city: 'Miami', country: 'United States', timezone: 'America/New_York' },
+    { city: 'Minneapolis', country: 'United States', timezone: 'America/Chicago' },
+    { city: 'Cleveland', country: 'United States', timezone: 'America/New_York' },
+    { city: 'New Orleans', country: 'United States', timezone: 'America/Chicago' },
+    { city: 'Honolulu', country: 'United States', timezone: 'Pacific/Honolulu' },
+    { city: 'Tampa', country: 'United States', timezone: 'America/New_York' },
+    { city: 'Pittsburgh', country: 'United States', timezone: 'America/New_York' },
+    { city: 'Cincinnati', country: 'United States', timezone: 'America/New_York' },
+    { city: 'St. Louis', country: 'United States', timezone: 'America/Chicago' },
+    { city: 'Orlando', country: 'United States', timezone: 'America/New_York' },
+    { city: 'Salt Lake City', country: 'United States', timezone: 'America/Denver' },
+    { city: 'Toronto', country: 'Canada', timezone: 'America/Toronto' },
+    { city: 'Montreal', country: 'Canada', timezone: 'America/Toronto' },
+    { city: 'Vancouver', country: 'Canada', timezone: 'America/Vancouver' },
+    { city: 'Calgary', country: 'Canada', timezone: 'America/Edmonton' },
+    { city: 'Edmonton', country: 'Canada', timezone: 'America/Edmonton' },
+    { city: 'Ottawa', country: 'Canada', timezone: 'America/Toronto' },
+    { city: 'Winnipeg', country: 'Canada', timezone: 'America/Winnipeg' },
+    { city: 'Quebec City', country: 'Canada', timezone: 'America/Toronto' },
+    { city: 'Halifax', country: 'Canada', timezone: 'America/Halifax' },
+    { city: 'Victoria', country: 'Canada', timezone: 'America/Vancouver' },
+
+    // Europe
+    { city: 'London', country: 'United Kingdom', timezone: 'Europe/London' },
+    { city: 'Birmingham', country: 'United Kingdom', timezone: 'Europe/London' },
+    { city: 'Manchester', country: 'United Kingdom', timezone: 'Europe/London' },
+    { city: 'Glasgow', country: 'United Kingdom', timezone: 'Europe/London' },
+    { city: 'Edinburgh', country: 'United Kingdom', timezone: 'Europe/London' },
+    { city: 'Belfast', country: 'United Kingdom', timezone: 'Europe/London' },
+    { city: 'Dublin', country: 'Ireland', timezone: 'Europe/Dublin' },
+    { city: 'Paris', country: 'France', timezone: 'Europe/Paris' },
+    { city: 'Marseille', country: 'France', timezone: 'Europe/Paris' },
+    { city: 'Lyon', country: 'France', timezone: 'Europe/Paris' },
+    { city: 'Toulouse', country: 'France', timezone: 'Europe/Paris' },
+    { city: 'Nice', country: 'France', timezone: 'Europe/Paris' },
+    { city: 'Berlin', country: 'Germany', timezone: 'Europe/Berlin' },
     { city: 'Hamburg', country: 'Germany', timezone: 'Europe/Berlin' },
+    { city: 'Munich', country: 'Germany', timezone: 'Europe/Berlin' },
+    { city: 'Cologne', country: 'Germany', timezone: 'Europe/Berlin' },
+    { city: 'Frankfurt', country: 'Germany', timezone: 'Europe/Berlin' },
     { city: 'Stuttgart', country: 'Germany', timezone: 'Europe/Berlin' },
-    { city: 'Barcelona', country: 'Spain', timezone: 'Europe/Madrid' },
-    { city: 'Seville', country: 'Spain', timezone: 'Europe/Madrid' },
-    { city: 'Geneva', country: 'Switzerland', timezone: 'Europe/Zurich' },
+    { city: 'Dusseldorf', country: 'Germany', timezone: 'Europe/Berlin' },
+    { city: 'Rome', country: 'Italy', timezone: 'Europe/Rome' },
+    { city: 'Milan', country: 'Italy', timezone: 'Europe/Rome' },
+    { city: 'Naples', country: 'Italy', timezone: 'Europe/Rome' },
+    { city: 'Turin', country: 'Italy', timezone: 'Europe/Rome' },
     { city: 'Venice', country: 'Italy', timezone: 'Europe/Rome' },
     { city: 'Florence', country: 'Italy', timezone: 'Europe/Rome' },
-    { city: 'Nice', country: 'France', timezone: 'Europe/Paris' },
-    { city: 'Lyon', country: 'France', timezone: 'Europe/Paris' },
-    { city: 'Marseille', country: 'France', timezone: 'Europe/Paris' },
-    { city: 'Boston', country: 'United States', timezone: 'America/New_York' },
-    { city: 'San Francisco', country: 'United States', timezone: 'America/Los_Angeles' },
-    { city: 'Seattle', country: 'United States', timezone: 'America/Los_Angeles' },
-    { city: 'Miami', country: 'United States', timezone: 'America/New_York' },
-    { city: 'Atlanta', country: 'United States', timezone: 'America/New_York' },
-    { city: 'Dallas-Fort Worth', country: 'United States', timezone: 'America/Chicago' },
-    { city: 'Houston', country: 'United States', timezone: 'America/Chicago' },
-    { city: 'Las Vegas', country: 'United States', timezone: 'America/Los_Angeles' },
-    { city: 'Philadelphia', country: 'United States', timezone: 'America/New_York' },
-    { city: 'Washington D.C.', country: 'United States', timezone: 'America/New_York' },
-    { city: 'Montreal', country: 'Canada', timezone: 'America/Toronto' },
-    { city: 'Calgary', country: 'Canada', timezone: 'America/Edmonton' },
-    { city: 'Ottawa', country: 'Canada', timezone: 'America/Toronto' },
+    { city: 'Madrid', country: 'Spain', timezone: 'Europe/Madrid' },
+    { city: 'Barcelona', country: 'Spain', timezone: 'Europe/Madrid' },
+    { city: 'Valencia', country: 'Spain', timezone: 'Europe/Madrid' },
+    { city: 'Seville', country: 'Spain', timezone: 'Europe/Madrid' },
+    { city: 'Stockholm', country: 'Sweden', timezone: 'Europe/Stockholm' },
+    { city: 'Gothenburg', country: 'Sweden', timezone: 'Europe/Stockholm' },
+    { city: 'Oslo', country: 'Norway', timezone: 'Europe/Oslo' },
+    { city: 'Copenhagen', country: 'Denmark', timezone: 'Europe/Copenhagen' },
+    { city: 'Helsinki', country: 'Finland', timezone: 'Europe/Helsinki' },
+    { city: 'Geneva', country: 'Switzerland', timezone: 'Europe/Zurich' },
+    { city: 'Zurich', country: 'Switzerland', timezone: 'Europe/Zurich' },
+    { city: 'Vienna', country: 'Austria', timezone: 'Europe/Vienna' },
+    { city: 'Brussels', country: 'Belgium', timezone: 'Europe/Brussels' },
+    { city: 'Amsterdam', country: 'Netherlands', timezone: 'Europe/Amsterdam' },
+    { city: 'Rotterdam', country: 'Netherlands', timezone: 'Europe/Amsterdam' },
+    { city: 'Athens', country: 'Greece', timezone: 'Europe/Athens' },
+    { city: 'Lisbon', country: 'Portugal', timezone: 'Europe/Lisbon' },
+    { city: 'Warsaw', country: 'Poland', timezone: 'Europe/Warsaw' },
+    { city: 'Krakow', country: 'Poland', timezone: 'Europe/Warsaw' },
+    { city: 'Prague', country: 'Czech Republic', timezone: 'Europe/Prague' },
+    { city: 'Budapest', country: 'Hungary', timezone: 'Europe/Budapest' },
+    { city: 'Bucharest', country: 'Romania', timezone: 'Europe/Bucharest' },
+    { city: 'Moscow', country: 'Russia', timezone: 'Europe/Moscow' },
+    { city: 'Saint Petersburg', country: 'Russia', timezone: 'Europe/Moscow' },
+    { city: 'Istanbul', country: 'Turkey', timezone: 'Europe/Istanbul' },
+    { city: 'Ankara', country: 'Turkey', timezone: 'Europe/Istanbul' },
+
+    // Asia & Middle East
+    { city: 'Tokyo', country: 'Japan', timezone: 'Asia/Tokyo' },
+    { city: 'Osaka', country: 'Japan', timezone: 'Asia/Tokyo' },
+    { city: 'Kyoto', country: 'Japan', timezone: 'Asia/Tokyo' },
+    { city: 'Yokohama', country: 'Japan', timezone: 'Asia/Tokyo' },
+    { city: 'Seoul', country: 'South Korea', timezone: 'Asia/Seoul' },
+    { city: 'Incheon', country: 'South Korea', timezone: 'Asia/Seoul' },
+    { city: 'Busan', country: 'South Korea', timezone: 'Asia/Seoul' },
     { city: 'Beijing', country: 'China', timezone: 'Asia/Shanghai' },
+    { city: 'Shanghai', country: 'China', timezone: 'Asia/Shanghai' },
     { city: 'Shenzhen', country: 'China', timezone: 'Asia/Shanghai' },
     { city: 'Guangzhou', country: 'China', timezone: 'Asia/Shanghai' },
     { city: 'Chengdu', country: 'China', timezone: 'Asia/Shanghai' },
+    { city: 'Hong Kong', country: 'Hong Kong', timezone: 'Asia/Hong_Kong' },
+    { city: 'Taipei', country: 'Taiwan', timezone: 'Asia/Taipei' },
+    { city: 'Singapore', country: 'Singapore', timezone: 'Asia/Singapore' },
+    { city: 'Bangkok', country: 'Thailand', timezone: 'Asia/Bangkok' },
+    { city: 'Jakarta', country: 'Indonesia', timezone: 'Asia/Jakarta' },
+    { city: 'Manila', country: 'Philippines', timezone: 'Asia/Manila' },
+    { city: 'Kuala Lumpur', country: 'Malaysia', timezone: 'Asia/Kuala_Lumpur' },
     { city: 'Mumbai', country: 'India', timezone: 'Asia/Kolkata' },
     { city: 'Delhi', country: 'India', timezone: 'Asia/Kolkata' },
+    { city: 'New Delhi', country: 'India', timezone: 'Asia/Kolkata' },
     { city: 'Bangalore', country: 'India', timezone: 'Asia/Kolkata' },
     { city: 'Chennai', country: 'India', timezone: 'Asia/Kolkata' },
-    { city: 'Osaka', country: 'Japan', timezone: 'Asia/Tokyo' },
-    { city: 'Kyoto', country: 'Japan', timezone: 'Asia/Tokyo' },
-    { city: 'Incheon', country: 'South Korea', timezone: 'Asia/Seoul' },
-    { city: 'Cape Town', country: 'South Africa', timezone: 'Africa/Johannesburg' },
-    { city: 'Durban', country: 'South Africa', timezone: 'Africa/Johannesburg' },
+    { city: 'Hyderabad', country: 'India', timezone: 'Asia/Kolkata' },
+    { city: 'Pune', country: 'India', timezone: 'Asia/Kolkata' },
+    { city: 'Dubai', country: 'United Arab Emirates', timezone: 'Asia/Dubai' },
+    { city: 'Abu Dhabi', country: 'United Arab Emirates', timezone: 'Asia/Dubai' },
+    { city: 'Riyadh', country: 'Saudi Arabia', timezone: 'Asia/Riyadh' },
+    { city: 'Jeddah', country: 'Saudi Arabia', timezone: 'Asia/Riyadh' },
+    { city: 'Tehran', country: 'Iran', timezone: 'Asia/Tehran' },
+
+    // Latin America
+    { city: 'Sao Paulo', country: 'Brazil', timezone: 'America/Sao_Paulo' },
     { city: 'Rio de Janeiro', country: 'Brazil', timezone: 'America/Sao_Paulo' },
-    { city: 'Buenos Aires', country: 'Argentina', timezone: 'America/Argentina/Buenos_Aires' },
-    { city: 'Santiago', country: 'Chile', timezone: 'America/Santiago' },
-    { city: 'Bogota', country: 'Colombia', timezone: 'America/Bogota' },
-    { city: 'Lima', country: 'Peru', timezone: 'America/Lima' },
+    { city: 'Brasilia', country: 'Brazil', timezone: 'America/Sao_Paulo' },
     { city: 'Mexico City', country: 'Mexico', timezone: 'America/Mexico_City' },
-    { city: 'Cancun', country: 'Mexico', timezone: 'America/Cancun' },
     { city: 'Guadalajara', country: 'Mexico', timezone: 'America/Mexico_City' },
-    { city: 'Monterrey', country: 'Mexico', timezone: 'America/Monterrey' }
+    { city: 'Monterrey', country: 'Mexico', timezone: 'America/Monterrey' },
+    { city: 'Cancun', country: 'Mexico', timezone: 'America/Cancun' },
+    { city: 'Buenos Aires', country: 'Argentina', timezone: 'America/Argentina/Buenos_Aires' },
+    { city: 'Bogota', country: 'Colombia', timezone: 'America/Bogota' },
+    { city: 'Santiago', country: 'Chile', timezone: 'America/Santiago' },
+    { city: 'Lima', country: 'Peru', timezone: 'America/Lima' },
+
+    // Oceania
+    { city: 'Sydney', country: 'Australia', timezone: 'Australia/Sydney' },
+    { city: 'Melbourne', country: 'Australia', timezone: 'Australia/Melbourne' },
+    { city: 'Brisbane', country: 'Australia', timezone: 'Australia/Brisbane' },
+    { city: 'Perth', country: 'Australia', timezone: 'Australia/Perth' },
+    { city: 'Adelaide', country: 'Australia', timezone: 'Australia/Adelaide' },
+    { city: 'Canberra', country: 'Australia', timezone: 'Australia/Sydney' },
+    { city: 'Auckland', country: 'New Zealand', timezone: 'Pacific/Auckland' },
+    { city: 'Wellington', country: 'New Zealand', timezone: 'Pacific/Auckland' },
+
+    // Africa
+    { city: 'Cairo', country: 'Egypt', timezone: 'Africa/Cairo' },
+    { city: 'Johannesburg', country: 'South Africa', timezone: 'Africa/Johannesburg' },
+    { city: 'Cape Town', country: 'South Africa', timezone: 'Africa/Johannesburg' },
+    { city: 'Lagos', country: 'Nigeria', timezone: 'Africa/Lagos' },
+    { city: 'Nairobi', country: 'Kenya', timezone: 'Africa/Nairobi' },
+    { city: 'Casablanca', country: 'Morocco', timezone: 'Africa/Casablanca' }
 ];
 
 // Fallback search database combining popular list, browser list, additional cities, and Wikipedia abbreviations
@@ -351,7 +481,8 @@ export const searchTimezones = (query) => {
     // 1. Search for abbreviation matches (both exact and prefix/partial) from the Wikipedia Abbreviations list
     let abbreviationMatches = [];
     for (const key in WIKIPEDIA_ABBREVIATIONS) {
-        if (key === normalizedQuery || key.startsWith(normalizedQuery)) {
+        // Only trigger abbreviation lookup if the query is a match for the abbreviation key
+        if (key === normalizedQuery || (normalizedQuery.length >= 3 && key.startsWith(normalizedQuery))) {
             const abbrevInfo = WIKIPEDIA_ABBREVIATIONS[key];
             abbrevInfo.zones.forEach(zoneId => {
                 let zoneObj = POPULAR_TIMEZONES.find(t => t.id === zoneId) || 
@@ -428,7 +559,6 @@ export const searchTimezones = (query) => {
 
     // Combine results
     const combined = [...abbreviationMatches, ...cityMatches, ...popularMatches, ...otherMatches];
-    
     // Deduplicate (keep unique id + customLabel pairings so aliases aren't filtered out)
     const seen = new Set();
     const result = [];
@@ -440,10 +570,67 @@ export const searchTimezones = (query) => {
         }
     }
 
-    return result.slice(0, 50);
+    // Filter to guarantee every returned result strictly matches what's visible in the list items
+    const strictlyMatching = result.filter(item => {
+        const labelText = (item.label || item.city || '').toLowerCase();
+        const idText = (item.id || '').toLowerCase();
+        const abbrevText = (item.abbrev || '').toLowerCase();
+        
+        let offsetText = '';
+        let currentAbbrevText = '';
+        if (item.id) {
+            try {
+                const now = new Date();
+                offsetText = getTimeZoneOffset(now, item.id).toLowerCase();
+                currentAbbrevText = getTimeZoneAbbrev(now, item.id).toLowerCase();
+            } catch (e) {}
+        }
+        
+        return labelText.includes(normalizedQuery) ||
+               idText.includes(normalizedQuery) ||
+               abbrevText.includes(normalizedQuery) ||
+               currentAbbrevText.includes(normalizedQuery) ||
+               offsetText.includes(normalizedQuery);
+    });
+
+    // Score results for relevance sorting
+    const scoredResults = strictlyMatching.map(item => {
+        const cityLower = (item.city || '').toLowerCase();
+        const countryLower = (item.country || '').toLowerCase();
+        const labelLower = (item.label || '').toLowerCase();
+        const idLower = (item.id || '').toLowerCase();
+        const abbrevLower = (item.abbrev || '').toLowerCase();
+        
+        let score = 0;
+        
+        if (cityLower === normalizedQuery) {
+            score += 100;
+        } else if (cityLower.startsWith(normalizedQuery)) {
+            score += 80;
+        } else if (cityLower.includes(normalizedQuery)) {
+            score += 60;
+        } else if (idLower.includes(normalizedQuery) || labelLower.includes(normalizedQuery)) {
+            score += 40;
+        } else if (countryLower.includes(normalizedQuery)) {
+            score += 20;
+        } else if (abbrevLower.includes(normalizedQuery)) {
+            score += 10;
+        }
+        
+        return { item, score };
+    });
+
+    // Sort by score descending, then by city name alphabetically
+    scoredResults.sort((a, b) => {
+        if (b.score !== a.score) {
+            return b.score - a.score;
+        }
+        return (a.item.city || '').localeCompare(b.item.city || '');
+    });
+
+    return scoredResults.map(x => x.item).slice(0, 50);
 };
 
-// Get timezone abbreviation (e.g. EST, BST) for a given Date
 export const getTimeZoneAbbrev = (date, timeZone) => {
     try {
         const parts = new Intl.DateTimeFormat('en-US', {

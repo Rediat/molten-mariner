@@ -665,7 +665,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
             >
                 <p>
                     Convert times between different global zones or compute time differences and arithmetic offsets.
-                    Switch between the <strong>Converter</strong> and <strong>Calculator</strong> modes using the toggle next to the header title.
+                    Switch between the <strong>Converter</strong> and <strong>Calculator</strong> modes using the toggle in the header.
                 </p>
 
                 <div className="pt-2">
@@ -680,7 +680,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                 <div className="pt-2">
                     <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Features & Shortcuts:</p>
                     <FieldList fields={[
-                        { name: 'Wikipedia Abbreviation Search', description: 'Search the dropdown by standard abbreviation codes (e.g. EST, JST, BST, GMT) or major city/country names. Aliases such as Milan are also mapped.' },
+                        { name: 'Searchable City & Abbreviation Database', description: 'Search the dropdown by standard abbreviation codes (e.g. EST, JST, GMT) or any of the hundreds of mapped global cities (like Milan, Nashville, New Delhi, Stockholm, etc.). The search engine automatically prioritizes exact and prefix matches at the top of the list, filtering out unrelated items.' },
                         { name: '12-Hour / 24-Hour Format', description: 'Toggle time representation globally. In 12-Hour format, custom time boxes render an AM/PM toggle button.' },
                         { name: 'Dial Buttons', description: 'Hover or focus on custom time fields to use the increment (Up) and decrement (Down) buttons for precise hour and minute selection.' },
                         { name: 'Shareable Links', description: 'Copy the synchronized state URL to your clipboard. Sharing this link loads the exact same clocks and reference time for another user.' }
