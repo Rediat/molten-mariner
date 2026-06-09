@@ -588,8 +588,30 @@ const TimeZoneConverter = ({ toggleHelp, toggleSettings }) => {
                 </div>
                 
                 <div className="flex items-center gap-1.5 shrink-0">
+                    <button
+                        onClick={() => setShowExplanation(!showExplanation)}
+                        className={`flex items-center justify-center p-1.5 rounded-full transition-all ${showExplanation ? 'bg-primary-600/20 text-primary-400 ring-1 ring-primary-500/50' : 'bg-neutral-800 text-neutral-500 hover:bg-neutral-700 hover:text-neutral-300'}`}
+                        title="Show Info"
+                    >
+                        <Info className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                        onClick={toggleHelp}
+                        className="flex items-center justify-center p-1.5 rounded-full bg-neutral-800 text-neutral-500 hover:bg-neutral-700 hover:text-neutral-300 transition-all"
+                        title="Help Guide"
+                    >
+                        <HelpCircle className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                        onClick={toggleSettings}
+                        className="flex items-center justify-center p-1.5 rounded-full bg-neutral-800 text-neutral-500 hover:bg-neutral-700 hover:text-neutral-300 transition-all mr-1"
+                        title="Settings"
+                    >
+                        <Settings className="w-3.5 h-3.5" />
+                    </button>
+
                     {/* Main Mode Toggle: Converter vs Calculator */}
-                    <div className="flex bg-neutral-900/70 rounded-md p-0.5 ring-1 ring-neutral-800 mr-1">
+                    <div className="flex bg-neutral-900/70 rounded-md p-0.5 ring-1 ring-neutral-800">
                         <button
                             onClick={() => setMainMode('converter')}
                             className={`px-2 py-1 text-[8px] font-bold uppercase tracking-wider rounded transition-all ${
@@ -611,28 +633,6 @@ const TimeZoneConverter = ({ toggleHelp, toggleSettings }) => {
                             Calculator
                         </button>
                     </div>
-
-                    <button
-                        onClick={() => setShowExplanation(!showExplanation)}
-                        className={`flex items-center justify-center p-1.5 rounded-full transition-all ${showExplanation ? 'bg-primary-600/20 text-primary-400 ring-1 ring-primary-500/50' : 'bg-neutral-800 text-neutral-500 hover:bg-neutral-700 hover:text-neutral-300'}`}
-                        title="Show Info"
-                    >
-                        <Info className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                        onClick={toggleHelp}
-                        className="flex items-center justify-center p-1.5 rounded-full bg-neutral-800 text-neutral-500 hover:bg-neutral-700 hover:text-neutral-300 transition-all"
-                        title="Help Guide"
-                    >
-                        <HelpCircle className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                        onClick={toggleSettings}
-                        className="flex items-center justify-center p-1.5 rounded-full bg-neutral-800 text-neutral-500 hover:bg-neutral-700 hover:text-neutral-300 transition-all"
-                        title="Settings"
-                    >
-                        <Settings className="w-3.5 h-3.5" />
-                    </button>
                 </div>
             </div>
 
