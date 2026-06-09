@@ -19,6 +19,7 @@ import InflationCalculator from './features/inflation/InflationCalculator';
 import RideFareCalculator from './features/transport/RideFareCalculator';
 import FxCompare from './features/fxcompare/FxCompare';
 import TaxCalculator from './features/tax/TaxCalculator';
+import TimeZoneConverter from './features/timezone/TimeZoneConverter';
 import { Analytics } from "@vercel/analytics/react";
 import { initGlobalClipboard } from './utils/clipboard';
 
@@ -31,6 +32,7 @@ const TAB_TO_SETTING = {
     transport: 'showTransport',
     flow: 'showFlow',
     bond: 'showBond',
+    timezone: 'showTimeZone',
     rates: 'showRates',
     tbill: 'showTBill',
     tax: 'showTax',
@@ -43,7 +45,7 @@ function AppContent() {
     const { settings } = useSettings();
     const [activeTab, setActiveTab] = useState(() => {
         // Initialize to first enabled tab
-        const tabOrder = settings.tabOrder || ['tvm', 'goal', 'loan', 'tax', 'pension', 'inflation', 'tbill', 'fxcompare', 'transport', 'flow', 'bond', 'rates', 'history'];
+        const tabOrder = settings.tabOrder || ['tvm', 'goal', 'loan', 'tax', 'pension', 'inflation', 'tbill', 'fxcompare', 'transport', 'flow', 'bond', 'timezone', 'rates', 'history'];
         const firstEnabled = tabOrder.find(id => settings[TAB_TO_SETTING[id]]);
         return firstEnabled || 'tvm';
     });
@@ -61,7 +63,7 @@ function AppContent() {
     useEffect(() => {
         const settingKey = TAB_TO_SETTING[activeTab];
         if (settingKey && !settings[settingKey]) {
-            const tabOrder = settings.tabOrder || ['tvm', 'goal', 'loan', 'tax', 'pension', 'inflation', 'tbill', 'fxcompare', 'transport', 'flow', 'bond', 'rates', 'history'];
+            const tabOrder = settings.tabOrder || ['tvm', 'goal', 'loan', 'tax', 'pension', 'inflation', 'tbill', 'fxcompare', 'transport', 'flow', 'bond', 'timezone', 'rates', 'history'];
             const firstEnabled = tabOrder.find(id => settings[TAB_TO_SETTING[id]]);
             if (firstEnabled) {
                 setActiveTab(firstEnabled);
@@ -143,6 +145,9 @@ function AppContent() {
             </div>
             <div className={activeTab === 'rates' ? 'block h-full' : 'hidden'}>
                 <RateConverter toggleHelp={toggleHelp} toggleSettings={toggleSettings} />
+            </div>
+            <div className={activeTab === 'timezone' ? 'block h-full' : 'hidden'}>
+                <TimeZoneConverter toggleHelp={toggleHelp} toggleSettings={toggleSettings} />
             </div>
             <div className={activeTab === 'goal' ? 'block h-full' : 'hidden'}>
                 <GoalPlanner toggleHelp={toggleHelp} toggleSettings={toggleSettings} />

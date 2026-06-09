@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
     HelpCircle, Calculator, Target, DollarSign, Activity, FileText, Percent,
-    ChevronDown, ChevronUp, Book, Lightbulb, Hash, ArrowRight, History, Trash2, Receipt, Settings, Wallet, TrendingUp, Car, ArrowRightLeft, Landmark
+    ChevronDown, ChevronUp, Book, Lightbulb, Hash, ArrowRight, History, Trash2, Receipt, Settings, Wallet, TrendingUp, Car, ArrowRightLeft, Landmark, Globe
 } from 'lucide-react';
 import { MIN_YEAR, MAX_YEAR, FORECAST_END } from '../inflation/data';
 
@@ -15,6 +15,7 @@ const TAB_TO_SECTION = {
     flow: 'flow',
     bond: 'bond',
     rates: 'rates',
+    timezone: 'timezone',
     tbill: 'tbill',
     tax: 'tax',
     fxcompare: 'fxcompare',
@@ -170,6 +171,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                         <li>• <strong>Flow</strong> - NPV, IRR & cash flow analysis</li>
                         <li>• <strong>Bond</strong> - Bond pricing & yields</li>
                         <li>• <strong>Rates</strong> - Interest rate conversions</li>
+                        <li>• <strong>Time</strong> - Global timezone converter & calculator</li>
                         <li>• <strong>Ride</strong> - Ride Fare Calculator</li>
                         <li>• <strong>T-Bill</strong> - Treasury Bill bidding calculator</li>
                         <li>• <strong>Tax</strong> - Ethiopian Tax calculator</li>
@@ -650,6 +652,43 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                 <InfoBox type="tip">
                     <strong>Rule of 72:</strong> A quick estimate for doubling time is 72 ÷ interest rate.
                     For example, at 8%, money doubles in approximately 72 ÷ 8 = 9 years.
+                </InfoBox>
+            </HelpSection>
+
+            {/* Time Zone Converter */}
+            <HelpSection
+                id="timezone"
+                title="Time Tools (Time Zone Converter)"
+                icon={Globe}
+                isOpen={openSection === 'timezone'}
+                onToggle={handleToggle}
+            >
+                <p>
+                    Convert times between different global zones or compute time differences and arithmetic offsets.
+                    Switch between the <strong>Converter</strong> and <strong>Calculator</strong> modes using the toggle next to the header title.
+                </p>
+
+                <div className="pt-2">
+                    <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Modes:</p>
+                    <FieldList fields={[
+                        { name: 'Converter Mode', description: 'Synchronize multiple global clocks. Changing the time or moving the slider on any clock automatically converts and updates the rest of the clocks in real time.' },
+                        { name: 'Difference Mode', description: 'Under Calculator tab, calculates the exact duration (Days, Hours, Minutes, and total seconds/minutes/hours) between two separate date-time points in different timezones.' },
+                        { name: 'Add/Subtract Mode', description: 'Under Calculator tab, calculates the target date-time after adding or subtracting a custom duration (Years, Months, Days, Hours, Minutes, Seconds) from a starting point.' }
+                    ]} />
+                </div>
+
+                <div className="pt-2">
+                    <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Features & Shortcuts:</p>
+                    <FieldList fields={[
+                        { name: 'Wikipedia Abbreviation Search', description: 'Search the dropdown by standard abbreviation codes (e.g. EST, JST, BST, GMT) or major city/country names. Aliases such as Milan are also mapped.' },
+                        { name: '12-Hour / 24-Hour Format', description: 'Toggle time representation globally. In 12-Hour format, custom time boxes render an AM/PM toggle button.' },
+                        { name: 'Dial Buttons', description: 'Hover or focus on custom time fields to use the increment (Up) and decrement (Down) buttons for precise hour and minute selection.' },
+                        { name: 'Shareable Links', description: 'Copy the synchronized state URL to your clipboard. Sharing this link loads the exact same clocks and reference time for another user.' }
+                    ]} />
+                </div>
+
+                <InfoBox type="tip">
+                    <strong>Relative Time Sliders:</strong> Drag the slider underneath any clock to quickly shift hours and minutes and preview how business days or flight arrival times align between locations.
                 </InfoBox>
             </HelpSection>
 

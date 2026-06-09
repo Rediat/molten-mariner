@@ -30,7 +30,8 @@ const DEFAULT_SETTINGS = {
     showTransport: false,
     showHistory: false,
     showFxCompare: true,
-    tabOrder: ['tvm', 'goal', 'loan', 'tax', 'pension', 'inflation', 'tbill', 'fxcompare', 'transport', 'flow', 'bond', 'rates', 'history'],
+    showTimeZone: true,
+    tabOrder: ['tvm', 'goal', 'loan', 'tax', 'pension', 'inflation', 'tbill', 'fxcompare', 'transport', 'flow', 'bond', 'timezone', 'rates', 'history'],
 };
 
 export const SettingsProvider = ({ children }) => {
@@ -49,6 +50,16 @@ export const SettingsProvider = ({ children }) => {
                     merged.tabOrder.splice(tbillIndex + 1, 0, 'fxcompare');
                 } else {
                     merged.tabOrder.push('fxcompare');
+                }
+            }
+
+            // Ensure timezone is in tabOrder if it's missing (migration)
+            if (merged.tabOrder && !merged.tabOrder.includes('timezone')) {
+                const ratesIndex = merged.tabOrder.indexOf('rates');
+                if (ratesIndex !== -1) {
+                    merged.tabOrder.splice(ratesIndex, 0, 'timezone');
+                } else {
+                    merged.tabOrder.push('timezone');
                 }
             }
             
