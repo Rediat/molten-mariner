@@ -218,7 +218,7 @@ const TimeZoneConverter = ({ toggleHelp, toggleSettings }) => {
         return `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
     });
     const [diffTimeA, setDiffTimeA] = useState('12:00');
-    const [diffTzA, setDiffTzA] = useState(() => getLocalTimeZone());
+    const [diffTzA, setDiffTzA] = useState('Africa/Addis_Ababa');
 
     const [diffDateB, setDiffDateB] = useState(() => {
         const tomorrow = new Date();
@@ -226,7 +226,7 @@ const TimeZoneConverter = ({ toggleHelp, toggleSettings }) => {
         return `${tomorrow.getFullYear()}-${pad(tomorrow.getMonth() + 1)}-${pad(tomorrow.getDate())}`;
     });
     const [diffTimeB, setDiffTimeB] = useState('12:00');
-    const [diffTzB, setDiffTzB] = useState('UTC');
+    const [diffTzB, setDiffTzB] = useState('Africa/Addis_Ababa');
 
     // 3. Calculator State - Math Mode (Add/Subtract)
     const [mathDate, setMathDate] = useState(() => {
@@ -234,7 +234,7 @@ const TimeZoneConverter = ({ toggleHelp, toggleSettings }) => {
         return `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
     });
     const [mathTime, setMathTime] = useState('12:00');
-    const [mathTz, setMathTz] = useState(() => getLocalTimeZone());
+    const [mathTz, setMathTz] = useState('Africa/Addis_Ababa');
     const [mathOp, setMathOp] = useState('add');
     const [mathDays, setMathDays] = useState(0);
     const [mathHours, setMathHours] = useState(0);
@@ -641,14 +641,6 @@ const TimeZoneConverter = ({ toggleHelp, toggleSettings }) => {
                     {/* Top widgets row */}
                     <div className="flex justify-center gap-1.5 mb-1 pb-3 border-b border-neutral-700/35 shrink-0">
                         <button
-                            onClick={() => setUse24Hour(!use24Hour)}
-                            className="flex items-center gap-1 py-1.5 px-2.5 rounded-xl bg-neutral-850 text-neutral-400 font-bold text-[10px] hover:bg-neutral-750 hover:text-white transition-all ring-1 ring-white/5 uppercase tracking-wider"
-                        >
-                            <Clock size={12} />
-                            {use24Hour ? '24-Hour' : '12-Hour'}
-                        </button>
-                        
-                        <button
                             onClick={() => setShowDatePicker(!showDatePicker)}
                             className={`flex items-center gap-1 py-1.5 px-2.5 rounded-xl font-bold text-[10px] transition-all ring-1 ring-white/5 uppercase tracking-wider ${
                                 showDatePicker 
@@ -909,22 +901,13 @@ const TimeZoneConverter = ({ toggleHelp, toggleSettings }) => {
                         </button>
                     </div>
 
-                    {/* Time format selector row */}
-                    <div className="flex justify-center gap-1.5 shrink-0">
-                        <button
-                            onClick={() => setUse24Hour(!use24Hour)}
-                            className="flex items-center gap-1 py-1.5 px-3 rounded-xl bg-neutral-850 text-neutral-400 font-bold text-[10px] hover:bg-neutral-750 hover:text-white transition-all ring-1 ring-white/5 uppercase tracking-wider"
-                        >
-                            <Clock size={12} />
-                            {use24Hour ? '24-Hour Format' : '12-Hour Format'}
-                        </button>
-                    </div>
+
 
                     {calcSubMode === 'difference' ? (
                         /* DIFFERENCE CALCULATOR */
                         <div className="space-y-4">
                             {/* Input A */}
-                            <div className="bg-neutral-850/40 border border-neutral-750/50 rounded-2xl p-4 space-y-3">
+                            <div className="bg-neutral-800/60 border border-neutral-700 rounded-2xl p-4 space-y-3">
                                 <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest block">Start Date-Time (A)</span>
                                 <div className="grid grid-cols-2 gap-2">
                                     <input 
@@ -1001,7 +984,7 @@ const TimeZoneConverter = ({ toggleHelp, toggleSettings }) => {
                             </div>
 
                             {/* Input B */}
-                            <div className="bg-neutral-850/40 border border-neutral-750/50 rounded-2xl p-4 space-y-3">
+                            <div className="bg-neutral-800/60 border border-neutral-700 rounded-2xl p-4 space-y-3">
                                 <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest block">End Date-Time (B)</span>
                                 <div className="grid grid-cols-2 gap-2">
                                     <input 
@@ -1079,7 +1062,7 @@ const TimeZoneConverter = ({ toggleHelp, toggleSettings }) => {
 
                             {/* Difference Output Result */}
                             {diffResult && (
-                                <div className="bg-gradient-to-br from-neutral-800/80 to-neutral-900/80 border border-white/10 rounded-2xl p-4 space-y-3">
+                                <div className="bg-gradient-to-br from-neutral-800/80 to-neutral-900/80 border border-primary-500/30 rounded-2xl p-4 space-y-3">
                                     <span className="text-[10px] font-bold text-primary-400 uppercase tracking-widest block">Time Difference</span>
                                     <div className="grid grid-cols-3 gap-2 text-center">
                                         <div className="bg-neutral-900/60 rounded-xl p-2.5 border border-white/5">
@@ -1118,7 +1101,7 @@ const TimeZoneConverter = ({ toggleHelp, toggleSettings }) => {
                         /* ADD / SUBTRACT CALCULATOR */
                         <div className="space-y-4">
                             {/* Start parameters */}
-                            <div className="bg-neutral-850/40 border border-neutral-750/50 rounded-2xl p-4 space-y-3">
+                            <div className="bg-neutral-800/60 border border-neutral-700 rounded-2xl p-4 space-y-3">
                                 <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest block">Start Date-Time</span>
                                 <div className="grid grid-cols-2 gap-2">
                                     <input 
@@ -1285,7 +1268,7 @@ const TimeZoneConverter = ({ toggleHelp, toggleSettings }) => {
 
                             {/* Math Result */}
                             {mathResult && (
-                                <div className="bg-gradient-to-br from-neutral-800/80 to-neutral-900/80 border border-white/10 rounded-2xl p-4 space-y-2">
+                                <div className="bg-gradient-to-br from-neutral-800/80 to-neutral-900/80 border border-primary-500/30 rounded-2xl p-4 space-y-2">
                                     <span className="text-[10px] font-bold text-primary-400 uppercase tracking-widest block">Calculated Result Date-Time</span>
                                     <div className="text-center py-2 space-y-1">
                                         <div className="text-2xl font-mono font-bold text-white">{mathResult.time}</div>
@@ -1302,21 +1285,30 @@ const TimeZoneConverter = ({ toggleHelp, toggleSettings }) => {
             )}
 
             {/* Footer with Help Guide and Settings buttons */}
-            <div className="flex justify-end gap-1.5 pt-2 mt-2 border-t border-neutral-800/40 shrink-0">
+            <div className="flex justify-between items-center pt-2 mt-2 border-t border-neutral-800/40 shrink-0">
                 <button
-                    onClick={toggleHelp}
-                    className="flex items-center justify-center p-1.5 rounded-full bg-neutral-800 text-neutral-500 hover:bg-neutral-700 hover:text-neutral-300 transition-all"
-                    title="Help Guide"
+                    onClick={() => setUse24Hour(!use24Hour)}
+                    className="flex items-center gap-1 py-1.5 px-2.5 rounded-xl bg-neutral-850 hover:bg-neutral-750 text-neutral-400 hover:text-white font-bold text-[10px] transition-all ring-1 ring-white/5 uppercase tracking-wider"
                 >
-                    <HelpCircle className="w-3.5 h-3.5" />
+                    <Clock size={12} />
+                    {use24Hour ? '24-Hour' : '12-Hour'}
                 </button>
-                <button
-                    onClick={toggleSettings}
-                    className="flex items-center justify-center p-1.5 rounded-full bg-neutral-800 text-neutral-500 hover:bg-neutral-700 hover:text-neutral-300 transition-all"
-                    title="Settings"
-                >
-                    <Settings className="w-3.5 h-3.5" />
-                </button>
+                <div className="flex gap-1.5">
+                    <button
+                        onClick={toggleHelp}
+                        className="flex items-center justify-center p-1.5 rounded-full bg-neutral-800 text-neutral-500 hover:bg-neutral-700 hover:text-neutral-300 transition-all"
+                        title="Help Guide"
+                    >
+                        <HelpCircle className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                        onClick={toggleSettings}
+                        className="flex items-center justify-center p-1.5 rounded-full bg-neutral-800 text-neutral-500 hover:bg-neutral-700 hover:text-neutral-300 transition-all"
+                        title="Settings"
+                    >
+                        <Settings className="w-3.5 h-3.5" />
+                    </button>
+                </div>
             </div>
         </div>
     );
