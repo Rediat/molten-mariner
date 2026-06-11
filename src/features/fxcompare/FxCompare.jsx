@@ -206,7 +206,7 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
             [],
             leverageAsset === 'tbill'
                 ? ['Round', 'Auction Date', 'Maturity', 'Quantity', 'Invested', 'End Value', 'Profit', 'Reinvested', 'Pocketed', 'Leftover']
-                : ['Round', 'Deposit Date', 'Maturity', 'Quantity', 'Invested', 'End Value', 'Interest', 'Reinvested', 'Pocketed']
+                : ['Round', 'Deposit Date', 'Maturity', 'Invested', 'End Value', 'Interest', 'Reinvested', 'Pocketed']
         ];
         
         leverageResult.rounds.forEach((r, i) => {
@@ -228,7 +228,6 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                     i + 1,
                     r.auctionDate,
                     r.maturityDate,
-                    r.quantity,
                     r.invested.toFixed(2),
                     r.endValue.toFixed(2),
                     r.profit.toFixed(2),
@@ -272,11 +271,11 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
             `${leverageAsset === 'tbill' ? 'T-Bill' : 'Deposit'}: ${customTbillRate.toFixed(2)}% | Reinvestment: ${reinvestmentPercentage}% | ${termText} | ROI: ${leverageResult.tbillTotalROI.toFixed(2)}% | Final: ${formatCurrency(leverageResult.tbillFinalValue)} | Net Profit: ${formatCurrency(leverageResult.netProfit)}`
         ];
 
-        const doc = createStandardPDF(`${leverageAsset === 'tbill' ? 'T-Bill' : 'Time Deposit'} Leverage Analysis`, summaryLines);
+        const doc = createStandardPDF(`${leverageAsset === 'tbill' ? 'T-Bill' : 'Time Deposit'} Leverage Analysis`, summaryLines, { orientation: 'landscape' });
 
         const head = leverageAsset === 'tbill'
             ? [["Round", "Auction Date", "Maturity", "Quantity", "Invested", "End Value", "Profit", "Reinvested", "Pocketed", "Leftover"]]
-            : [["Round", "Deposit Date", "Maturity", "Quantity", "Invested", "End Value", "Interest", "Reinvested", "Pocketed"]];
+            : [["Round", "Deposit Date", "Maturity", "Invested", "End Value", "Interest", "Reinvested", "Pocketed"]];
 
         const body = leverageResult.rounds.map((r, i) => {
             if (leverageAsset === 'tbill') {
@@ -297,7 +296,6 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                     i + 1,
                     r.auctionDate,
                     r.maturityDate,
-                    r.quantity,
                     `${formatCurrency(r.invested)}`,
                     `${formatCurrency(r.endValue)}`,
                     `${r.profit >= 0 ? '+' : ''}${formatCurrency(r.profit)}`,
@@ -334,7 +332,6 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                     5: { halign: 'right' },
                     6: { halign: 'right' },
                     7: { halign: 'right' },
-                    8: { halign: 'right' },
                 },
         });
         
@@ -365,7 +362,7 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
             [],
             leverageAsset === 'tbill'
                 ? ["Round", "Auction Date", "Maturity", "Quantity", "Invested", "End Value", "Profit", "Reinvested", "Pocketed", "Leftover"]
-                : ["Round", "Deposit Date", "Maturity", "Quantity", "Invested", "End Value", "Interest", "Reinvested", "Pocketed"]
+                : ["Round", "Deposit Date", "Maturity", "Invested", "End Value", "Interest", "Reinvested", "Pocketed"]
         ];
         
         leverageResult.rounds.forEach((r, i) => {
@@ -387,7 +384,6 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                     i + 1,
                     r.auctionDate,
                     r.maturityDate,
-                    r.quantity,
                     r.invested,
                     r.endValue,
                     r.profit,

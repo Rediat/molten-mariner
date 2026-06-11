@@ -5,10 +5,12 @@ import jsPDF from 'jspdf';
  * 
  * @param {string} title - The main title of the document.
  * @param {string[]} summaryLines - An array of strings to be displayed as summary lines below the title.
+ * @param {object} options - Configuration options such as orientation ('portrait' | 'landscape').
  * @returns {jsPDF} The initialized jsPDF document instance.
  */
-export const createStandardPDF = (title, summaryLines = []) => {
-    const doc = new jsPDF();
+export const createStandardPDF = (title, summaryLines = [], options = {}) => {
+    const { orientation = 'portrait' } = options;
+    const doc = new jsPDF(orientation === 'landscape' ? 'l' : 'p', 'mm', 'a4');
     
     // Title
     doc.setTextColor(40);
