@@ -257,7 +257,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                     <FieldList fields={[
                         { name: 'Annuity Only', description: 'Calculate required periodic payments with no initial deposit' },
                         { name: 'Lump Sum Only', description: 'Calculate required one-time deposit with no periodic payments' },
-                        { name: 'PV + Annuity', description: 'Combine an initial deposit with periodic payments' }
+                        { name: 'PV + Annuity', description: 'Combine an initial deposit with payments' }
                     ]} />
                 </div>
 
@@ -267,6 +267,22 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                         { name: 'Initial PV', description: 'Specify your initial lump sum, solve for required payment' },
                         { name: 'Fixed PMT', description: 'Specify your periodic payment, solve for required initial deposit' },
                         { name: 'PV Ratio %', description: 'Specify what percentage of total contributions should be from the initial deposit' }
+                    ]} />
+                </div>
+
+                <div className="pt-2">
+                    <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Settings:</p>
+                    <FieldList fields={[
+                        { name: 'END/BEGIN', description: 'When payments occur - end of period (ordinary annuity) or beginning (annuity due)' },
+                        { name: 'COMPOUND/SIMPLE', description: 'Type of interest calculation (compound vs simple interest)' },
+                        { name: 'Payments', description: 'Number of payments/deposits per year (monthly = 12, weekly = 52, etc.)' }
+                    ]} />
+                </div>
+
+                <div className="pt-2">
+                    <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Advanced Features:</p>
+                    <FieldList fields={[
+                        { name: 'Advanced Compounding Mode', description: 'Click the Settings/Sliders icon in the header to decouple Payment Frequency (Payments) from Compounding Frequency (Compounds) for complex savings scenarios.' }
                     ]} />
                 </div>
 

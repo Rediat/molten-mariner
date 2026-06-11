@@ -533,10 +533,10 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
                     </div>
                 </div>
                 <div className="flex flex-col items-end gap-1.5">
-                    <div className="flex gap-1.5">
+                    <div className="flex gap-1.5 items-center">
                         <button
                             onClick={() => setShowExplanation(!showExplanation)}
-                            className={`flex items-center justify-center p-1 rounded-full transition-all ${showExplanation ? 'bg-primary-600/20 text-primary-400 ring-1 ring-primary-500/50' : 'bg-neutral-800 text-neutral-500 hover:bg-neutral-700'}`}
+                            className={`w-5 h-5 flex items-center justify-center rounded-full transition-all ${showExplanation ? 'bg-primary-600/20 text-primary-400 ring-1 ring-primary-500/50' : 'bg-neutral-800 text-neutral-500 hover:bg-neutral-700'}`}
                             title="Show Info"
                         >
                             <Info className="w-3 h-3" />
@@ -549,7 +549,7 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
                                     setIsCompoundingManuallySet(false);
                                 }
                             }}
-                            className={`flex items-center justify-center p-1 rounded-full transition-all ${showAdvanced ? 'bg-primary-600/20 text-primary-400 ring-1 ring-primary-500/50' : 'bg-neutral-800 text-neutral-500 hover:bg-neutral-700'}`}
+                            className={`w-5 h-5 flex items-center justify-center rounded-full transition-all ${showAdvanced ? 'bg-primary-600/20 text-primary-400 ring-1 ring-primary-500/50' : 'bg-neutral-800 text-neutral-500 hover:bg-neutral-700'}`}
                             title={showAdvanced ? "Simple Mode" : "Advanced Mode"}
                         >
                             <Settings2 className="w-3 h-3" />
