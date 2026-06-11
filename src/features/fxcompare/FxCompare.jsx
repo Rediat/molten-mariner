@@ -1,10 +1,10 @@
-import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback, useId } from 'react';
 import { useInputFocus } from '../../hooks/useInputFocus';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { createStandardPDF, addStandardFooter, STANDARD_TABLE_STYLES } from '../../utils/pdf-utils';
 import * as XLSX from 'xlsx';
-import { ArrowRightLeft, Info, HelpCircle, Settings, ChevronDown, ChevronUp, Trash2, X, TrendingUp, TrendingDown, Search, Calendar, FileSpreadsheet, FileText, Download } from 'lucide-react';
+import { ArrowRightLeft, Info, HelpCircle, Settings, ChevronDown, ChevronUp, Trash2, X, TrendingUp, TrendingDown, Search, Calendar, FileSpreadsheet, FileText, Download, ChevronLeft, ChevronRight } from 'lucide-react';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
 import { CalculateIcon } from '../../components/Icons';
 import AwaitingCalculation from '../../components/AwaitingCalculation';
@@ -112,6 +112,7 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
     const [auctionSearch, setAuctionSearch] = useState('');
     const [currencySearch, setCurrencySearch] = useState('');
     const [showAllModal, setShowAllModal] = useState(false);
+    const [reinvestmentPercentage, setReinvestmentPercentage] = useState(100);
     const [leverageAsset, setLeverageAsset] = useState('deposit'); // Default to deposit
     
     // Refs for input focus
@@ -167,7 +168,8 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                 customTbillRate || 0,
                 brokerageRate,
                 selectedTenure,
-                leverageAsset
+                leverageAsset,
+                reinvestmentPercentage
             );
             setLeverageResult(res);
         }
@@ -195,6 +197,7 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
             ['Loan Rate', `${loanRate}%`],
             ['Term (Years)', loanYears],
             ['Frequency', loanFrequency],
+            ['Reinvestment Rate', `${reinvestmentPercentage}%`],
             [],
             ['Results Summary'],
             ['Total Final Value', formatCurrency(leverageResult.tbillFinalValue)],
@@ -202,8 +205,8 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
             ['Total ROI', `${leverageResult.tbillTotalROI.toFixed(2)}%`],
             [],
             leverageAsset === 'tbill'
-                ? ['Round', 'Auction Date', 'Maturity', 'Quantity', 'Invested', 'End Value', 'Profit', 'Leftover']
-                : ['Round', 'Deposit Date', 'Maturity', 'Quantity', 'Invested', 'End Value', 'Interest']
+                ? ['Round', 'Auction Date', 'Maturity', 'Quantity', 'Invested', 'End Value', 'Profit', 'Reinvested', 'Pocketed', 'Leftover']
+                : ['Round', 'Deposit Date', 'Maturity', 'Quantity', 'Invested', 'End Value', 'Interest', 'Reinvested', 'Pocketed']
         ];
         
         leverageResult.rounds.forEach((r, i) => {
@@ -216,6 +219,8 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                     r.invested.toFixed(2),
                     r.endValue.toFixed(2),
                     r.profit.toFixed(2),
+                    r.reinvested.toFixed(2),
+                    r.withdrawn.toFixed(2),
                     r.leftover.toFixed(2)
                 ]);
             } else {
@@ -226,7 +231,9 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                     r.quantity,
                     r.invested.toFixed(2),
                     r.endValue.toFixed(2),
-                    r.profit.toFixed(2)
+                    r.profit.toFixed(2),
+                    r.reinvested.toFixed(2),
+                    r.withdrawn.toFixed(2)
                 ]);
             }
         });
@@ -262,14 +269,14 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
         
         const summaryLines = [
             `Loan: ${formatCurrency(budget)} | Rate: ${loanRate.toFixed(2)}% | Term: ${loanYears}y | Freq: ${loanFrequency} | Total Interest: ${formatCurrency(leverageResult.loanResult.totalInterest)}`,
-            `${leverageAsset === 'tbill' ? 'T-Bill' : 'Deposit'}: ${customTbillRate.toFixed(2)}% | ${termText} | ROI: ${leverageResult.tbillTotalROI.toFixed(2)}% | Final: ${formatCurrency(leverageResult.tbillFinalValue)} | Net Profit: ${formatCurrency(leverageResult.netProfit)}`
+            `${leverageAsset === 'tbill' ? 'T-Bill' : 'Deposit'}: ${customTbillRate.toFixed(2)}% | Reinvestment: ${reinvestmentPercentage}% | ${termText} | ROI: ${leverageResult.tbillTotalROI.toFixed(2)}% | Final: ${formatCurrency(leverageResult.tbillFinalValue)} | Net Profit: ${formatCurrency(leverageResult.netProfit)}`
         ];
 
         const doc = createStandardPDF(`${leverageAsset === 'tbill' ? 'T-Bill' : 'Time Deposit'} Leverage Analysis`, summaryLines);
 
         const head = leverageAsset === 'tbill'
-            ? [["Round", "Auction Date", "Maturity", "Quantity", "Invested", "End Value", "Profit", "Leftover"]]
-            : [["Round", "Deposit Date", "Maturity", "Quantity", "Invested", "End Value", "Interest"]];
+            ? [["Round", "Auction Date", "Maturity", "Quantity", "Invested", "End Value", "Profit", "Reinvested", "Pocketed", "Leftover"]]
+            : [["Round", "Deposit Date", "Maturity", "Quantity", "Invested", "End Value", "Interest", "Reinvested", "Pocketed"]];
 
         const body = leverageResult.rounds.map((r, i) => {
             if (leverageAsset === 'tbill') {
@@ -281,6 +288,8 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                     `${formatCurrency(r.invested)}`,
                     `${formatCurrency(r.endValue)}`,
                     `${r.profit >= 0 ? '+' : ''}${formatCurrency(r.profit)}`,
+                    `${formatCurrency(r.reinvested)}`,
+                    `${formatCurrency(r.withdrawn)}`,
                     `${formatCurrency(r.leftover)}`
                 ];
             } else {
@@ -291,7 +300,9 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                     r.quantity,
                     `${formatCurrency(r.invested)}`,
                     `${formatCurrency(r.endValue)}`,
-                    `${r.profit >= 0 ? '+' : ''}${formatCurrency(r.profit)}`
+                    `${r.profit >= 0 ? '+' : ''}${formatCurrency(r.profit)}`,
+                    `${formatCurrency(r.reinvested)}`,
+                    `${formatCurrency(r.withdrawn)}`
                 ];
             }
         });
@@ -311,6 +322,8 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                     5: { halign: 'right' },
                     6: { halign: 'right' },
                     7: { halign: 'right' },
+                    8: { halign: 'right' },
+                    9: { halign: 'right' },
                 }
                 : {
                     0: { halign: 'right' },
@@ -320,6 +333,8 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                     4: { halign: 'right' },
                     5: { halign: 'right' },
                     6: { halign: 'right' },
+                    7: { halign: 'right' },
+                    8: { halign: 'right' },
                 },
         });
         
@@ -341,6 +356,7 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
             ["Loan Rate", `${loanRate}%`],
             ["Term (Years)", loanYears],
             ["Frequency", loanFrequency],
+            ["Reinvestment Rate", `${reinvestmentPercentage}%`],
             [],
             ["Results Summary"],
             ["Total Final Value", leverageResult.tbillFinalValue],
@@ -348,8 +364,8 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
             ["Total ROI", `${leverageResult.tbillTotalROI.toFixed(2)}%`],
             [],
             leverageAsset === 'tbill'
-                ? ["Round", "Auction Date", "Maturity", "Quantity", "Invested", "End Value", "Profit", "Leftover"]
-                : ["Round", "Deposit Date", "Maturity", "Quantity", "Invested", "End Value", "Interest"]
+                ? ["Round", "Auction Date", "Maturity", "Quantity", "Invested", "End Value", "Profit", "Reinvested", "Pocketed", "Leftover"]
+                : ["Round", "Deposit Date", "Maturity", "Quantity", "Invested", "End Value", "Interest", "Reinvested", "Pocketed"]
         ];
         
         leverageResult.rounds.forEach((r, i) => {
@@ -362,6 +378,8 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                     r.invested,
                     r.endValue,
                     r.profit,
+                    r.reinvested,
+                    r.withdrawn,
                     r.leftover
                 ]);
             } else {
@@ -372,7 +390,9 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                     r.quantity,
                     r.invested,
                     r.endValue,
-                    r.profit
+                    r.profit,
+                    r.reinvested,
+                    r.withdrawn
                 ]);
             }
         });
@@ -652,64 +672,127 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                     
                 {/* Leverage Mode Inputs */}
                 {mode === 'leverage' && (
-                    <div className="bg-neutral-800/40 rounded-xl p-1.5 border border-neutral-700 text-left grid grid-cols-4 gap-2">
-                        <div className="flex flex-col">
-                            <label 
-                                onClick={focusTbillRate}
-                                className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold mb-1 cursor-pointer hover:text-emerald-400 transition-colors select-none"
-                            >
-                                {leverageAsset === 'tbill' ? 'T-Bill (%)' : 'Deposit (%)'}
-                            </label>
-                            <FormattedNumberInput
-                                ref={tbillRateRef}
-                                value={customTbillRate}
-                                onChange={(e) => setCustomTbillRate(parseFloat(e.target.value.replace(/,/g, '')))}
-                                decimals={2}
-                                className="bg-neutral-900 border border-neutral-700 rounded-md text-white text-[11px] p-1.5 focus:outline-none focus:border-emerald-500 w-full font-mono text-right"
-                            />
+                    <div className="bg-neutral-800/40 rounded-xl p-1.5 border border-neutral-700 text-left flex flex-col gap-2">
+                        <div className="grid grid-cols-4 gap-2">
+                            <div className="flex flex-col">
+                                <label 
+                                    onClick={focusTbillRate}
+                                    className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold mb-1 cursor-pointer hover:text-emerald-400 transition-colors select-none"
+                                >
+                                    {leverageAsset === 'tbill' ? 'T-Bill (%)' : 'Deposit (%)'}
+                                </label>
+                                <FormattedNumberInput
+                                    ref={tbillRateRef}
+                                    value={customTbillRate}
+                                    onChange={(e) => setCustomTbillRate(parseFloat(e.target.value.replace(/,/g, '')))}
+                                    decimals={2}
+                                    className="bg-neutral-900 border border-neutral-700 rounded-md text-white text-[11px] p-1.5 focus:outline-none focus:border-emerald-500 w-full font-mono text-right"
+                                />
+                            </div>
+                            <div className="flex flex-col">
+                                <label 
+                                    onClick={focusLoanRate}
+                                    className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold mb-1 cursor-pointer hover:text-emerald-400 transition-colors select-none"
+                                >
+                                    Loan (%)
+                                </label>
+                                <FormattedNumberInput
+                                    ref={loanRateRef}
+                                    value={loanRate}
+                                    onChange={(e) => setLoanRate(parseFloat(e.target.value.replace(/,/g, '')))}
+                                    decimals={2}
+                                    className="bg-neutral-900 border border-neutral-700 rounded-md text-white text-[11px] p-1.5 focus:outline-none focus:border-emerald-500 w-full font-mono text-right"
+                                />
+                            </div>
+                            <div className="flex flex-col">
+                                <label 
+                                    onClick={focusLoanYears}
+                                    className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold mb-1 cursor-pointer hover:text-emerald-400 transition-colors select-none"
+                                >
+                                    Term (YR)
+                                </label>
+                                <FormattedNumberInput
+                                    ref={loanYearsRef}
+                                    value={loanYears}
+                                    onChange={(e) => setLoanYears(parseFloat(e.target.value.replace(/,/g, '')))}
+                                    decimals={0}
+                                    className="bg-neutral-900 border border-neutral-700 rounded-md text-white text-[11px] p-1.5 focus:outline-none focus:border-emerald-500 w-full font-mono text-right"
+                                />
+                            </div>
+                            <div className="flex flex-col">
+                                <label className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold mb-1">Frequency</label>
+                                <select
+                                    value={loanFrequency}
+                                    onChange={(e) => setLoanFrequency(parseInt(e.target.value))}
+                                    className="bg-neutral-900 border border-neutral-700 rounded-md text-white text-[10px] p-1.5 focus:outline-none focus:border-emerald-500 w-full"
+                                >
+                                    <option value={1}>Annually</option>
+                                    <option value={2}>Semi-Annually</option>
+                                    <option value={4}>Quarterly</option>
+                                    <option value={12}>Monthly</option>
+                                </select>
+                            </div>
                         </div>
-                        <div className="flex flex-col">
-                            <label 
-                                onClick={focusLoanRate}
-                                className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold mb-1 cursor-pointer hover:text-emerald-400 transition-colors select-none"
-                            >
-                                Loan (%)
+                        {/* Reinvestment Rate Row */}
+                        <div className="border-t border-neutral-700/50 pt-1.5 flex flex-col gap-1">
+                            <label className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold block select-none">
+                                Reinvestment Rate ({reinvestmentPercentage}%)
                             </label>
-                            <FormattedNumberInput
-                                ref={loanRateRef}
-                                value={loanRate}
-                                onChange={(e) => setLoanRate(parseFloat(e.target.value.replace(/,/g, '')))}
-                                decimals={2}
-                                className="bg-neutral-900 border border-neutral-700 rounded-md text-white text-[11px] p-1.5 focus:outline-none focus:border-emerald-500 w-full font-mono text-right"
-                            />
-                        </div>
-                        <div className="flex flex-col">
-                            <label 
-                                onClick={focusLoanYears}
-                                className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold mb-1 cursor-pointer hover:text-emerald-400 transition-colors select-none"
-                            >
-                                Term (YR)
-                            </label>
-                            <FormattedNumberInput
-                                ref={loanYearsRef}
-                                value={loanYears}
-                                onChange={(e) => setLoanYears(parseFloat(e.target.value.replace(/,/g, '')))}
-                                decimals={0}
-                                className="bg-neutral-900 border border-neutral-700 rounded-md text-white text-[11px] p-1.5 focus:outline-none focus:border-emerald-500 w-full font-mono text-right"
-                            />
-                        </div>
-                        <div className="flex flex-col">
-                            <label className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold mb-1">Frequency</label>
-                            <select
-                                value={loanFrequency}
-                                onChange={(e) => setLoanFrequency(parseInt(e.target.value))}
-                                className="bg-neutral-900 border border-neutral-700 rounded-md text-white text-[10px] p-1.5 focus:outline-none focus:border-emerald-500 w-full"
-                            >
-                                <option value={1}>Annually</option>
-                                <option value={2}>Semi-Annually</option>
-                                <option value={4}>Quarterly</option>
-                                <option value={12}>Monthly</option>
-                            </select>
+                            <div className="flex items-center gap-2 mt-1">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setReinvestmentPercentage(prev => {
+                                            const newVal = Math.max(0, prev - 5);
+                                            return newVal;
+                                        });
+                                        handleClear();
+                                    }}
+                                    className="h-6 p-1 rounded bg-neutral-900 hover:bg-neutral-800 text-neutral-400 hover:text-white border border-neutral-700 transition-colors flex items-center justify-center"
+                                    title="Decrease by 5%"
+                                >
+                                    <ChevronLeft className="w-3.5 h-3.5" />
+                                </button>
+                                <input
+                                    type="range"
+                                    min="0"
+                                    max="100"
+                                    step="5"
+                                    value={reinvestmentPercentage}
+                                    onChange={(e) => {
+                                        setReinvestmentPercentage(parseFloat(e.target.value));
+                                        handleClear();
+                                    }}
+                                    className="flex-1 accent-emerald-500 h-1 bg-neutral-900 rounded-lg appearance-none cursor-pointer"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setReinvestmentPercentage(prev => {
+                                            const newVal = Math.min(100, prev + 5);
+                                            return newVal;
+                                        });
+                                        handleClear();
+                                    }}
+                                    className="h-6 p-1 rounded bg-neutral-900 hover:bg-neutral-800 text-neutral-400 hover:text-white border border-neutral-700 transition-colors flex items-center justify-center"
+                                    title="Increase by 5%"
+                                >
+                                    <ChevronRight className="w-3.5 h-3.5" />
+                                </button>
+                                <FormattedNumberInput
+                                    value={reinvestmentPercentage}
+                                    onChange={(e) => {
+                                        let val = parseFloat(e.target.value.replace(/,/g, ''));
+                                        if (isNaN(val)) val = 0;
+                                        if (val < 0) val = 0;
+                                        if (val > 100) val = 100;
+                                        setReinvestmentPercentage(val);
+                                        handleClear();
+                                    }}
+                                    decimals={0}
+                                    className="bg-neutral-900 border border-neutral-700 rounded-md text-white text-[11px] h-6 focus:outline-none focus:border-emerald-500 w-16 shrink-0 font-mono text-center"
+                                />
+                            </div>
                         </div>
                     </div>
                 )}
@@ -1047,6 +1130,9 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                                                 <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase">Rate</span><span className="text-[10px] text-white font-mono">{leverageResult.rounds[0].yield.toFixed(3)}%</span></div>
                                                 <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase">Rounds</span><span className="text-[10px] text-neutral-400 font-mono">{leverageResult.totalRounds}</span></div>
                                                 <div className="flex justify-between pt-1 border-t border-neutral-700/50"><span className="text-[9px] text-neutral-500 uppercase">Total Profit</span><span className="text-[10px] font-bold font-mono text-green-400">+{formatCurrency(leverageResult.tbillTotalProfit)}</span></div>
+                                                {reinvestmentPercentage < 100 && (
+                                                    <div className="flex justify-between"><span className="text-[9px] text-amber-500/90 font-bold uppercase">Total Pocketed</span><span className="text-[10px] text-amber-400 font-mono font-bold">+{formatCurrency(leverageResult.totalWithdrawn)}</span></div>
+                                                )}
                                                 <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase">Final Value</span><span className="text-[10px] text-emerald-400 font-black font-mono">{formatCurrency(leverageResult.tbillFinalValue)}</span></div>
                                             </div>
                                         </div>
@@ -1071,7 +1157,7 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                                                  </span>
                                              </div>
                                          </div>
-                                    </div>
+                                     </div>
                                 </div>
                                 {/* Round-by-round breakdown */}
                                 <div className="bg-neutral-900/60 border border-neutral-700 rounded-xl overflow-hidden">
@@ -1103,6 +1189,12 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                                                         <div className="flex justify-between"><span className="text-neutral-500">Invested</span><span className="text-white font-mono">{formatCurrency(r.invested)}</span></div>
                                                         <div className="flex justify-between"><span className="text-neutral-500">End Val</span><span className="text-white font-mono">{formatCurrency(r.endValue)}</span></div>
                                                         <div className="flex justify-between"><span className="text-neutral-500">{leverageAsset === 'tbill' ? 'Profit' : 'Interest'}</span><span className={`font-mono font-bold ${r.profit >= 0 ? 'text-green-400' : 'text-red-400'}`}>{r.profit >= 0 ? '+' : ''}{formatCurrency(r.profit)}</span></div>
+                                                        {reinvestmentPercentage < 100 && (
+                                                            <>
+                                                                <div className="flex justify-between"><span className="text-neutral-500">Reinvested</span><span className="text-emerald-400 font-mono font-bold">+{formatCurrency(r.reinvested)}</span></div>
+                                                                <div className="flex justify-between"><span className="text-neutral-500">Pocketed</span><span className="text-amber-400 font-mono font-bold">+{formatCurrency(r.withdrawn)}</span></div>
+                                                            </>
+                                                        )}
                                                         {leverageAsset === 'tbill' && (
                                                             <div className="flex justify-between"><span className="text-neutral-500">Leftover</span><span className="text-amber-400/80 font-mono">{formatCurrency(r.leftover)}</span></div>
                                                         )}
@@ -1183,6 +1275,7 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
 };
 
 const MiniTrendChart = ({ data, color = '#10b981' }) => {
+    const id = useId();
     if (!data || data.length < 2) return null;
 
     const min = Math.min(...data);
@@ -1202,7 +1295,7 @@ const MiniTrendChart = ({ data, color = '#10b981' }) => {
     const firstVal = data[0];
     const isUp = lastVal >= firstVal;
     const strokeColor = isUp ? '#10b981' : '#ef4444';
-    const gradientId = `gradient-${Math.random().toString(36).substr(2, 9)}`;
+    const gradientId = `gradient-${id.replace(/:/g, '')}`;
 
     return (
         <div className="w-full h-12 relative group/chart">

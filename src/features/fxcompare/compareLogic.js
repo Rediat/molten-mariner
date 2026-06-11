@@ -341,13 +341,14 @@ export function compareRollingReturns(budget, startAuction, tbillDataAll, fxData
     };
 }
 
-function getLeverageFinalValue(budget, yieldAnnual, loanYears, brokerageRate, selectedTenure, leverageAsset = 'tbill') {
+function getLeverageFinalValue(budget, yieldAnnual, loanYears, brokerageRate, selectedTenure, leverageAsset = 'tbill', reinvestmentPercentage = 100) {
     const UNIT_FV = 5000;
     const startDate = new Date(2026, 3, 29); // Base simulation on current date (Apr 29, 2026)
     const endDate = new Date(startDate);
     endDate.setFullYear(endDate.getFullYear() + loanYears);
     
     let currentCash = budget;
+    let totalWithdrawn = 0;
     
     if (leverageAsset === 'deposit') {
         let currentRoundDate = new Date(startDate);
@@ -357,10 +358,12 @@ function getLeverageFinalValue(budget, yieldAnnual, loanYears, brokerageRate, se
             if (maturityDate > endDate) break;
             
             const interest = currentCash * (yieldAnnual / 100) * (selectedTenure / 365);
-            currentCash = currentCash + interest;
+            const withdrawn = interest * (1 - reinvestmentPercentage / 100);
+            totalWithdrawn += withdrawn;
+            currentCash = currentCash + interest - withdrawn;
             currentRoundDate = maturityDate;
         }
-        return currentCash;
+        return currentCash + totalWithdrawn;
     }
 
     let currentRoundDate = getNextAuctionDate(startDate, false); 
@@ -389,15 +392,18 @@ function getLeverageFinalValue(budget, yieldAnnual, loanYears, brokerageRate, se
         const invested = quantity * unitPriceInclBrok;
         const leftover = currentCash - invested;
         const endValue = quantity * UNIT_FV;
-        currentCash = endValue + leftover;
+        const profit = endValue - invested;
+        const withdrawn = profit * (1 - reinvestmentPercentage / 100);
+        totalWithdrawn += withdrawn;
+        currentCash = endValue - withdrawn + leftover;
         
         // Find next auction strictly AFTER maturity
         currentRoundDate = getNextAuctionDate(maturityDate, true);
     }
-    return currentCash;
+    return currentCash + totalWithdrawn;
 }
 
-export function findBreakEvenTbillRate(budget, loanRate, loanYears, loanFrequency, brokerageRate, selectedTenure, leverageAsset = 'tbill') {
+export function findBreakEvenTbillRate(budget, loanRate, loanYears, loanFrequency, brokerageRate, selectedTenure, leverageAsset = 'tbill', reinvestmentPercentage = 100) {
     const loanResult = calculateLoan(budget, loanRate, loanYears, 0, loanFrequency);
     const targetValue = loanResult.totalPayment;
     
@@ -407,7 +413,7 @@ export function findBreakEvenTbillRate(budget, loanRate, loanYears, loanFrequenc
     
     for (let i = 0; i < 20; i++) {
         let mid = (low + high) / 2;
-        let fv = getLeverageFinalValue(budget, mid, loanYears, brokerageRate, selectedTenure, leverageAsset);
+        let fv = getLeverageFinalValue(budget, mid, loanYears, brokerageRate, selectedTenure, leverageAsset, reinvestmentPercentage);
         if (fv >= targetValue) {
             breakEven = mid;
             high = mid;
@@ -418,7 +424,7 @@ export function findBreakEvenTbillRate(budget, loanRate, loanYears, loanFrequenc
     return breakEven;
 }
 
-export function compareLeverageReturns(budget, loanRate, loanYears, loanFrequency, customTbillRate, brokerageRate, selectedTenure, leverageAsset = 'tbill') {
+export function compareLeverageReturns(budget, loanRate, loanYears, loanFrequency, customTbillRate, brokerageRate, selectedTenure, leverageAsset = 'tbill', reinvestmentPercentage = 100) {
     const UNIT_FV = 5000;
     const yieldAnnual = customTbillRate;
 
@@ -450,6 +456,8 @@ export function compareLeverageReturns(budget, loanRate, loanYears, loanFrequenc
             const interest = currentCash * (yieldAnnual / 100) * (selectedTenure / 365);
             const endValue = currentCash + interest;
             const profit = interest;
+            const withdrawn = profit * (1 - reinvestmentPercentage / 100);
+            const reinvested = profit - withdrawn;
 
             rounds.push({
                 roundNo: rounds.length + 1,
@@ -460,11 +468,13 @@ export function compareLeverageReturns(budget, loanRate, loanYears, loanFrequenc
                 invested: currentCash,
                 endValue,
                 profit,
+                reinvested,
+                withdrawn,
                 leftover: 0,
                 roi: (profit / currentCash) * 100
             });
 
-            currentCash = endValue;
+            currentCash = endValue - withdrawn;
             currentRoundDate = maturityDate;
         }
     } else {
@@ -497,6 +507,8 @@ export function compareLeverageReturns(budget, loanRate, loanYears, loanFrequenc
             const leftover = currentCash - invested;
             const endValue = quantity * UNIT_FV;
             const profit = endValue - invested;
+            const withdrawn = profit * (1 - reinvestmentPercentage / 100);
+            const reinvested = profit - withdrawn;
 
             rounds.push({
                 roundNo: rounds.length + 1,
@@ -507,11 +519,13 @@ export function compareLeverageReturns(budget, loanRate, loanYears, loanFrequenc
                 invested,
                 endValue,
                 profit,
+                reinvested,
+                withdrawn,
                 leftover,
                 roi: (profit / invested) * 100
             });
 
-            currentCash = endValue + leftover;
+            currentCash = endValue - withdrawn + leftover;
             
             // Find next auction strictly AFTER maturity
             currentRoundDate = getNextAuctionDate(maturityDate, true);
@@ -522,15 +536,16 @@ export function compareLeverageReturns(budget, loanRate, loanYears, loanFrequenc
         return { error: `Budget too low to buy 1 unit or loan term too short.` };
     }
 
+    const totalWithdrawn = rounds.reduce((sum, r) => sum + r.withdrawn, 0);
     const lastRound = rounds[rounds.length - 1];
-    const tbillFinalValue = lastRound.endValue + lastRound.leftover;
+    const tbillFinalValue = currentCash + totalWithdrawn;
     const tbillTotalProfit = tbillFinalValue - totalInvested;
     const tbillTotalROI = (tbillTotalProfit / totalInvested) * 100;
     
     const netProfit = tbillFinalValue - loanResult.totalPayment;
     const isProfitable = netProfit > 0;
 
-    const breakEvenTbillRate = findBreakEvenTbillRate(budget, loanRate, loanYears, loanFrequency, brokerageRate, selectedTenure, leverageAsset);
+    const breakEvenTbillRate = findBreakEvenTbillRate(budget, loanRate, loanYears, loanFrequency, brokerageRate, selectedTenure, leverageAsset, reinvestmentPercentage);
 
     // Calculate actual days from simulation start to final maturity
     const finalMaturityDate = new Date(lastRound.maturityDate.split('-')[0], lastRound.maturityDate.split('-')[1]-1, lastRound.maturityDate.split('-')[2]);
@@ -547,6 +562,7 @@ export function compareLeverageReturns(budget, loanRate, loanYears, loanFrequenc
         totalRounds: rounds.length,
         accumulatedDays,
         breakEvenTbillRate,
+        totalWithdrawn,
         startDate: toLocalISO(startDate),
         endDate: toLocalISO(endDate)
     };
