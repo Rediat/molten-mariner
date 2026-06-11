@@ -31,7 +31,7 @@ const DEFAULT_SETTINGS = {
     showHistory: false,
     showFxCompare: true,
     showTimeZone: true,
-    tabOrder: ['tvm', 'loan', 'tax', 'pension', 'inflation', 'fxcompare', 'transport', 'flow', 'bond', 'timezone', 'rates', 'history'],
+    tabOrder: ['tvm', 'goal', 'loan', 'tax', 'pension', 'tbill', 'fxcompare', 'inflation', 'transport', 'flow', 'bond', 'timezone', 'rates', 'history'],
 };
 
 export const SettingsProvider = ({ children }) => {
@@ -43,6 +43,21 @@ export const SettingsProvider = ({ children }) => {
             const parsed = JSON.parse(stored);
             const merged = { ...DEFAULT_SETTINGS, ...parsed };
             
+            // Ensure tbill is in tabOrder if it's missing (migration)
+            if (merged.tabOrder && !merged.tabOrder.includes('tbill')) {
+                const fxIndex = merged.tabOrder.indexOf('fxcompare');
+                if (fxIndex !== -1) {
+                    merged.tabOrder.splice(fxIndex, 0, 'tbill');
+                } else {
+                    const historyIndex = merged.tabOrder.indexOf('history');
+                    if (historyIndex !== -1) {
+                        merged.tabOrder.splice(historyIndex, 0, 'tbill');
+                    } else {
+                        merged.tabOrder.push('tbill');
+                    }
+                }
+            }
+
             // Ensure fxcompare is in tabOrder if it's missing (migration)
             if (merged.tabOrder && !merged.tabOrder.includes('fxcompare')) {
                 const tbillIndex = merged.tabOrder.indexOf('tbill');
@@ -50,6 +65,21 @@ export const SettingsProvider = ({ children }) => {
                     merged.tabOrder.splice(tbillIndex + 1, 0, 'fxcompare');
                 } else {
                     merged.tabOrder.push('fxcompare');
+                }
+            }
+
+            // Ensure goal is in tabOrder if it's missing (migration)
+            if (merged.tabOrder && !merged.tabOrder.includes('goal')) {
+                const tvmIndex = merged.tabOrder.indexOf('tvm');
+                if (tvmIndex !== -1) {
+                    merged.tabOrder.splice(tvmIndex + 1, 0, 'goal');
+                } else {
+                    const historyIndex = merged.tabOrder.indexOf('history');
+                    if (historyIndex !== -1) {
+                        merged.tabOrder.splice(historyIndex, 0, 'goal');
+                    } else {
+                        merged.tabOrder.push('goal');
+                    }
                 }
             }
 

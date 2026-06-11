@@ -27,7 +27,7 @@ const SettingsModal = ({ isOpen, onClose }) => {
 
     if (!isOpen) return null;
 
-    const tabOrder = settings.tabOrder || ['tvm', 'loan', 'tax', 'pension', 'inflation', 'fxcompare', 'transport', 'flow', 'bond', 'timezone', 'rates', 'history'];
+    const tabOrder = settings.tabOrder || ['tvm', 'goal', 'loan', 'tax', 'pension', 'tbill', 'fxcompare', 'inflation', 'transport', 'flow', 'bond', 'timezone', 'rates', 'history'];
     const orderedItems = tabOrder
         .filter(id => id !== 'history' && TAB_CONFIG[id]) // Exclude history and unknown tabs from normal order
         .map(id => ({ id, ...TAB_CONFIG[id] }));

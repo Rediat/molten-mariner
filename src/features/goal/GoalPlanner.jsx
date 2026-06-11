@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useInputFocus } from '../../hooks/useInputFocus';
 import { useHistory } from '../../context/HistoryContext';
-import { Target, TrendingUp, Wallet, PiggyBank, Calculator, Info, HelpCircle, Trash2, Settings, History } from 'lucide-react';
+import { Target, TrendingUp, Wallet, PiggyBank, Calculator, Info, HelpCircle, Trash2, Settings, History, Settings2 } from 'lucide-react';
 import FormattedNumberInput from '../../components/FormattedNumberInput';
 import { CalculateIcon } from '../../components/Icons';
 import HistoryOverlay from '../../components/HistoryOverlay';
@@ -31,6 +31,10 @@ const GoalPlanner = ({ toggleHelp, toggleSettings }) => {
     const [mode, setMode] = useState('END');
     const [frequency, setFrequency] = useState(12);
     const [solveMode, setSolveMode] = useState('pmt'); // 'pmt', 'pv', or 'combo'
+    const [interestType, setInterestType] = useState('COMPOUND');
+    const [compoundingFrequency, setCompoundingFrequency] = useState(12);
+    const [isCompoundingManuallySet, setIsCompoundingManuallySet] = useState(false);
+    const [showAdvanced, setShowAdvanced] = useState(false);
 
     // Input values
     const [targetFV, setTargetFV] = useState(1000000); // Target Future Value
@@ -86,22 +90,39 @@ const GoalPlanner = ({ toggleHelp, toggleSettings }) => {
         }
     }, [results]);
 
+    const handleFrequencyChange = (newFreq) => {
+        setFrequency(newFreq);
+        if (!showAdvanced || !isCompoundingManuallySet) {
+            setCompoundingFrequency(newFreq);
+        }
+        setResults(null);
+    };
+
     // Calculate effective rate per period (matches TVM calculator logic)
     // I/Y is treated as nominal annual rate (APR), same as standard financial calculators
     const getPeriodicRate = () => {
-        // Standard approach: nominal rate / periods per year
-        // When compounding frequency = payment frequency, this gives the correct periodic rate
-        const nominalRate = rate / 100;
-        return nominalRate / frequency;
+        if (interestType === 'SIMPLE') {
+            return (rate / 100) / frequency;
+        }
+        const cy = showAdvanced ? compoundingFrequency : frequency;
+        const py = frequency;
+        const r_periodic = (rate / 100) / cy;
+        return Math.pow(1 + r_periodic, cy / py) - 1;
     };
 
     // Calculate FV factor for PV
-    const getFVFactorPV = (r, n) => {
+    const getFVFactorPV = (r, n, interestType) => {
+        if (interestType === 'SIMPLE') {
+            return 1 + r * n;
+        }
         return Math.pow(1 + r, n);
     };
 
     // Calculate FV factor for PMT (annuity)
-    const getFVFactorPMT = (r, n, isBegin) => {
+    const getFVFactorPMT = (r, n, isBegin, interestType) => {
+        if (interestType === 'SIMPLE') {
+            return isBegin ? n + r * n * (n + 1) / 2 : n + r * n * (n - 1) / 2;
+        }
         if (Math.abs(r) < 1e-9) return n;
         const factor = (Math.pow(1 + r, n) - 1) / r;
         return isBegin ? factor * (1 + r) : factor;
@@ -115,8 +136,8 @@ const GoalPlanner = ({ toggleHelp, toggleSettings }) => {
             const isBegin = mode === 'BEGIN';
             const fv = targetFV || 0;
 
-            const fvFactorPV = getFVFactorPV(r, n);
-            const fvFactorPMT = getFVFactorPMT(r, n, isBegin);
+            const fvFactorPV = getFVFactorPV(r, n, interestType);
+            const fvFactorPMT = getFVFactorPMT(r, n, isBegin, interestType);
 
             let calculatedPV = 0;
             let calculatedPMT = 0;
@@ -197,7 +218,7 @@ const GoalPlanner = ({ toggleHelp, toggleSettings }) => {
             totalInterestEarned = (targetFV || 0) - totalContributions;
 
             // Calculate actionable insights
-            const insights = calculateInsights(calculatedPMT, calculatedPV, totalContributions, totalInterestEarned, years, frequency, rate);
+            const insights = calculateInsights(calculatedPMT, calculatedPV, totalContributions, totalInterestEarned, years, frequency, rate, interestType);
 
             const newResults = {
                 pv: Math.abs(calculatedPV),
@@ -209,17 +230,19 @@ const GoalPlanner = ({ toggleHelp, toggleSettings }) => {
                 years,
                 rate,
                 frequency,
+                compoundingFrequency: showAdvanced ? compoundingFrequency : frequency,
                 mode,
                 solveMode,
                 insights,
-                exceedsSuggestion
+                exceedsSuggestion,
+                interestType
             };
 
             setResults(newResults);
 
             // Add to history
             addToHistory('GoalPlanner',
-                { targetFV, years, rate, frequency, mode, solveMode, pvRatio, knownPV, knownPMT },
+                { targetFV, years, rate, frequency, compoundingFrequency: showAdvanced ? compoundingFrequency : frequency, mode, solveMode, pvRatio, knownPV, knownPMT, interestType },
                 newResults
             );
 
@@ -230,7 +253,7 @@ const GoalPlanner = ({ toggleHelp, toggleSettings }) => {
     };
 
     // Calculate actionable insights
-    const calculateInsights = (pmt, pv, totalContrib, totalInterest, yrs, freq, annualRate) => {
+    const calculateInsights = (pmt, pv, totalContrib, totalInterest, yrs, freq, annualRate, interestType) => {
         const freqLabels = { 1: 'year', 2: 'six months', 4: 'quarter', 12: 'month', 24: 'half-month', 26: 'two weeks', 52: 'week' };
         const freqLabel = freqLabels[freq] || 'period';
 
@@ -241,11 +264,19 @@ const GoalPlanner = ({ toggleHelp, toggleSettings }) => {
         const dailySavings = (pmt * freq) / 365;
 
         // Calculate what happens if you wait 5 years
-        const r = Math.pow(1 + annualRate / 100, 1 / freq) - 1;
+        let r;
+        if (interestType === 'SIMPLE') {
+            r = (annualRate / 100) / freq;
+        } else {
+            const cy = showAdvanced ? compoundingFrequency : freq;
+            const py = freq;
+            const r_periodic = (annualRate / 100) / cy;
+            r = Math.pow(1 + r_periodic, cy / py) - 1;
+        }
         const shorterYears = Math.max(1, yrs - 5);
         const shorterN = shorterYears * freq;
         const isBegin = mode === 'BEGIN';
-        const fvFactorShorter = getFVFactorPMT(r, shorterN, isBegin);
+        const fvFactorShorter = getFVFactorPMT(r, shorterN, isBegin, interestType);
         const pmtIfWait5Years = targetFV / fvFactorShorter;
         const increasedPmt = pmtIfWait5Years - pmt;
         const increasePercent = ((increasedPmt / pmt) * 100).toFixed(0);
@@ -267,7 +298,7 @@ const GoalPlanner = ({ toggleHelp, toggleSettings }) => {
             <div className="flex justify-between items-start mb-4 shrink-0">
                 <div className="flex items-center gap-2 min-w-0">
                     <Target className="w-5 h-5 text-primary-500 shrink-0" />
-                    <div className="min-w-0">
+                    <div className="min-w-0 text-left">
                         <h1 className="text-xl font-bold bg-gradient-to-r from-white to-neutral-400 bg-clip-text text-transparent leading-tight">
                             Goal Planner
                         </h1>
@@ -286,23 +317,68 @@ const GoalPlanner = ({ toggleHelp, toggleSettings }) => {
                             <Info className="w-3 h-3" />
                         </button>
                         <button
+                            onClick={() => {
+                                setShowAdvanced(!showAdvanced);
+                                if (showAdvanced) {
+                                    setCompoundingFrequency(frequency);
+                                    setIsCompoundingManuallySet(false);
+                                }
+                            }}
+                            className={`flex items-center justify-center p-1 rounded-full transition-all ${showAdvanced ? 'bg-primary-600/20 text-primary-400 ring-1 ring-primary-500/50' : 'bg-neutral-800 text-neutral-500 hover:bg-neutral-700'}`}
+                            title={showAdvanced ? "Simple Mode" : "Advanced Mode"}
+                        >
+                            <Settings2 className="w-3 h-3" />
+                        </button>
+                        <button
+                            onClick={() => setInterestType(t => t === 'COMPOUND' ? 'SIMPLE' : 'COMPOUND')}
+                            className={`flex items-center gap-1 border rounded-full px-2.5 py-0.5 text-[10px] font-bold transition-all ${interestType === 'SIMPLE' ? 'bg-primary-600 border-primary-500 text-white shadow-lg shadow-primary-900/20' : 'bg-neutral-800 border-neutral-700 text-neutral-400 hover:bg-neutral-700'}`}
+                        >
+                            {interestType}
+                        </button>
+                        <button
                             onClick={() => setMode(m => m === 'END' ? 'BEGIN' : 'END')}
                             className="flex items-center gap-1 bg-neutral-800 border border-neutral-700 rounded-full px-2.5 py-0.5 text-[10px] font-bold text-primary-500 hover:bg-neutral-700 transition-all"
                         >
                             {mode}
                         </button>
                     </div>
-                    <select
-                        value={frequency}
-                        onChange={(e) => setFrequency(Number(e.target.value))}
-                        className="bg-neutral-800 border border-neutral-700 rounded-lg px-2 py-0.5 text-[10px] font-bold text-neutral-300 focus:outline-none"
-                    >
-                        {FREQUENCIES.map(f => (
-                            <option key={f.value} value={f.value}>
-                                {f.label}
-                            </option>
-                        ))}
-                    </select>
+                    <div className="flex flex-col items-end gap-1.5">
+                        <div className="flex items-center gap-2">
+                            <span className="w-14 text-right text-[8px] font-black text-primary-500/70 uppercase tracking-[0.1em]">
+                                Payments
+                            </span>
+                            <select
+                                value={frequency}
+                                onChange={(e) => handleFrequencyChange(Number(e.target.value))}
+                                className="bg-neutral-800 border border-neutral-700 rounded-lg px-2 py-0.5 text-[10px] font-bold text-neutral-300 focus:outline-none"
+                            >
+                                {FREQUENCIES.map(f => (
+                                    <option key={f.value} value={f.value}>
+                                        {f.label}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className={`flex items-center gap-2 transition-all duration-200 ${showAdvanced ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+                            <span className="w-14 text-right text-[8px] font-black text-primary-500/70 uppercase tracking-[0.1em]">
+                                Compounds
+                            </span>
+                            <select
+                                value={compoundingFrequency}
+                                onChange={(e) => {
+                                    setCompoundingFrequency(Number(e.target.value));
+                                    setIsCompoundingManuallySet(true);
+                                }}
+                                className={`bg-neutral-800 rounded-lg px-2 py-0.5 text-[10px] font-bold focus:outline-none border ${isCompoundingManuallySet ? 'text-primary-400 border-primary-500/50' : 'text-neutral-500 border-neutral-700'}`}
+                            >
+                                {FREQUENCIES.map(f => (
+                                    <option key={f.value} value={f.value}>
+                                        {f.label}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
                 </div>
             </div>
 

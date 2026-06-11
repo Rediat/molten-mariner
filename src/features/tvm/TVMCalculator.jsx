@@ -520,14 +520,14 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
     return (
         <div className="flex flex-col h-full">
             {/* Header */}
-            <div className="flex justify-between items-center mb-2">
+            <div className="flex justify-between items-start mb-4">
                 <div className="flex items-center gap-2 min-w-0">
                     <Calculator className="w-5 h-5 text-primary-500 shrink-0" />
                     <div className="min-w-0 text-left">
-                        <h1 className="text-lg font-bold bg-gradient-to-r from-white to-neutral-400 bg-clip-text text-transparent leading-tight">
+                        <h1 className="text-xl font-bold bg-gradient-to-r from-white to-neutral-400 bg-clip-text text-transparent leading-tight">
                             TVM
                         </h1>
-                        <p className="text-neutral-500 text-[9px] font-medium uppercase tracking-wider">
+                        <p className="text-neutral-500 text-[10px] font-medium uppercase tracking-wider">
                             Time Value of Money
                         </p>
                     </div>
