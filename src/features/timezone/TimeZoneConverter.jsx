@@ -1178,7 +1178,7 @@ const TimeZoneConverter = ({ toggleHelp, toggleSettings }) => {
                             </div>
 
                             {/* Math controls */}
-                            <div className="bg-neutral-850/40 border border-neutral-750/50 rounded-2xl p-4 space-y-3">
+                            <div className="bg-neutral-800/60 border border-neutral-700 rounded-2xl p-4 space-y-3">
                                 <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest block">Add or Subtract Duration</span>
                                 <div className="flex bg-neutral-900/60 rounded-xl p-0.5 border border-white/5 mb-2">
                                     <button
