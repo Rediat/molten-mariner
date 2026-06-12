@@ -199,12 +199,12 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                 <div className="pt-2">
                     <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Variables:</p>
                     <FieldList fields={[
-                        { name: 'N', description: 'Total number of periods (or Years if toggle is set)' },
+                        { name: 'Periods / Years', description: 'Total number of periods (or Years if toggle is set)' },
                         { name: 'I/Y', description: 'Annual interest rate (as a percentage)' },
                         { name: 'PV', description: 'Present Value - the current lump sum amount' },
-                        { name: 'PMT', description: 'Payment - periodic payment amount' },
+                        { name: 'PMT', description: 'Payment Amount - periodic payment amount' },
                         { name: 'FV', description: 'Future Value - the target amount at the end' },
-                        { name: 'TI', description: 'Total Interest - total interest over the period' },
+                        { name: 'Total Interest', description: 'Total interest over the period' },
                         { name: 'ΣPmt', description: 'Total Payment - shows PMT × N when PV and PMT have opposite signs, otherwise PV + PMT × N (read only)' }
                     ]} />
                 </div>
@@ -221,7 +221,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                 <div className="pt-2">
                     <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Advanced Features:</p>
                     <FieldList fields={[
-                        { name: 'Total Interest (TI) Targeting', description: 'You can explicitly set a target Total Interest amount, and the calculator will reverse-solve for PV, PMT, FV, I/Y, or N to match that exact interest amount. The constraint solver respects your Simple vs Compound interest selection. You can toggle between GROSS and NET interest targeting next to the TI label, and the entered interest amount will automatically convert on the fly.' },
+                        { name: 'Total Interest Targeting', description: 'You can explicitly set a target Total Interest amount, and the calculator will reverse-solve for PV, PMT, FV, I/Y, or Periods to match that exact interest amount. The constraint solver respects your Simple vs Compound interest selection. You can toggle between GROSS and NET interest targeting next to the Total Interest label, and the entered interest amount will automatically convert on the fly.' },
                         { name: 'Tax Deduction & Net Returns', description: 'If a Deduction/Tax % is specified, the calculator shows the Tax Paid, Net Interest (remaining %), and Actual Net Future Value alongside the actual net interest rate (Simple Net Rate or Compounded Net Rate).' },
                         { name: 'Advanced Frequency Mode', description: 'Click the Settings icon to decouple Payment Frequency (Payments) from Compounding Frequency (Compounds) for complex loan or investment scenarios.' },
                         { name: 'Interest Ratio Display', description: 'When Total Interest is calculated, the label shows what percentage of your final/initial value is made up of pure interest.' }
