@@ -438,13 +438,13 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
 
     // Field definitions
     const fields = [
-        { id: 'n', label: nMode === 'YEARS' ? 'Years' : 'N', sub: nMode === 'YEARS' ? 'N / Frequency' : 'Total Periods', hasNToggle: true },
+        { id: 'n', label: nMode === 'YEARS' ? 'Years' : 'Periods', sub: nMode === 'YEARS' ? 'N / Frequency' : 'Total Periods', hasNToggle: true },
         { id: 'i', label: 'I/Y', sub: 'Annual %' },
-        { id: 'pv', label: 'PV', sub: 'Pres Val' },
-        { id: 'pmt', label: 'PMT', sub: 'Payment' },
-        { id: 'fv', label: 'FV', sub: 'Fut Val' },
+        { id: 'pv', label: 'PV', sub: 'Present Value' },
+        { id: 'pmt', label: 'PMT', sub: 'Payment Amount' },
+        { id: 'fv', label: 'FV', sub: 'Future Value' },
         { id: 'deductionPercent', label: 'Deduction %', sub: 'Deduction / Tax Rate' },
-        { id: 'totalInterest', label: 'TI', sub: tiMode === 'GROSS' ? 'Gross Interest' : 'Net Interest' }
+        { id: 'totalInterest', label: 'Total Interest', sub: tiMode === 'GROSS' ? 'Gross Interest' : 'Net Interest' }
     ];
 
     const renderField = (field, isHalfRow = false) => {
