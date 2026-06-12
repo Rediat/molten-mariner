@@ -444,7 +444,7 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
         { id: 'pmt', label: 'PMT', sub: 'Payment Amount' },
         { id: 'fv', label: 'FV', sub: 'Future Value' },
         { id: 'deductionPercent', label: 'Deduction %', sub: 'Deduction / Tax Rate' },
-        { id: 'totalInterest', label: 'Total Interest', sub: tiMode === 'GROSS' ? 'Gross Interest' : 'Net Interest' }
+        { id: 'totalInterest', label: tiMode === 'GROSS' ? 'Gross Interest' : 'Net Interest', sub: 'Total Interest' }
     ];
 
     const renderField = (field, isHalfRow = false) => {

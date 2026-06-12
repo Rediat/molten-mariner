@@ -204,7 +204,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                         { name: 'PV', description: 'Present Value - the current lump sum amount' },
                         { name: 'PMT', description: 'Payment Amount - periodic payment amount' },
                         { name: 'FV', description: 'Future Value - the target amount at the end' },
-                        { name: 'Total Interest', description: 'Total interest over the period' },
+                        { name: 'Gross / Net Interest', description: 'Total interest over the period (label toggles between Gross Interest and Net Interest depending on selected mode)' },
                         { name: 'ΣPmt', description: 'Total Payment - shows PMT × N when PV and PMT have opposite signs, otherwise PV + PMT × N (read only)' }
                     ]} />
                 </div>
@@ -221,7 +221,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                 <div className="pt-2">
                     <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Advanced Features:</p>
                     <FieldList fields={[
-                        { name: 'Total Interest Targeting', description: 'You can explicitly set a target Total Interest amount, and the calculator will reverse-solve for PV, PMT, FV, I/Y, or Periods to match that exact interest amount. The constraint solver respects your Simple vs Compound interest selection. You can toggle between GROSS and NET interest targeting next to the Total Interest label, and the entered interest amount will automatically convert on the fly.' },
+                        { name: 'Total Interest Targeting', description: 'You can explicitly set a target Total Interest amount, and the calculator will reverse-solve for PV, PMT, FV, I/Y, or Periods to match that exact interest amount. The constraint solver respects your Simple vs Compound interest selection. You can toggle between GROSS and NET interest targeting next to the label (which toggles the label itself between Gross Interest and Net Interest), and the entered interest amount will automatically convert on the fly.' },
                         { name: 'Tax Deduction & Net Returns', description: 'If a Deduction/Tax % is specified, the calculator shows the Tax Paid, Net Interest (remaining %), and Actual Net Future Value alongside the actual net interest rate (Simple Net Rate or Compounded Net Rate).' },
                         { name: 'Advanced Frequency Mode', description: 'Click the Settings icon to decouple Payment Frequency (Payments) from Compounding Frequency (Compounds) for complex loan or investment scenarios.' },
                         { name: 'Interest Ratio Display', description: 'When Total Interest is calculated, the label shows what percentage of your final/initial value is made up of pure interest.' }
