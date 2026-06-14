@@ -1330,6 +1330,41 @@
     "timestamp": 1770152400000
   },
   {
+    "auctionNo": "997th/26",
+    "date": "Feb 18, 2026",
+    "cutOffYields": {
+      "28_days": 11.35,
+      "91_days": 13.474,
+      "182_days": 17,
+      "364_days": 17.5
+    },
+    "weightedAverageYields": {
+      "28_days": 11.059,
+      "91_days": 12.507,
+      "182_days": 14.548,
+      "364_days": 15.51
+    },
+    "amountOffered": {
+      "28_days": 3466.79,
+      "91_days": 11933.585,
+      "182_days": 21867.17,
+      "364_days": 22400.38
+    },
+    "bidsReceived": {
+      "28_days": 4683.315,
+      "91_days": 18243.81,
+      "182_days": 20862.14,
+      "364_days": 19655.97
+    },
+    "amountAccepted": {
+      "28_days": 3466.79,
+      "91_days": 15683.025,
+      "182_days": 20862.14,
+      "364_days": 19655.97
+    },
+    "timestamp": 1771362000000
+  },
+  {
     "auctionNo": "998th/26",
     "date": "Mar 04, 2026",
     "cutOffYields": {
@@ -1538,5 +1573,75 @@
       "364_days": 11994.285
     },
     "timestamp": 1778619600000
+  },
+  {
+    "auctionNo": "1004th/26",
+    "date": "May 28, 2026",
+    "cutOffYields": {
+      "28_days": 9.5,
+      "91_days": 10.813,
+      "182_days": 13.37,
+      "364_days": 15.65
+    },
+    "weightedAverageYields": {
+      "28_days": 9.5,
+      "91_days": 10.617,
+      "182_days": 12.753,
+      "364_days": 14.721
+    },
+    "amountOffered": {
+      "28_days": 1672.56,
+      "91_days": 4181.4,
+      "182_days": 5853.96,
+      "364_days": 5017.68
+    },
+    "bidsReceived": {
+      "28_days": 5559.135,
+      "91_days": 15500.94,
+      "182_days": 22530.005,
+      "364_days": 14777.3
+    },
+    "amountAccepted": {
+      "28_days": 1672.56,
+      "91_days": 4181.4,
+      "182_days": 5853.96,
+      "364_days": 5017.68
+    },
+    "timestamp": 1779915600000
+  },
+  {
+    "auctionNo": "1005th/26",
+    "date": "Jun 10, 2026",
+    "cutOffYields": {
+      "28_days": 8.529,
+      "91_days": 9.863,
+      "182_days": 12.461,
+      "364_days": 15.382
+    },
+    "weightedAverageYields": {
+      "28_days": 8.529,
+      "91_days": 9.859,
+      "182_days": 12.461,
+      "364_days": 14.819
+    },
+    "amountOffered": {
+      "28_days": 3293.85,
+      "91_days": 8234.625,
+      "182_days": 9881.55,
+      "364_days": 11528.471
+    },
+    "bidsReceived": {
+      "28_days": 7131.025,
+      "91_days": 19024.44,
+      "182_days": 21398.78,
+      "364_days": 20667.395
+    },
+    "amountAccepted": {
+      "28_days": 3293.85,
+      "91_days": 8234.625,
+      "182_days": 9881.55,
+      "364_days": 11528.47
+    },
+    "timestamp": 1781038800000
   }
 ]
