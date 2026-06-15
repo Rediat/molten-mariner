@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import * as cheerio from 'cheerio';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -82,6 +83,49 @@ async function fetchTelegramP2PAverageSell() {
   } catch (e) {
     console.error("Could not fetch live P2P rates. Falling back to the calculated average: 184.01916531845873");
     return 184.01916531845873;
+  }
+}
+
+const EG_CURRENCY_URL = "https://egcurrency.com/en/currency/ETB/blackMarket";
+
+async function fetchEgCurrencyBlackMarketRates() {
+  console.log("Fetching ETB black market rates from EG Currency: " + EG_CURRENCY_URL);
+  try {
+    const response = await fetch(EG_CURRENCY_URL);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    const html = await response.text();
+    const $ = cheerio.load(html);
+    const egRates = {};
+    
+    $('tbody.list tr').each((i, el) => {
+      const href = $(el).attr('data-href') || $(el).find('a').attr('href') || '';
+      const match = href.match(/\/currency\/([A-Z0-9]+)-to-ETB/i);
+      if (match) {
+        const currencyCode = match[1].toUpperCase();
+        const tds = $(el).find('td');
+        if (tds.length >= 3) {
+          const buyText = $(tds[1]).text().trim().replace(/,/g, '');
+          const sellText = $(tds[2]).text().trim().replace(/,/g, '');
+          const buy = parseFloat(buyText);
+          const sell = parseFloat(sellText);
+          if (!isNaN(buy) && !isNaN(sell)) {
+            egRates[currencyCode] = (buy + sell) / 2;
+          } else if (!isNaN(buy)) {
+            egRates[currencyCode] = buy;
+          } else if (!isNaN(sell)) {
+            egRates[currencyCode] = sell;
+          }
+        }
+      }
+    });
+    
+    console.log(`Successfully fetched rates for ${Object.keys(egRates).length} currencies from EG Currency.`);
+    return egRates;
+  } catch (e) {
+    console.error("Could not fetch rates from EG Currency:", e.message);
+    return null;
   }
 }
 
@@ -196,23 +240,54 @@ async function syncFxData() {
         });
 
         // 2. Fetch live data for current month (2026-05 onwards)
-        const averageEtbUsdtSell = await fetchTelegramP2PAverageSell();
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const targetMonth = `${year}-${month}`;
+
         const standardRates = await fetchStandardExchangeRates();
-
-        // Calculate converted selling prices in ETB
         const newMonthRates = {};
-        CURRENCIES.forEach(currency => {
-            const ratePerUsd = standardRates[currency];
-            if (ratePerUsd) {
-                const usdValue = 1 / ratePerUsd;
-                newMonthRates[currency] = usdValue * averageEtbUsdtSell;
-            } else {
-                console.warn(`Standard rate for ${currency} is missing. Skipping.`);
-            }
-        });
 
-        // Current simulation month is 2026-05
-        const targetMonth = '2026-05';
+        if (targetMonth >= '2026-06') {
+            console.log(`Using EG Currency black market rate sync for ${targetMonth}...`);
+            const egRates = await fetchEgCurrencyBlackMarketRates();
+            if (egRates && Object.keys(egRates).length > 0) {
+                const usdEtbRate = egRates['USD'] || 190.0;
+                CURRENCIES.forEach(currency => {
+                    if (egRates[currency] !== undefined) {
+                        newMonthRates[currency] = egRates[currency];
+                    } else {
+                        // Estimate missing currency using USD/ETB black market rate and standard global rate
+                        const ratePerUsd = standardRates[currency];
+                        if (ratePerUsd) {
+                            newMonthRates[currency] = usdEtbRate / ratePerUsd;
+                            console.log(`Estimated missing black market rate for ${currency}: ${newMonthRates[currency]} ETB (via USD conversion)`);
+                        } else {
+                            console.warn(`Standard rate for missing currency ${currency} is not available. Skipping.`);
+                        }
+                    }
+                });
+            } else {
+                console.warn("EG Currency rates empty, falling back to Telegram P2P rate conversion logic...");
+                const averageEtbUsdtSell = await fetchTelegramP2PAverageSell();
+                CURRENCIES.forEach(currency => {
+                    const ratePerUsd = standardRates[currency];
+                    if (ratePerUsd) {
+                        newMonthRates[currency] = (1 / ratePerUsd) * averageEtbUsdtSell;
+                    }
+                });
+            }
+        } else {
+            console.log(`Using Telegram P2P rate sync for ${targetMonth}...`);
+            const averageEtbUsdtSell = await fetchTelegramP2PAverageSell();
+            CURRENCIES.forEach(currency => {
+                const ratePerUsd = standardRates[currency];
+                if (ratePerUsd) {
+                    newMonthRates[currency] = (1 / ratePerUsd) * averageEtbUsdtSell;
+                }
+            });
+        }
+
         const targetMonthIdx = mergedMonthlyPrices.findIndex(m => m.month === targetMonth);
         
         if (targetMonthIdx === -1) {
@@ -221,7 +296,7 @@ async function syncFxData() {
                 value: newMonthRates
             });
             addedCount++;
-            console.log(`Created new entry for ${targetMonth} using Telegram P2P conversion.`);
+            console.log(`Created new entry for ${targetMonth}.`);
         } else {
             const existingEntry = mergedMonthlyPrices[targetMonthIdx];
             const updatedValue = { ...existingEntry.value, ...newMonthRates };
@@ -231,7 +306,7 @@ async function syncFxData() {
                 value: updatedValue
             };
             updatedCount++;
-            console.log(`Updated entry for ${targetMonth} using Telegram P2P conversion (preserving other commodity keys).`);
+            console.log(`Updated entry for ${targetMonth} (preserving other commodity keys).`);
         }
 
         // Sort by month (YYYY-MM) ascending
@@ -240,7 +315,7 @@ async function syncFxData() {
         // Use the metadata structure from the original dataset
         const finalData = { 
             earliest: existingData.earliest || 1672775224, 
-            latest: 1778749773, // May 2026 epoch range
+            latest: Math.floor(now.getTime() / 1000), 
             monthlyPrices: mergedMonthlyPrices 
         };
         
