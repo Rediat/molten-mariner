@@ -246,9 +246,10 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
                     { pmt: calcValues.pmt, totalInterest: result });
             } else {
                 const finalValues = { ...calcValues, [target]: result };
-                const currentInterest = (finalValues.pv || 0) + (finalValues.pmt || 0) * (finalValues.n || 0) + (finalValues.fv || 0);
-                let interestToStore = currentInterest;
-                if (tiMode === 'NET' && taxRate > 0) {
+                const grossInterestVal = (finalValues.pv || 0) + (finalValues.pmt || 0) * (finalValues.n || 0) + (finalValues.fv || 0);
+                let netInterestVal = grossInterestVal;
+                
+                if (taxRate > 0) {
                     const netValues = {
                         n: finalValues.n || 0,
                         i: (finalValues.i || 0) * (1 - taxRate / 100),
@@ -258,8 +259,16 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
                     };
                     const netFVResult = calculateTVM('fv', netValues, mode, frequency, interestType, effectiveCY);
                     if (typeof netFVResult === 'number' && !isNaN(netFVResult)) {
-                        interestToStore = (netValues.pv || 0) + (netValues.pmt || 0) * (netValues.n || 0) + netFVResult;
+                        netInterestVal = (netValues.pv || 0) + (netValues.pmt || 0) * (netValues.n || 0) + netFVResult;
                     } 
+                }
+
+                let interestToStore;
+                if (interestType === 'COMPOUND' && taxRate > 0) {
+                    const calculatedGrossInterest = netInterestVal / (1 - taxRate / 100);
+                    interestToStore = tiMode === 'NET' ? netInterestVal : calculatedGrossInterest;
+                } else {
+                    interestToStore = tiMode === 'NET' ? netInterestVal : grossInterestVal;
                 }
                 setTotalInterest(interestToStore);
                 setValues(prev => {
@@ -416,14 +425,19 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
         }
     }
 
-    // If tiMode is NET, the user-defined totalInterest is Net Interest, so netInterest should match it.
-    if (tiMode === 'NET') {
-        netInterest = totalInterest;
-    }
+    let finalGrossInterest;
 
-    const finalGrossInterest = tiMode === 'NET'
-        ? (interestType === 'COMPOUND' ? grossInterest : (taxRate < 100 ? totalInterest / (1 - taxRate / 100) : totalInterest))
-        : grossInterest;
+    if (interestType === 'COMPOUND' && taxRate > 0) {
+        netInterest = (tiMode === 'NET') ? totalInterest : netInterest;
+        finalGrossInterest = (taxRate < 100) ? netInterest / (1 - taxRate / 100) : netInterest;
+    } else {
+        if (tiMode === 'NET') {
+            netInterest = totalInterest;
+        }
+        finalGrossInterest = tiMode === 'NET'
+            ? (taxRate < 100 ? totalInterest / (1 - taxRate / 100) : totalInterest)
+            : grossInterest;
+    }
 
     const taxAmount = finalGrossInterest > netInterest ? finalGrossInterest - netInterest : 0;
 

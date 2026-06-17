@@ -341,7 +341,7 @@ export function compareRollingReturns(budget, startAuction, tbillDataAll, fxData
     };
 }
 
-function getLeverageFinalValue(budget, yieldAnnual, loanYears, brokerageRate, selectedTenure, leverageAsset = 'tbill', reinvestmentPercentage = 100) {
+function getLeverageFinalValue(budget, yieldAnnual, loanYears, brokerageRate, selectedTenure, leverageAsset = 'tbill', reinvestmentPercentage = 100, depositInterestType = 'compounding', depositCompoundingFreq = 0, depositPaymentFreq = 0, depositTaxRate = 0) {
     const UNIT_FV = 5000;
     const startDate = new Date(2026, 3, 29); // Base simulation on current date (Apr 29, 2026)
     const endDate = new Date(startDate);
@@ -357,10 +357,26 @@ function getLeverageFinalValue(budget, yieldAnnual, loanYears, brokerageRate, se
             maturityDate.setDate(maturityDate.getDate() + selectedTenure);
             if (maturityDate > endDate) break;
             
-            const interest = currentCash * (yieldAnnual / 100) * (selectedTenure / 365);
-            const withdrawn = interest * (1 - reinvestmentPercentage / 100);
+            const t = selectedTenure / 365;
+            const taxMult = 1 - depositTaxRate / 100;
+            let netInterest = 0;
+
+            if (depositInterestType === 'simple') {
+                const grossInterest = budget * (yieldAnnual / 100) * t;
+                netInterest = grossInterest * taxMult;
+            } else {
+                const fc = depositCompoundingFreq > 0 ? depositCompoundingFreq : (1 / t);
+                const n = fc * t;
+                const grossRatePerPeriod = (yieldAnnual / 100) / fc;
+                const netRatePerPeriod = grossRatePerPeriod * taxMult;
+                
+                const endValueNet = currentCash * Math.pow(1 + netRatePerPeriod, n);
+                netInterest = endValueNet - currentCash;
+            }
+
+            const withdrawn = netInterest * (1 - reinvestmentPercentage / 100);
             totalWithdrawn += withdrawn;
-            currentCash = currentCash + interest - withdrawn;
+            currentCash = currentCash + netInterest - withdrawn;
             currentRoundDate = maturityDate;
         }
         return currentCash + totalWithdrawn;
@@ -403,7 +419,7 @@ function getLeverageFinalValue(budget, yieldAnnual, loanYears, brokerageRate, se
     return currentCash + totalWithdrawn;
 }
 
-export function findBreakEvenTbillRate(budget, loanRate, loanYears, loanFrequency, brokerageRate, selectedTenure, leverageAsset = 'tbill', reinvestmentPercentage = 100) {
+export function findBreakEvenTbillRate(budget, loanRate, loanYears, loanFrequency, brokerageRate, selectedTenure, leverageAsset = 'tbill', reinvestmentPercentage = 100, depositInterestType = 'compounding', depositCompoundingFreq = 0, depositPaymentFreq = 0, depositTaxRate = 0) {
     const loanResult = calculateLoan(budget, loanRate, loanYears, 0, loanFrequency);
     const targetValue = loanResult.totalPayment;
     
@@ -413,7 +429,7 @@ export function findBreakEvenTbillRate(budget, loanRate, loanYears, loanFrequenc
     
     for (let i = 0; i < 20; i++) {
         let mid = (low + high) / 2;
-        let fv = getLeverageFinalValue(budget, mid, loanYears, brokerageRate, selectedTenure, leverageAsset, reinvestmentPercentage);
+        let fv = getLeverageFinalValue(budget, mid, loanYears, brokerageRate, selectedTenure, leverageAsset, reinvestmentPercentage, depositInterestType, depositCompoundingFreq, depositPaymentFreq, depositTaxRate);
         if (fv >= targetValue) {
             breakEven = mid;
             high = mid;
@@ -424,7 +440,7 @@ export function findBreakEvenTbillRate(budget, loanRate, loanYears, loanFrequenc
     return breakEven;
 }
 
-export function compareLeverageReturns(budget, loanRate, loanYears, loanFrequency, customTbillRate, brokerageRate, selectedTenure, leverageAsset = 'tbill', reinvestmentPercentage = 100) {
+export function compareLeverageReturns(budget, loanRate, loanYears, loanFrequency, customTbillRate, brokerageRate, selectedTenure, leverageAsset = 'tbill', reinvestmentPercentage = 100, depositInterestType = 'compounding', depositCompoundingFreq = 0, depositPaymentFreq = 0, depositTaxRate = 0) {
     const UNIT_FV = 5000;
     const yieldAnnual = customTbillRate;
 
@@ -443,6 +459,7 @@ export function compareLeverageReturns(budget, loanRate, loanYears, loanFrequenc
     let currentCash = budget;
     const totalInvested = budget;
     const rounds = [];
+    let accumulatedTaxPaid = 0;
     
     if (leverageAsset === 'deposit') {
         let currentRoundDate = new Date(startDate);
@@ -453,9 +470,31 @@ export function compareLeverageReturns(budget, loanRate, loanYears, loanFrequenc
             // Cannot mature after loan term
             if (maturityDate > endDate) break;
 
-            const interest = currentCash * (yieldAnnual / 100) * (selectedTenure / 365);
-            const endValue = currentCash + interest;
-            const profit = interest;
+            const t = selectedTenure / 365;
+            const taxMult = 1 - depositTaxRate / 100;
+            let grossInterest = 0;
+            let netInterest = 0;
+
+            if (depositInterestType === 'simple') {
+                grossInterest = budget * (yieldAnnual / 100) * t;
+                netInterest = grossInterest * taxMult;
+            } else {
+                const fc = depositCompoundingFreq > 0 ? depositCompoundingFreq : (1 / t);
+                const n = fc * t;
+                const grossRatePerPeriod = (yieldAnnual / 100) / fc;
+                const netRatePerPeriod = grossRatePerPeriod * taxMult;
+                
+                const endValueNet = currentCash * Math.pow(1 + netRatePerPeriod, n);
+                netInterest = endValueNet - currentCash;
+                
+                grossInterest = depositTaxRate < 100 ? netInterest / taxMult : netInterest;
+            }
+
+            const taxPaid = grossInterest - netInterest;
+            accumulatedTaxPaid += taxPaid;
+
+            const endValue = currentCash + netInterest;
+            const profit = netInterest;
             const withdrawn = profit * (1 - reinvestmentPercentage / 100);
             const reinvested = profit - withdrawn;
 
@@ -466,12 +505,14 @@ export function compareLeverageReturns(budget, loanRate, loanYears, loanFrequenc
                 yield: yieldAnnual,
                 quantity: 1,
                 invested: currentCash,
-                endValue,
+                endValue: endValue - withdrawn,
                 profit,
                 reinvested,
                 withdrawn,
                 leftover: 0,
-                roi: (profit / currentCash) * 100
+                roi: (profit / currentCash) * 100,
+                taxPaid,
+                grossInterest
             });
 
             currentCash = endValue - withdrawn;
@@ -545,7 +586,7 @@ export function compareLeverageReturns(budget, loanRate, loanYears, loanFrequenc
     const netProfit = tbillFinalValue - loanResult.totalPayment;
     const isProfitable = netProfit > 0;
 
-    const breakEvenTbillRate = findBreakEvenTbillRate(budget, loanRate, loanYears, loanFrequency, brokerageRate, selectedTenure, leverageAsset, reinvestmentPercentage);
+    const breakEvenTbillRate = findBreakEvenTbillRate(budget, loanRate, loanYears, loanFrequency, brokerageRate, selectedTenure, leverageAsset, reinvestmentPercentage, depositInterestType, depositCompoundingFreq, depositPaymentFreq, depositTaxRate);
 
     // Calculate actual days from simulation start to final maturity
     const finalMaturityDate = new Date(lastRound.maturityDate.split('-')[0], lastRound.maturityDate.split('-')[1]-1, lastRound.maturityDate.split('-')[2]);
@@ -563,6 +604,7 @@ export function compareLeverageReturns(budget, loanRate, loanYears, loanFrequenc
         accumulatedDays,
         breakEvenTbillRate,
         totalWithdrawn,
+        accumulatedTaxPaid,
         startDate: toLocalISO(startDate),
         endDate: toLocalISO(endDate)
     };

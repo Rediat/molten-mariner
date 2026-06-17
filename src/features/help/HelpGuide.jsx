@@ -897,6 +897,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                                 <ul className="list-disc pl-5 mt-1 space-y-1 text-neutral-400 text-[11px]">
                                     <li><strong>T-Bill:</strong> Compares loan cost against a realistic bi-weekly rolling T-Bill reinvestment strategy following the bi-weekly NBE schedule.</li>
                                     <li><strong>Deposits:</strong> Compares loan cost against fixed retail bank deposits (182-day or 365-day terms). The 1-year deposit term uses a standard <strong>365-day year</strong> calculation rather than 364 days to match standard banking practices.</li>
+                                    <li><strong>Deposit Interest & Tax Options:</strong> When Time Deposits is selected, you can customize the interest structure. Toggle between <strong>Simple</strong> and <strong>Compounding</strong> interest, configure both <strong>Compounding Frequency</strong> and <strong>Payment Frequency</strong> (from At Maturity to Daily), and specify a <strong>Tax/Deduction (%)</strong> rate.</li>
                                     <li><strong>Reinvestment Rate:</strong> You can configure the percentage of returns (interest/profits) to be reinvested into subsequent periods. Pocketed profits accumulate separately as cash and are combined with the matured principal to compute the final net return.</li>
                                 </ul>
                             </div>
@@ -923,7 +924,8 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                         { name: 'Currency / Asset', description: 'Choose between 20+ Foreign Currencies, GOLD (Commodity), or BITCOIN (Crypto). Hidden in Leverage Mode.' },
                         { name: 'Tenure Strategy', description: '(Rolling & Leverage Modes) Choose whether to roll 28D, 91D, 182D, or 364D bills' },
                         { name: 'Loan Rate & Term', description: '(Leverage Mode only) Annual interest rate and duration of the loan in years.' },
-                        { name: 'Reinvestment Rate (%)', description: '(Leverage Mode only) The percentage of returns from each round to reinvest. The slider is accompanied by arrow buttons to step by ±5%, and a text field for precise values.' }
+                        { name: 'Reinvestment Rate (%)', description: '(Leverage Mode only) The percentage of returns from each round to reinvest. The slider is accompanied by arrow buttons to step by ±5%, and a text field for precise values.' },
+                        { name: 'Deposit Settings', description: '(Leverage Deposit only) Configure Interest Type (Simple vs Compounding), Compounding Frequency, Payment Frequency, and Tax/Deduction (%) rate.' }
                     ]} />
                 </div>
 
@@ -933,7 +935,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                         { name: 'Winner Badge', description: 'Identifies which strategy (T-Bill or Asset) yielded higher profit over the horizon' },
                         { name: 'End Value', description: 'The final ETB value received (compounded in Rolling mode). In Leverage mode, this includes the final matured investment balance plus all accumulated pocketed cash.' },
                         { name: 'Break-even Rate', description: 'The critical rate where strategies yield zero net advantage. In Rolling mode, it shows the asset price required to match T-Bills; in Leverage mode, it shows the T-Bill yield required to cover loan costs.' },
-                        { name: 'Strategy Breakdown', description: 'A detailed log showing the Auction Date, Maturity, Yield, Quantity, Profit, and Leftover Cash for every reinvestment round. When the Reinvestment Rate is below 100%, each round also displays the exact breakdown of Reinvested and Pocketed cash.' }
+                        { name: 'Strategy Breakdown', description: 'A detailed log showing the Auction Date, Maturity, Yield, Quantity, Profit (Net Interest for Deposits), and Leftover Cash for every reinvestment round. When the Reinvestment Rate is below 100%, each round also displays the exact breakdown of Reinvested and Pocketed cash. If Tax/Deduction is applied to Deposits, it also breaks down each round\'s Gross Interest and Tax Paid.' }
                     ]} />
                 </div>
 

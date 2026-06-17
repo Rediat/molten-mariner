@@ -107,19 +107,24 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
     const [loanRate, setLoanRate] = useState(12.5);
     const [loanYears, setLoanYears] = useState(7);
     const [loanFrequency, setLoanFrequency] = useState(12);
-    const [customTbillRate, setCustomTbillRate] = useState(23.75);
+    const [customTbillRate, setCustomTbillRate] = useState(25);
     const [expandedRounds, setExpandedRounds] = useState(false);
     const [auctionSearch, setAuctionSearch] = useState('');
     const [currencySearch, setCurrencySearch] = useState('');
     const [showAllModal, setShowAllModal] = useState(false);
     const [reinvestmentPercentage, setReinvestmentPercentage] = useState(100);
     const [leverageAsset, setLeverageAsset] = useState('deposit'); // Default to deposit
+    const [depositInterestType, setDepositInterestType] = useState('compounding'); // 'compounding' or 'simple'
+    const [depositCompoundingFreq, setDepositCompoundingFreq] = useState(0); // 0 = At Maturity
+    const [depositPaymentFreq, setDepositPaymentFreq] = useState(0); // 0 = At Maturity
+    const [depositTaxRate, setDepositTaxRate] = useState(10);
     
     // Refs for input focus
     const budgetRef = useRef(null);
     const tbillRateRef = useRef(null);
     const loanRateRef = useRef(null);
     const loanYearsRef = useRef(null);
+    const depositTaxRef = useRef(null);
 
     const handleClear = useCallback(() => {
         setResultData(null);
@@ -131,6 +136,7 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
     const focusTbillRate = useInputFocus(setCustomTbillRate, tbillRateRef, handleClear);
     const focusLoanRate = useInputFocus(setLoanRate, loanRateRef, handleClear);
     const focusLoanYears = useInputFocus(setLoanYears, loanYearsRef, handleClear);
+    const focusDepositTax = useInputFocus(setDepositTaxRate, depositTaxRef, handleClear);
 
     const handleCalculate = () => {
         if (!validAuctions[selectedAuctionIdx]) return;
@@ -169,7 +175,11 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                 brokerageRate,
                 selectedTenure,
                 leverageAsset,
-                reinvestmentPercentage
+                reinvestmentPercentage,
+                depositInterestType,
+                depositCompoundingFreq,
+                depositPaymentFreq,
+                depositTaxRate
             );
             setLeverageResult(res);
         }
@@ -198,6 +208,19 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
             ['Term (Years)', loanYears],
             ['Frequency', loanFrequency],
             ['Reinvestment Rate', `${reinvestmentPercentage}%`],
+        ];
+
+        if (leverageAsset === 'deposit') {
+            rows.push(
+                ['Interest Type', depositInterestType],
+                ['Compounding Frequency', depositCompoundingFreq === 0 ? 'At Maturity' : `${depositCompoundingFreq}x/year`],
+                ['Payment Frequency', depositPaymentFreq === 0 ? 'At Maturity' : `${depositPaymentFreq}x/year`],
+                ['Tax / Deduction Rate', `${depositTaxRate}%`],
+                ['Total Tax Paid', formatCurrency(leverageResult.accumulatedTaxPaid || 0)]
+            );
+        }
+
+        rows.push(
             [],
             ['Results Summary'],
             ['Total Final Value', formatCurrency(leverageResult.tbillFinalValue)],
@@ -206,8 +229,8 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
             [],
             leverageAsset === 'tbill'
                 ? ['Round', 'Auction Date', 'Maturity', 'Quantity', 'Invested', 'End Value', 'Profit', 'Reinvested', 'Pocketed', 'Leftover']
-                : ['Round', 'Deposit Date', 'Maturity', 'Invested', 'End Value', 'Interest', 'Reinvested', 'Pocketed']
-        ];
+                : ['Round', 'Deposit Date', 'Maturity', 'Invested', 'End Value', 'Gross Interest', 'Tax Paid', 'Net Interest', 'Reinvested', 'Pocketed']
+        );
         
         leverageResult.rounds.forEach((r, i) => {
             if (leverageAsset === 'tbill') {
@@ -230,6 +253,8 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                     r.maturityDate,
                     r.invested.toFixed(2),
                     r.endValue.toFixed(2),
+                    (r.grossInterest || r.profit).toFixed(2),
+                    (r.taxPaid || 0).toFixed(2),
                     r.profit.toFixed(2),
                     r.reinvested.toFixed(2),
                     r.withdrawn.toFixed(2)
@@ -264,18 +289,25 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
             if (days === 364 || days === 365) return "1 Year";
             return `${days} Days`;
         };
-        const termText = leverageAsset === 'tbill' ? `Tenure: ${selectedTenure}d` : `Term: ${getPeriodLabel(selectedTenure)}`;
+        const termText = leverageAsset === 'tbill' ? `Tenure: ${selectedTenure}d` : `Tenure: ${getPeriodLabel(selectedTenure)}`;
         
+        const profitLabel = leverageAsset === 'tbill' ? 'Total Profit' : 'Net Interest';
         const summaryLines = [
             `Loan: ${formatCurrency(budget)} | Rate: ${loanRate.toFixed(2)}% | Term: ${loanYears}y | Freq: ${loanFrequency} | Total Interest: ${formatCurrency(leverageResult.loanResult.totalInterest)}`,
-            `${leverageAsset === 'tbill' ? 'T-Bill' : 'Deposit'}: ${customTbillRate.toFixed(2)}% | Reinvestment: ${reinvestmentPercentage}% | ${termText} | ROI: ${leverageResult.tbillTotalROI.toFixed(2)}% | Final: ${formatCurrency(leverageResult.tbillFinalValue)} | Net Profit: ${formatCurrency(leverageResult.netProfit)}`
+            `${leverageAsset === 'tbill' ? 'T-Bill' : 'Deposit'}: ${customTbillRate.toFixed(2)}% | Reinvestment: ${reinvestmentPercentage}% | ${termText} | ROI: ${leverageResult.tbillTotalROI.toFixed(2)}% | Final: ${formatCurrency(leverageResult.tbillFinalValue)} | ${profitLabel}: ${formatCurrency(leverageResult.tbillTotalProfit)} | Net Profit: ${formatCurrency(leverageResult.netProfit)}`
         ];
+
+        if (leverageAsset === 'deposit') {
+            summaryLines.push(
+                `Type: ${depositInterestType.toUpperCase()} | Compounding: ${depositCompoundingFreq === 0 ? 'At Maturity' : `${depositCompoundingFreq}x/year`} | Payment: ${depositPaymentFreq === 0 ? 'At Maturity' : `${depositPaymentFreq}x/year`} | Tax Rate: ${depositTaxRate}% (Total Paid: ${formatCurrency(leverageResult.accumulatedTaxPaid || 0)})`
+            );
+        }
 
         const doc = createStandardPDF(`${leverageAsset === 'tbill' ? 'T-Bill' : 'Time Deposit'} Leverage Analysis`, summaryLines, { orientation: 'landscape' });
 
         const head = leverageAsset === 'tbill'
             ? [["Round", "Auction Date", "Maturity", "Quantity", "Invested", "End Value", "Profit", "Reinvested", "Pocketed", "Leftover"]]
-            : [["Round", "Deposit Date", "Maturity", "Invested", "End Value", "Interest", "Reinvested", "Pocketed"]];
+            : [["Round", "Deposit Date", "Maturity", "Invested", "End Value", "Gross Interest", "Tax Paid", "Net Interest", "Reinvested", "Pocketed"]];
 
         const body = leverageResult.rounds.map((r, i) => {
             if (leverageAsset === 'tbill') {
@@ -298,6 +330,8 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                     r.maturityDate,
                     `${formatCurrency(r.invested)}`,
                     `${formatCurrency(r.endValue)}`,
+                    `${formatCurrency(r.grossInterest || r.profit)}`,
+                    `${formatCurrency(r.taxPaid || 0)}`,
                     `${r.profit >= 0 ? '+' : ''}${formatCurrency(r.profit)}`,
                     `${formatCurrency(r.reinvested)}`,
                     `${formatCurrency(r.withdrawn)}`
@@ -307,32 +341,21 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
 
         autoTable(doc, {
             ...STANDARD_TABLE_STYLES,
-            startY: 44,
+            startY: leverageAsset === 'deposit' ? 49 : 44,
             head,
             body,
-            columnStyles: leverageAsset === 'tbill'
-                ? {
-                    0: { halign: 'right' },
-                    1: { halign: 'right' },
-                    2: { halign: 'right' },
-                    3: { halign: 'right' },
-                    4: { halign: 'right' },
-                    5: { halign: 'right' },
-                    6: { halign: 'right' },
-                    7: { halign: 'right' },
-                    8: { halign: 'right' },
-                    9: { halign: 'right' },
-                }
-                : {
-                    0: { halign: 'right' },
-                    1: { halign: 'right' },
-                    2: { halign: 'right' },
-                    3: { halign: 'right' },
-                    4: { halign: 'right' },
-                    5: { halign: 'right' },
-                    6: { halign: 'right' },
-                    7: { halign: 'right' },
-                },
+            columnStyles: {
+                0: { halign: 'right' },
+                1: { halign: 'right' },
+                2: { halign: 'right' },
+                3: { halign: 'right' },
+                4: { halign: 'right' },
+                5: { halign: 'right' },
+                6: { halign: 'right' },
+                7: { halign: 'right' },
+                8: { halign: 'right' },
+                9: { halign: 'right' },
+            },
         });
         
         addStandardFooter(doc);
@@ -354,6 +377,19 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
             ["Term (Years)", loanYears],
             ["Frequency", loanFrequency],
             ["Reinvestment Rate", `${reinvestmentPercentage}%`],
+        ];
+
+        if (leverageAsset === 'deposit') {
+            data.push(
+                ["Interest Type", depositInterestType],
+                ["Compounding Frequency", depositCompoundingFreq === 0 ? "At Maturity" : `${depositCompoundingFreq}x/year`],
+                ["Payment Frequency", depositPaymentFreq === 0 ? "At Maturity" : `${depositPaymentFreq}x/year`],
+                ["Tax / Deduction Rate", `${depositTaxRate}%`],
+                ["Total Tax Paid", leverageResult.accumulatedTaxPaid || 0]
+            );
+        }
+
+        data.push(
             [],
             ["Results Summary"],
             ["Total Final Value", leverageResult.tbillFinalValue],
@@ -362,8 +398,8 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
             [],
             leverageAsset === 'tbill'
                 ? ["Round", "Auction Date", "Maturity", "Quantity", "Invested", "End Value", "Profit", "Reinvested", "Pocketed", "Leftover"]
-                : ["Round", "Deposit Date", "Maturity", "Invested", "End Value", "Interest", "Reinvested", "Pocketed"]
-        ];
+                : ["Round", "Deposit Date", "Maturity", "Invested", "End Value", "Gross Interest", "Tax Paid", "Net Interest", "Reinvested", "Pocketed"]
+        );
         
         leverageResult.rounds.forEach((r, i) => {
             if (leverageAsset === 'tbill') {
@@ -386,6 +422,8 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                     r.maturityDate,
                     r.invested,
                     r.endValue,
+                    r.grossInterest || r.profit,
+                    r.taxPaid || 0,
                     r.profit,
                     r.reinvested,
                     r.withdrawn
@@ -790,6 +828,82 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                                 />
                             </div>
                         </div>
+                        {leverageAsset === 'deposit' && (
+                            <div className="grid grid-cols-4 gap-2 border-t border-neutral-700/50 pt-2">
+                                <div className="flex flex-col">
+                                    <label className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold mb-1">Interest Type</label>
+                                    <select
+                                        value={depositInterestType}
+                                        onChange={(e) => {
+                                            setDepositInterestType(e.target.value);
+                                            handleClear();
+                                        }}
+                                        className="bg-neutral-900 border border-neutral-700 rounded-md text-white text-[10px] p-1.5 focus:outline-none focus:border-emerald-500 w-full font-bold"
+                                    >
+                                        <option value="compounding">Compounding</option>
+                                        <option value="simple">Simple</option>
+                                    </select>
+                                </div>
+                                <div className="flex flex-col">
+                                    <label className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold mb-1">Compounding</label>
+                                    <select
+                                        value={depositCompoundingFreq}
+                                        onChange={(e) => {
+                                            setDepositCompoundingFreq(parseInt(e.target.value));
+                                            handleClear();
+                                        }}
+                                        disabled={depositInterestType === 'simple'}
+                                        className="bg-neutral-900 border border-neutral-700 rounded-md text-white text-[10px] p-1.5 focus:outline-none focus:border-emerald-500 w-full disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                                    >
+                                        <option value={0}>At Maturity</option>
+                                        <option value={12}>Monthly</option>
+                                        <option value={4}>Quarterly</option>
+                                        <option value={2}>Semi-Annually</option>
+                                        <option value={1}>Annually</option>
+                                        <option value={24}>Semi-Monthly</option>
+                                        <option value={26}>Bi-Weekly</option>
+                                        <option value={52}>Weekly</option>
+                                        <option value={365}>Daily</option>
+                                    </select>
+                                </div>
+                                <div className="flex flex-col">
+                                    <label className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold mb-1">Payment</label>
+                                    <select
+                                        value={depositPaymentFreq}
+                                        onChange={(e) => {
+                                            setDepositPaymentFreq(parseInt(e.target.value));
+                                            handleClear();
+                                        }}
+                                        className="bg-neutral-900 border border-neutral-700 rounded-md text-white text-[10px] p-1.5 focus:outline-none focus:border-emerald-500 w-full font-medium"
+                                    >
+                                        <option value={0}>At Maturity</option>
+                                        <option value={12}>Monthly</option>
+                                        <option value={4}>Quarterly</option>
+                                        <option value={2}>Semi-Annually</option>
+                                        <option value={1}>Annually</option>
+                                        <option value={24}>Semi-Monthly</option>
+                                        <option value={26}>Bi-Weekly</option>
+                                        <option value={52}>Weekly</option>
+                                        <option value={365}>Daily</option>
+                                    </select>
+                                </div>
+                                <div className="flex flex-col">
+                                    <label
+                                        onClick={focusDepositTax}
+                                        className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold mb-1 cursor-pointer hover:text-emerald-400 transition-colors select-none"
+                                    >
+                                        Tax/Deduct (%)
+                                    </label>
+                                    <FormattedNumberInput
+                                        ref={depositTaxRef}
+                                        value={depositTaxRate}
+                                        onChange={(e) => setDepositTaxRate(parseFloat(e.target.value.replace(/,/g, '')))}
+                                        decimals={2}
+                                        className="bg-neutral-900 border border-neutral-700 rounded-md text-white text-[11px] p-1.5 focus:outline-none focus:border-emerald-500 w-full font-mono text-right"
+                                    />
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -803,7 +917,7 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                                         onClick={() => {
                                             if (leverageAsset !== 'deposit') {
                                                 setLeverageAsset('deposit');
-                                                setCustomTbillRate(23.75);
+                                                setCustomTbillRate(25);
                                                 if (selectedTenure === 28) {
                                                     setSelectedTenure(182); // Default to 6M
                                                 } else if (selectedTenure === 364) {
@@ -1126,6 +1240,9 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                                                 <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase">Rate</span><span className="text-[10px] text-white font-mono">{leverageResult.rounds[0].yield.toFixed(3)}%</span></div>
                                                 <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase">Rounds</span><span className="text-[10px] text-neutral-400 font-mono">{leverageResult.totalRounds}</span></div>
                                                 <div className="flex justify-between pt-1 border-t border-neutral-700/50"><span className="text-[9px] text-neutral-500 uppercase">Total Profit</span><span className="text-[10px] font-bold font-mono text-green-400">+{formatCurrency(leverageResult.tbillTotalProfit)}</span></div>
+                                                {leverageAsset === 'deposit' && depositTaxRate > 0 && (
+                                                    <div className="flex justify-between"><span className="text-[9px] text-red-400/90 font-bold uppercase">Total Tax Paid</span><span className="text-[10px] text-red-400 font-mono font-bold">-{formatCurrency(leverageResult.accumulatedTaxPaid)}</span></div>
+                                                )}
                                                 {reinvestmentPercentage < 100 && (
                                                     <div className="flex justify-between"><span className="text-[9px] text-amber-500/90 font-bold uppercase">Total Pocketed</span><span className="text-[10px] text-amber-400 font-mono font-bold">+{formatCurrency(leverageResult.totalWithdrawn)}</span></div>
                                                 )}
@@ -1184,7 +1301,13 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                                                         )}
                                                         <div className="flex justify-between"><span className="text-neutral-500">Invested</span><span className="text-white font-mono">{formatCurrency(r.invested)}</span></div>
                                                         <div className="flex justify-between"><span className="text-neutral-500">End Val</span><span className="text-white font-mono">{formatCurrency(r.endValue)}</span></div>
-                                                        <div className="flex justify-between"><span className="text-neutral-500">{leverageAsset === 'tbill' ? 'Profit' : 'Interest'}</span><span className={`font-mono font-bold ${r.profit >= 0 ? 'text-green-400' : 'text-red-400'}`}>{r.profit >= 0 ? '+' : ''}{formatCurrency(r.profit)}</span></div>
+                                                        <div className="flex justify-between"><span className="text-neutral-500">{leverageAsset === 'tbill' ? 'Profit' : 'Net Interest'}</span><span className={`font-mono font-bold ${r.profit >= 0 ? 'text-green-400' : 'text-red-400'}`}>{r.profit >= 0 ? '+' : ''}{formatCurrency(r.profit)}</span></div>
+                                                        {leverageAsset === 'deposit' && depositTaxRate > 0 && (
+                                                            <>
+                                                                <div className="flex justify-between"><span className="text-neutral-500">Gross Int</span><span className="text-neutral-400 font-mono">{formatCurrency(r.grossInterest)}</span></div>
+                                                                <div className="flex justify-between"><span className="text-neutral-500">Tax Paid</span><span className="text-red-400 font-mono">-{formatCurrency(r.taxPaid)}</span></div>
+                                                            </>
+                                                        )}
                                                         {reinvestmentPercentage < 100 && (
                                                             <>
                                                                 <div className="flex justify-between"><span className="text-neutral-500">Reinvested</span><span className="text-emerald-400 font-mono font-bold">+{formatCurrency(r.reinvested)}</span></div>
