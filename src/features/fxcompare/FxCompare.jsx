@@ -116,7 +116,6 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
     const [leverageAsset, setLeverageAsset] = useState('deposit'); // Default to deposit
     const [depositInterestType, setDepositInterestType] = useState('compounding'); // 'compounding' or 'simple'
     const [depositCompoundingFreq, setDepositCompoundingFreq] = useState(0); // 0 = At Maturity
-    const [depositPaymentFreq, setDepositPaymentFreq] = useState(0); // 0 = At Maturity
     const [depositTaxRate, setDepositTaxRate] = useState(10);
     
     // Refs for input focus
@@ -178,7 +177,6 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                 reinvestmentPercentage,
                 depositInterestType,
                 depositCompoundingFreq,
-                depositPaymentFreq,
                 depositTaxRate
             );
             setLeverageResult(res);
@@ -214,7 +212,6 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
             rows.push(
                 ['Interest Type', depositInterestType],
                 ['Compounding Frequency', depositCompoundingFreq === 0 ? 'At Maturity' : `${depositCompoundingFreq}x/year`],
-                ['Payment Frequency', depositPaymentFreq === 0 ? 'At Maturity' : `${depositPaymentFreq}x/year`],
                 ['Tax / Deduction Rate', `${depositTaxRate}%`],
                 ['Total Tax Paid', formatCurrency(leverageResult.accumulatedTaxPaid || 0)]
             );
@@ -299,7 +296,7 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
 
         if (leverageAsset === 'deposit') {
             summaryLines.push(
-                `Type: ${depositInterestType.toUpperCase()} | Compounding: ${depositCompoundingFreq === 0 ? 'At Maturity' : `${depositCompoundingFreq}x/year`} | Payment: ${depositPaymentFreq === 0 ? 'At Maturity' : `${depositPaymentFreq}x/year`} | Tax Rate: ${depositTaxRate}% (Total Paid: ${formatCurrency(leverageResult.accumulatedTaxPaid || 0)})`
+                `Type: ${depositInterestType.toUpperCase()} | Compounding: ${depositCompoundingFreq === 0 ? 'At Maturity' : `${depositCompoundingFreq}x/year`} | Tax Rate: ${depositTaxRate}% (Total Paid: ${formatCurrency(leverageResult.accumulatedTaxPaid || 0)})`
             );
         }
 
@@ -383,7 +380,6 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
             data.push(
                 ["Interest Type", depositInterestType],
                 ["Compounding Frequency", depositCompoundingFreq === 0 ? "At Maturity" : `${depositCompoundingFreq}x/year`],
-                ["Payment Frequency", depositPaymentFreq === 0 ? "At Maturity" : `${depositPaymentFreq}x/year`],
                 ["Tax / Deduction Rate", `${depositTaxRate}%`],
                 ["Total Tax Paid", leverageResult.accumulatedTaxPaid || 0]
             );
@@ -829,7 +825,7 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                             </div>
                         </div>
                         {leverageAsset === 'deposit' && (
-                            <div className="grid grid-cols-4 gap-2 border-t border-neutral-700/50 pt-2">
+                            <div className="grid grid-cols-3 gap-2 border-t border-neutral-700/50 pt-2">
                                 <div className="flex flex-col">
                                     <label className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold mb-1">Interest Type</label>
                                     <select
@@ -840,12 +836,12 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                                         }}
                                         className="bg-neutral-900 border border-neutral-700 rounded-md text-white text-[10px] p-1.5 focus:outline-none focus:border-emerald-500 w-full font-bold"
                                     >
-                                        <option value="compounding">Compounding</option>
+                                        <option value="compounding">Compound</option>
                                         <option value="simple">Simple</option>
                                     </select>
                                 </div>
                                 <div className="flex flex-col">
-                                    <label className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold mb-1">Compounding</label>
+                                    <label className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold mb-1">Compounds</label>
                                     <select
                                         value={depositCompoundingFreq}
                                         onChange={(e) => {
@@ -867,32 +863,11 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                                     </select>
                                 </div>
                                 <div className="flex flex-col">
-                                    <label className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold mb-1">Payment</label>
-                                    <select
-                                        value={depositPaymentFreq}
-                                        onChange={(e) => {
-                                            setDepositPaymentFreq(parseInt(e.target.value));
-                                            handleClear();
-                                        }}
-                                        className="bg-neutral-900 border border-neutral-700 rounded-md text-white text-[10px] p-1.5 focus:outline-none focus:border-emerald-500 w-full font-medium"
-                                    >
-                                        <option value={0}>At Maturity</option>
-                                        <option value={12}>Monthly</option>
-                                        <option value={4}>Quarterly</option>
-                                        <option value={2}>Semi-Annually</option>
-                                        <option value={1}>Annually</option>
-                                        <option value={24}>Semi-Monthly</option>
-                                        <option value={26}>Bi-Weekly</option>
-                                        <option value={52}>Weekly</option>
-                                        <option value={365}>Daily</option>
-                                    </select>
-                                </div>
-                                <div className="flex flex-col">
                                     <label
                                         onClick={focusDepositTax}
                                         className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold mb-1 cursor-pointer hover:text-emerald-400 transition-colors select-none"
                                     >
-                                        Tax/Deduct (%)
+                                        Deduction (%)
                                     </label>
                                     <FormattedNumberInput
                                         ref={depositTaxRef}
