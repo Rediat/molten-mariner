@@ -67,7 +67,7 @@ const TBillCalculator = ({
     const [result, setResult] = useState(null);
     const [showExplanation, setShowExplanation] = useState(false);
     const [showHistory, setShowHistory] = useState(false);
-    const [bankSource, setBankSource] = useState('WEGAGEN'); // 'WEGAGEN' | 'GADAA' | 'CBE' | 'AWASH'
+    const [bankSource, setBankSource] = useState('WEGAGEN'); // 'WEGAGEN' | 'GADAA' | 'CBE' | 'AWASH' | 'ETHIO_FIDELITY'
 
     // Refs for input focus
     const faceValueRef = useRef(null);
@@ -433,9 +433,9 @@ const TBillCalculator = ({
                         <div className="text-left">
                             <label className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold block mb-0.5 group-hover:text-neutral-400 transition-colors text-left">CSD Custodian (Bank)</label>
                             <div className="flex items-center gap-1.5">
-                                <div className={`w-1.5 h-1.5 rounded-full ${bankSource === 'WEGAGEN' ? 'bg-primary-500 shadow-[0_0_8px_rgba(14,165,233,0.8)]' : bankSource === 'GADAA' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]' : bankSource === 'AWASH' ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.8)]' : 'bg-violet-500 shadow-[0_0_8px_rgba(139,92,246,0.8)]'}`} />
-                                <span className={`text-[11px] font-semibold uppercase tracking-wider ${bankSource === 'WEGAGEN' ? 'text-primary-400' : bankSource === 'GADAA' ? 'text-emerald-400' : bankSource === 'AWASH' ? 'text-amber-400' : 'text-violet-400'}`}>
-                                    {bankSource === 'WEGAGEN' ? 'Wegagen Capital Investment Bank (WCIB)' : bankSource === 'GADAA' ? 'Gadaa Securities Dealer S.C' : bankSource === 'AWASH' ? 'Awash Capital Investment Bank' : 'CBE Capital Investment Bank'}
+                                <div className={`w-1.5 h-1.5 rounded-full ${bankSource === 'WEGAGEN' ? 'bg-primary-500 shadow-[0_0_8px_rgba(14,165,233,0.8)]' : bankSource === 'GADAA' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]' : bankSource === 'AWASH' ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.8)]' : bankSource === 'ETHIO_FIDELITY' ? 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.8)]' : 'bg-violet-500 shadow-[0_0_8px_rgba(139,92,246,0.8)]'}`} />
+                                <span className={`text-[11px] font-semibold uppercase tracking-wider ${bankSource === 'WEGAGEN' ? 'text-primary-400' : bankSource === 'GADAA' ? 'text-emerald-400' : bankSource === 'AWASH' ? 'text-amber-400' : bankSource === 'ETHIO_FIDELITY' ? 'text-rose-400' : 'text-violet-400'}`}>
+                                    {bankSource === 'WEGAGEN' ? 'Wegagen Capital Investment Bank (WCIB)' : bankSource === 'GADAA' ? 'Gadaa Securities Dealer S.C' : bankSource === 'AWASH' ? 'Awash Capital Investment Bank' : bankSource === 'ETHIO_FIDELITY' ? 'Ethio Fidelity Securities S.C' : 'CBE Capital Investment Bank'}
                                 </span>
                             </div>
                         </div>
@@ -500,6 +500,19 @@ const TBillCalculator = ({
                                     </div>
                                     {bankSource === 'AWASH' && <div className="w-1 h-4 bg-amber-500 rounded-full" />}
                                 </button>
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); setBankSource('ETHIO_FIDELITY'); setShowBankSelector(false); }}
+                                    className={`flex items-center justify-between p-2 rounded-lg transition-all ${bankSource === 'ETHIO_FIDELITY' ? 'bg-rose-600/20 border border-rose-500/50' : 'hover:bg-neutral-800 border border-transparent'}`}
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <div className={`w-2 h-2 rounded-full ${bankSource === 'ETHIO_FIDELITY' ? 'bg-rose-500' : 'bg-neutral-700'}`} />
+                                        <div className="text-left">
+                                            <p className={`text-[11px] font-bold uppercase tracking-wider ${bankSource === 'ETHIO_FIDELITY' ? 'text-rose-400' : 'text-neutral-400'}`}>Ethio Fidelity Securities S.C</p>
+                                            <p className="text-[8px] font-bold text-neutral-500 tracking-tighter">ET75ETHF00131050</p>
+                                        </div>
+                                    </div>
+                                    {bankSource === 'ETHIO_FIDELITY' && <div className="w-1 h-4 bg-rose-500 rounded-full" />}
+                                </button>
                             </div>
                         </div>
                     )}
@@ -513,13 +526,13 @@ const TBillCalculator = ({
                         <div className="flex justify-between items-center mb-1">
                             <div className="flex items-center gap-2">
                                 <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Results</span>
-                                <div className={`flex items-center gap-1.5 text-[8px] font-bold uppercase tracking-tight ${bankSource === 'WEGAGEN' ? 'text-primary-400' : bankSource === 'GADAA' ? 'text-emerald-400' : bankSource === 'AWASH' ? 'text-amber-400' : 'text-violet-400'}`}>
-                                    <div className={`w-1 h-1 rounded-full ${bankSource === 'WEGAGEN' ? 'bg-primary-500' : bankSource === 'GADAA' ? 'bg-emerald-500' : bankSource === 'AWASH' ? 'bg-amber-500' : 'bg-violet-500'}`} />
-                                    {bankSource === 'CBE' ? 'CBE Capital' : bankSource === 'AWASH' ? 'Awash Capital' : bankSource} Account
+                                <div className={`flex items-center gap-1.5 text-[8px] font-bold uppercase tracking-tight ${bankSource === 'WEGAGEN' ? 'text-primary-400' : bankSource === 'GADAA' ? 'text-emerald-400' : bankSource === 'AWASH' ? 'text-amber-400' : bankSource === 'ETHIO_FIDELITY' ? 'text-rose-400' : 'text-violet-400'}`}>
+                                    <div className={`w-1 h-1 rounded-full ${bankSource === 'WEGAGEN' ? 'bg-primary-500' : bankSource === 'GADAA' ? 'bg-emerald-500' : bankSource === 'AWASH' ? 'bg-amber-500' : bankSource === 'ETHIO_FIDELITY' ? 'bg-rose-500' : 'bg-violet-500'}`} />
+                                    {bankSource === 'CBE' ? 'CBE Capital' : bankSource === 'AWASH' ? 'Awash Capital' : bankSource === 'ETHIO_FIDELITY' ? 'Ethio Fidelity' : bankSource} Account
                                 </div>
                             </div>
                             <div className="flex gap-3">
-                                <button onClick={() => { const bankInfo = { WEGAGEN: { name: 'Wegagen Capital Investment Bank (WCIB)', account: 'ET81WEGC00141021' }, GADAA: { name: 'Gadaa Securities Dealer S.C', account: 'ET57GADS00110312' }, CBE: { name: 'CBE Capital Investment Bank', account: 'ET49CBEC00140965' }, AWASH: { name: 'Awash Capital Investment Bank', account: 'ET21AWCA00113140' } }[bankSource]; generateTBillApplicationPDF({ faceValue: result.faceValue, tenure: tenure, issueDate: auctionDate, yieldRate: discountRate, maturityDate: result.maturityDate }, { accountNo: bankInfo.account, bankName: '' }); }} className={`text-[9px] font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all ${bankSource === 'WEGAGEN' ? 'text-primary-400 hover:text-primary-300' : bankSource === 'GADAA' ? 'text-emerald-400 hover:text-emerald-300' : bankSource === 'AWASH' ? 'text-amber-400 hover:text-amber-300' : 'text-violet-400 hover:text-violet-300'}`} title="Download Application Form"><Download size={11} /> Application</button>
+                                <button onClick={() => { const bankInfo = { WEGAGEN: { name: 'Wegagen Capital Investment Bank (WCIB)', account: 'ET81WEGC00141021' }, GADAA: { name: 'Gadaa Securities Dealer S.C', account: 'ET57GADS00110312' }, CBE: { name: 'CBE Capital Investment Bank', account: 'ET49CBEC00140965' }, AWASH: { name: 'Awash Capital Investment Bank', account: 'ET21AWCA00113140' }, ETHIO_FIDELITY: { name: 'Ethio Fidelity Securities S.C', account: 'ET75ETHF00131050' } }[bankSource]; generateTBillApplicationPDF({ faceValue: result.faceValue, tenure: tenure, issueDate: auctionDate, yieldRate: discountRate, maturityDate: result.maturityDate }, { accountNo: bankInfo.account, bankName: '' }); }} className={`text-[9px] font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all ${bankSource === 'WEGAGEN' ? 'text-primary-400 hover:text-primary-300' : bankSource === 'GADAA' ? 'text-emerald-400 hover:text-emerald-300' : bankSource === 'AWASH' ? 'text-amber-400 hover:text-amber-300' : bankSource === 'ETHIO_FIDELITY' ? 'text-rose-400 hover:text-rose-300' : 'text-violet-400 hover:text-violet-300'}`} title="Download Application Form"><Download size={11} /> Application</button>
                                 <button onClick={() => setShowHistory(true)} className="text-[9px] text-primary-500 font-bold uppercase tracking-wider flex items-center gap-1 hover:text-primary-400 transition-colors"><History size={11} /> View History</button>
                             </div>
                         </div>
