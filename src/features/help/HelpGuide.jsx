@@ -742,7 +742,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                         { name: 'Auction Date', description: 'The date when the T-Bill auction occurs. The system uses this date + 1 (Settlement Date) to anchor the maturity calculation.' },
                         { name: 'Auction Navigation', description: 'Use the < and > arrows on either side of the date to quickly move backward or forward by 14 days (the standard NBE auction cycle).' },
                         { name: 'Upcoming Auctions', description: 'Reveals a floating list of the next 10 bi-weekly T-Bill auctions. Selecting a date from this list automatically updates the Auction Date and clears the results.' },
-                        { name: 'CSD Custodian (Bank)', description: 'Select your target custodian (Wegagen Capital, Gadaa Securities, CBE Capital, or Awash Capital). This automatically fills the corresponding bank name and CSD account number on your application form.' }
+                        { name: 'CSD Custodian (Bank)', description: 'Select your target custodian (Wegagen Capital, Gadaa Securities, CBE Capital, Awash Capital, Ethio Fidelity Securities, or First Addis Investment Bank). This automatically fills the corresponding bank name and CSD account number on your application form.' }
                     ]} />
                 </div>
 
