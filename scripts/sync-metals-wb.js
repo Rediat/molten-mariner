@@ -10,16 +10,16 @@ const __dirname = path.dirname(__filename);
 const WB_URL = 'https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx';
 const JSON_PATH = path.join(__dirname, '../src/features/fxcompare/fxData.json');
 
-// Mapping from WB Column names to our JSON keys
+// Mapping from WB Column names (lowercase) to our JSON keys
 const METAL_MAPPING = {
-  'GOLD': 'XAU',
-  'SILVER': 'XAG',
-  'PLATINUM': 'XPT',
-  'COPPER': 'XCU',
-  'LEAD': 'XPB',
-  'Tin': 'XSN',
-  'NICKEL': 'XNI',
-  'Zinc': 'ZNC'
+  'gold': 'XAU',
+  'silver': 'XAG',
+  'platinum': 'XPT',
+  'copper': 'XCU',
+  'lead': 'XPB',
+  'tin': 'XSN',
+  'nickel': 'XNI',
+  'zinc': 'ZNC'
 };
 
 // Obsolete keys to be removed from fxData.json
@@ -37,27 +37,46 @@ async function syncMetals() {
     }
 
     const sheet = workbook.Sheets[sheetName];
-    // WB CMO Monthly Prices usually start data at row 7 (index 6)
-    const jsonData = XLSX.utils.sheet_to_json(sheet, { range: 6 });
-
-    console.log(`Parsed ${jsonData.length} months of commodity data.`);
+    const range = XLSX.utils.decode_range(sheet['!ref']);
+    
+    // Map lowercase column header names on row index 4 to column indices
+    const headerRowIdx = 4;
+    const colMap = {};
+    for (let c = range.s.c; c <= range.e.c; c++) {
+      const cell = sheet[XLSX.utils.encode_cell({ r: headerRowIdx, c })];
+      if (cell && cell.v) {
+        const headerName = String(cell.v).trim().toLowerCase();
+        if (METAL_MAPPING[headerName] !== undefined) {
+          colMap[c] = METAL_MAPPING[headerName];
+        }
+      }
+    }
 
     // Create a map of Month -> Metal Prices
-    // WB Month format is "1960M01" -> Convert to "1960-01"
     const metalPricesMap = {};
-    jsonData.forEach(row => {
-      const rawMonth = row['__EMPTY'] || row['Month'] || Object.values(row)[0];
-      if (typeof rawMonth === 'string' && rawMonth.includes('M')) {
+    let parsedCount = 0;
+    
+    // Row 6 (index 6) onwards is actual monthly data
+    for (let r = 6; r <= range.e.r; r++) {
+      const monthCell = sheet[XLSX.utils.encode_cell({ r, c: 0 })];
+      if (!monthCell || !monthCell.v) continue;
+      
+      const rawMonth = String(monthCell.v).trim();
+      if (rawMonth.includes('M')) {
         const standardMonth = rawMonth.replace('M', '-');
         metalPricesMap[standardMonth] = {};
+        parsedCount++;
 
-        for (const [wbKey, jsonKey] of Object.entries(METAL_MAPPING)) {
-          if (row[wbKey] !== undefined && row[wbKey] !== '' && row[wbKey] !== '..') {
-            metalPricesMap[standardMonth][jsonKey] = parseFloat(row[wbKey]);
+        for (const [colIdx, jsonKey] of Object.entries(colMap)) {
+          const valCell = sheet[XLSX.utils.encode_cell({ r, c: parseInt(colIdx) })];
+          if (valCell && valCell.v !== undefined && valCell.v !== '' && valCell.v !== '..') {
+            metalPricesMap[standardMonth][jsonKey] = parseFloat(valCell.v);
           }
         }
       }
-    });
+    }
+
+    console.log(`Parsed ${parsedCount} months of commodity data.`);
 
     console.log('Reading fxData.json...');
     const jsonContent = await fs.readFile(JSON_PATH, 'utf-8');
@@ -70,7 +89,7 @@ async function syncMetals() {
     let updatedCount = 0;
     data.monthlyPrices.forEach(item => {
       const prices = metalPricesMap[item.month];
-      if (prices) {
+      if (prices && Object.keys(prices).length > 0) {
         const usdRate = item.value.USD;
         if (usdRate) {
           // Clean up obsolete keys
