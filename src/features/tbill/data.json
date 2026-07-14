@@ -1678,5 +1678,40 @@
       "364_days": 9832.725
     },
     "timestamp": 1782248400000
+  },
+  {
+    "auctionNo": "1007th/26",
+    "date": "Jul 08, 2026",
+    "cutOffYields": {
+      "28_days": 6.933,
+      "91_days": 8.34,
+      "182_days": 9.516,
+      "364_days": 12.394
+    },
+    "weightedAverageYields": {
+      "28_days": 6.932,
+      "91_days": 8.34,
+      "182_days": 9.516,
+      "364_days": 12.394
+    },
+    "amountOffered": {
+      "28_days": 3293.85,
+      "91_days": 7048.68,
+      "182_days": 18269.725,
+      "364_days": 2100
+    },
+    "bidsReceived": {
+      "28_days": 9796.85,
+      "91_days": 25512.515,
+      "182_days": 46753.505,
+      "364_days": 6750.41
+    },
+    "amountAccepted": {
+      "28_days": 3293.85,
+      "91_days": 7048.68,
+      "182_days": 18269.725,
+      "364_days": 2100
+    },
+    "timestamp": 1783458000000
   }
 ]
