@@ -198,6 +198,30 @@ const TimeZoneConverter = ({ toggleHelp, toggleSettings }) => {
     // Sub-mode under calculator: 'difference' or 'math'
     const [calcSubMode, setCalcSubMode] = useState('difference');
 
+    // Calculator type: 'timezone' or 'date'
+    const [calcType, setCalcType] = useState('timezone');
+
+    // Date Calculator State - Difference Mode
+    const [dateDiffStart, setDateDiffStart] = useState(() => {
+        const today = new Date();
+        return `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
+    });
+    const [dateDiffEnd, setDateDiffEnd] = useState(() => {
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        return `${tomorrow.getFullYear()}-${pad(tomorrow.getMonth() + 1)}-${pad(tomorrow.getDate())}`;
+    });
+
+    // Date Calculator State - Math Mode (Add/Subtract)
+    const [dateMathStart, setDateMathStart] = useState(() => {
+        const today = new Date();
+        return `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
+    });
+    const [dateMathOp, setDateMathOp] = useState('add');
+    const [dateMathYears, setDateMathYears] = useState(0);
+    const [dateMathMonths, setDateMathMonths] = useState(0);
+    const [dateMathDays, setDateMathDays] = useState(0);
+
     // 1. Converter State
     const [referenceDate, setReferenceDate] = useState(() => new Date());
     const [use24Hour, setUse24Hour] = useState(false);
@@ -477,6 +501,137 @@ const TimeZoneConverter = ({ toggleHelp, toggleSettings }) => {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [activeSearchIndex, activeCalcSearchField]);
 
+    const getDaysInMonth = (year, month) => {
+        return new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+    };
+
+    const calculateCalendarDateDiff = () => {
+        try {
+            const [yA, mA, dA] = dateDiffStart.split('-').map(Number);
+            const dateA = new Date(Date.UTC(yA, mA - 1, dA));
+
+            const [yB, mB, dB] = dateDiffEnd.split('-').map(Number);
+            const dateB = new Date(Date.UTC(yB, mB - 1, dB));
+
+            const isStartEarlier = dateA <= dateB;
+            const d1 = isStartEarlier ? dateA : dateB;
+            const d2 = isStartEarlier ? dateB : dateA;
+
+            const totalDays = Math.round(Math.abs(dateB.getTime() - dateA.getTime()) / (1000 * 60 * 60 * 24));
+
+            let y = d1.getUTCFullYear();
+            let m = d1.getUTCMonth();
+            let d = d1.getUTCDate();
+
+            let years = 0;
+            let months = 0;
+
+            // Add years
+            while (true) {
+                let nextY = y + 1;
+                let nextM = m;
+                let nextD = d;
+                // Leap year adjustment
+                if (nextM === 1 && nextD === 29 && !((nextY % 4 === 0 && nextY % 100 !== 0) || nextY % 400 === 0)) {
+                    nextD = 28;
+                }
+                const nextDate = new Date(Date.UTC(nextY, nextM, nextD));
+                if (nextDate <= d2) {
+                    y = nextY;
+                    d = nextD;
+                    years++;
+                } else {
+                    break;
+                }
+            }
+
+            // Add months
+            while (true) {
+                let nextY = y;
+                let nextM = m + 1;
+                if (nextM > 11) {
+                    nextY++;
+                    nextM = 0;
+                }
+                let nextD = d;
+                const dim = getDaysInMonth(nextY, nextM);
+                if (nextD > dim) {
+                    nextD = dim;
+                }
+                const nextDate = new Date(Date.UTC(nextY, nextM, nextD));
+                if (nextDate <= d2) {
+                    y = nextY;
+                    m = nextM;
+                    d = nextD;
+                    months++;
+                } else {
+                    break;
+                }
+            }
+
+            const finalDate = new Date(Date.UTC(y, m, d));
+            const daysLeft = Math.round((d2.getTime() - finalDate.getTime()) / (1000 * 60 * 60 * 24));
+            const weeks = Math.floor(daysLeft / 7);
+            const remDays = daysLeft % 7;
+
+            return {
+                years,
+                months,
+                weeks,
+                days: remDays,
+                totalDays,
+                isSame: totalDays === 0
+            };
+        } catch (e) {
+            return null;
+        }
+    };
+
+    const calculateCalendarDateMath = () => {
+        try {
+            const [y, m, d] = dateMathStart.split('-').map(Number);
+            let targetYear = y;
+            let targetMonth = m - 1;
+
+            if (dateMathOp === 'add') {
+                targetYear += (dateMathYears || 0);
+                targetMonth += (dateMathMonths || 0);
+            } else {
+                targetYear -= (dateMathYears || 0);
+                targetMonth -= (dateMathMonths || 0);
+            }
+
+            const adjustedYear = targetYear + Math.floor(targetMonth / 12);
+            const adjustedMonth = ((targetMonth % 12) + 12) % 12;
+
+            const dim = getDaysInMonth(adjustedYear, adjustedMonth);
+            const targetDay = Math.min(d, dim);
+
+            const resultDate = new Date(Date.UTC(adjustedYear, adjustedMonth, targetDay));
+            if (dateMathOp === 'add') {
+                resultDate.setUTCDate(resultDate.getUTCDate() + (dateMathDays || 0));
+            } else {
+                resultDate.setUTCDate(resultDate.getUTCDate() - (dateMathDays || 0));
+            }
+
+            const resY = resultDate.getUTCFullYear();
+            const resM = resultDate.getUTCMonth();
+            const resD = resultDate.getUTCDate();
+
+            const daysArr = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            const dayOfWeek = daysArr[resultDate.getUTCDay()];
+            
+            const monthsArr = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+            const monthName = monthsArr[resM];
+
+            return {
+                date: `${dayOfWeek}, ${monthName} ${resD}, ${resY}`
+            };
+        } catch (e) {
+            return null;
+        }
+    };
+
     // 4. Calculator Computations
     const calculateDifferenceResult = () => {
         try {
@@ -575,6 +730,8 @@ const TimeZoneConverter = ({ toggleHelp, toggleSettings }) => {
 
     const diffResult = calculateDifferenceResult();
     const mathResult = calculateMathResult();
+    const dateDiffResult = calculateCalendarDateDiff();
+    const dateMathResult = calculateCalendarDateMath();
 
     return (
         <div className="flex flex-col h-full overflow-hidden max-w-lg mx-auto w-full">
@@ -881,6 +1038,30 @@ const TimeZoneConverter = ({ toggleHelp, toggleSettings }) => {
             ) : (
                 /* --------------------- CALCULATOR VIEW --------------------- */
                 <div className="flex-1 flex flex-col min-h-0 space-y-4 overflow-y-auto custom-scrollbar pb-2 px-0.5">
+                    {/* Calculator Type Toggle: Time Zone vs Date (Calendar) */}
+                    <div className="flex bg-neutral-900/70 rounded-lg p-0.5 border border-neutral-700/60 self-center">
+                        <button
+                            onClick={() => setCalcType('timezone')}
+                            className={`px-3 py-1.5 text-[9px] font-bold uppercase tracking-wider rounded-md transition-all ${
+                                calcType === 'timezone' 
+                                    ? 'bg-primary-600/20 text-primary-400 ring-1 ring-primary-500/30' 
+                                    : 'text-neutral-500 hover:text-neutral-300'
+                            }`}
+                        >
+                            Time Zone Calc
+                        </button>
+                        <button
+                            onClick={() => setCalcType('date')}
+                            className={`px-3 py-1.5 text-[9px] font-bold uppercase tracking-wider rounded-md transition-all ${
+                                calcType === 'date' 
+                                    ? 'bg-primary-600/20 text-primary-400 ring-1 ring-primary-500/30' 
+                                    : 'text-neutral-500 hover:text-neutral-300'
+                            }`}
+                        >
+                            Date Calc (Calendar)
+                        </button>
+                    </div>
+
                     {/* Calculator Subtabs: Difference vs Add/Subtract */}
                     <div className="flex bg-neutral-800/60 rounded-lg p-0.5 border border-neutral-700">
                         <button
@@ -901,385 +1082,527 @@ const TimeZoneConverter = ({ toggleHelp, toggleSettings }) => {
                         </button>
                     </div>
 
-
-
-                    {calcSubMode === 'difference' ? (
-                        /* DIFFERENCE CALCULATOR */
-                        <div className="space-y-4">
-                            {/* Input A */}
-                            <div className="bg-neutral-800/60 border border-neutral-700 rounded-2xl p-4 space-y-3">
-                                <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest block">Start Date-Time (A)</span>
-                                <div className="grid grid-cols-2 gap-2">
-                                    <input 
-                                        type="date" 
-                                        value={diffDateA}
-                                        onChange={(e) => setDiffDateA(e.target.value)}
-                                        className="bg-neutral-900 border border-white/5 rounded-xl px-2 py-1.5 text-xs text-neutral-200 focus:outline-none dark:[color-scheme:dark]"
-                                    />
-                                    <TimeInput 
-                                        value={diffTimeA}
-                                        onChange={setDiffTimeA}
-                                        use24Hour={use24Hour}
-                                    />
+                    {calcType === 'timezone' ? (
+                        /* TIME ZONE CALCULATOR MODE */
+                        calcSubMode === 'difference' ? (
+                            /* DIFFERENCE CALCULATOR */
+                            <div className="space-y-4">
+                                {/* Input A */}
+                                <div className="bg-neutral-800/60 border border-neutral-700 rounded-2xl p-4 space-y-3">
+                                    <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest block">Start Date-Time (A)</span>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <input 
+                                            type="date" 
+                                            value={diffDateA}
+                                            onChange={(e) => setDiffDateA(e.target.value)}
+                                            className="bg-neutral-900 border border-white/5 rounded-xl px-2 py-1.5 text-xs text-neutral-200 focus:outline-none dark:[color-scheme:dark]"
+                                        />
+                                        <TimeInput 
+                                            value={diffTimeA}
+                                            onChange={setDiffTimeA}
+                                            use24Hour={use24Hour}
+                                        />
+                                    </div>
+                                    <div className="relative" ref={el => calcDropdownRefs.current['diffA'] = el}>
+                                        {activeCalcSearchField === 'diffA' ? (
+                                            <div className="w-full">
+                                                <input
+                                                    type="text"
+                                                    autoFocus
+                                                    value={calcSearchQuery}
+                                                    placeholder="Search city, country, or timezone..."
+                                                    onChange={(e) => handleCalcSearchChange('diffA', e.target.value)}
+                                                    className="w-full bg-neutral-900 border border-primary-500/50 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-primary-500 font-medium"
+                                                />
+                                                <div className="absolute left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-neutral-900 border border-neutral-700 rounded-xl shadow-2xl z-[99999] py-1 divide-y divide-neutral-800 custom-scrollbar">
+                                                    {calcSearchResults.length > 0 ? (
+                                                        calcSearchResults.map(res => {
+                                                            const shortCode = res.id ? (getTimeZoneAbbrev(new Date(), res.id) || res.abbrev?.toUpperCase()) : '';
+                                                            const offset = res.id ? getTimeZoneOffset(new Date(), res.id) : '';
+                                                            return (
+                                                                <button
+                                                                    key={res.customLabel ? `${res.id}-${res.customLabel}` : (res.label ? `${res.id}-${res.label}` : res.id)}
+                                                                    onClick={() => handleSelectCalcTimezone('diffA', res.id)}
+                                                                    className="w-full text-left px-3 py-2 text-[11px] text-neutral-300 hover:bg-primary-600/20 hover:text-white transition-colors flex justify-between items-center"
+                                                                >
+                                                                    <div className="flex items-center gap-1.5 min-w-0">
+                                                                        <span className="font-semibold truncate">{res.label || res.city}</span>
+                                                                        {shortCode && (
+                                                                            <span className="text-[8px] px-1 py-0.5 rounded bg-primary-950/60 text-primary-400 font-mono border border-primary-500/25 uppercase shrink-0">
+                                                                                {shortCode}
+                                                                            </span>
+                                                                        )}
+                                                                        {offset && (
+                                                                            <span className="text-[8px] px-1 py-0.5 rounded bg-neutral-900/60 text-neutral-400 font-mono border border-white/5 uppercase shrink-0">
+                                                                                {offset}
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                    <span className="text-[9px] text-neutral-500 font-mono shrink-0 ml-2">{res.id}</span>
+                                                                </button>
+                                                            );
+                                                        })
+                                                    ) : (
+                                                        <div className="px-3 py-2 text-[10px] text-neutral-500 text-center">No matching timezones</div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <button
+                                                onClick={() => {
+                                                    setActiveCalcSearchField('diffA');
+                                                    handleCalcSearchChange('diffA', '');
+                                                }}
+                                                className="w-full flex justify-between items-center bg-neutral-900 border border-white/5 rounded-xl px-3 py-1.5 text-xs text-neutral-300 hover:text-white transition-all text-left"
+                                            >
+                                                <span className="truncate">
+                                                    {diffTzA.split('/').pop()?.replace(/_/g, ' ') || diffTzA} ({diffTzA})
+                                                </span>
+                                                <ChevronDown size={14} className="opacity-60 shrink-0" />
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
-                                <div className="relative" ref={el => calcDropdownRefs.current['diffA'] = el}>
-                                    {activeCalcSearchField === 'diffA' ? (
-                                        <div className="w-full">
-                                            <input
-                                                type="text"
-                                                autoFocus
-                                                value={calcSearchQuery}
-                                                placeholder="Search city, country, or timezone..."
-                                                onChange={(e) => handleCalcSearchChange('diffA', e.target.value)}
-                                                className="w-full bg-neutral-900 border border-primary-500/50 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-primary-500 font-medium"
-                                            />
-                                            <div className="absolute left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-neutral-900 border border-neutral-700 rounded-xl shadow-2xl z-[99999] py-1 divide-y divide-neutral-800 custom-scrollbar">
-                                                {calcSearchResults.length > 0 ? (
-                                                    calcSearchResults.map(res => {
-                                                        const shortCode = res.id ? (getTimeZoneAbbrev(new Date(), res.id) || res.abbrev?.toUpperCase()) : '';
-                                                        const offset = res.id ? getTimeZoneOffset(new Date(), res.id) : '';
-                                                        return (
-                                                            <button
-                                                                key={res.customLabel ? `${res.id}-${res.customLabel}` : (res.label ? `${res.id}-${res.label}` : res.id)}
-                                                                onClick={() => handleSelectCalcTimezone('diffA', res.id)}
-                                                                className="w-full text-left px-3 py-2 text-[11px] text-neutral-300 hover:bg-primary-600/20 hover:text-white transition-colors flex justify-between items-center"
-                                                            >
-                                                                <div className="flex items-center gap-1.5 min-w-0">
-                                                                    <span className="font-semibold truncate">{res.label || res.city}</span>
-                                                                    {shortCode && (
-                                                                        <span className="text-[8px] px-1 py-0.5 rounded bg-primary-950/60 text-primary-400 font-mono border border-primary-500/25 uppercase shrink-0">
-                                                                            {shortCode}
-                                                                        </span>
-                                                                    )}
-                                                                    {offset && (
-                                                                        <span className="text-[8px] px-1 py-0.5 rounded bg-neutral-900/60 text-neutral-400 font-mono border border-white/5 uppercase shrink-0">
-                                                                            {offset}
-                                                                        </span>
-                                                                    )}
-                                                                </div>
-                                                                <span className="text-[9px] text-neutral-500 font-mono shrink-0 ml-2">{res.id}</span>
-                                                            </button>
-                                                        );
-                                                    })
-                                                ) : (
-                                                    <div className="px-3 py-2 text-[10px] text-neutral-500 text-center">No matching timezones</div>
-                                                )}
+
+                                {/* Input B */}
+                                <div className="bg-neutral-800/60 border border-neutral-700 rounded-2xl p-4 space-y-3">
+                                    <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest block">End Date-Time (B)</span>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <input 
+                                            type="date" 
+                                            value={diffDateB}
+                                            onChange={(e) => setDiffDateB(e.target.value)}
+                                            className="bg-neutral-900 border border-white/5 rounded-xl px-2 py-1.5 text-xs text-neutral-200 focus:outline-none dark:[color-scheme:dark]"
+                                        />
+                                        <TimeInput 
+                                            value={diffTimeB}
+                                            onChange={setDiffTimeB}
+                                            use24Hour={use24Hour}
+                                        />
+                                    </div>
+                                    <div className="relative" ref={el => calcDropdownRefs.current['diffB'] = el}>
+                                        {activeCalcSearchField === 'diffB' ? (
+                                            <div className="w-full">
+                                                <input
+                                                    type="text"
+                                                    autoFocus
+                                                    value={calcSearchQuery}
+                                                    placeholder="Search city, country, or timezone..."
+                                                    onChange={(e) => handleCalcSearchChange('diffB', e.target.value)}
+                                                    className="w-full bg-neutral-900 border border-primary-500/50 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-primary-500 font-medium"
+                                                />
+                                                <div className="absolute left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-neutral-900 border border-neutral-700 rounded-xl shadow-2xl z-[99999] py-1 divide-y divide-neutral-800 custom-scrollbar">
+                                                    {calcSearchResults.length > 0 ? (
+                                                        calcSearchResults.map(res => {
+                                                            const shortCode = res.id ? (getTimeZoneAbbrev(new Date(), res.id) || res.abbrev?.toUpperCase()) : '';
+                                                            const offset = res.id ? getTimeZoneOffset(new Date(), res.id) : '';
+                                                            return (
+                                                                <button
+                                                                    key={res.customLabel ? `${res.id}-${res.customLabel}` : (res.label ? `${res.id}-${res.label}` : res.id)}
+                                                                    onClick={() => handleSelectCalcTimezone('diffB', res.id)}
+                                                                    className="w-full text-left px-3 py-2 text-[11px] text-neutral-300 hover:bg-primary-600/20 hover:text-white transition-colors flex justify-between items-center"
+                                                                >
+                                                                    <div className="flex items-center gap-1.5 min-w-0">
+                                                                        <span className="font-semibold truncate">{res.label || res.city}</span>
+                                                                        {shortCode && (
+                                                                            <span className="text-[8px] px-1 py-0.5 rounded bg-primary-950/60 text-primary-400 font-mono border border-primary-500/25 uppercase shrink-0">
+                                                                                {shortCode}
+                                                                            </span>
+                                                                        )}
+                                                                        {offset && (
+                                                                            <span className="text-[8px] px-1 py-0.5 rounded bg-neutral-900/60 text-neutral-400 font-mono border border-white/5 uppercase shrink-0">
+                                                                                {offset}
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                    <span className="text-[9px] text-neutral-500 font-mono shrink-0 ml-2">{res.id}</span>
+                                                                </button>
+                                                            );
+                                                        })
+                                                    ) : (
+                                                        <div className="px-3 py-2 text-[10px] text-neutral-500 text-center">No matching timezones</div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <button
+                                                onClick={() => {
+                                                    setActiveCalcSearchField('diffB');
+                                                    handleCalcSearchChange('diffB', '');
+                                                }}
+                                                className="w-full flex justify-between items-center bg-neutral-900 border border-white/5 rounded-xl px-3 py-1.5 text-xs text-neutral-300 hover:text-white transition-all text-left"
+                                            >
+                                                <span className="truncate">
+                                                    {diffTzB.split('/').pop()?.replace(/_/g, ' ') || diffTzB} ({diffTzB})
+                                                </span>
+                                                <ChevronDown size={14} className="opacity-60 shrink-0" />
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Difference Output Result */}
+                                {diffResult && (
+                                    <div className="bg-gradient-to-br from-neutral-800/80 to-neutral-900/80 border border-primary-500/30 rounded-2xl p-4 space-y-3">
+                                        <span className="text-[10px] font-bold text-primary-400 uppercase tracking-widest block">Time Difference</span>
+                                        <div className="grid grid-cols-3 gap-2 text-center">
+                                            <div className="bg-neutral-900/60 rounded-xl p-2.5 border border-white/5">
+                                                <div className="text-[9px] text-neutral-500 font-bold uppercase">Days</div>
+                                                <div className="text-xl font-bold font-mono text-white">{diffResult.days}</div>
+                                            </div>
+                                            <div className="bg-neutral-900/60 rounded-xl p-2.5 border border-white/5">
+                                                <div className="text-[9px] text-neutral-500 font-bold uppercase">Hours</div>
+                                                <div className="text-xl font-bold font-mono text-white">{diffResult.hours}</div>
+                                            </div>
+                                            <div className="bg-neutral-900/60 rounded-xl p-2.5 border border-white/5">
+                                                <div className="text-[9px] text-neutral-500 font-bold uppercase">Minutes</div>
+                                                <div className="text-xl font-bold font-mono text-white">{diffResult.minutes}</div>
                                             </div>
                                         </div>
-                                    ) : (
-                                        <button
-                                            onClick={() => {
-                                                setActiveCalcSearchField('diffA');
-                                                handleCalcSearchChange('diffA', '');
-                                            }}
-                                            className="w-full flex justify-between items-center bg-neutral-900 border border-white/5 rounded-xl px-3 py-1.5 text-xs text-neutral-300 hover:text-white transition-all text-left"
-                                        >
-                                            <span className="truncate">
-                                                {diffTzA.split('/').pop()?.replace(/_/g, ' ') || diffTzA} ({diffTzA})
-                                            </span>
-                                            <ChevronDown size={14} className="opacity-60 shrink-0" />
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Input B */}
-                            <div className="bg-neutral-800/60 border border-neutral-700 rounded-2xl p-4 space-y-3">
-                                <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest block">End Date-Time (B)</span>
-                                <div className="grid grid-cols-2 gap-2">
-                                    <input 
-                                        type="date" 
-                                        value={diffDateB}
-                                        onChange={(e) => setDiffDateB(e.target.value)}
-                                        className="bg-neutral-900 border border-white/5 rounded-xl px-2 py-1.5 text-xs text-neutral-200 focus:outline-none dark:[color-scheme:dark]"
-                                    />
-                                    <TimeInput 
-                                        value={diffTimeB}
-                                        onChange={setDiffTimeB}
-                                        use24Hour={use24Hour}
-                                    />
-                                </div>
-                                <div className="relative" ref={el => calcDropdownRefs.current['diffB'] = el}>
-                                    {activeCalcSearchField === 'diffB' ? (
-                                        <div className="w-full">
-                                            <input
-                                                type="text"
-                                                autoFocus
-                                                value={calcSearchQuery}
-                                                placeholder="Search city, country, or timezone..."
-                                                onChange={(e) => handleCalcSearchChange('diffB', e.target.value)}
-                                                className="w-full bg-neutral-900 border border-primary-500/50 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-primary-500 font-medium"
-                                            />
-                                            <div className="absolute left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-neutral-900 border border-neutral-700 rounded-xl shadow-2xl z-[99999] py-1 divide-y divide-neutral-800 custom-scrollbar">
-                                                {calcSearchResults.length > 0 ? (
-                                                    calcSearchResults.map(res => {
-                                                        const shortCode = res.id ? (getTimeZoneAbbrev(new Date(), res.id) || res.abbrev?.toUpperCase()) : '';
-                                                        const offset = res.id ? getTimeZoneOffset(new Date(), res.id) : '';
-                                                        return (
-                                                            <button
-                                                                key={res.customLabel ? `${res.id}-${res.customLabel}` : (res.label ? `${res.id}-${res.label}` : res.id)}
-                                                                onClick={() => handleSelectCalcTimezone('diffB', res.id)}
-                                                                className="w-full text-left px-3 py-2 text-[11px] text-neutral-300 hover:bg-primary-600/20 hover:text-white transition-colors flex justify-between items-center"
-                                                            >
-                                                                <div className="flex items-center gap-1.5 min-w-0">
-                                                                    <span className="font-semibold truncate">{res.label || res.city}</span>
-                                                                    {shortCode && (
-                                                                        <span className="text-[8px] px-1 py-0.5 rounded bg-primary-950/60 text-primary-400 font-mono border border-primary-500/25 uppercase shrink-0">
-                                                                            {shortCode}
-                                                                        </span>
-                                                                    )}
-                                                                    {offset && (
-                                                                        <span className="text-[8px] px-1 py-0.5 rounded bg-neutral-900/60 text-neutral-400 font-mono border border-white/5 uppercase shrink-0">
-                                                                            {offset}
-                                                                        </span>
-                                                                    )}
-                                                                </div>
-                                                                <span className="text-[9px] text-neutral-500 font-mono shrink-0 ml-2">{res.id}</span>
-                                                            </button>
-                                                        );
-                                                    })
-                                                ) : (
-                                                    <div className="px-3 py-2 text-[10px] text-neutral-500 text-center">No matching timezones</div>
-                                                )}
+                                        
+                                        {/* Detailed breakdown list */}
+                                        <div className="space-y-1.5 text-[11px] text-neutral-400 bg-neutral-900/40 p-3 rounded-xl border border-white/5 font-mono">
+                                            <div className="flex justify-between">
+                                                <span>Total Hours:</span>
+                                                <span className="text-white font-bold">{diffResult.totalHours.toLocaleString()} hrs</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span>Total Minutes:</span>
+                                                <span className="text-white font-bold">{diffResult.totalMins.toLocaleString()} mins</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span>Total Seconds:</span>
+                                                <span className="text-white font-bold">{diffResult.totalSecs.toLocaleString()} secs</span>
                                             </div>
                                         </div>
-                                    ) : (
-                                        <button
-                                            onClick={() => {
-                                                setActiveCalcSearchField('diffB');
-                                                handleCalcSearchChange('diffB', '');
-                                            }}
-                                            className="w-full flex justify-between items-center bg-neutral-900 border border-white/5 rounded-xl px-3 py-1.5 text-xs text-neutral-300 hover:text-white transition-all text-left"
-                                        >
-                                            <span className="truncate">
-                                                {diffTzB.split('/').pop()?.replace(/_/g, ' ') || diffTzB} ({diffTzB})
-                                            </span>
-                                            <ChevronDown size={14} className="opacity-60 shrink-0" />
-                                        </button>
-                                    )}
-                                </div>
+                                    </div>
+                                )}
                             </div>
+                        ) : (
+                            /* ADD / SUBTRACT CALCULATOR */
+                            <div className="space-y-4">
+                                {/* Start parameters */}
+                                <div className="bg-neutral-800/60 border border-neutral-700 rounded-2xl p-4 space-y-3">
+                                    <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest block">Start Date-Time</span>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <input 
+                                            type="date" 
+                                            value={mathDate}
+                                            onChange={(e) => setMathDate(e.target.value)}
+                                            className="bg-neutral-900 border border-white/5 rounded-xl px-2 py-1.5 text-xs text-neutral-200 focus:outline-none dark:[color-scheme:dark]"
+                                        />
+                                        <TimeInput 
+                                            value={mathTime}
+                                            onChange={setMathTime}
+                                            use24Hour={use24Hour}
+                                        />
+                                    </div>
+                                    <div className="relative" ref={el => calcDropdownRefs.current['math'] = el}>
+                                        {activeCalcSearchField === 'math' ? (
+                                            <div className="w-full">
+                                                <input
+                                                    type="text"
+                                                    autoFocus
+                                                    value={calcSearchQuery}
+                                                    placeholder="Search city, country, or timezone..."
+                                                    onChange={(e) => handleCalcSearchChange('math', e.target.value)}
+                                                    className="w-full bg-neutral-900 border border-primary-500/50 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-primary-500 font-medium"
+                                                />
+                                                <div className="absolute left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-neutral-900 border border-neutral-700 rounded-xl shadow-2xl z-[99999] py-1 divide-y divide-neutral-800 custom-scrollbar">
+                                                    {calcSearchResults.length > 0 ? (
+                                                        calcSearchResults.map(res => {
+                                                            const shortCode = res.id ? (getTimeZoneAbbrev(new Date(), res.id) || res.abbrev?.toUpperCase()) : '';
+                                                            const offset = res.id ? getTimeZoneOffset(new Date(), res.id) : '';
+                                                            return (
+                                                                <button
+                                                                    key={res.customLabel ? `${res.id}-${res.customLabel}` : (res.label ? `${res.id}-${res.label}` : res.id)}
+                                                                    onClick={() => handleSelectCalcTimezone('math', res.id)}
+                                                                    className="w-full text-left px-3 py-2 text-[11px] text-neutral-300 hover:bg-primary-600/20 hover:text-white transition-colors flex justify-between items-center"
+                                                                >
+                                                                    <div className="flex items-center gap-1.5 min-w-0">
+                                                                        <span className="font-semibold truncate">{res.label || res.city}</span>
+                                                                        {shortCode && (
+                                                                            <span className="text-[8px] px-1 py-0.5 rounded bg-primary-950/60 text-primary-400 font-mono border border-primary-500/25 uppercase shrink-0">
+                                                                                {shortCode}
+                                                                            </span>
+                                                                        )}
+                                                                        {offset && (
+                                                                            <span className="text-[8px] px-1 py-0.5 rounded bg-neutral-900/60 text-neutral-400 font-mono border border-white/5 uppercase shrink-0">
+                                                                                {offset}
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                    <span className="text-[9px] text-neutral-500 font-mono shrink-0 ml-2">{res.id}</span>
+                                                                </button>
+                                                            );
+                                                        })
+                                                    ) : (
+                                                        <div className="px-3 py-2 text-[10px] text-neutral-500 text-center">No matching timezones</div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <button
+                                                onClick={() => {
+                                                    setActiveCalcSearchField('math');
+                                                    handleCalcSearchChange('math', '');
+                                                }}
+                                                className="w-full flex justify-between items-center bg-neutral-900 border border-white/5 rounded-xl px-3 py-1.5 text-xs text-neutral-300 hover:text-white transition-all text-left"
+                                            >
+                                                <span className="truncate">
+                                                    {mathTz.split('/').pop()?.replace(/_/g, ' ') || mathTz} ({mathTz})
+                                                </span>
+                                                <ChevronDown size={14} className="opacity-60 shrink-0" />
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
 
-                            {/* Difference Output Result */}
-                            {diffResult && (
-                                <div className="bg-gradient-to-br from-neutral-800/80 to-neutral-900/80 border border-primary-500/30 rounded-2xl p-4 space-y-3">
-                                    <span className="text-[10px] font-bold text-primary-400 uppercase tracking-widest block">Time Difference</span>
-                                    <div className="grid grid-cols-3 gap-2 text-center">
-                                        <div className="bg-neutral-900/60 rounded-xl p-2.5 border border-white/5">
-                                            <div className="text-[9px] text-neutral-500 font-bold uppercase">Days</div>
-                                            <div className="text-xl font-bold font-mono text-white">{diffResult.days}</div>
+                                {/* Math controls */}
+                                <div className="bg-neutral-800/60 border border-neutral-700 rounded-2xl p-4 space-y-3">
+                                    <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest block">Add or Subtract Duration</span>
+                                    <div className="flex bg-neutral-900/60 rounded-xl p-0.5 border border-white/5 mb-2">
+                                        <button
+                                            onClick={() => setMathOp('add')}
+                                            className={`flex-1 py-1 rounded-lg text-[10px] font-bold uppercase transition-all ${
+                                                mathOp === 'add' ? 'bg-primary-600/20 text-primary-400' : 'text-neutral-500 hover:text-neutral-300'
+                                            }`}
+                                        >
+                                            Add (+)
+                                        </button>
+                                        <button
+                                            onClick={() => setMathOp('subtract')}
+                                            className={`flex-1 py-1 rounded-lg text-[10px] font-bold uppercase transition-all ${
+                                                mathOp === 'subtract' ? 'bg-primary-600/20 text-primary-400' : 'text-neutral-500 hover:text-neutral-300'
+                                            }`}
+                                        >
+                                            Subtract (-)
+                                        </button>
+                                    </div>
+                                    
+                                    <div className="grid grid-cols-3 gap-2 mb-2">
+                                        <div className="space-y-1">
+                                            <label className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Years</label>
+                                            <input 
+                                                type="number"
+                                                min={0}
+                                                value={mathYears}
+                                                onChange={(e) => setMathYears(Math.max(0, parseInt(e.target.value, 10) || 0))}
+                                                className="w-full bg-neutral-900 border border-white/5 rounded-xl px-2.5 py-1.5 text-xs font-mono text-center text-white focus:outline-none"
+                                            />
                                         </div>
-                                        <div className="bg-neutral-900/60 rounded-xl p-2.5 border border-white/5">
-                                            <div className="text-[9px] text-neutral-500 font-bold uppercase">Hours</div>
-                                            <div className="text-xl font-bold font-mono text-white">{diffResult.hours}</div>
+                                        <div className="space-y-1">
+                                            <label className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Months</label>
+                                            <input 
+                                                type="number"
+                                                min={0}
+                                                value={mathMonths}
+                                                onChange={(e) => setMathMonths(Math.max(0, parseInt(e.target.value, 10) || 0))}
+                                                className="w-full bg-neutral-900 border border-white/5 rounded-xl px-2.5 py-1.5 text-xs font-mono text-center text-white focus:outline-none"
+                                            />
                                         </div>
-                                        <div className="bg-neutral-900/60 rounded-xl p-2.5 border border-white/5">
-                                            <div className="text-[9px] text-neutral-500 font-bold uppercase">Minutes</div>
-                                            <div className="text-xl font-bold font-mono text-white">{diffResult.minutes}</div>
+                                        <div className="space-y-1">
+                                            <label className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Days</label>
+                                            <input 
+                                                type="number"
+                                                min={0}
+                                                value={mathDays}
+                                                onChange={(e) => setMathDays(Math.max(0, parseInt(e.target.value, 10) || 0))}
+                                                className="w-full bg-neutral-900 border border-white/5 rounded-xl px-2.5 py-1.5 text-xs font-mono text-center text-white focus:outline-none"
+                                            />
                                         </div>
                                     </div>
                                     
-                                    {/* Detailed breakdown list */}
-                                    <div className="space-y-1.5 text-[11px] text-neutral-400 bg-neutral-900/40 p-3 rounded-xl border border-white/5 font-mono">
-                                        <div className="flex justify-between">
-                                            <span>Total Hours:</span>
-                                            <span className="text-white font-bold">{diffResult.totalHours.toLocaleString()} hrs</span>
+                                    <div className="grid grid-cols-3 gap-2">
+                                        <div className="space-y-1">
+                                            <label className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Hours</label>
+                                            <input 
+                                                type="number"
+                                                min={0}
+                                                value={mathHours}
+                                                onChange={(e) => setMathHours(Math.max(0, parseInt(e.target.value, 10) || 0))}
+                                                className="w-full bg-neutral-900 border border-white/5 rounded-xl px-2.5 py-1.5 text-xs font-mono text-center text-white focus:outline-none"
+                                            />
                                         </div>
-                                        <div className="flex justify-between">
-                                            <span>Total Minutes:</span>
-                                            <span className="text-white font-bold">{diffResult.totalMins.toLocaleString()} mins</span>
+                                        <div className="space-y-1">
+                                            <label className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Minutes</label>
+                                            <input 
+                                                type="number"
+                                                min={0}
+                                                value={mathMinutes}
+                                                onChange={(e) => setMathMinutes(Math.max(0, parseInt(e.target.value, 10) || 0))}
+                                                className="w-full bg-neutral-900 border border-white/5 rounded-xl px-2.5 py-1.5 text-xs font-mono text-center text-white focus:outline-none"
+                                            />
                                         </div>
-                                        <div className="flex justify-between">
-                                            <span>Total Seconds:</span>
-                                            <span className="text-white font-bold">{diffResult.totalSecs.toLocaleString()} secs</span>
+                                        <div className="space-y-1">
+                                            <label className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Seconds</label>
+                                            <input 
+                                                type="number"
+                                                min={0}
+                                                value={mathSeconds}
+                                                onChange={(e) => setMathSeconds(Math.max(0, parseInt(e.target.value, 10) || 0))}
+                                                className="w-full bg-neutral-900 border border-white/5 rounded-xl px-2.5 py-1.5 text-xs font-mono text-center text-white focus:outline-none"
+                                            />
                                         </div>
                                     </div>
                                 </div>
-                            )}
-                        </div>
-                    ) : (
-                        /* ADD / SUBTRACT CALCULATOR */
-                        <div className="space-y-4">
-                            {/* Start parameters */}
-                            <div className="bg-neutral-800/60 border border-neutral-700 rounded-2xl p-4 space-y-3">
-                                <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest block">Start Date-Time</span>
-                                <div className="grid grid-cols-2 gap-2">
-                                    <input 
-                                        type="date" 
-                                        value={mathDate}
-                                        onChange={(e) => setMathDate(e.target.value)}
-                                        className="bg-neutral-900 border border-white/5 rounded-xl px-2 py-1.5 text-xs text-neutral-200 focus:outline-none dark:[color-scheme:dark]"
-                                    />
-                                    <TimeInput 
-                                        value={mathTime}
-                                        onChange={setMathTime}
-                                        use24Hour={use24Hour}
-                                    />
-                                </div>
-                                <div className="relative" ref={el => calcDropdownRefs.current['math'] = el}>
-                                    {activeCalcSearchField === 'math' ? (
-                                        <div className="w-full">
-                                            <input
-                                                type="text"
-                                                autoFocus
-                                                value={calcSearchQuery}
-                                                placeholder="Search city, country, or timezone..."
-                                                onChange={(e) => handleCalcSearchChange('math', e.target.value)}
-                                                className="w-full bg-neutral-900 border border-primary-500/50 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-primary-500 font-medium"
-                                            />
-                                            <div className="absolute left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-neutral-900 border border-neutral-700 rounded-xl shadow-2xl z-[99999] py-1 divide-y divide-neutral-800 custom-scrollbar">
-                                                {calcSearchResults.length > 0 ? (
-                                                    calcSearchResults.map(res => {
-                                                        const shortCode = res.id ? (getTimeZoneAbbrev(new Date(), res.id) || res.abbrev?.toUpperCase()) : '';
-                                                        const offset = res.id ? getTimeZoneOffset(new Date(), res.id) : '';
-                                                        return (
-                                                            <button
-                                                                key={res.customLabel ? `${res.id}-${res.customLabel}` : (res.label ? `${res.id}-${res.label}` : res.id)}
-                                                                onClick={() => handleSelectCalcTimezone('math', res.id)}
-                                                                className="w-full text-left px-3 py-2 text-[11px] text-neutral-300 hover:bg-primary-600/20 hover:text-white transition-colors flex justify-between items-center"
-                                                            >
-                                                                <div className="flex items-center gap-1.5 min-w-0">
-                                                                    <span className="font-semibold truncate">{res.label || res.city}</span>
-                                                                    {shortCode && (
-                                                                        <span className="text-[8px] px-1 py-0.5 rounded bg-primary-950/60 text-primary-400 font-mono border border-primary-500/25 uppercase shrink-0">
-                                                                            {shortCode}
-                                                                        </span>
-                                                                    )}
-                                                                    {offset && (
-                                                                        <span className="text-[8px] px-1 py-0.5 rounded bg-neutral-900/60 text-neutral-400 font-mono border border-white/5 uppercase shrink-0">
-                                                                            {offset}
-                                                                        </span>
-                                                                    )}
-                                                                </div>
-                                                                <span className="text-[9px] text-neutral-500 font-mono shrink-0 ml-2">{res.id}</span>
-                                                            </button>
-                                                        );
-                                                    })
-                                                ) : (
-                                                    <div className="px-3 py-2 text-[10px] text-neutral-500 text-center">No matching timezones</div>
-                                                )}
+
+                                {/* Math Result */}
+                                {mathResult && (
+                                    <div className="bg-gradient-to-br from-neutral-800/80 to-neutral-900/80 border border-primary-500/30 rounded-2xl p-4 space-y-2">
+                                        <span className="text-[10px] font-bold text-primary-400 uppercase tracking-widest block">Calculated Result Date-Time</span>
+                                        <div className="text-center py-2 space-y-1">
+                                            <div className="text-2xl font-mono font-bold text-white">{mathResult.time}</div>
+                                            <div className="text-xs text-neutral-300 font-bold">{mathResult.date}</div>
+                                            <div className="text-[9px] text-neutral-500 font-mono tracking-wider">
+                                                {mathResult.abbrev} {mathResult.offset}
                                             </div>
                                         </div>
-                                    ) : (
+                                    </div>
+                                )}
+                            </div>
+                        )
+                    ) : (
+                        /* DATE ONLY (CALENDAR) CALCULATOR MODE */
+                        calcSubMode === 'difference' ? (
+                            /* DATE DIFFERENCE */
+                            <div className="space-y-4">
+                                <div className="bg-neutral-800/60 border border-neutral-700 rounded-2xl p-4 space-y-3">
+                                    <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest block">Start Date</span>
+                                    <input 
+                                        type="date" 
+                                        value={dateDiffStart}
+                                        onChange={(e) => setDateDiffStart(e.target.value)}
+                                        className="w-full bg-neutral-900 border border-white/5 rounded-xl px-3 py-2 text-xs text-neutral-200 focus:outline-none dark:[color-scheme:dark] font-bold"
+                                    />
+                                </div>
+
+                                <div className="bg-neutral-800/60 border border-neutral-700 rounded-2xl p-4 space-y-3">
+                                    <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest block">End Date</span>
+                                    <input 
+                                        type="date" 
+                                        value={dateDiffEnd}
+                                        onChange={(e) => setDateDiffEnd(e.target.value)}
+                                        className="w-full bg-neutral-900 border border-white/5 rounded-xl px-3 py-2 text-xs text-neutral-200 focus:outline-none dark:[color-scheme:dark] font-bold"
+                                    />
+                                </div>
+
+                                {/* Calendar Date Difference Output Result */}
+                                {dateDiffResult && (
+                                    <div className="bg-gradient-to-br from-neutral-800/80 to-neutral-900/80 border border-primary-500/30 rounded-2xl p-4 space-y-3">
+                                        <span className="text-[10px] font-bold text-primary-400 uppercase tracking-widest block">Difference</span>
+                                        {dateDiffResult.isSame ? (
+                                            <div className="text-center py-4 text-xs font-bold text-neutral-300">
+                                                Same date
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <div className="grid grid-cols-4 gap-2 text-center">
+                                                    <div className="bg-neutral-900/60 rounded-xl p-2 border border-white/5">
+                                                        <div className="text-[8px] text-neutral-500 font-bold uppercase">Years</div>
+                                                        <div className="text-lg font-bold font-mono text-white">{dateDiffResult.years}</div>
+                                                    </div>
+                                                    <div className="bg-neutral-900/60 rounded-xl p-2 border border-white/5">
+                                                        <div className="text-[8px] text-neutral-500 font-bold uppercase">Months</div>
+                                                        <div className="text-lg font-bold font-mono text-white">{dateDiffResult.months}</div>
+                                                    </div>
+                                                    <div className="bg-neutral-900/60 rounded-xl p-2 border border-white/5">
+                                                        <div className="text-[8px] text-neutral-500 font-bold uppercase">Weeks</div>
+                                                        <div className="text-lg font-bold font-mono text-white">{dateDiffResult.weeks}</div>
+                                                    </div>
+                                                    <div className="bg-neutral-900/60 rounded-xl p-2 border border-white/5">
+                                                        <div className="text-[8px] text-neutral-500 font-bold uppercase">Days</div>
+                                                        <div className="text-lg font-bold font-mono text-white">{dateDiffResult.days}</div>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div className="text-center text-xs font-bold text-neutral-300 pt-1 font-mono">
+                                                    Total Days: <span className="text-primary-400">{dateDiffResult.totalDays.toLocaleString()}</span>
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            /* DATE ADD/SUBTRACT */
+                            <div className="space-y-4">
+                                <div className="bg-neutral-800/60 border border-neutral-700 rounded-2xl p-4 space-y-3">
+                                    <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest block">Start Date</span>
+                                    <input 
+                                        type="date" 
+                                        value={dateMathStart}
+                                        onChange={(e) => setDateMathStart(e.target.value)}
+                                        className="w-full bg-neutral-900 border border-white/5 rounded-xl px-3 py-2 text-xs text-neutral-200 focus:outline-none dark:[color-scheme:dark] font-bold"
+                                    />
+                                </div>
+
+                                <div className="bg-neutral-800/60 border border-neutral-700 rounded-2xl p-4 space-y-3">
+                                    <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest block">Add or Subtract</span>
+                                    <div className="flex bg-neutral-900/60 rounded-xl p-0.5 border border-white/5 mb-2">
                                         <button
-                                            onClick={() => {
-                                                setActiveCalcSearchField('math');
-                                                handleCalcSearchChange('math', '');
-                                            }}
-                                            className="w-full flex justify-between items-center bg-neutral-900 border border-white/5 rounded-xl px-3 py-1.5 text-xs text-neutral-300 hover:text-white transition-all text-left"
+                                            onClick={() => setDateMathOp('add')}
+                                            className={`flex-1 py-1 rounded-lg text-[10px] font-bold uppercase transition-all ${
+                                                dateMathOp === 'add' ? 'bg-primary-600/20 text-primary-400' : 'text-neutral-500 hover:text-neutral-300'
+                                            }`}
                                         >
-                                            <span className="truncate">
-                                                {mathTz.split('/').pop()?.replace(/_/g, ' ') || mathTz} ({mathTz})
-                                            </span>
-                                            <ChevronDown size={14} className="opacity-60 shrink-0" />
+                                            Add (+)
                                         </button>
-                                    )}
-                                </div>
-                            </div>
+                                        <button
+                                            onClick={() => setDateMathOp('subtract')}
+                                            className={`flex-1 py-1 rounded-lg text-[10px] font-bold uppercase transition-all ${
+                                                dateMathOp === 'subtract' ? 'bg-primary-600/20 text-primary-400' : 'text-neutral-500 hover:text-neutral-300'
+                                            }`}
+                                        >
+                                            Subtract (-)
+                                        </button>
+                                    </div>
 
-                            {/* Math controls */}
-                            <div className="bg-neutral-800/60 border border-neutral-700 rounded-2xl p-4 space-y-3">
-                                <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest block">Add or Subtract Duration</span>
-                                <div className="flex bg-neutral-900/60 rounded-xl p-0.5 border border-white/5 mb-2">
-                                    <button
-                                        onClick={() => setMathOp('add')}
-                                        className={`flex-1 py-1 rounded-lg text-[10px] font-bold uppercase transition-all ${
-                                            mathOp === 'add' ? 'bg-primary-600/20 text-primary-400' : 'text-neutral-500 hover:text-neutral-300'
-                                        }`}
-                                    >
-                                        Add (+)
-                                    </button>
-                                    <button
-                                        onClick={() => setMathOp('subtract')}
-                                        className={`flex-1 py-1 rounded-lg text-[10px] font-bold uppercase transition-all ${
-                                            mathOp === 'subtract' ? 'bg-primary-600/20 text-primary-400' : 'text-neutral-500 hover:text-neutral-300'
-                                        }`}
-                                    >
-                                        Subtract (-)
-                                    </button>
-                                </div>
-                                
-                                <div className="grid grid-cols-3 gap-2 mb-2">
-                                    <div className="space-y-1">
-                                        <label className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Years</label>
-                                        <input 
-                                            type="number"
-                                            min={0}
-                                            value={mathYears}
-                                            onChange={(e) => setMathYears(Math.max(0, parseInt(e.target.value, 10) || 0))}
-                                            className="w-full bg-neutral-900 border border-white/5 rounded-xl px-2.5 py-1.5 text-xs font-mono text-center text-white focus:outline-none"
-                                        />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <label className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Months</label>
-                                        <input 
-                                            type="number"
-                                            min={0}
-                                            value={mathMonths}
-                                            onChange={(e) => setMathMonths(Math.max(0, parseInt(e.target.value, 10) || 0))}
-                                            className="w-full bg-neutral-900 border border-white/5 rounded-xl px-2.5 py-1.5 text-xs font-mono text-center text-white focus:outline-none"
-                                        />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <label className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Days</label>
-                                        <input 
-                                            type="number"
-                                            min={0}
-                                            value={mathDays}
-                                            onChange={(e) => setMathDays(Math.max(0, parseInt(e.target.value, 10) || 0))}
-                                            className="w-full bg-neutral-900 border border-white/5 rounded-xl px-2.5 py-1.5 text-xs font-mono text-center text-white focus:outline-none"
-                                        />
-                                    </div>
-                                </div>
-                                
-                                <div className="grid grid-cols-3 gap-2">
-                                    <div className="space-y-1">
-                                        <label className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Hours</label>
-                                        <input 
-                                            type="number"
-                                            min={0}
-                                            value={mathHours}
-                                            onChange={(e) => setMathHours(Math.max(0, parseInt(e.target.value, 10) || 0))}
-                                            className="w-full bg-neutral-900 border border-white/5 rounded-xl px-2.5 py-1.5 text-xs font-mono text-center text-white focus:outline-none"
-                                        />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <label className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Minutes</label>
-                                        <input 
-                                            type="number"
-                                            min={0}
-                                            value={mathMinutes}
-                                            onChange={(e) => setMathMinutes(Math.max(0, parseInt(e.target.value, 10) || 0))}
-                                            className="w-full bg-neutral-900 border border-white/5 rounded-xl px-2.5 py-1.5 text-xs font-mono text-center text-white focus:outline-none"
-                                        />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <label className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Seconds</label>
-                                        <input 
-                                            type="number"
-                                            min={0}
-                                            value={mathSeconds}
-                                            onChange={(e) => setMathSeconds(Math.max(0, parseInt(e.target.value, 10) || 0))}
-                                            className="w-full bg-neutral-900 border border-white/5 rounded-xl px-2.5 py-1.5 text-xs font-mono text-center text-white focus:outline-none"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Math Result */}
-                            {mathResult && (
-                                <div className="bg-gradient-to-br from-neutral-800/80 to-neutral-900/80 border border-primary-500/30 rounded-2xl p-4 space-y-2">
-                                    <span className="text-[10px] font-bold text-primary-400 uppercase tracking-widest block">Calculated Result Date-Time</span>
-                                    <div className="text-center py-2 space-y-1">
-                                        <div className="text-2xl font-mono font-bold text-white">{mathResult.time}</div>
-                                        <div className="text-xs text-neutral-300 font-bold">{mathResult.date}</div>
-                                        <div className="text-[9px] text-neutral-500 font-mono tracking-wider">
-                                            {mathResult.abbrev} {mathResult.offset}
+                                    <div className="grid grid-cols-3 gap-2">
+                                        <div className="space-y-1">
+                                            <label className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Years</label>
+                                            <input 
+                                                type="number"
+                                                min={0}
+                                                value={dateMathYears}
+                                                onChange={(e) => setDateMathYears(Math.max(0, parseInt(e.target.value, 10) || 0))}
+                                                className="w-full bg-neutral-900 border border-white/5 rounded-xl px-2.5 py-1.5 text-xs font-mono text-center text-white focus:outline-none"
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Months</label>
+                                            <input 
+                                                type="number"
+                                                min={0}
+                                                value={dateMathMonths}
+                                                onChange={(e) => setDateMathMonths(Math.max(0, parseInt(e.target.value, 10) || 0))}
+                                                className="w-full bg-neutral-900 border border-white/5 rounded-xl px-2.5 py-1.5 text-xs font-mono text-center text-white focus:outline-none"
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Days</label>
+                                            <input 
+                                                type="number"
+                                                min={0}
+                                                value={dateMathDays}
+                                                onChange={(e) => setDateMathDays(Math.max(0, parseInt(e.target.value, 10) || 0))}
+                                                className="w-full bg-neutral-900 border border-white/5 rounded-xl px-2.5 py-1.5 text-xs font-mono text-center text-white focus:outline-none"
+                                            />
                                         </div>
                                     </div>
                                 </div>
-                            )}
-                        </div>
+
+                                {/* Calendar Date Math Result */}
+                                {dateMathResult && (
+                                    <div className="bg-gradient-to-br from-neutral-800/80 to-neutral-900/80 border border-primary-500/30 rounded-2xl p-4 space-y-2">
+                                        <span className="text-[10px] font-bold text-primary-400 uppercase tracking-widest block">Date Result</span>
+                                        <div className="text-center py-3">
+                                            <div className="text-base font-bold text-white font-mono">{dateMathResult.date}</div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )
                     )}
                 </div>
             )}

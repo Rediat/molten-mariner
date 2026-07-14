@@ -685,11 +685,28 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                 </p>
 
                 <div className="pt-2">
-                    <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Modes:</p>
+                    <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Calculator Options:</p>
+                    <p className="text-neutral-400 mb-2">
+                        Under the <strong>Calculator</strong> tab, you can choose between two main calculators:
+                    </p>
+                    <ul className="list-disc list-inside space-y-1.5 text-xs text-neutral-300 pl-2 mb-3">
+                        <li>
+                            <strong>Time Zone Calc:</strong> Performs calculations including times, offsets, and timezone differences.
+                        </li>
+                        <li>
+                            <strong>Date Calc (Calendar):</strong> Performs date-only calculations regardless of time zones (similar to the Windows Calculator's Date calculation feature).
+                        </li>
+                    </ul>
+                </div>
+
+                <div className="pt-2">
+                    <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Calculator Modes:</p>
                     <FieldList fields={[
                         { name: 'Converter Mode', description: 'Synchronize multiple global clocks. Changing the time or moving the slider on any clock automatically converts and updates the rest of the clocks in real time.' },
-                        { name: 'Difference Mode', description: 'Under Calculator tab, calculates the exact duration (Days, Hours, Minutes, and total seconds/minutes/hours) between two separate date-time points in different timezones.' },
-                        { name: 'Add/Subtract Mode', description: 'Under Calculator tab, calculates the target date-time after adding or subtracting a custom duration (Years, Months, Days, Hours, Minutes, Seconds) from a starting point.' }
+                        { name: 'Difference Mode (Time Zone)', description: 'Calculates the exact duration (Days, Hours, Minutes, and total seconds/minutes/hours) between two separate date-time points in different timezones.' },
+                        { name: 'Add/Subtract Mode (Time Zone)', description: 'Calculates the target date-time after adding or subtracting a custom duration (Years, Months, Days, Hours, Minutes, Seconds) from a starting point.' },
+                        { name: 'Difference Mode (Calendar Date)', description: 'Calculates the calendar difference between two dates in Years, Months, Weeks, and Days, as well as the total count of days.' },
+                        { name: 'Add/Subtract Mode (Calendar Date)', description: 'Adds or subtracts a specified number of Years, Months, and Days from a starting date, outputting the resulting calendar date.' }
                     ]} />
                 </div>
 
@@ -867,7 +884,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
             >
                 <p>
                     Compare the historical returns of investing in Ethiopian Treasury Bills versus holding foreign currencies
-                    (e.g., USD, EUR, GBP), Commodities (GOLD), or Cryptocurrency (BITCOIN) purchased on the parallel market.
+                    (e.g., USD, EUR, GBP), Commodities (Gold, Silver, Platinum, Copper, Tin, Zinc, Lead, Nickel), or Cryptocurrency (Bitcoin) purchased on the parallel market.
                 </p>
 
                 <div className="pt-2">
@@ -907,7 +924,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
 
                 <div className="pt-2">
                     <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">All Currency ROI Modal:</p>
-                    <p className="text-xs text-neutral-400 mb-2">Click the <strong>"ALL"</strong> button next to the currency selector to open a comprehensive market overview. This power-user tool allows you to rank all 20+ supported assets by their return on investment simultaneously.</p>
+                    <p className="text-xs text-neutral-400 mb-2">Click the <strong>"ALL"</strong> button next to the currency selector to open a comprehensive market overview. This power-user tool allows you to rank all 30+ supported assets (currencies, metals, and crypto) by their return on investment simultaneously.</p>
                     <FieldList fields={[
                         { name: 'Year + Month Picker', description: 'Select precise start and end periods using an intuitive two-step selection grid (Year → Month).' },
                         { name: 'Quick Presets', description: 'Instantly jump to standard windows like YTD (Year-to-Date), 1 Year, 2 Years, or All historical data.' },
@@ -921,7 +938,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                     <FieldList fields={[
                         { name: 'Investment Budget', description: 'The total amount in ETB you are considering for investment (acts as Loan Amount in Leverage Mode)' },
                         { name: 'Start Auction', description: 'The initial auction to begin the simulation. Defaults to approximately 6 months ago for relevant analysis.' },
-                        { name: 'Currency / Asset', description: 'Choose between 20+ Foreign Currencies, GOLD (Commodity), or BITCOIN (Crypto). Hidden in Leverage Mode.' },
+                        { name: 'Currency / Asset', description: 'Choose between 20+ Foreign Currencies, 8 Metals/Commodities (Gold, Silver, Platinum, Copper, Tin, Zinc, Lead, Nickel), or Bitcoin (Crypto). Hidden in Leverage Mode.' },
                         { name: 'Tenure Strategy', description: '(Rolling & Leverage Modes) Choose whether to roll 28D, 91D, 182D, or 364D bills' },
                         { name: 'Loan Rate & Term', description: '(Leverage Mode only) Annual interest rate and duration of the loan in years.' },
                         { name: 'Reinvestment Rate (%)', description: '(Leverage Mode only) The percentage of returns from each round to reinvest. The slider is accompanied by arrow buttons to step by ±5%, and a text field for precise values.' },
@@ -949,11 +966,11 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                 </InfoBox>
 
                 <InfoBox type="tip">
-                    <strong>Real-Time Data:</strong> Rates are available from <strong>January 2023</strong>. Historical FX rates (prior to May 2026) come from <code>ethioblackmarket.com</code>, the rate for May 2026 is calculated dynamically using the live Telegram Wallet P2P average rate conversion, and rates starting from June 2026 are synced directly from <code>egcurrency.com</code> (with missing currencies estimated using standard global exchange rates). Gold comes from <code>Datahub.io</code>, and Bitcoin from <code>Yahoo Finance</code>. All are converted to ETB based on parallel market averages for accuracy.
+                    <strong>Real-Time Data:</strong> Rates are available from <strong>January 2023</strong>. Historical FX rates (prior to May 2026) come from <code>ethioblackmarket.com</code>, the rate for May 2026 is calculated dynamically using the live Telegram Wallet P2P average rate conversion, and rates starting from June 2026 are synced directly from <code>egcurrency.com</code> (with missing currencies estimated using standard global exchange rates). Metal prices (Gold, Silver, Platinum, Copper, Tin, Zinc, Lead, Nickel) come from the <code>World Bank CMO Monthly Prices</code> dataset, and Bitcoin from <code>Yahoo Finance</code>. All are converted to ETB based on parallel market averages for accuracy.
                 </InfoBox>
 
                 <InfoBox type="note">
-                    <strong>Data Refresh (Sync):</strong> Run <code>npm run sync-all</code> in the terminal to update all FX, Gold, Bitcoin, and T-Bill data. The app uses a local <code>fxData.json</code> database for speed and offline reliability.
+                    <strong>Data Refresh (Sync):</strong> Run <code>npm run sync-all</code> in the terminal to update all FX, Metals, Bitcoin, and T-Bill data. The app uses a local <code>fxData.json</code> database for speed and offline reliability.
                 </InfoBox>
 
                 <InfoBox type="note">
@@ -1261,9 +1278,10 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                     <FieldList fields={[
                         { name: 'npm run sync-tbill', description: 'Scrapes the NBE website for latest Treasury Bill auction results (Starts from Aug 2024). Updates cut-off yields and supply/demand metrics.' },
                         { name: 'npm run sync-fx', description: 'Fetches parallel market rates prior to May 2026, uses Telegram P2P for May 2026, and starting from June 2026 syncs from egcurrency.com using USD/ETB conversion for missing currencies.' },
-                        { name: 'npm run sync-gold', description: 'Updates historical Gold prices from Datahub.io (Starts from Jan 2023) and converts them to ETB using the latest parallel rates.' },
+                        { name: 'npm run sync-metals', description: 'Downloads the World Bank CMO Monthly Prices Excel dataset and extracts prices for 8 metals (Gold, Silver, Platinum, Copper, Lead, Tin, Nickel, Zinc). Prices are converted to ETB using the latest parallel USD rate.' },
+                        { name: 'npm run sync-btc', description: 'Updates historical Bitcoin prices from Yahoo Finance (Starts from Jan 2023) and converts them to ETB using the latest parallel rates.' },
                         { name: 'npm run sync-inflation', description: 'Updates historical Ethiopian and USA inflation rates (Starts from 1966). Re-calculates CAGR and ARIMA forecast baselines.' },
-                        { name: 'npm run sync-all', description: 'Executes all sync scripts in sequence. This is the recommended way to maintain the entire application data stack.' }
+                        { name: 'npm run sync-all', description: 'Executes all sync scripts in sequence (tbill → fx → metals → btc → inflation). This is the recommended way to maintain the entire application data stack.' }
                     ]} />
                 </div>
 
