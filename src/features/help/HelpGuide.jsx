@@ -214,7 +214,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                     <FieldList fields={[
                         { name: 'END/BEGIN', description: 'When payments occur - end of period (ordinary annuity) or beginning (annuity due)' },
                         { name: 'COMPOUND/SIMPLE', description: 'Type of interest calculation' },
-                        { name: 'Payments', description: 'Number of payments per year (monthly = 12, weekly = 52, etc.)' }
+                        { name: 'Payments', description: 'Number of payments per year (monthly = 12, weekly = 52, daily = 365, etc.)' }
                     ]} />
                 </div>
 
@@ -275,7 +275,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                     <FieldList fields={[
                         { name: 'END/BEGIN', description: 'When payments occur - end of period (ordinary annuity) or beginning (annuity due)' },
                         { name: 'COMPOUND/SIMPLE', description: 'Type of interest calculation (compound vs simple interest)' },
-                        { name: 'Payments', description: 'Number of payments/deposits per year (monthly = 12, weekly = 52, etc.)' }
+                        { name: 'Payments', description: 'Number of payments/deposits per year (monthly = 12, weekly = 52, daily = 365, etc.)' }
                     ]} />
                 </div>
 
