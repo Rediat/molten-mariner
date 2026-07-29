@@ -16,6 +16,7 @@ const FREQUENCIES = [
     { label: 'Semi-Monthly (24)', value: 24 },
     { label: 'Bi-Weekly (26)', value: 26 },
     { label: 'Weekly (52)', value: 52 },
+    { label: 'Daily (365)', value: 365 },
 ];
 
 const SOLVE_MODES = [
@@ -254,7 +255,7 @@ const GoalPlanner = ({ toggleHelp, toggleSettings }) => {
 
     // Calculate actionable insights
     const calculateInsights = (pmt, pv, totalContrib, totalInterest, yrs, freq, annualRate, interestType) => {
-        const freqLabels = { 1: 'year', 2: 'six months', 4: 'quarter', 12: 'month', 24: 'half-month', 26: 'two weeks', 52: 'week' };
+        const freqLabels = { 1: 'year', 2: 'six months', 4: 'quarter', 12: 'month', 24: 'half-month', 26: 'two weeks', 52: 'week', 365: 'day' };
         const freqLabel = freqLabels[freq] || 'period';
 
         // Calculate interest as percentage of final value
