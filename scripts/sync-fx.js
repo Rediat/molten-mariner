@@ -197,11 +197,6 @@ async function syncFxData() {
         let updatedCount = 0;
 
         historyData.monthlyPrices.forEach(newItem => {
-            // ONLY accept historical data for months before 2026-05
-            if (newItem.month >= '2026-05') {
-                return;
-            }
-            
             const idx = mergedMonthlyPrices.findIndex(oldItem => oldItem.month === newItem.month);
             if (idx === -1) {
                 mergedMonthlyPrices.push(newItem);
