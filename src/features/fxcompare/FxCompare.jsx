@@ -10,7 +10,8 @@ import { CalculateIcon } from '../../components/Icons';
 import AwaitingCalculation from '../../components/AwaitingCalculation';
 import tbillData from '../tbill/data.json';
 import fxData from './fxData.json';
-import { compareReturns, compareRollingReturns, compareLeverageReturns, TENURES, getMonthKey, getFxRateWithFallback } from './compareLogic';
+import bankFxData from './bankFxData.json';
+import { compareReturns, compareRollingReturns, compareLeverageReturns, compareDepositReturns, TENURES, getMonthKey, getFxRateWithFallback } from './compareLogic';
 
 const CURRENCY_NAMES = {
     'USD': 'US Dollar',
@@ -55,33 +56,45 @@ const TENURE_OPTIONS = [
 const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
     const brokerageRate = tbillBrokerageRate !== undefined ? tbillBrokerageRate : 0.105;
 
-    // Extract available currencies from the first month of fxData
+    const [rateSource, setRateSource] = useState('black'); // 'black' or 'bank'
+    const activeFxData = useMemo(() => {
+        return rateSource === 'bank' ? bankFxData : fxData;
+    }, [rateSource]);
+
+    // Extract available currencies from the first month of activeFxData
     const currencies = useMemo(() => {
-        if (!fxData || !fxData.monthlyPrices || fxData.monthlyPrices.length === 0) return [];
-        return Object.keys(fxData.monthlyPrices[0].value);
-    }, []);
+        if (!activeFxData || !activeFxData.monthlyPrices || activeFxData.monthlyPrices.length === 0) return [];
+        return Object.keys(activeFxData.monthlyPrices[0].value);
+    }, [activeFxData]);
 
     // Filter T-Bill auctions that have overlapping fx data for start and end
     const validAuctions = useMemo(() => {
-        if (!fxData || !fxData.monthlyPrices) return [];
+        if (!activeFxData || !activeFxData.monthlyPrices) return [];
         
         // simple helper to check if month exists
-        const fxMonths = new Set(fxData.monthlyPrices.map(m => m.month));
+        const fxMonths = new Set(activeFxData.monthlyPrices.map(m => m.month));
         
         return tbillData.filter(auction => {
             const startMonth = getMonthKey(auction.timestamp);
             return fxMonths.has(startMonth);
         }).sort((a, b) => b.timestamp - a.timestamp); // newest first
-    }, []);
+    }, [activeFxData]);
 
     const [budget, setBudget] = useState(1000000);
     const [selectedCurrency, setSelectedCurrency] = useState('USD');
     const [selectedAuctionIdx, setSelectedAuctionIdx] = useState(0);
 
+    // Auto-adjust selected currency if it is not supported in the active source
+    useEffect(() => {
+        if (currencies.length > 0 && !currencies.includes(selectedCurrency)) {
+            setSelectedCurrency(currencies[0]);
+        }
+    }, [currencies, selectedCurrency]);
+
     // Set default auction to ~6 months ago on initial load
     useEffect(() => {
         if (validAuctions.length > 0) {
-            const latestMonth = fxData.monthlyPrices[fxData.monthlyPrices.length - 1].month;
+            const latestMonth = activeFxData.monthlyPrices[activeFxData.monthlyPrices.length - 1].month;
             const [y, m] = latestMonth.split('-').map(Number);
             const targetDate = new Date(y, m - 1 - 6, 1);
             
@@ -96,14 +109,53 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
             });
             setSelectedAuctionIdx(bestIdx);
         }
-    }, [validAuctions]);
+    }, [validAuctions, activeFxData]);
 
     const [resultData, setResultData] = useState(null);
     const [showExplanation, setShowExplanation] = useState(false);
-    const [mode, setMode] = useState('leverage'); // 'leverage' or 'rolling' or 'single'
+    const [mode, setMode] = useState('leverage'); // 'leverage' or 'rolling' or 'single' or 'deposit'
     const [selectedTenure, setSelectedTenure] = useState(365);
     const [rollingResult, setRollingResult] = useState(null);
     const [leverageResult, setLeverageResult] = useState(null);
+    const [depositCompareResult, setDepositCompareResult] = useState(null);
+    const [foreignApr, setForeignApr] = useState(14.0);
+    const [localApr, setLocalApr] = useState(22.0);
+    const [foreignCompounding, setForeignCompounding] = useState(12); // monthly
+    const [localCompounding, setLocalCompounding] = useState(365); // daily
+    const [foreignTaxRate, setForeignTaxRate] = useState(0.0);
+    const [localTaxRate, setLocalTaxRate] = useState(0.0);
+    const [foreignReinvestRate, setForeignReinvestRate] = useState(100);
+    const [localReinvestRate, setLocalReinvestRate] = useState(100);
+    
+    const latestMonthEntry = activeFxData.monthlyPrices[activeFxData.monthlyPrices.length - 1];
+    const latestDataMonth = latestMonthEntry.month;
+    
+    const [depositStartMonth, setDepositStartMonthRaw] = useState(() => {
+        const [y, m] = latestDataMonth.split('-').map(Number);
+        const d = new Date(y, m - 1 - 6, 1);
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        return `${year}-${month}`;
+    });
+    const [depositEndMonth, setDepositEndMonthRaw] = useState(latestDataMonth);
+    const [depositStartPickerOpen, setDepositStartPickerOpen] = useState(false);
+    const [depositEndPickerOpen, setDepositEndPickerOpen] = useState(false);
+    const [depositStartPickerYear, setDepositStartPickerYear] = useState(() => depositStartMonth.split('-')[0]);
+    const [depositEndPickerYear, setDepositEndPickerYear] = useState(() => depositEndMonth.split('-')[0]);
+    
+    const depositPeriodBarRef = useRef(null);
+
+    const setDepositStartMonth = (val) => {
+        setDepositStartMonthRaw(val);
+        if (val > depositEndMonth) setDepositEndMonthRaw(val);
+        handleClear();
+    };
+    const setDepositEndMonth = (val) => {
+        setDepositEndMonthRaw(val);
+        if (val < depositStartMonth) setDepositStartMonthRaw(val);
+        handleClear();
+    };
+
     const [loanRate, setLoanRate] = useState(12.5);
     const [loanYears, setLoanYears] = useState(7);
     const [loanFrequency, setLoanFrequency] = useState(12);
@@ -111,7 +163,9 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
     const [expandedRounds, setExpandedRounds] = useState(false);
     const [auctionSearch, setAuctionSearch] = useState('');
     const [currencySearch, setCurrencySearch] = useState('');
-    const [showAllModal, setShowAllModal] = useState(false);
+    const [compareAllResult, setCompareAllResult] = useState(null);
+    const [compareSearch, setCompareSearch] = useState('');
+    const [expandedCurrency, setExpandedCurrency] = useState(null);
     const [reinvestmentPercentage, setReinvestmentPercentage] = useState(100);
     const [leverageAsset, setLeverageAsset] = useState('deposit'); // Default to deposit
     const [depositInterestType, setDepositInterestType] = useState('compounding'); // 'compounding' or 'simple'
@@ -124,11 +178,17 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
     const loanRateRef = useRef(null);
     const loanYearsRef = useRef(null);
     const depositTaxRef = useRef(null);
+    const foreignAprRef = useRef(null);
+    const localAprRef = useRef(null);
+    const foreignTaxRef = useRef(null);
+    const localTaxRef = useRef(null);
 
     const handleClear = useCallback(() => {
         setResultData(null);
         setRollingResult(null);
         setLeverageResult(null);
+        setDepositCompareResult(null);
+        setCompareAllResult(null);
     }, []);
 
     const focusBudget = useInputFocus(setBudget, budgetRef, handleClear);
@@ -136,19 +196,37 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
     const focusLoanRate = useInputFocus(setLoanRate, loanRateRef, handleClear);
     const focusLoanYears = useInputFocus(setLoanYears, loanYearsRef, handleClear);
     const focusDepositTax = useInputFocus(setDepositTaxRate, depositTaxRef, handleClear);
+    const focusForeignApr = useInputFocus(setForeignApr, foreignAprRef, handleClear);
+    const focusLocalApr = useInputFocus(setLocalApr, localAprRef, handleClear);
+    const focusForeignTax = useInputFocus(setForeignTaxRate, foreignTaxRef, handleClear);
+    const focusLocalTax = useInputFocus(setLocalTaxRate, localTaxRef, handleClear);
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (depositPeriodBarRef.current && !depositPeriodBarRef.current.contains(event.target)) {
+                setDepositStartPickerOpen(false);
+                setDepositEndPickerOpen(false);
+            }
+        };
+        if (depositStartPickerOpen || depositEndPickerOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [depositStartPickerOpen, depositEndPickerOpen]);
 
     const handleCalculate = () => {
-        if (!validAuctions[selectedAuctionIdx]) return;
+        if (mode !== 'deposit' && mode !== 'compareAll' && !validAuctions[selectedAuctionIdx]) return;
         setResultData(null);
         setRollingResult(null);
         setLeverageResult(null);
+        setDepositCompareResult(null);
         setExpandedRounds(false);
 
         if (mode === 'single') {
             const res = compareReturns(
                 budget || 0,
                 validAuctions[selectedAuctionIdx],
-                fxData,
+                activeFxData,
                 selectedCurrency,
                 brokerageRate
             );
@@ -158,7 +236,7 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                 budget || 0,
                 validAuctions[selectedAuctionIdx],
                 tbillData,
-                fxData,
+                activeFxData,
                 selectedCurrency,
                 brokerageRate,
                 selectedTenure
@@ -180,6 +258,57 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                 depositTaxRate
             );
             setLeverageResult(res);
+        } else if (mode === 'deposit') {
+            const res = compareDepositReturns(
+                budget || 0,
+                depositStartMonth,
+                depositEndMonth,
+                activeFxData,
+                selectedCurrency,
+                foreignApr || 0,
+                foreignCompounding,
+                foreignTaxRate || 0,
+                foreignReinvestRate || 0,
+                localApr || 0,
+                localCompounding,
+                localTaxRate || 0,
+                localReinvestRate || 0
+            );
+            setDepositCompareResult(res);
+        } else if (mode === 'compareAll') {
+            const currenciesList = Object.keys(activeFxData.monthlyPrices[0].value);
+            const res = currenciesList.map(c => {
+                const startInfo = getFxRateWithFallback(activeFxData, c, depositStartMonth);
+                const endInfo = getFxRateWithFallback(activeFxData, c, depositEndMonth);
+                
+                if (!startInfo || !endInfo) return null;
+                
+                const roi = ((endInfo.rate / startInfo.rate) - 1) * 100;
+                const unitsBought = (budget || 0) / startInfo.rate;
+                const endValue = unitsBought * endInfo.rate;
+                const profit = endValue - (budget || 0);
+                
+                return {
+                    currency: c,
+                    displayCode: c,
+                    startRate: startInfo.rate,
+                    endRate: endInfo.rate,
+                    roi,
+                    profit,
+                    endValue,
+                    unitsBought,
+                    startMonth: startInfo.monthUsed,
+                    endMonth: endInfo.monthUsed,
+                    multiplier: endInfo.rate / startInfo.rate,
+                    startIsFallback: startInfo.isFallback,
+                    endIsFallback: endInfo.isFallback,
+                    history: activeFxData.monthlyPrices
+                        .filter(m => m.month >= depositStartMonth && m.month <= depositEndMonth)
+                        .map(m => m.value[c])
+                        .filter(v => v !== undefined && v !== null)
+                };
+            }).filter(Boolean).sort((a, b) => b.roi - a.roi);
+            setCompareAllResult(res);
         }
     };
 
@@ -506,8 +635,20 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                         Single
                     </button>
                     <button
-                        onClick={() => setShowAllModal(true)}
-                        className="flex-1 py-1 text-[9px] font-bold uppercase tracking-wider rounded transition-all text-neutral-500 hover:text-neutral-300 hover:bg-neutral-800/30"
+                        onClick={() => {
+                            setMode('deposit');
+                            handleClear();
+                        }}
+                        className={`flex-1 py-1 text-[9px] font-bold uppercase tracking-wider rounded transition-all ${mode === 'deposit' ? 'bg-emerald-600/25 text-emerald-400 ring-1 ring-emerald-500/40' : 'text-neutral-500 hover:text-neutral-300'}`}
+                    >
+                        Deposit
+                    </button>
+                    <button
+                        onClick={() => {
+                            setMode('compareAll');
+                            handleClear();
+                        }}
+                        className={`flex-1 py-1 text-[9px] font-bold uppercase tracking-wider rounded transition-all ${mode === 'compareAll' ? 'bg-emerald-600/25 text-emerald-400 ring-1 ring-emerald-500/40' : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-800/30'}`}
                     >
                         Compare All
                     </button>
@@ -566,9 +707,84 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                     </div>
                 </div>
 
-                {mode !== 'leverage' && (
+                {/* Rate Source Toggle (Only for Deposit and Compare All modes) */}
+                {(mode === 'deposit' || mode === 'compareAll') && (
+                    <div className="bg-neutral-800/40 rounded-xl p-1.5 border border-neutral-700 hover:border-neutral-600 animate-in fade-in duration-200">
+                        <div className="flex justify-between items-center gap-2">
+                            <span className="text-xs font-bold text-white leading-tight select-none">
+                                Rate Source
+                            </span>
+                            <div className="flex bg-neutral-900 rounded p-0.5 ring-1 ring-neutral-800">
+                                <button
+                                    onClick={() => { setRateSource('black'); handleClear(); }}
+                                    className={`px-3 py-1 text-[9px] font-bold uppercase tracking-wider rounded transition-all ${rateSource === 'black' ? 'bg-emerald-600/25 text-emerald-400 ring-1 ring-emerald-500/40' : 'text-neutral-500 hover:text-neutral-300'}`}
+                                >
+                                    Black Market
+                                </button>
+                                <button
+                                    onClick={() => { setRateSource('bank'); handleClear(); }}
+                                    className={`px-3 py-1 text-[9px] font-bold uppercase tracking-wider rounded transition-all ${rateSource === 'bank' ? 'bg-emerald-600/25 text-emerald-400 ring-1 ring-emerald-500/40' : 'text-neutral-500 hover:text-neutral-300'}`}
+                                >
+                                    Bank Rate
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Deposit Mode Period Picker (Full Width) */}
+                {(mode === 'deposit' || mode === 'compareAll') && (
+                    <div ref={depositPeriodBarRef} className="bg-neutral-800/60 rounded-xl p-2 border border-neutral-700/50 text-left flex flex-col justify-between">
+                        <div className="flex items-center gap-2">
+                            <YearMonthPicker
+                                label="From"
+                                value={depositStartMonth}
+                                onChange={setDepositStartMonth}
+                                isOpen={depositStartPickerOpen}
+                                setIsOpen={(v) => { setDepositStartPickerOpen(v); if (v) setDepositEndPickerOpen(false); }}
+                                pickerYear={depositStartPickerYear}
+                                setPickerYear={setDepositStartPickerYear}
+                                fxData={activeFxData}
+                            />
+                            <span className="text-[9px] text-neutral-600 font-black shrink-0">→</span>
+                            <YearMonthPicker
+                                label="To"
+                                value={depositEndMonth}
+                                onChange={setDepositEndMonth}
+                                isOpen={depositEndPickerOpen}
+                                setIsOpen={(v) => { setDepositEndPickerOpen(v); if (v) setDepositStartPickerOpen(false); }}
+                                pickerYear={depositEndPickerYear}
+                                setPickerYear={setDepositEndPickerYear}
+                                fxData={activeFxData}
+                            />
+                        </div>
+                        {/* Quick Presets */}
+                        <div className="flex items-center gap-1 mt-1.5 justify-center">
+                            {[
+                                { label: 'YTD', start: `${new Date().getFullYear()}-01`, end: latestDataMonth },
+                                { label: '1Y', start: (() => { const d = new Date(); d.setFullYear(d.getFullYear() - 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; })(), end: latestDataMonth },
+                                { label: '2Y', start: (() => { const d = new Date(); d.setFullYear(d.getFullYear() - 2); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; })(), end: latestDataMonth },
+                                { label: 'All', start: activeFxData.monthlyPrices[0].month, end: latestDataMonth },
+                            ].map(preset => {
+                                const isActive = depositStartMonth === preset.start && depositEndMonth === preset.end;
+                                return (
+                                    <button
+                                        key={preset.label}
+                                        onClick={() => { setDepositStartMonth(preset.start); setDepositEndMonth(preset.end); }}
+                                        className={`px-3 py-1 rounded text-[10px] font-black transition-all ${isActive ? 'bg-emerald-600/20 text-emerald-400 ring-1 ring-emerald-500/40' : 'text-neutral-500 hover:text-white hover:bg-neutral-800/40'}`}
+                                    >
+                                        {preset.label}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
+
+                {/* Rolling and Single Mode Selector (Side-by-side) */}
+                {mode !== 'leverage' && mode !== 'deposit' && mode !== 'compareAll' && (
                 <div className="grid grid-cols-2 gap-2">
-                    {/* Auction Selection */}
+                    {/* Auction/Date Selection */}
                     <div className="bg-neutral-800/40 rounded-xl p-1.5 border border-neutral-700 text-left flex flex-col">
                         <div className="flex justify-between items-center mb-1">
                             <label className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold">{mode === 'rolling' ? 'Start Auction' : 'Auction Date'}</label>
@@ -642,8 +858,7 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                     </div>
 
                     {/* Currency Selection */}
-                    {mode !== 'leverage' && (
-                        <div className="bg-neutral-800/40 rounded-xl p-1.5 border border-neutral-700 text-left">
+                    <div className="bg-neutral-800/40 rounded-xl p-1.5 border border-neutral-700 text-left">
                         <div className="flex justify-between items-center mb-1">
                             <label className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold block">Foreign Currency</label>
                             <input 
@@ -668,7 +883,10 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                                     </button>
                                 ))}
                                 <button
-                                    onClick={() => setShowAllModal(true)}
+                                    onClick={() => {
+                                        setMode('compareAll');
+                                        handleClear();
+                                    }}
                                     className={`shrink-0 px-1.5 py-0.5 rounded text-[9px] font-black transition-all bg-emerald-600/20 text-emerald-500 ring-1 ring-emerald-600/40 hover:bg-emerald-600/30 hover:text-emerald-400`}
                                 >
                                     ALL
@@ -696,8 +914,159 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                                 })}
                         </select>
                     </div>
-                    )}
                 </div>
+                )}
+                    
+                {/* Deposit Mode Inputs */}
+                {mode === 'deposit' && (
+                    <div className="bg-neutral-800/40 rounded-xl p-2.5 border border-neutral-700 text-left flex flex-col gap-3">
+                        {/* Foreign / USD Deposit Details */}
+                        <div className="border-b border-neutral-700/50 pb-2">
+                            <div className="flex items-center gap-1.5 mb-2 select-none">
+                                <select
+                                    value={selectedCurrency}
+                                    onChange={(e) => { setSelectedCurrency(e.target.value); handleClear(); }}
+                                    className="bg-neutral-950 border border-neutral-700 rounded px-1 py-0.5 text-[10px] font-black text-emerald-400 uppercase focus:outline-none focus:border-emerald-500 cursor-pointer"
+                                >
+                                    {currencies.map(c => (
+                                        <option key={c} value={c} className="text-white bg-neutral-950 font-normal">
+                                            {c}
+                                        </option>
+                                    ))}
+                                </select>
+                                <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">Account Settings</span>
+                            </div>
+                            <div className="grid grid-cols-4 gap-2">
+                                <div className="flex flex-col">
+                                    <label onClick={focusForeignApr} className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold mb-1 cursor-pointer hover:text-emerald-400 transition-colors select-none">
+                                        APR (%)
+                                    </label>
+                                    <FormattedNumberInput
+                                        ref={foreignAprRef}
+                                        value={foreignApr}
+                                        onChange={(e) => setForeignApr(parseFloat(e.target.value.replace(/,/g, '')))}
+                                        decimals={2}
+                                        className="bg-neutral-900 border border-neutral-700 rounded-md text-white text-[11px] p-1.5 focus:outline-none focus:border-emerald-500 w-full font-mono text-right"
+                                    />
+                                </div>
+                                <div className="flex flex-col">
+                                    <label className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold mb-1">
+                                        Compounding
+                                    </label>
+                                    <select
+                                        value={foreignCompounding}
+                                        onChange={(e) => { setForeignCompounding(parseInt(e.target.value)); handleClear(); }}
+                                        className="bg-neutral-900 border border-neutral-700 rounded-md text-white text-[10px] p-1.5 focus:outline-none focus:border-emerald-500 w-full"
+                                    >
+                                        <option value={0}>At Maturity</option>
+                                        <option value={12}>Monthly</option>
+                                        <option value={4}>Quarterly</option>
+                                        <option value={2}>Semi-Annually</option>
+                                        <option value={1}>Annually</option>
+                                        <option value={52}>Weekly</option>
+                                        <option value={365}>Daily</option>
+                                    </select>
+                                </div>
+                                <div className="flex flex-col">
+                                    <label onClick={focusForeignTax} className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold mb-1 cursor-pointer hover:text-emerald-400 transition-colors select-none">
+                                        Deduction (%)
+                                    </label>
+                                    <FormattedNumberInput
+                                        ref={foreignTaxRef}
+                                        value={foreignTaxRate}
+                                        onChange={(e) => setForeignTaxRate(parseFloat(e.target.value.replace(/,/g, '')))}
+                                        decimals={2}
+                                        className="bg-neutral-900 border border-neutral-700 rounded-md text-white text-[11px] p-1.5 focus:outline-none focus:border-emerald-500 w-full font-mono text-right"
+                                    />
+                                </div>
+                                <div className="flex flex-col">
+                                    <label className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold mb-1 select-none">
+                                        Reinvest (%)
+                                    </label>
+                                    <FormattedNumberInput
+                                        value={foreignReinvestRate}
+                                        onChange={(e) => {
+                                            let val = parseFloat(e.target.value.replace(/,/g, ''));
+                                            if (isNaN(val)) val = 0;
+                                            if (val < 0) val = 0;
+                                            if (val > 100) val = 100;
+                                            setForeignReinvestRate(val);
+                                            handleClear();
+                                        }}
+                                        decimals={0}
+                                        className="bg-neutral-900 border border-neutral-700 rounded-md text-white text-[11px] p-1.5 focus:outline-none focus:border-emerald-500 w-full font-mono text-right"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Local / ETB Deposit Details */}
+                        <div>
+                            <p className="text-[10px] font-bold text-emerald-400 uppercase mb-2 tracking-wider">ETB Account Settings</p>
+                            <div className="grid grid-cols-4 gap-2">
+                                <div className="flex flex-col">
+                                    <label onClick={focusLocalApr} className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold mb-1 cursor-pointer hover:text-emerald-400 transition-colors select-none">
+                                        APR (%)
+                                    </label>
+                                    <FormattedNumberInput
+                                        ref={localAprRef}
+                                        value={localApr}
+                                        onChange={(e) => setLocalApr(parseFloat(e.target.value.replace(/,/g, '')))}
+                                        decimals={2}
+                                        className="bg-neutral-900 border border-neutral-700 rounded-md text-white text-[11px] p-1.5 focus:outline-none focus:border-emerald-500 w-full font-mono text-right"
+                                    />
+                                </div>
+                                <div className="flex flex-col">
+                                    <label className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold mb-1">
+                                        Compounding
+                                    </label>
+                                    <select
+                                        value={localCompounding}
+                                        onChange={(e) => { setLocalCompounding(parseInt(e.target.value)); handleClear(); }}
+                                        className="bg-neutral-900 border border-neutral-700 rounded-md text-white text-[10px] p-1.5 focus:outline-none focus:border-emerald-500 w-full"
+                                    >
+                                        <option value={0}>At Maturity</option>
+                                        <option value={12}>Monthly</option>
+                                        <option value={4}>Quarterly</option>
+                                        <option value={2}>Semi-Annually</option>
+                                        <option value={1}>Annually</option>
+                                        <option value={52}>Weekly</option>
+                                        <option value={365}>Daily</option>
+                                    </select>
+                                </div>
+                                <div className="flex flex-col">
+                                    <label onClick={focusLocalTax} className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold mb-1 cursor-pointer hover:text-emerald-400 transition-colors select-none">
+                                        Deduction (%)
+                                    </label>
+                                    <FormattedNumberInput
+                                        ref={localTaxRef}
+                                        value={localTaxRate}
+                                        onChange={(e) => setLocalTaxRate(parseFloat(e.target.value.replace(/,/g, '')))}
+                                        decimals={2}
+                                        className="bg-neutral-900 border border-neutral-700 rounded-md text-white text-[11px] p-1.5 focus:outline-none focus:border-emerald-500 w-full font-mono text-right"
+                                    />
+                                </div>
+                                <div className="flex flex-col">
+                                    <label className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold mb-1 select-none">
+                                        Reinvest (%)
+                                    </label>
+                                    <FormattedNumberInput
+                                        value={localReinvestRate}
+                                        onChange={(e) => {
+                                            let val = parseFloat(e.target.value.replace(/,/g, ''));
+                                            if (isNaN(val)) val = 0;
+                                            if (val < 0) val = 0;
+                                            if (val > 100) val = 100;
+                                            setLocalReinvestRate(val);
+                                            handleClear();
+                                        }}
+                                        decimals={0}
+                                        className="bg-neutral-900 border border-neutral-700 rounded-md text-white text-[11px] p-1.5 focus:outline-none focus:border-emerald-500 w-full font-mono text-right"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 )}
                     
                 {/* Leverage Mode Inputs */}
@@ -957,7 +1326,7 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
             {/* Scrollable Results Section */}
             <div className="flex-1 overflow-y-auto pr-1 scrollbar-hide">
                 {/* Awaiting Calculation Placeholder */}
-                {((mode === 'single' && !resultData) || (mode === 'rolling' && !rollingResult) || (mode === 'leverage' && !leverageResult)) && (
+                {((mode === 'single' && !resultData) || (mode === 'rolling' && !rollingResult) || (mode === 'leverage' && !leverageResult) || (mode === 'deposit' && !depositCompareResult) || (mode === 'compareAll' && !compareAllResult)) && (
                     <div className="mt-2.5 h-[140px] shrink-0">
                         <AwaitingCalculation Icon={ArrowRightLeft} />
                     </div>
@@ -1303,6 +1672,273 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                     </div>
                 )}
 
+                {/* Deposit mode results */}
+                {mode === 'deposit' && depositCompareResult && (
+                    <div className="mt-1 space-y-2.5 pb-2">
+                        {depositCompareResult.error ? (
+                            <div className="bg-neutral-800/50 border border-red-500/30 rounded-xl p-3 text-center">
+                                <p className="text-xs font-bold text-red-400">Deposit Calculation Error</p>
+                                <p className="text-[10px] text-neutral-500">{depositCompareResult.error}</p>
+                            </div>
+                        ) : (
+                            <div className="bg-neutral-900/60 border border-neutral-700 rounded-xl p-3 relative overflow-hidden">
+                                <div className="flex justify-between items-stretch mb-3">
+                                    <div className="text-left">
+                                        <h3 className="text-sm font-bold text-white leading-none">Deposit Strategy Comparison</h3>
+                                        <p className="text-[9px] text-neutral-500 uppercase mt-1">
+                                            {formatMonth(depositStartMonth)} → {formatMonth(depositEndMonth)} ({depositCompareResult.totalDays} Days)
+                                        </p>
+                                    </div>
+                                    <div className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider flex items-center text-right bg-emerald-500/20 text-emerald-400`}>
+                                        Winner: {depositCompareResult.winner} (+{formatCurrency(depositCompareResult.diffAmount)} ETB | +{depositCompareResult.diffROI.toFixed(2)}% ROI)
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-3">
+                                    {/* USD/Foreign currency strategy card */}
+                                    <div className={`rounded-lg p-2.5 border ${depositCompareResult.winner === 'USD' || depositCompareResult.winner === 'BTC' || depositCompareResult.winner === 'XAU' || depositCompareResult.winner === depositCompareResult.currency ? 'border-emerald-500/40 bg-emerald-900/10' : 'border-neutral-800 bg-neutral-800/30'}`}>
+                                        <p className="text-[10px] font-bold text-emerald-400 uppercase text-center mb-2 tracking-wider">{selectedCurrency} Deposit ({foreignApr}% APR)</p>
+                                        <div className="space-y-1.5">
+                                            <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase">Initial {selectedCurrency}</span><span className="text-[10px] text-white font-mono">{formatCurrency(depositCompareResult.fxUnitsBought)} {selectedCurrency}</span></div>
+                                            <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase">Final Balance</span><span className="text-[10px] text-white font-mono">{formatCurrency(depositCompareResult.foreignResult.finalBalance)} {selectedCurrency}</span></div>
+                                            {foreignReinvestRate < 100 && (
+                                                <div className="flex justify-between"><span className="text-[9px] text-amber-500/90 font-bold uppercase">Pocketed</span><span className="text-[10px] text-amber-400 font-mono font-bold">+{formatCurrency(depositCompareResult.foreignResult.pocketedValue)} {selectedCurrency}</span></div>
+                                            )}
+                                            {foreignTaxRate > 0 && (
+                                                <div className="flex justify-between"><span className="text-[9px] text-red-400/90 font-bold uppercase">Tax Paid</span><span className="text-[10px] text-red-400 font-mono font-bold">-{formatCurrency(depositCompareResult.foreignResult.totalTaxPaid)} {selectedCurrency}</span></div>
+                                            )}
+                                            <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase font-semibold">Total Value</span><span className="text-[10px] text-white font-mono font-bold">{formatCurrency(depositCompareResult.usdEndValueInUsd)} {selectedCurrency}</span></div>
+                                            <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase font-semibold">Total (ETB)</span><span className={`text-[11px] font-black font-mono ${depositCompareResult.winner !== 'ETB' ? 'text-emerald-400' : 'text-neutral-400'}`}>{formatCurrency(depositCompareResult.usdEndValueInEtb)} ETB</span></div>
+                                            
+                                            <div className="flex flex-col gap-1 pt-1 border-t border-neutral-700/50 mt-1">
+                                                <div className="flex justify-between">
+                                                    <span className="text-[9px] text-neutral-500 uppercase">Rate (Start)</span>
+                                                    <span className="text-[10px] text-neutral-400 font-mono">{formatCurrency(depositCompareResult.fxStartRate)}</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-[9px] text-neutral-500 uppercase">Rate (End)</span>
+                                                    <span className="text-[10px] text-neutral-400 font-mono">{formatCurrency(depositCompareResult.fxEndRate)}</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-[9px] text-neutral-500 uppercase">Compounding</span>
+                                                    <span className="text-[10px] text-neutral-400">
+                                                        {foreignCompounding === 0 ? 'Maturity' : foreignCompounding === 12 ? 'Monthly' : foreignCompounding === 4 ? 'Quarterly' : foreignCompounding === 2 ? 'Semi-Annually' : foreignCompounding === 1 ? 'Annually' : foreignCompounding === 52 ? 'Weekly' : 'Daily'}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div className="flex justify-between pt-1 border-t border-neutral-700/50"><span className="text-[9px] text-neutral-500 uppercase">Profit</span><span className={`text-[10px] font-bold font-mono ${depositCompareResult.usdProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>{depositCompareResult.usdProfit >= 0 ? '+' : ''}{formatCurrency(depositCompareResult.usdProfit)} ETB</span></div>
+                                            <div className="flex justify-between items-center"><span className="text-[9px] text-neutral-500 uppercase">ROI</span><span className={`text-[10px] font-bold font-mono ${depositCompareResult.usdROI >= 0 ? 'text-green-400' : 'text-red-400'}`}>{depositCompareResult.usdROI.toFixed(2)}%</span></div>
+                                        </div>
+                                    </div>
+
+                                    {/* ETB/Local currency strategy card */}
+                                    <div className={`rounded-lg p-2.5 border ${depositCompareResult.winner === 'ETB' ? 'border-emerald-500/40 bg-emerald-900/10' : 'border-neutral-800 bg-neutral-800/30'}`}>
+                                        <p className="text-[10px] font-bold text-emerald-400 uppercase text-center mb-2 tracking-wider">ETB Deposit ({localApr}% APR)</p>
+                                        <div className="space-y-1.5">
+                                            <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase">Initial ETB</span><span className="text-[10px] text-white font-mono">{formatCurrency(budget)} ETB</span></div>
+                                            <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase">Final Balance</span><span className="text-[10px] text-white font-mono">{formatCurrency(depositCompareResult.localResult.finalBalance)} ETB</span></div>
+                                            {localReinvestRate < 100 && (
+                                                <div className="flex justify-between"><span className="text-[9px] text-amber-500/90 font-bold uppercase">Pocketed</span><span className="text-[10px] text-amber-400 font-mono font-bold">+{formatCurrency(depositCompareResult.localResult.pocketedValue)} ETB</span></div>
+                                            )}
+                                            {localTaxRate > 0 && (
+                                                <div className="flex justify-between"><span className="text-[9px] text-red-400/90 font-bold uppercase">Tax Paid</span><span className="text-[10px] text-red-400 font-mono font-bold">-{formatCurrency(depositCompareResult.localResult.totalTaxPaid)} ETB</span></div>
+                                            )}
+                                            <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase font-semibold">Total Value</span><span className={`text-[11px] font-black font-mono ${depositCompareResult.winner === 'ETB' ? 'text-emerald-400' : 'text-neutral-400'}`}>{formatCurrency(depositCompareResult.etbEndValue)} ETB</span></div>
+                                            
+                                            <div className="flex flex-col gap-1 pt-1 border-t border-neutral-700/50 mt-1">
+                                                <div className="flex justify-between">
+                                                    <span className="text-[9px] text-neutral-500 uppercase">Compounding</span>
+                                                    <span className="text-[10px] text-neutral-400">
+                                                        {localCompounding === 0 ? 'Maturity' : localCompounding === 12 ? 'Monthly' : localCompounding === 4 ? 'Quarterly' : localCompounding === 2 ? 'Semi-Annually' : localCompounding === 1 ? 'Annually' : localCompounding === 52 ? 'Weekly' : 'Daily'}
+                                                    </span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-[9px] text-neutral-500 uppercase">ETB Growth</span>
+                                                    <span className="text-[10px] text-emerald-400 font-bold font-mono">{(depositCompareResult.etbEndValue / budget).toFixed(4)}x</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-[9px] text-neutral-500 uppercase">Duration</span>
+                                                    <span className="text-[10px] text-neutral-400 font-mono">{(depositCompareResult.totalDays / 365).toFixed(2)} Years</span>
+                                                </div>
+                                            </div>
+                                            <div className="flex justify-between pt-1 border-t border-neutral-700/50"><span className="text-[9px] text-neutral-500 uppercase">Profit</span><span className={`text-[10px] font-bold font-mono ${depositCompareResult.etbProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>{depositCompareResult.etbProfit >= 0 ? '+' : ''}{formatCurrency(depositCompareResult.etbProfit)} ETB</span></div>
+                                            <div className="flex justify-between items-center"><span className="text-[9px] text-neutral-500 uppercase">ROI</span><span className={`text-[10px] font-bold font-mono ${depositCompareResult.etbROI >= 0 ? 'text-green-400' : 'text-red-400'}`}>{depositCompareResult.etbROI.toFixed(2)}%</span></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* Compare All mode results */}
+                {mode === 'compareAll' && compareAllResult && (
+                    <div className="mt-1 space-y-2.5 pb-2 text-left animate-in fade-in duration-200">
+                        <div className="relative mb-2">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-500" />
+                            <input 
+                                type="text"
+                                placeholder="Search currencies..."
+                                value={compareSearch}
+                                onChange={(e) => setCompareSearch(e.target.value)}
+                                className="w-full bg-neutral-800/50 border border-neutral-700/50 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder:text-neutral-600 focus:outline-none focus:border-emerald-600/50 transition-colors"
+                            />
+                        </div>
+                        <div className="grid grid-cols-1 gap-2">
+                            {compareAllResult
+                                .filter(r => {
+                                    const fullName = CURRENCY_NAMES[r.currency] || r.currency;
+                                    const s = compareSearch.toLowerCase();
+                                    return r.currency.toLowerCase().includes(s) ||
+                                           fullName.toLowerCase().includes(s);
+                                })
+                                .map((res, idx) => {
+                                    const isExpanded = expandedCurrency === res.currency;
+                                    const isTop = idx === 0;
+                                    const isTop3 = idx < 3;
+                                    const maxRoi = compareAllResult.length > 0 ? Math.max(compareAllResult[0].roi, 1) : 1;
+                                    const roiPercent = Math.max(0, Math.min(100, (res.roi / maxRoi) * 100));
+
+                                    return (
+                                        <div
+                                            key={res.currency}
+                                            onClick={() => setExpandedCurrency(isExpanded ? null : res.currency)}
+                                            className={`group rounded-2xl border transition-all overflow-hidden cursor-pointer ${isTop ? 'bg-gradient-to-r from-emerald-600/10 to-teal-900/5 border-emerald-600/30 shadow-lg shadow-emerald-600/5' : isTop3 ? 'bg-neutral-800/30 border-neutral-700/40' : 'bg-neutral-800/20 border-neutral-800/50 hover:border-neutral-700/50'}`}
+                                        >
+                                            <div className="p-2.5 flex items-center justify-between gap-2">
+                                                <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                                                    <div className="relative shrink-0">
+                                                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-[10px] ${isTop ? 'bg-gradient-to-br from-emerald-700 to-emerald-600 text-white shadow-lg shadow-emerald-700/30' : isTop3 ? 'bg-neutral-700 text-neutral-200' : 'bg-neutral-800 text-neutral-400'}`}>
+                                                            {res.displayCode}
+                                                        </div>
+                                                        <span className={`absolute -top-1 -left-1 w-4 h-4 rounded-full flex items-center justify-center text-[7px] font-black ${isTop ? 'bg-emerald-700 text-white' : isTop3 ? 'bg-neutral-600 text-neutral-200' : 'bg-neutral-700 text-neutral-400'}`}>
+                                                            {idx + 1}
+                                                        </span>
+                                                    </div>
+                                                    <div className="min-w-0 flex-1">
+                                                        <h4 className={`font-bold truncate transition-colors text-sm text-left ${isTop ? 'text-emerald-500' : 'text-white group-hover:text-emerald-600'}`}>{CURRENCY_NAMES[res.currency] || res.currency}</h4>
+                                                        <div className="flex items-center gap-2 mt-1">
+                                                            <div className="flex-1 h-1 bg-neutral-800 rounded-full overflow-hidden">
+                                                                <div 
+                                                                    className={`h-full rounded-full transition-all ${res.roi >= 0 ? 'bg-gradient-to-r from-emerald-500 to-emerald-400' : 'bg-red-500'}`}
+                                                                    style={{ width: `${Math.max(2, roiPercent)}%` }}
+                                                                />
+                                                            </div>
+                                                            <span className={`text-[9px] font-mono font-bold shrink-0 ${res.roi >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                                                                {res.roi >= 0 ? '+' : ''}{res.roi.toFixed(1)}%
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex items-center gap-1.5 shrink-0">
+                                                    <div className="text-right">
+                                                        <div className={`font-mono font-black tabular-nums ${isTop ? 'text-sm text-emerald-300' : isTop3 ? 'text-xs text-emerald-400' : 'text-[11px] text-emerald-400/80'} ${res.roi < 0 ? '!text-red-400' : ''}`}>
+                                                            {res.profit >= 0 ? '+' : ''}{res.profit.toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                                                        </div>
+                                                        <span className="text-[7px] text-neutral-500 font-bold uppercase">ETB</span>
+                                                    </div>
+                                                    <div 
+                                                        className={`p-1.5 rounded-lg transition-all ${isExpanded ? 'bg-emerald-600 text-white' : 'bg-neutral-800 text-neutral-500 group-hover:text-white'}`}
+                                                    >
+                                                        {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {isExpanded && (
+                                                <div 
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    className="mx-3 mb-3 rounded-xl border border-emerald-600/10 bg-gradient-to-b from-emerald-900/10 to-black/30 overflow-hidden animate-in slide-in-from-top-2 duration-200"
+                                                >
+                                                    <div className="px-3 py-2 bg-emerald-600/5 border-b border-emerald-600/10">
+                                                        <h5 className="text-[9px] font-black text-emerald-500 uppercase tracking-[0.2em] text-left">Hold {res.currency}</h5>
+                                                    </div>
+                                                    <div className="p-3 space-y-2">
+                                                        <div className="flex justify-between items-center">
+                                                            <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Bought</span>
+                                                            <span className="text-xs font-mono font-bold text-white">{formatCurrency(res.unitsBought)} <span className="text-neutral-500">{res.displayCode}</span></span>
+                                                        </div>
+                                                        <div className="flex justify-between items-center">
+                                                            <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">End Value</span>
+                                                            <span className="text-sm font-mono font-black text-emerald-400">{formatCurrency(res.endValue)}</span>
+                                                        </div>
+
+                                                        <div className="flex justify-between items-center py-1">
+                                                            <span className="text-[8px] font-bold text-neutral-500 uppercase tracking-wider">Pricing Unit</span>
+                                                            <span className="text-[10px] text-emerald-500/70 font-bold">
+                                                                {['XAU', 'XAG', 'XPT'].includes(res.currency) 
+                                                                    ? 'Troy Ounce (31.1034768g)' 
+                                                                    : ['XCU', 'XSN', 'ZNC', 'XPB', 'XNI'].includes(res.currency)
+                                                                        ? 'Metric Ton'
+                                                                        : `1 ${res.currency}`}
+                                                            </span>
+                                                        </div>
+
+                                                        <div className="py-2">
+                                                            <div className="flex justify-between items-center mb-1">
+                                                                <span className="text-[8px] font-black text-neutral-600 uppercase tracking-widest">Performance Trend</span>
+                                                                <span className={`text-[8px] font-bold ${res.roi >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                                                                    {res.history.length} Months
+                                                                </span>
+                                                            </div>
+                                                            <div className="bg-neutral-900/50 rounded-lg py-3 px-1 border border-neutral-800/50">
+                                                                <MiniTrendChart data={res.history} />
+                                                            </div>
+                                                        </div>
+                                                        
+                                                        <div className="h-px bg-neutral-800/80" />
+                                                        
+                                                        <div className="flex justify-between items-center">
+                                                            <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Rate (Start)</span>
+                                                            <div className="text-right">
+                                                                <span className="text-[11px] font-mono text-neutral-300">{formatCurrency(res.startRate)}</span>
+                                                                {res.startIsFallback && <div className="text-[7px] text-amber-500 italic leading-none">Using {res.startMonth} data</div>}
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex justify-between items-center">
+                                                            <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Rate (End)</span>
+                                                            <div className="text-right">
+                                                                <span className="text-[11px] font-mono text-neutral-300">{formatCurrency(res.endRate)}</span>
+                                                                {res.endIsFallback && <div className="text-[7px] text-amber-500 italic leading-none">Using {res.endMonth} data</div>}
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex justify-between items-center">
+                                                            <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Multiplier</span>
+                                                            <span className="text-[11px] font-mono font-bold text-emerald-400/80">{res.multiplier.toFixed(4)}x</span>
+                                                        </div>
+                                                        
+                                                        <div className="h-px bg-neutral-800/80" />
+                                                        
+                                                        <div className="flex justify-between items-center">
+                                                            <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Profit</span>
+                                                            <span className={`text-sm font-mono font-black ${res.profit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{res.profit >= 0 ? '+' : ''}{formatCurrency(res.profit)}</span>
+                                                        </div>
+                                                        <div className="flex justify-between items-center">
+                                                            <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Total ROI</span>
+                                                            <span className={`text-sm font-mono font-black ${res.roi >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{res.roi.toFixed(2)}%</span>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="px-3 pb-3">
+                                                        <button
+                                                            onClick={() => {
+                                                                setSelectedCurrency(res.currency);
+                                                                setMode('single');
+                                                                handleClear();
+                                                            }}
+                                                            className="w-full py-2.5 bg-gradient-to-r from-emerald-700 to-emerald-600 text-white font-black text-[9px] uppercase tracking-[0.2em] rounded-lg hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20"
+                                                        >
+                                                            Select {res.displayCode} & Compare
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Actions */}
@@ -1337,33 +1973,7 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                 </button>
             </div>
 
-            {/* All Currencies Comparison Modal */}
-            {showAllModal && (
-                <AllCurrenciesModal 
-                    onClose={() => setShowAllModal(false)}
-                    startAuction={validAuctions[selectedAuctionIdx]}
-                    fxData={fxData}
-                    budget={budget || 0}
-                    onSelectCurrency={(c) => {
-                        setSelectedCurrency(c);
-                        setShowAllModal(false);
-                        if (mode === 'leverage') {
-                            setMode('single');
-                        }
-                    }}
-                    onStartMonthChange={(month) => {
-                        const matchingIndices = validAuctions
-                            .map((auc, idx) => ({ month: getMonthKey(auc.timestamp), idx }))
-                            .filter(item => item.month === month);
-                        
-                        if (matchingIndices.length > 0) {
-                            // Find the earliest auction in that month (largest index since sorted newest-to-oldest)
-                            const earliestIdx = Math.max(...matchingIndices.map(m => m.idx));
-                            setSelectedAuctionIdx(earliestIdx);
-                        }
-                    }}
-                />
-            )}
+
         </div>
     );
 };
@@ -1427,459 +2037,109 @@ const MiniTrendChart = ({ data, color = '#10b981' }) => {
     );
 };
 
-const AllCurrenciesModal = ({ onClose, startAuction, fxData, budget, onSelectCurrency, onStartMonthChange }) => {
-    const [search, setSearch] = useState('');
-    const [expandedCurrency, setExpandedCurrency] = useState(null);
-    
-    const latestMonthEntry = fxData.monthlyPrices[fxData.monthlyPrices.length - 1];
-    const latestDataMonth = latestMonthEntry.month;
-    
-    const [modalStartMonth, setModalStartMonthRaw] = useState(() => {
-        if (startAuction) {
-            return getMonthKey(startAuction.timestamp);
-        }
-        const [y, m] = latestDataMonth.split('-').map(Number);
-        const d = new Date(y, m - 1 - 6, 1);
-        const year = d.getFullYear();
-        const month = String(d.getMonth() + 1).padStart(2, '0');
-        return `${year}-${month}`;
+const MONTH_LABELS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+const getAvailableYears = (fxDataObj) => {
+    const years = new Set();
+    fxDataObj.monthlyPrices.forEach(m => {
+        years.add(m.month.split('-')[0]);
     });
-    const [modalEndMonth, setModalEndMonthRaw] = useState(latestDataMonth);
+    return Array.from(years).sort();
+};
 
-    // Ensure end >= start when either changes
-    const setModalStartMonth = (val) => {
-        setModalStartMonthRaw(val);
-        if (onStartMonthChange) onStartMonthChange(val);
-        if (val > modalEndMonth) setModalEndMonthRaw(val);
-    };
-    const setModalEndMonth = (val) => {
-        setModalEndMonthRaw(val);
-        if (val < modalStartMonth) setModalStartMonthRaw(val);
-    };
-
-
-
-    // Available years from fxData
-    const availableYears = useMemo(() => {
-        const years = new Set();
-        fxData.monthlyPrices.forEach(m => {
-            years.add(m.month.split('-')[0]);
-        });
-        return Array.from(years).sort();
-    }, []);
-
-    const MONTH_LABELS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-
-    // Available months for a given year (from fxData)
-    const getMonthsForYear = (year) => {
-        const months = [];
-        fxData.monthlyPrices.forEach(m => {
-            if (m.month.startsWith(year)) {
-                const mo = parseInt(m.month.split('-')[1]);
-                months.push(mo);
-            }
-        });
-        return months.sort((a, b) => a - b);
-    };
-
-    // Year/month picker open state
-    const [startPickerOpen, setStartPickerOpen] = useState(false);
-    const [endPickerOpen, setEndPickerOpen] = useState(false);
-    const [startPickerYear, setStartPickerYear] = useState(() => modalStartMonth.split('-')[0]);
-    const [endPickerYear, setEndPickerYear] = useState(() => modalEndMonth.split('-')[0]);
-
-    const periodBarRef = useRef(null);
-
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (periodBarRef.current && !periodBarRef.current.contains(event.target)) {
-                setStartPickerOpen(false);
-                setEndPickerOpen(false);
-            }
-        };
-        if (startPickerOpen || endPickerOpen) {
-            document.addEventListener('mousedown', handleClickOutside);
+const getMonthsForYear = (fxDataObj, year) => {
+    const months = [];
+    fxDataObj.monthlyPrices.forEach(m => {
+        if (m.month.startsWith(year)) {
+            const mo = parseInt(m.month.split('-')[1]);
+            months.push(mo);
         }
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, [startPickerOpen, endPickerOpen]);
-
-    const results = useMemo(() => {
-        if (!fxData || !fxData.monthlyPrices) return [];
-        
-        const currencies = Object.keys(fxData.monthlyPrices[0].value);
-        
-        return currencies.map(c => {
-            const startInfo = getFxRateWithFallback(fxData, c, modalStartMonth);
-            const endInfo = getFxRateWithFallback(fxData, c, modalEndMonth);
-            
-            if (!startInfo || !endInfo) return null;
-            
-            const roi = ((endInfo.rate / startInfo.rate) - 1) * 100;
-            const unitsBought = budget / startInfo.rate;
-            const endValue = unitsBought * endInfo.rate;
-            const profit = endValue - budget;
-            
-            return {
-                currency: c,
-                displayCode: c,
-                startRate: startInfo.rate,
-                endRate: endInfo.rate,
-                roi,
-                profit,
-                endValue,
-                unitsBought,
-                startMonth: startInfo.monthUsed,
-                endMonth: endInfo.monthUsed,
-                multiplier: endInfo.rate / startInfo.rate,
-                startIsFallback: startInfo.isFallback,
-                endIsFallback: endInfo.isFallback,
-                history: fxData.monthlyPrices
-                    .filter(m => m.month >= modalStartMonth && m.month <= modalEndMonth)
-                    .map(m => m.value[c])
-                    .filter(v => v !== undefined && v !== null)
-            };
-        }).filter(Boolean).sort((a, b) => b.roi - a.roi);
-    }, [fxData, budget, modalStartMonth, modalEndMonth]);
-
-    const filteredResults = results.filter(r => {
-        const fullName = CURRENCY_NAMES[r.currency] || r.currency;
-        const s = search.toLowerCase();
-        return r.currency.toLowerCase().includes(s) ||
-               r.displayCode.toLowerCase().includes(s) ||
-               fullName.toLowerCase().includes(s);
     });
+    return months.sort((a, b) => a - b);
+};
 
-    const formatMonth = (m) => {
-        const [year, month] = m.split('-');
-        const date = new Date(year, parseInt(month) - 1);
-        return date.toLocaleString('default', { month: 'short', year: 'numeric' });
+const formatMonth = (m) => {
+    const [year, month] = m.split('-');
+    const date = new Date(year, parseInt(month) - 1);
+    return date.toLocaleString('default', { month: 'short', year: 'numeric' });
+};
+
+const YearMonthPicker = ({ label, value, onChange, isOpen, setIsOpen, pickerYear, setPickerYear, fxData, accentColor = 'emerald' }) => {
+    const selectedYear = value.split('-')[0];
+    const selectedMo = parseInt(value.split('-')[1]);
+    const months = getMonthsForYear(fxData, pickerYear);
+    const availableYears = getAvailableYears(fxData);
+    const colorMap = {
+        emerald: {
+            activeBg: 'bg-emerald-600/20', activeText: 'text-emerald-500', activeRing: 'ring-emerald-600/40',
+            selectedBg: 'bg-emerald-600', selectedText: 'text-white',
+            hoverBg: 'hover:bg-emerald-600/10', hoverText: 'hover:text-emerald-400',
+            borderFocus: 'border-emerald-600/50', iconColor: 'text-emerald-500',
+        }
     };
-
-    const periods = results.length > 0 ? {
-        start: formatMonth(results[0].startMonth),
-        end: formatMonth(results[0].endMonth)
-    } : null;
-
-    const formatCurrency = (val) => val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-    // Inline Year+Month Picker component
-    const YearMonthPicker = ({ label, value, onChange, isOpen, setIsOpen, pickerYear, setPickerYear, accentColor = 'emerald' }) => {
-        const selectedYear = value.split('-')[0];
-        const selectedMo = parseInt(value.split('-')[1]);
-        const months = getMonthsForYear(pickerYear);
-        const colorMap = {
-            emerald: {
-                activeBg: 'bg-emerald-600/20', activeText: 'text-emerald-500', activeRing: 'ring-emerald-600/40',
-                selectedBg: 'bg-emerald-600', selectedText: 'text-white',
-                hoverBg: 'hover:bg-emerald-600/10', hoverText: 'hover:text-emerald-400',
-                borderFocus: 'border-emerald-600/50', iconColor: 'text-emerald-500',
-            }
-        };
-        const c = colorMap[accentColor] || colorMap.emerald;
-
-        return (
-            <div className="flex-1 relative">
-                <button
-                    onClick={() => { setIsOpen(!isOpen); if (!isOpen) setPickerYear(selectedYear); }}
-                    className={`w-full flex items-center justify-between gap-1 bg-neutral-900 border rounded-lg px-2 py-1.5 transition-all cursor-pointer ${isOpen ? `${c.borderFocus} ring-1 ${c.activeRing}` : 'border-neutral-700 hover:border-neutral-600'}`}
-                >
-                    <div className="flex items-center gap-1.5">
-                        <Calendar className={`w-3.5 h-3.5 ${c.iconColor}`} />
-                        <span className="text-[10px] text-neutral-500 font-bold uppercase">{label}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                        <span className="text-xs font-mono font-bold text-white">{MONTH_LABELS[selectedMo - 1]} {selectedYear}</span>
-                        <ChevronDown className={`w-3.5 h-3.5 text-neutral-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-                    </div>
-                </button>
-                {isOpen && (
-                    <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-neutral-900 border border-neutral-700 rounded-xl shadow-2xl shadow-black/50 overflow-hidden animate-in slide-in-from-top-1 fade-in duration-150">
-                        {/* Year Pills */}
-                        <div className="flex items-center gap-1 p-2 border-b border-neutral-800 bg-neutral-900/80">
-                            {availableYears.map(y => (
-                                <button
-                                    key={y}
-                                    onClick={() => setPickerYear(y)}
-                                    className={`flex-1 py-1.5 rounded-md text-xs font-black transition-all ${pickerYear === y ? `${c.activeBg} ${c.activeText} ring-1 ${c.activeRing}` : 'text-neutral-500 hover:text-white hover:bg-neutral-800'}`}
-                                >
-                                    {y}
-                                </button>
-                            ))}
-                        </div>
-                        {/* Month Grid */}
-                        <div className="grid grid-cols-4 gap-1 p-2">
-                            {MONTH_LABELS.map((ml, idx) => {
-                                const mo = idx + 1;
-                                const moKey = `${pickerYear}-${String(mo).padStart(2, '0')}`;
-                                const isAvailable = months.includes(mo);
-                                const isSelected = value === moKey;
-                                return (
-                                    <button
-                                        key={mo}
-                                        disabled={!isAvailable}
-                                        onClick={() => {
-                                            if (isAvailable) {
-                                                onChange(moKey);
-                                                setIsOpen(false);
-                                            }
-                                        }}
-                                        className={`py-2 rounded-lg text-xs font-bold transition-all ${
-                                            isSelected
-                                                ? `${c.selectedBg} ${c.selectedText} shadow-md`
-                                                : isAvailable
-                                                    ? `bg-neutral-800/60 text-neutral-300 ${c.hoverBg} ${c.hoverText}`
-                                                    : 'bg-neutral-900/30 text-neutral-700 cursor-not-allowed'
-                                        }`}
-                                    >
-                                        {ml}
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    </div>
-                )}
-            </div>
-        );
-    };
+    const c = colorMap[accentColor] || colorMap.emerald;
 
     return (
-        <div className="absolute inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-neutral-900 border border-neutral-800 w-full h-full flex flex-col scale-100 animate-in zoom-in-95 duration-200">
-                <div className="p-4 border-b border-neutral-800 bg-neutral-900/50 backdrop-blur-md shrink-0 relative z-20">
-                    <div className="flex justify-between items-start mb-3">
-                        <div className="text-left">
-                            <h2 className="text-lg font-black text-white leading-tight flex items-center gap-2">
-                                <span className="p-1.5 bg-emerald-600/20 text-emerald-500 rounded-xl">
-                                    <TrendingUp className="w-4 h-4" />
-                                </span>
-                                All Currency ROI
-                            </h2>
-                            <p className="text-[9px] uppercase tracking-widest text-neutral-500 font-bold mt-0.5">
-                                Market Performance Analysis
-                            </p>
-                        </div>
-                        <button 
-                            onClick={onClose}
-                            className="p-2 hover:bg-neutral-800 rounded-full transition-colors text-neutral-500 hover:text-white"
-                        >
-                            <X className="w-5 h-5" />
-                        </button>
-                    </div>
-
-                    {/* Year+Month Period Picker */}
-                    <div ref={periodBarRef} className="bg-neutral-800/60 rounded-xl p-2 mb-3 border border-neutral-700/50">
-                        <div className="flex items-center gap-2">
-                            <YearMonthPicker
-                                label="From"
-                                value={modalStartMonth}
-                                onChange={setModalStartMonth}
-                                isOpen={startPickerOpen}
-                                setIsOpen={(v) => { setStartPickerOpen(v); if (v) setEndPickerOpen(false); }}
-                                pickerYear={startPickerYear}
-                                setPickerYear={setStartPickerYear}
-                            />
-                            <span className="text-[9px] text-neutral-600 font-black shrink-0">→</span>
-                            <YearMonthPicker
-                                label="To"
-                                value={modalEndMonth}
-                                onChange={setModalEndMonth}
-                                isOpen={endPickerOpen}
-                                setIsOpen={(v) => { setEndPickerOpen(v); if (v) setStartPickerOpen(false); }}
-                                pickerYear={endPickerYear}
-                                setPickerYear={setEndPickerYear}
-                            />
-                        </div>
-                        {/* Quick Presets */}
-                        <div className="flex items-center gap-1 mt-1.5 justify-center">
-                            {[
-                                { label: 'YTD', start: `${new Date().getFullYear()}-01`, end: latestDataMonth },
-                                { label: '1Y', start: (() => { const d = new Date(); d.setFullYear(d.getFullYear() - 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; })(), end: latestDataMonth },
-                                { label: '2Y', start: (() => { const d = new Date(); d.setFullYear(d.getFullYear() - 2); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; })(), end: latestDataMonth },
-                                { label: 'All', start: fxData.monthlyPrices[0].month, end: latestDataMonth },
-                            ].map(preset => {
-                                const isActive = modalStartMonth === preset.start && modalEndMonth === preset.end;
-                                return (
-                                    <button
-                                        key={preset.label}
-                                        onClick={() => { setModalStartMonth(preset.start); setModalEndMonth(preset.end); }}
-                                        className={`px-3 py-1 rounded text-[10px] font-black transition-all ${isActive ? 'bg-emerald-600/20 text-emerald-500 ring-1 ring-emerald-600/40' : 'text-neutral-500 hover:text-white hover:bg-neutral-800'}`}
-                                    >
-                                        {preset.label}
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    </div>
-
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-500" />
-                        <input 
-                            type="text"
-                            placeholder="Search currencies..."
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            className="w-full bg-neutral-800/50 border border-neutral-700/50 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder:text-neutral-600 focus:outline-none focus:border-emerald-600/50 transition-colors"
-                        />
-                    </div>
+        <div className="flex-1 relative">
+            <button
+                onClick={() => { setIsOpen(!isOpen); if (!isOpen) setPickerYear(selectedYear); }}
+                className={`w-full flex items-center justify-between gap-1 bg-neutral-900 border rounded-lg px-2 py-1.5 transition-all cursor-pointer ${isOpen ? `${c.borderFocus} ring-1 ${c.activeRing}` : 'border-neutral-700 hover:border-neutral-600'}`}
+            >
+                <div className="flex items-center gap-1.5">
+                    <Calendar className={`w-3.5 h-3.5 ${c.iconColor}`} />
+                    <span className="text-[10px] text-neutral-500 font-bold uppercase">{label}</span>
                 </div>
-
-
-                <div className="flex-1 overflow-y-auto p-3 custom-scrollbar relative z-10">
-                    <div className="grid grid-cols-1 gap-2">
-                        {filteredResults.map((res, idx) => {
-                            const isExpanded = expandedCurrency === res.currency;
-                            const isTop = idx === 0;
-                            const isTop3 = idx < 3;
-                            const maxRoi = filteredResults.length > 0 ? Math.max(filteredResults[0].roi, 1) : 1;
-                            const roiPercent = Math.max(0, Math.min(100, (res.roi / maxRoi) * 100));
-
+                <div className="flex items-center gap-1">
+                    <span className="text-xs font-mono font-bold text-white">{MONTH_LABELS[selectedMo - 1]} {selectedYear}</span>
+                    <ChevronDown className={`w-3.5 h-3.5 text-neutral-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                </div>
+            </button>
+            {isOpen && (
+                <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-neutral-900 border border-neutral-700 rounded-xl shadow-2xl shadow-black/50 overflow-hidden animate-in slide-in-from-top-1 fade-in duration-150">
+                    {/* Year Pills */}
+                    <div className="flex items-center gap-1 p-2 border-b border-neutral-800 bg-neutral-900/80">
+                        {availableYears.map(y => (
+                            <button
+                                key={y}
+                                onClick={() => setPickerYear(y)}
+                                className={`flex-1 py-1.5 rounded-md text-xs font-black transition-all ${pickerYear === y ? `${c.activeBg} ${c.activeText} ring-1 ${c.activeRing}` : 'text-neutral-500 hover:text-white hover:bg-neutral-800'}`}
+                            >
+                                {y}
+                            </button>
+                        ))}
+                    </div>
+                    {/* Month Grid */}
+                    <div className="grid grid-cols-4 gap-1 p-2">
+                        {MONTH_LABELS.map((ml, idx) => {
+                            const mo = idx + 1;
+                            const moKey = `${pickerYear}-${String(mo).padStart(2, '0')}`;
+                            const isAvailable = months.includes(mo);
+                            const isSelected = value === moKey;
                             return (
-                                <div
-                                    key={res.currency}
-                                    onClick={() => setExpandedCurrency(isExpanded ? null : res.currency)}
-                                    className={`group rounded-2xl border transition-all overflow-hidden cursor-pointer ${isTop ? 'bg-gradient-to-r from-emerald-600/10 to-teal-900/5 border-emerald-600/30 shadow-lg shadow-emerald-600/5' : isTop3 ? 'bg-neutral-800/30 border-neutral-700/40' : 'bg-neutral-800/20 border-neutral-800/50 hover:border-neutral-700/50'}`}
+                                <button
+                                    key={mo}
+                                    disabled={!isAvailable}
+                                    onClick={() => {
+                                        if (isAvailable) {
+                                            onChange(moKey);
+                                            setIsOpen(false);
+                                        }
+                                    }}
+                                    className={`py-2 rounded-lg text-xs font-bold transition-all ${
+                                        isSelected
+                                            ? `${c.selectedBg} ${c.selectedText} shadow-md`
+                                            : isAvailable
+                                                ? `bg-neutral-800/60 text-neutral-300 ${c.hoverBg} ${c.hoverText}`
+                                                : 'bg-neutral-900/30 text-neutral-700 cursor-not-allowed'
+                                    }`}
                                 >
-                                    <div className="p-2.5 flex items-center justify-between gap-2">
-                                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                                            {/* Rank + Badge */}
-                                            <div className="relative shrink-0">
-                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-[10px] ${isTop ? 'bg-gradient-to-br from-emerald-700 to-emerald-600 text-white shadow-lg shadow-emerald-700/30' : isTop3 ? 'bg-neutral-700 text-neutral-200' : 'bg-neutral-800 text-neutral-400'}`}>
-                                                    {res.displayCode}
-                                                </div>
-                                                <span className={`absolute -top-1 -left-1 w-4 h-4 rounded-full flex items-center justify-center text-[7px] font-black ${isTop ? 'bg-emerald-700 text-white' : isTop3 ? 'bg-neutral-600 text-neutral-200' : 'bg-neutral-700 text-neutral-400'}`}>
-                                                    {idx + 1}
-                                                </span>
-                                            </div>
-                                            <div className="min-w-0 flex-1">
-                                                <h4 className={`font-bold truncate transition-colors text-sm text-left ${isTop ? 'text-emerald-500' : 'text-white group-hover:text-emerald-600'}`}>{CURRENCY_NAMES[res.currency] || res.currency}</h4>
-                                                {/* Mini ROI bar */}
-                                                <div className="flex items-center gap-2 mt-1">
-                                                    <div className="flex-1 h-1 bg-neutral-800 rounded-full overflow-hidden">
-                                                        <div 
-                                                            className={`h-full rounded-full transition-all ${res.roi >= 0 ? 'bg-gradient-to-r from-emerald-500 to-emerald-400' : 'bg-red-500'}`}
-                                                            style={{ width: `${Math.max(2, roiPercent)}%` }}
-                                                        />
-                                                    </div>
-                                                    <span className={`text-[9px] font-mono font-bold shrink-0 ${res.roi >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                                                        {res.roi >= 0 ? '+' : ''}{res.roi.toFixed(1)}%
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="flex items-center gap-1.5 shrink-0">
-                                            <div className="text-right">
-                                                <div className={`font-mono font-black tabular-nums ${isTop ? 'text-sm text-emerald-300' : isTop3 ? 'text-xs text-emerald-400' : 'text-[11px] text-emerald-400/80'} ${res.roi < 0 ? '!text-red-400' : ''}`}>
-                                                    {res.profit >= 0 ? '+' : ''}{res.profit.toLocaleString('en-US', { maximumFractionDigits: 0 })}
-                                                </div>
-                                                <span className="text-[7px] text-neutral-500 font-bold uppercase">ETB</span>
-                                            </div>
-                                            <div 
-                                                className={`p-1.5 rounded-lg transition-all ${isExpanded ? 'bg-emerald-600 text-white' : 'bg-neutral-800 text-neutral-500 group-hover:text-white'}`}
-                                            >
-                                                {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {isExpanded && (
-                                        <div 
-                                            onClick={(e) => e.stopPropagation()}
-                                            className="mx-3 mb-3 rounded-xl border border-emerald-600/10 bg-gradient-to-b from-emerald-900/10 to-black/30 overflow-hidden animate-in slide-in-from-top-2 duration-200"
-                                        >
-                                            <div className="px-3 py-2 bg-emerald-600/5 border-b border-emerald-600/10">
-                                                <h5 className="text-[9px] font-black text-emerald-500 uppercase tracking-[0.2em] text-left">Hold {res.currency}</h5>
-                                            </div>
-                                            <div className="p-3 space-y-2">
-                                                <div className="flex justify-between items-center">
-                                                    <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Bought</span>
-                                                    <span className="text-xs font-mono font-bold text-white">{formatCurrency(res.unitsBought)} <span className="text-neutral-500">{res.displayCode}</span></span>
-                                                </div>
-                                                <div className="flex justify-between items-center">
-                                                    <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">End Value</span>
-                                                    <span className="text-sm font-mono font-black text-emerald-400">{formatCurrency(res.endValue)}</span>
-                                                </div>
-
-                                                {/* Pricing Unit Info */}
-                                                <div className="flex justify-between items-center py-1">
-                                                    <span className="text-[8px] font-bold text-neutral-500 uppercase tracking-wider">Pricing Unit</span>
-                                                    <span className="text-[10px] text-emerald-500/70 font-bold">
-                                                        {['XAU', 'XAG', 'XPT'].includes(res.currency) 
-                                                            ? 'Troy Ounce (31.1034768g)' 
-                                                            : ['XCU', 'XSN', 'ZNC', 'XPB', 'XNI'].includes(res.currency)
-                                                                ? 'Metric Ton'
-                                                                : `1 ${res.currency}`}
-                                                    </span>
-                                                </div>
-
-                                                <div className="py-2">
-                                                    <div className="flex justify-between items-center mb-1">
-                                                        <span className="text-[8px] font-black text-neutral-600 uppercase tracking-widest">Performance Trend</span>
-                                                        <span className={`text-[8px] font-bold ${res.roi >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                                                            {res.history.length} Months
-                                                        </span>
-                                                    </div>
-                                                    <div className="bg-neutral-900/50 rounded-lg py-3 px-1 border border-neutral-800/50">
-                                                        <MiniTrendChart data={res.history} />
-                                                    </div>
-                                                </div>
-                                                
-                                                <div className="h-px bg-neutral-800/80" />
-                                                
-                                                <div className="flex justify-between items-center">
-                                                    <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Rate (Start)</span>
-                                                    <div className="text-right">
-                                                        <span className="text-[11px] font-mono text-neutral-300">{formatCurrency(res.startRate)}</span>
-                                                        {res.startIsFallback && <div className="text-[7px] text-amber-500 italic leading-none">Using {res.startMonth} data</div>}
-                                                    </div>
-                                                </div>
-                                                <div className="flex justify-between items-center">
-                                                    <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Rate (End)</span>
-                                                    <div className="text-right">
-                                                        <span className="text-[11px] font-mono text-neutral-300">{formatCurrency(res.endRate)}</span>
-                                                        {res.endIsFallback && <div className="text-[7px] text-amber-500 italic leading-none">Using {res.endMonth} data</div>}
-                                                    </div>
-                                                </div>
-                                                <div className="flex justify-between items-center">
-                                                    <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Multiplier</span>
-                                                    <span className="text-[11px] font-mono font-bold text-emerald-400/80">{res.multiplier.toFixed(4)}x</span>
-                                                </div>
-                                                
-                                                <div className="h-px bg-neutral-800/80" />
-                                                
-                                                <div className="flex justify-between items-center">
-                                                    <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Profit</span>
-                                                    <span className={`text-sm font-mono font-black ${res.profit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{res.profit >= 0 ? '+' : ''}{formatCurrency(res.profit)}</span>
-                                                </div>
-                                                <div className="flex justify-between items-center">
-                                                    <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Total ROI</span>
-                                                    <span className={`text-sm font-mono font-black ${res.roi >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{res.roi.toFixed(2)}%</span>
-                                                </div>
-                                            </div>
-
-                                            <div className="px-3 pb-3">
-                                                <button
-                                                    onClick={() => onSelectCurrency(res.currency)}
-                                                    className="w-full py-2.5 bg-gradient-to-r from-emerald-700 to-emerald-600 text-white font-black text-[9px] uppercase tracking-[0.2em] rounded-lg hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20"
-                                                >
-                                                    Select {res.displayCode} & Compare
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
+                                    {ml}
+                                </button>
                             );
                         })}
                     </div>
                 </div>
-
-                <div className="px-4 py-2.5 bg-neutral-900 border-t border-neutral-800 shrink-0">
-                    <p className="text-[9px] text-neutral-500 text-center">
-                        Budget: <span className="text-neutral-300 font-mono font-bold">{budget.toLocaleString()} ETB</span> · {filteredResults.length} currencies
-                    </p>
-                </div>
-
-            </div>
+            )}
         </div>
     );
 };

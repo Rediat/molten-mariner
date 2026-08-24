@@ -609,3 +609,160 @@ export function compareLeverageReturns(budget, loanRate, loanYears, loanFrequenc
         endDate: toLocalISO(endDate)
     };
 }
+export function compareDepositReturns(
+    budget,
+    startMonth,
+    endMonth,
+    fxDataObj,
+    currency,
+    foreignApr = 14,
+    foreignCompoundingFreq = 12,
+    foreignTaxRate = 0,
+    foreignReinvestRate = 100,
+    localApr = 22,
+    localCompoundingFreq = 365,
+    localTaxRate = 0,
+    localReinvestRate = 100
+) {
+    // Check start month FX data (with fallback)
+    const startRateInfo = getFxRateWithFallback(fxDataObj, currency, startMonth);
+    if (!startRateInfo) {
+        return { error: `No FX data for ${currency} available on or before ${startMonth}` };
+    }
+    const fxStartRate = startRateInfo.rate;
+    const startMonthUsed = startRateInfo.monthUsed;
+    const startIsFallback = startRateInfo.isFallback;
+
+    // The end date is the latest date in fxDataObj
+    const endRateInfo = getFxRateWithFallback(fxDataObj, currency, endMonth);
+    if (!endRateInfo) {
+        return { error: `No FX data for ${currency} available on or before ${endMonth}` };
+    }
+    const fxEndRate = endRateInfo.rate;
+    const endMonthUsed = endRateInfo.monthUsed;
+    const endIsFallback = endRateInfo.isFallback;
+
+    // Calculate total days between start date and end date
+    const [sy, sm] = startMonth.split('-').map(Number);
+    const startDate = new Date(sy, sm - 1, 1);
+    
+    const [ey, em] = endMonth.split('-').map(Number);
+    const endDate = new Date(ey, em - 1, 1);
+    
+    const totalDays = Math.round((endDate - startDate) / (1000 * 60 * 60 * 24));
+    if (totalDays <= 0) {
+        return { error: `Start month ${startMonth} must be strictly before end month ${endMonth}` };
+    }
+
+
+    const t = totalDays / 365;
+
+    // Helper simulation function
+    const simulateDeposit = (principal, apr, compoundingFreq, taxRate, reinvestRate) => {
+        let fc = compoundingFreq;
+        let n = 0;
+        let ratePerPeriod = 0;
+        
+        if (fc === 0) { // At Maturity
+            n = 1;
+            ratePerPeriod = (apr / 100) * t;
+        } else {
+            n = fc * t;
+            ratePerPeriod = (apr / 100) / fc;
+        }
+        
+        let currentCash = principal;
+        let totalPocketed = 0;
+        let totalTaxPaid = 0;
+        
+        const wholePeriods = Math.floor(n);
+        const fractionalPeriod = n - wholePeriods;
+        
+        const runPeriod = (p, rate, fraction = 1) => {
+            const grossRate = rate * fraction;
+            const grossInterest = p * grossRate;
+            const taxPaid = grossInterest * (taxRate / 100);
+            const netInterest = grossInterest - taxPaid;
+            const pocketed = netInterest * (1 - reinvestRate / 100);
+            const reinvested = netInterest - pocketed;
+            return { reinvested, pocketed, taxPaid };
+        };
+
+        for (let i = 0; i < wholePeriods; i++) {
+            const { reinvested, pocketed, taxPaid } = runPeriod(currentCash, ratePerPeriod);
+            currentCash += reinvested;
+            totalPocketed += pocketed;
+            totalTaxPaid += taxPaid;
+        }
+        
+        if (fractionalPeriod > 0) {
+            const { reinvested, pocketed, taxPaid } = runPeriod(currentCash, ratePerPeriod, fractionalPeriod);
+            currentCash += reinvested;
+            totalPocketed += pocketed;
+            totalTaxPaid += taxPaid;
+        }
+        
+        return {
+            finalBalance: currentCash,
+            pocketedValue: totalPocketed,
+            totalTaxPaid: totalTaxPaid,
+            totalValue: currentCash + totalPocketed
+        };
+    };
+
+    // USD/Foreign Strategy:
+    const fxUnitsBought = budget / fxStartRate;
+    const foreignResult = simulateDeposit(
+        fxUnitsBought,
+        foreignApr,
+        foreignCompoundingFreq,
+        foreignTaxRate,
+        foreignReinvestRate
+    );
+
+    const usdEndValueInUsd = foreignResult.totalValue;
+    const usdEndValueInEtb = usdEndValueInUsd * fxEndRate;
+    const usdProfit = usdEndValueInEtb - budget;
+    const usdROI = (usdProfit / budget) * 100;
+
+    // ETB/Local Strategy:
+    const localResult = simulateDeposit(
+        budget,
+        localApr,
+        localCompoundingFreq,
+        localTaxRate,
+        localReinvestRate
+    );
+
+    const etbEndValue = localResult.totalValue;
+    const etbProfit = etbEndValue - budget;
+    const etbROI = (etbProfit / budget) * 100;
+
+    return {
+        issueDate: toLocalISO(startDate),
+        endDate: toLocalISO(endDate),
+        currency,
+        startMonth,
+        endMonth,
+        totalDays,
+        fxStartRate,
+        fxEndRate,
+        fxUnitsBought,
+        usdEndValueInUsd,
+        usdEndValueInEtb,
+        usdProfit,
+        usdROI,
+        foreignResult,
+        etbEndValue,
+        etbProfit,
+        etbROI,
+        localResult,
+        startMonthUsed,
+        startIsFallback,
+        endMonthUsed,
+        endIsFallback,
+        winner: usdEndValueInEtb > etbEndValue ? 'USD' : 'ETB',
+        diffAmount: Math.abs(usdEndValueInEtb - etbEndValue),
+        diffROI: Math.abs(usdROI - etbROI)
+    };
+}
