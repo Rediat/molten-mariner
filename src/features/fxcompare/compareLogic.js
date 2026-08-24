@@ -761,7 +761,7 @@ export function compareDepositReturns(
         startIsFallback,
         endMonthUsed,
         endIsFallback,
-        winner: usdEndValueInEtb > etbEndValue ? 'USD' : 'ETB',
+        winner: usdEndValueInEtb > etbEndValue ? currency : 'ETB',
         diffAmount: Math.abs(usdEndValueInEtb - etbEndValue),
         diffROI: Math.abs(usdROI - etbROI)
     };

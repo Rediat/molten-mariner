@@ -64,7 +64,7 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
     // Extract available currencies from the first month of activeFxData
     const currencies = useMemo(() => {
         if (!activeFxData || !activeFxData.monthlyPrices || activeFxData.monthlyPrices.length === 0) return [];
-        return Object.keys(activeFxData.monthlyPrices[0].value);
+        return Object.keys(activeFxData.monthlyPrices[0].value).sort();
     }, [activeFxData]);
 
     // Filter T-Bill auctions that have overlapping fx data for start and end
@@ -1181,16 +1181,29 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                             <div className="flex items-center justify-between gap-1.5 mb-2 select-none">
                                 <div className="flex items-center gap-1.5">
                                     <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">Account Settings</span>
+                                    <input 
+                                        type="text"
+                                        placeholder="Search..."
+                                        value={currencySearch}
+                                        onChange={(e) => setCurrencySearch(e.target.value)}
+                                        className="bg-neutral-900/50 border border-neutral-700 rounded px-1.5 py-0.5 text-[9px] text-white focus:outline-none focus:border-emerald-500 w-16"
+                                    />
                                     <select
                                         value={selectedCurrency}
                                         onChange={(e) => { setSelectedCurrency(e.target.value); handleClear(); }}
-                                        className="bg-neutral-950 border border-neutral-700 rounded px-1.5 py-0.5 text-[10px] font-black text-emerald-400 uppercase focus:outline-none focus:border-emerald-500 cursor-pointer"
+                                        className="bg-neutral-950 border border-neutral-700 rounded px-1.5 py-0.5 text-[10px] font-black text-emerald-400 uppercase focus:outline-none focus:border-emerald-500 cursor-pointer max-w-[120px] truncate"
                                     >
-                                        {currencies.map(c => (
-                                            <option key={c} value={c} className="text-white bg-neutral-950 font-normal">
-                                                {CURRENCY_NAMES[c] || c}
-                                            </option>
-                                        ))}
+                                        {currencies
+                                            .filter(c => {
+                                                const fullName = CURRENCY_NAMES[c] || c;
+                                                const s = currencySearch.toLowerCase();
+                                                return c.toLowerCase().includes(s) || fullName.toLowerCase().includes(s);
+                                            })
+                                            .map(c => (
+                                                <option key={c} value={c} className="text-white bg-neutral-950 font-normal">
+                                                    {c}
+                                                </option>
+                                            ))}
                                     </select>
                                 </div>
                                 <div className="flex bg-neutral-900 rounded p-0.5 ring-1 ring-neutral-800 shrink-0">
