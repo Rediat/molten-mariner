@@ -884,7 +884,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
             >
                 <p>
                     Compare the historical returns of investing in Ethiopian Treasury Bills versus holding foreign currencies
-                    (e.g., USD, EUR, GBP), Commodities (Gold, Silver, Platinum, Copper, Tin, Zinc, Lead, Nickel), or Cryptocurrency (Bitcoin) purchased on the parallel market.
+                    (e.g., USD, EUR, GBP), Commodities (Gold, Silver, Platinum, Copper, Tin, Zinc, Lead, Nickel), or Cryptocurrency (Bitcoin) purchased on either the unofficial parallel (Black) market or official Bank rates.
                 </p>
 
                 <div className="pt-2">
@@ -919,6 +919,13 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                                 </ul>
                             </div>
                         </li>
+                        <li className="flex gap-2">
+                            <ArrowRight className="w-3 h-3 mt-1 text-emerald-500 shrink-0" />
+                            <div>
+                                <span className="font-bold text-white uppercase tracking-tight">Deposit Mode:</span>
+                                <p className="text-neutral-400 mt-1">Compares the growth of a foreign currency deposit strategy (using configurable APR, compounding frequency, tax rate, and reinvestment rate) against an equivalent ETB local deposit strategy over a specified start and end period.</p>
+                            </div>
+                        </li>
                     </ul>
                 </div>
 
@@ -942,6 +949,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                         { name: 'Tenure Strategy', description: '(Rolling & Leverage Modes) Choose whether to roll 28D, 91D, 182D, or 364D bills' },
                         { name: 'Loan Rate & Term', description: '(Leverage Mode only) Annual interest rate and duration of the loan in years.' },
                         { name: 'Reinvestment Rate (%)', description: '(Leverage Mode only) The percentage of returns from each round to reinvest. The slider is accompanied by arrow buttons to step by ±5%, and a text field for precise values.' },
+                        { name: 'Rate Source', description: '(Deposit & Compare All Modes) Select whether to use unofficial parallel (Black) market rates or official bank exchange rates.' },
                         { name: 'Deposit Settings', description: '(Leverage Deposit only) Configure Interest Type (Simple vs Compounding), Compounds frequency, and Deduction (%) rate.' }
                     ]} />
                 </div>
@@ -970,7 +978,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                 </InfoBox>
 
                 <InfoBox type="note">
-                    <strong>Data Refresh (Sync):</strong> Run <code>npm run sync-all</code> in the terminal to update all FX, Metals, Bitcoin, and T-Bill data. The app uses a local <code>fxData.json</code> database for speed and offline reliability.
+                    <strong>Data Refresh (Sync):</strong> Run <code>npm run sync-all</code> in the terminal to update all FX, Metals, Bitcoin, official Bank rates, and T-Bill data. The app uses local <code>fxData.json</code> and <code>bankFxData.json</code> databases for speed and offline reliability.
                 </InfoBox>
 
                 <InfoBox type="note">

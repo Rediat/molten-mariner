@@ -56,7 +56,7 @@ const TENURE_OPTIONS = [
 const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
     const brokerageRate = tbillBrokerageRate !== undefined ? tbillBrokerageRate : 0.105;
 
-    const [rateSource, setRateSource] = useState('black'); // 'black' or 'bank'
+    const [rateSource, setRateSource] = useState('bank'); // 'black' or 'bank'
     const activeFxData = useMemo(() => {
         return rateSource === 'bank' ? bankFxData : fxData;
     }, [rateSource]);
@@ -119,11 +119,11 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
     const [leverageResult, setLeverageResult] = useState(null);
     const [depositCompareResult, setDepositCompareResult] = useState(null);
     const [foreignApr, setForeignApr] = useState(14.0);
-    const [localApr, setLocalApr] = useState(22.0);
+    const [localApr, setLocalApr] = useState(25.0);
     const [foreignCompounding, setForeignCompounding] = useState(12); // monthly
     const [localCompounding, setLocalCompounding] = useState(365); // daily
-    const [foreignTaxRate, setForeignTaxRate] = useState(0.0);
-    const [localTaxRate, setLocalTaxRate] = useState(0.0);
+    const [foreignTaxRate, setForeignTaxRate] = useState(10.0);
+    const [localTaxRate, setLocalTaxRate] = useState(10.0);
     const [foreignReinvestRate, setForeignReinvestRate] = useState(100);
     const [localReinvestRate, setLocalReinvestRate] = useState(100);
     
@@ -707,8 +707,8 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                     </div>
                 </div>
 
-                {/* Rate Source Toggle (Only for Deposit and Compare All modes) */}
-                {(mode === 'deposit' || mode === 'compareAll') && (
+                {/* Rate Source Toggle (Only for Compare All mode) */}
+                {mode === 'compareAll' && (
                     <div className="bg-neutral-800/40 rounded-xl p-1.5 border border-neutral-700 hover:border-neutral-600 animate-in fade-in duration-200">
                         <div className="flex justify-between items-center gap-2">
                             <span className="text-xs font-bold text-white leading-tight select-none">
@@ -915,158 +915,6 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                         </select>
                     </div>
                 </div>
-                )}
-                    
-                {/* Deposit Mode Inputs */}
-                {mode === 'deposit' && (
-                    <div className="bg-neutral-800/40 rounded-xl p-2.5 border border-neutral-700 text-left flex flex-col gap-3">
-                        {/* Foreign / USD Deposit Details */}
-                        <div className="border-b border-neutral-700/50 pb-2">
-                            <div className="flex items-center gap-1.5 mb-2 select-none">
-                                <select
-                                    value={selectedCurrency}
-                                    onChange={(e) => { setSelectedCurrency(e.target.value); handleClear(); }}
-                                    className="bg-neutral-950 border border-neutral-700 rounded px-1 py-0.5 text-[10px] font-black text-emerald-400 uppercase focus:outline-none focus:border-emerald-500 cursor-pointer"
-                                >
-                                    {currencies.map(c => (
-                                        <option key={c} value={c} className="text-white bg-neutral-950 font-normal">
-                                            {c}
-                                        </option>
-                                    ))}
-                                </select>
-                                <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">Account Settings</span>
-                            </div>
-                            <div className="grid grid-cols-4 gap-2">
-                                <div className="flex flex-col">
-                                    <label onClick={focusForeignApr} className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold mb-1 cursor-pointer hover:text-emerald-400 transition-colors select-none">
-                                        APR (%)
-                                    </label>
-                                    <FormattedNumberInput
-                                        ref={foreignAprRef}
-                                        value={foreignApr}
-                                        onChange={(e) => setForeignApr(parseFloat(e.target.value.replace(/,/g, '')))}
-                                        decimals={2}
-                                        className="bg-neutral-900 border border-neutral-700 rounded-md text-white text-[11px] p-1.5 focus:outline-none focus:border-emerald-500 w-full font-mono text-right"
-                                    />
-                                </div>
-                                <div className="flex flex-col">
-                                    <label className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold mb-1">
-                                        Compounding
-                                    </label>
-                                    <select
-                                        value={foreignCompounding}
-                                        onChange={(e) => { setForeignCompounding(parseInt(e.target.value)); handleClear(); }}
-                                        className="bg-neutral-900 border border-neutral-700 rounded-md text-white text-[10px] p-1.5 focus:outline-none focus:border-emerald-500 w-full"
-                                    >
-                                        <option value={0}>At Maturity</option>
-                                        <option value={12}>Monthly</option>
-                                        <option value={4}>Quarterly</option>
-                                        <option value={2}>Semi-Annually</option>
-                                        <option value={1}>Annually</option>
-                                        <option value={52}>Weekly</option>
-                                        <option value={365}>Daily</option>
-                                    </select>
-                                </div>
-                                <div className="flex flex-col">
-                                    <label onClick={focusForeignTax} className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold mb-1 cursor-pointer hover:text-emerald-400 transition-colors select-none">
-                                        Deduction (%)
-                                    </label>
-                                    <FormattedNumberInput
-                                        ref={foreignTaxRef}
-                                        value={foreignTaxRate}
-                                        onChange={(e) => setForeignTaxRate(parseFloat(e.target.value.replace(/,/g, '')))}
-                                        decimals={2}
-                                        className="bg-neutral-900 border border-neutral-700 rounded-md text-white text-[11px] p-1.5 focus:outline-none focus:border-emerald-500 w-full font-mono text-right"
-                                    />
-                                </div>
-                                <div className="flex flex-col">
-                                    <label className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold mb-1 select-none">
-                                        Reinvest (%)
-                                    </label>
-                                    <FormattedNumberInput
-                                        value={foreignReinvestRate}
-                                        onChange={(e) => {
-                                            let val = parseFloat(e.target.value.replace(/,/g, ''));
-                                            if (isNaN(val)) val = 0;
-                                            if (val < 0) val = 0;
-                                            if (val > 100) val = 100;
-                                            setForeignReinvestRate(val);
-                                            handleClear();
-                                        }}
-                                        decimals={0}
-                                        className="bg-neutral-900 border border-neutral-700 rounded-md text-white text-[11px] p-1.5 focus:outline-none focus:border-emerald-500 w-full font-mono text-right"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Local / ETB Deposit Details */}
-                        <div>
-                            <p className="text-[10px] font-bold text-emerald-400 uppercase mb-2 tracking-wider">ETB Account Settings</p>
-                            <div className="grid grid-cols-4 gap-2">
-                                <div className="flex flex-col">
-                                    <label onClick={focusLocalApr} className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold mb-1 cursor-pointer hover:text-emerald-400 transition-colors select-none">
-                                        APR (%)
-                                    </label>
-                                    <FormattedNumberInput
-                                        ref={localAprRef}
-                                        value={localApr}
-                                        onChange={(e) => setLocalApr(parseFloat(e.target.value.replace(/,/g, '')))}
-                                        decimals={2}
-                                        className="bg-neutral-900 border border-neutral-700 rounded-md text-white text-[11px] p-1.5 focus:outline-none focus:border-emerald-500 w-full font-mono text-right"
-                                    />
-                                </div>
-                                <div className="flex flex-col">
-                                    <label className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold mb-1">
-                                        Compounding
-                                    </label>
-                                    <select
-                                        value={localCompounding}
-                                        onChange={(e) => { setLocalCompounding(parseInt(e.target.value)); handleClear(); }}
-                                        className="bg-neutral-900 border border-neutral-700 rounded-md text-white text-[10px] p-1.5 focus:outline-none focus:border-emerald-500 w-full"
-                                    >
-                                        <option value={0}>At Maturity</option>
-                                        <option value={12}>Monthly</option>
-                                        <option value={4}>Quarterly</option>
-                                        <option value={2}>Semi-Annually</option>
-                                        <option value={1}>Annually</option>
-                                        <option value={52}>Weekly</option>
-                                        <option value={365}>Daily</option>
-                                    </select>
-                                </div>
-                                <div className="flex flex-col">
-                                    <label onClick={focusLocalTax} className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold mb-1 cursor-pointer hover:text-emerald-400 transition-colors select-none">
-                                        Deduction (%)
-                                    </label>
-                                    <FormattedNumberInput
-                                        ref={localTaxRef}
-                                        value={localTaxRate}
-                                        onChange={(e) => setLocalTaxRate(parseFloat(e.target.value.replace(/,/g, '')))}
-                                        decimals={2}
-                                        className="bg-neutral-900 border border-neutral-700 rounded-md text-white text-[11px] p-1.5 focus:outline-none focus:border-emerald-500 w-full font-mono text-right"
-                                    />
-                                </div>
-                                <div className="flex flex-col">
-                                    <label className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold mb-1 select-none">
-                                        Reinvest (%)
-                                    </label>
-                                    <FormattedNumberInput
-                                        value={localReinvestRate}
-                                        onChange={(e) => {
-                                            let val = parseFloat(e.target.value.replace(/,/g, ''));
-                                            if (isNaN(val)) val = 0;
-                                            if (val < 0) val = 0;
-                                            if (val > 100) val = 100;
-                                            setLocalReinvestRate(val);
-                                            handleClear();
-                                        }}
-                                        decimals={0}
-                                        className="bg-neutral-900 border border-neutral-700 rounded-md text-white text-[11px] p-1.5 focus:outline-none focus:border-emerald-500 w-full font-mono text-right"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 )}
                     
                 {/* Leverage Mode Inputs */}
@@ -1325,6 +1173,173 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
 
             {/* Scrollable Results Section */}
             <div className="flex-1 overflow-y-auto pr-1 scrollbar-hide">
+                {/* Deposit Mode Inputs */}
+                {mode === 'deposit' && (
+                    <div className="mb-2 bg-neutral-800/40 rounded-xl p-2.5 border border-neutral-700 text-left flex flex-col gap-3">
+                        {/* Foreign / USD Deposit Details */}
+                        <div className="border-b border-neutral-700/50 pb-2">
+                            <div className="flex items-center justify-between gap-1.5 mb-2 select-none">
+                                <div className="flex items-center gap-1.5">
+                                    <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">Account Settings</span>
+                                    <select
+                                        value={selectedCurrency}
+                                        onChange={(e) => { setSelectedCurrency(e.target.value); handleClear(); }}
+                                        className="bg-neutral-950 border border-neutral-700 rounded px-1.5 py-0.5 text-[10px] font-black text-emerald-400 uppercase focus:outline-none focus:border-emerald-500 cursor-pointer"
+                                    >
+                                        {currencies.map(c => (
+                                            <option key={c} value={c} className="text-white bg-neutral-950 font-normal">
+                                                {CURRENCY_NAMES[c] || c}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="flex bg-neutral-900 rounded p-0.5 ring-1 ring-neutral-800 shrink-0">
+                                    <button
+                                        onClick={() => { setRateSource('black'); handleClear(); }}
+                                        className={`px-1.5 py-0.5 text-[8px] font-bold uppercase rounded transition-all ${rateSource === 'black' ? 'bg-emerald-600/25 text-emerald-400 ring-1 ring-emerald-500/40' : 'text-neutral-500 hover:text-neutral-300'}`}
+                                    >
+                                        Black
+                                    </button>
+                                    <button
+                                        onClick={() => { setRateSource('bank'); handleClear(); }}
+                                        className={`px-1.5 py-0.5 text-[8px] font-bold uppercase rounded transition-all ${rateSource === 'bank' ? 'bg-emerald-600/25 text-emerald-400 ring-1 ring-emerald-500/40' : 'text-neutral-500 hover:text-neutral-300'}`}
+                                    >
+                                        Bank
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-4 gap-2">
+                                <div className="flex flex-col">
+                                    <label onClick={focusForeignApr} className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold mb-1 cursor-pointer hover:text-emerald-400 transition-colors select-none">
+                                        APR (%)
+                                    </label>
+                                    <FormattedNumberInput
+                                        ref={foreignAprRef}
+                                        value={foreignApr}
+                                        onChange={(e) => setForeignApr(parseFloat(e.target.value.replace(/,/g, '')))}
+                                        decimals={2}
+                                        className="bg-neutral-900 border border-neutral-700 rounded-md text-white text-[11px] p-1.5 focus:outline-none focus:border-emerald-500 w-full font-mono text-right"
+                                    />
+                                </div>
+                                <div className="flex flex-col">
+                                    <label className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold mb-1">
+                                        Compounding
+                                    </label>
+                                    <select
+                                        value={foreignCompounding}
+                                        onChange={(e) => { setForeignCompounding(parseInt(e.target.value)); handleClear(); }}
+                                        className="bg-neutral-900 border border-neutral-700 rounded-md text-white text-[10px] p-1.5 focus:outline-none focus:border-emerald-500 w-full"
+                                    >
+                                        <option value={0}>At Maturity</option>
+                                        <option value={12}>Monthly</option>
+                                        <option value={4}>Quarterly</option>
+                                        <option value={2}>Semi-Annually</option>
+                                        <option value={1}>Annually</option>
+                                        <option value={52}>Weekly</option>
+                                        <option value={365}>Daily</option>
+                                    </select>
+                                </div>
+                                <div className="flex flex-col">
+                                    <label onClick={focusForeignTax} className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold mb-1 cursor-pointer hover:text-emerald-400 transition-colors select-none">
+                                        Deduction (%)
+                                    </label>
+                                    <FormattedNumberInput
+                                        ref={foreignTaxRef}
+                                        value={foreignTaxRate}
+                                        onChange={(e) => setForeignTaxRate(parseFloat(e.target.value.replace(/,/g, '')))}
+                                        decimals={2}
+                                        className="bg-neutral-900 border border-neutral-700 rounded-md text-white text-[11px] p-1.5 focus:outline-none focus:border-emerald-500 w-full font-mono text-right"
+                                    />
+                                </div>
+                                <div className="flex flex-col">
+                                    <label className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold mb-1 select-none">
+                                        Reinvest (%)
+                                    </label>
+                                    <FormattedNumberInput
+                                        value={foreignReinvestRate}
+                                        onChange={(e) => {
+                                            let val = parseFloat(e.target.value.replace(/,/g, ''));
+                                            if (isNaN(val)) val = 0;
+                                            if (val < 0) val = 0;
+                                            if (val > 100) val = 100;
+                                            setForeignReinvestRate(val);
+                                            handleClear();
+                                        }}
+                                        decimals={0}
+                                        className="bg-neutral-900 border border-neutral-700 rounded-md text-white text-[11px] p-1.5 focus:outline-none focus:border-emerald-500 w-full font-mono text-right"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Local / ETB Deposit Details */}
+                        <div>
+                            <p className="text-[10px] font-bold text-emerald-400 uppercase mb-2 tracking-wider">ETB Account Settings</p>
+                            <div className="grid grid-cols-4 gap-2">
+                                <div className="flex flex-col">
+                                    <label onClick={focusLocalApr} className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold mb-1 cursor-pointer hover:text-emerald-400 transition-colors select-none">
+                                        APR (%)
+                                    </label>
+                                    <FormattedNumberInput
+                                        ref={localAprRef}
+                                        value={localApr}
+                                        onChange={(e) => setLocalApr(parseFloat(e.target.value.replace(/,/g, '')))}
+                                        decimals={2}
+                                        className="bg-neutral-900 border border-neutral-700 rounded-md text-white text-[11px] p-1.5 focus:outline-none focus:border-emerald-500 w-full font-mono text-right"
+                                    />
+                                </div>
+                                <div className="flex flex-col">
+                                    <label className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold mb-1">
+                                        Compounding
+                                    </label>
+                                    <select
+                                        value={localCompounding}
+                                        onChange={(e) => { setLocalCompounding(parseInt(e.target.value)); handleClear(); }}
+                                        className="bg-neutral-900 border border-neutral-700 rounded-md text-white text-[10px] p-1.5 focus:outline-none focus:border-emerald-500 w-full"
+                                    >
+                                        <option value={0}>At Maturity</option>
+                                        <option value={12}>Monthly</option>
+                                        <option value={4}>Quarterly</option>
+                                        <option value={2}>Semi-Annually</option>
+                                        <option value={1}>Annually</option>
+                                        <option value={52}>Weekly</option>
+                                        <option value={365}>Daily</option>
+                                    </select>
+                                </div>
+                                <div className="flex flex-col">
+                                    <label onClick={focusLocalTax} className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold mb-1 cursor-pointer hover:text-emerald-400 transition-colors select-none">
+                                        Deduction (%)
+                                    </label>
+                                    <FormattedNumberInput
+                                        ref={localTaxRef}
+                                        value={localTaxRate}
+                                        onChange={(e) => setLocalTaxRate(parseFloat(e.target.value.replace(/,/g, '')))}
+                                        decimals={2}
+                                        className="bg-neutral-900 border border-neutral-700 rounded-md text-white text-[11px] p-1.5 focus:outline-none focus:border-emerald-500 w-full font-mono text-right"
+                                    />
+                                </div>
+                                <div className="flex flex-col">
+                                    <label className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold mb-1 select-none">
+                                        Reinvest (%)
+                                    </label>
+                                    <FormattedNumberInput
+                                        value={localReinvestRate}
+                                        onChange={(e) => {
+                                            let val = parseFloat(e.target.value.replace(/,/g, ''));
+                                            if (isNaN(val)) val = 0;
+                                            if (val < 0) val = 0;
+                                            if (val > 100) val = 100;
+                                            setLocalReinvestRate(val);
+                                            handleClear();
+                                        }}
+                                        decimals={0}
+                                        className="bg-neutral-900 border border-neutral-700 rounded-md text-white text-[11px] p-1.5 focus:outline-none focus:border-emerald-500 w-full font-mono text-right"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
                 {/* Awaiting Calculation Placeholder */}
                 {((mode === 'single' && !resultData) || (mode === 'rolling' && !rollingResult) || (mode === 'leverage' && !leverageResult) || (mode === 'deposit' && !depositCompareResult) || (mode === 'compareAll' && !compareAllResult)) && (
                     <div className="mt-2.5 h-[140px] shrink-0">
@@ -1684,13 +1699,10 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                             <div className="bg-neutral-900/60 border border-neutral-700 rounded-xl p-3 relative overflow-hidden">
                                 <div className="flex justify-between items-stretch mb-3">
                                     <div className="text-left">
-                                        <h3 className="text-sm font-bold text-white leading-none">Deposit Strategy Comparison</h3>
+                                        <h3 className="text-sm font-bold text-white leading-none">Deposit Strategy</h3>
                                         <p className="text-[9px] text-neutral-500 uppercase mt-1">
                                             {formatMonth(depositStartMonth)} → {formatMonth(depositEndMonth)} ({depositCompareResult.totalDays} Days)
                                         </p>
-                                    </div>
-                                    <div className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider flex items-center text-right bg-emerald-500/20 text-emerald-400`}>
-                                        Winner: {depositCompareResult.winner} (+{formatCurrency(depositCompareResult.diffAmount)} ETB | +{depositCompareResult.diffROI.toFixed(2)}% ROI)
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-3">
@@ -1708,6 +1720,13 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                                             )}
                                             <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase font-semibold">Total Value</span><span className="text-[10px] text-white font-mono font-bold">{formatCurrency(depositCompareResult.usdEndValueInUsd)} {selectedCurrency}</span></div>
                                             <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase font-semibold">Total (ETB)</span><span className={`text-[11px] font-black font-mono ${depositCompareResult.winner !== 'ETB' ? 'text-emerald-400' : 'text-neutral-400'}`}>{formatCurrency(depositCompareResult.usdEndValueInEtb)} ETB</span></div>
+                                            <div className="flex justify-between items-start">
+                                                <span className="text-[9px] text-emerald-400/90 font-bold uppercase text-left">Interest Gained</span>
+                                                <div className="text-right">
+                                                    <span className="text-[10px] text-emerald-400 font-mono font-bold">+{formatCurrency(depositCompareResult.usdEndValueInUsd - depositCompareResult.fxUnitsBought)} {selectedCurrency}</span>
+                                                    <div className="text-[8px] text-neutral-500 font-mono">≈ {formatCurrency((depositCompareResult.usdEndValueInUsd - depositCompareResult.fxUnitsBought) * depositCompareResult.fxEndRate)} ETB</div>
+                                                </div>
+                                            </div>
                                             
                                             <div className="flex flex-col gap-1 pt-1 border-t border-neutral-700/50 mt-1">
                                                 <div className="flex justify-between">
@@ -1743,6 +1762,7 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                                                 <div className="flex justify-between"><span className="text-[9px] text-red-400/90 font-bold uppercase">Tax Paid</span><span className="text-[10px] text-red-400 font-mono font-bold">-{formatCurrency(depositCompareResult.localResult.totalTaxPaid)} ETB</span></div>
                                             )}
                                             <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase font-semibold">Total Value</span><span className={`text-[11px] font-black font-mono ${depositCompareResult.winner === 'ETB' ? 'text-emerald-400' : 'text-neutral-400'}`}>{formatCurrency(depositCompareResult.etbEndValue)} ETB</span></div>
+                                            <div className="flex justify-between items-start"><span className="text-[9px] text-green-400/90 font-bold uppercase text-left">Interest Gained</span><span className="text-[10px] text-green-400 font-mono font-bold text-right">+{formatCurrency(depositCompareResult.etbProfit)} ETB</span></div>
                                             
                                             <div className="flex flex-col gap-1 pt-1 border-t border-neutral-700/50 mt-1">
                                                 <div className="flex justify-between">
@@ -1762,6 +1782,24 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                                             </div>
                                             <div className="flex justify-between pt-1 border-t border-neutral-700/50"><span className="text-[9px] text-neutral-500 uppercase">Profit</span><span className={`text-[10px] font-bold font-mono ${depositCompareResult.etbProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>{depositCompareResult.etbProfit >= 0 ? '+' : ''}{formatCurrency(depositCompareResult.etbProfit)} ETB</span></div>
                                             <div className="flex justify-between items-center"><span className="text-[9px] text-neutral-500 uppercase">ROI</span><span className={`text-[10px] font-bold font-mono ${depositCompareResult.etbROI >= 0 ? 'text-green-400' : 'text-red-400'}`}>{depositCompareResult.etbROI.toFixed(2)}%</span></div>
+                                        </div>
+                                    </div>
+
+                                    {/* Summary Card */}
+                                    <div className="col-span-2 rounded-lg p-2.5 border border-emerald-500/40 bg-emerald-900/20">
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-[10px] font-bold text-white uppercase tracking-wider">
+                                                {depositCompareResult.winner} Advantage
+                                            </span>
+                                            <span className="text-sm font-black font-mono text-emerald-400">
+                                                +{formatCurrency(depositCompareResult.diffAmount)} ETB
+                                            </span>
+                                        </div>
+                                        <div className="flex justify-between items-center mt-1.5 pt-1.5 border-t border-neutral-700/30">
+                                            <span className="text-[9px] text-neutral-500 uppercase">ROI Edge</span>
+                                            <span className="text-[10px] font-bold font-mono text-emerald-400">
+                                                {depositCompareResult.diffROI.toFixed(2)}%
+                                            </span>
                                         </div>
                                     </div>
                                 </div>
