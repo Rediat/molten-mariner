@@ -1,9 +1,13 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import dotenv from 'dotenv';
 
+// Load .env.local for local dev; on Vercel, env vars are injected automatically
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+dotenv.config({ path: path.join(__dirname, '../.env.local') });
+
 const DATA_FILE = path.join(__dirname, '../src/features/fxcompare/bankFxData.json');
 
 const targetCurrencies = [
@@ -15,8 +19,12 @@ const targetCurrencies = [
 async function syncBankFx() {
     console.log('Initiating bank FX exchange rates sync...');
     
-    // API key
-    const apiKey = '5f5e293d508364d65cc61cccecb3b3a5';
+    // API key — set via Vercel Environment Variables or .env.local
+    const apiKey = process.env.EXCHANGERATE_API_KEY;
+    if (!apiKey) {
+        console.error('Missing EXCHANGERATE_API_KEY. Set it in Vercel Environment Variables or .env.local');
+        process.exit(1);
+    }
     
     let existingData = { monthlyPrices: [] };
     if (fs.existsSync(DATA_FILE)) {
