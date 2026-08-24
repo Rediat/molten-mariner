@@ -865,7 +865,21 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                                 type="text"
                                 placeholder="Search..."
                                 value={currencySearch}
-                                onChange={(e) => setCurrencySearch(e.target.value)}
+                                onChange={(e) => {
+                                    const search = e.target.value;
+                                    setCurrencySearch(search);
+                                    if (search) {
+                                        const s = search.toLowerCase();
+                                        const filtered = currencies.filter(c => {
+                                            const fullName = CURRENCY_NAMES[c] || c;
+                                            return c.toLowerCase().includes(s) || fullName.toLowerCase().includes(s);
+                                        });
+                                        if (filtered.length > 0 && !filtered.includes(selectedCurrency)) {
+                                            setSelectedCurrency(filtered[0]);
+                                            handleClear();
+                                        }
+                                    }
+                                }}
                                 className="bg-neutral-900/50 border border-neutral-700 rounded px-1.5 py-0.5 text-[9px] text-white focus:outline-none focus:border-emerald-500 w-16"
                             />
                         </div>
@@ -896,11 +910,12 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
 
                         <select
                             value={selectedCurrency}
-                            onChange={(e) => setSelectedCurrency(e.target.value)}
+                            onChange={(e) => { setSelectedCurrency(e.target.value); setCurrencySearch(''); handleClear(); }}
                             className="w-full bg-neutral-900 border border-neutral-700 rounded-md text-white text-xs p-1.5 focus:outline-none focus:border-emerald-500"
                         >
                             {currencies
                                 .filter(c => {
+                                    if (c === selectedCurrency) return true;
                                     const fullName = CURRENCY_NAMES[c] || c;
                                     const s = currencySearch.toLowerCase();
                                     return c.toLowerCase().includes(s) || fullName.toLowerCase().includes(s);
@@ -1185,16 +1200,31 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                                         type="text"
                                         placeholder="Search..."
                                         value={currencySearch}
-                                        onChange={(e) => setCurrencySearch(e.target.value)}
+                                        onChange={(e) => {
+                                            const search = e.target.value;
+                                            setCurrencySearch(search);
+                                            if (search) {
+                                                const s = search.toLowerCase();
+                                                const filtered = currencies.filter(c => {
+                                                    const fullName = CURRENCY_NAMES[c] || c;
+                                                    return c.toLowerCase().includes(s) || fullName.toLowerCase().includes(s);
+                                                });
+                                                if (filtered.length > 0 && !filtered.includes(selectedCurrency)) {
+                                                    setSelectedCurrency(filtered[0]);
+                                                    handleClear();
+                                                }
+                                            }
+                                        }}
                                         className="bg-neutral-900/50 border border-neutral-700 rounded px-1.5 py-0.5 text-[9px] text-white focus:outline-none focus:border-emerald-500 w-16"
                                     />
                                     <select
                                         value={selectedCurrency}
-                                        onChange={(e) => { setSelectedCurrency(e.target.value); handleClear(); }}
+                                        onChange={(e) => { setSelectedCurrency(e.target.value); setCurrencySearch(''); handleClear(); }}
                                         className="bg-neutral-950 border border-neutral-700 rounded px-1.5 py-0.5 text-[10px] font-black text-emerald-400 uppercase focus:outline-none focus:border-emerald-500 cursor-pointer max-w-[120px] truncate"
                                     >
                                         {currencies
                                             .filter(c => {
+                                                if (c === selectedCurrency) return true;
                                                 const fullName = CURRENCY_NAMES[c] || c;
                                                 const s = currencySearch.toLowerCase();
                                                 return c.toLowerCase().includes(s) || fullName.toLowerCase().includes(s);
@@ -1719,24 +1749,24 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-3">
-                                    {/* USD/Foreign currency strategy card */}
-                                    <div className={`rounded-lg p-2.5 border ${depositCompareResult.winner === 'USD' || depositCompareResult.winner === 'BTC' || depositCompareResult.winner === 'XAU' || depositCompareResult.winner === depositCompareResult.currency ? 'border-emerald-500/40 bg-emerald-900/10' : 'border-neutral-800 bg-neutral-800/30'}`}>
-                                        <p className="text-[10px] font-bold text-emerald-400 uppercase text-center mb-2 tracking-wider">{selectedCurrency} Deposit ({foreignApr}% APR)</p>
+                                    {/* Foreign currency strategy card */}
+                                    <div className={`rounded-lg p-2.5 border ${depositCompareResult.winner === depositCompareResult.currency ? 'border-emerald-500/40 bg-emerald-900/10' : 'border-neutral-800 bg-neutral-800/30'}`}>
+                                        <p className="text-[10px] font-bold text-emerald-400 uppercase text-center mb-2 tracking-wider">{depositCompareResult.currency} Deposit ({foreignApr}% APR)</p>
                                         <div className="space-y-1.5">
-                                            <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase">Initial {selectedCurrency}</span><span className="text-[10px] text-white font-mono">{formatCurrency(depositCompareResult.fxUnitsBought)} {selectedCurrency}</span></div>
-                                            <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase">Final Balance</span><span className="text-[10px] text-white font-mono">{formatCurrency(depositCompareResult.foreignResult.finalBalance)} {selectedCurrency}</span></div>
+                                            <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase">Initial {depositCompareResult.currency}</span><span className="text-[10px] text-white font-mono">{formatCurrency(depositCompareResult.fxUnitsBought)} {depositCompareResult.currency}</span></div>
+                                            <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase">Final Balance</span><span className="text-[10px] text-white font-mono">{formatCurrency(depositCompareResult.foreignResult.finalBalance)} {depositCompareResult.currency}</span></div>
                                             {foreignReinvestRate < 100 && (
-                                                <div className="flex justify-between"><span className="text-[9px] text-amber-500/90 font-bold uppercase">Pocketed</span><span className="text-[10px] text-amber-400 font-mono font-bold">+{formatCurrency(depositCompareResult.foreignResult.pocketedValue)} {selectedCurrency}</span></div>
+                                                <div className="flex justify-between"><span className="text-[9px] text-amber-500/90 font-bold uppercase">Pocketed</span><span className="text-[10px] text-amber-400 font-mono font-bold">+{formatCurrency(depositCompareResult.foreignResult.pocketedValue)} {depositCompareResult.currency}</span></div>
                                             )}
                                             {foreignTaxRate > 0 && (
-                                                <div className="flex justify-between"><span className="text-[9px] text-red-400/90 font-bold uppercase">Tax Paid</span><span className="text-[10px] text-red-400 font-mono font-bold">-{formatCurrency(depositCompareResult.foreignResult.totalTaxPaid)} {selectedCurrency}</span></div>
+                                                <div className="flex justify-between"><span className="text-[9px] text-red-400/90 font-bold uppercase">Tax Paid</span><span className="text-[10px] text-red-400 font-mono font-bold">-{formatCurrency(depositCompareResult.foreignResult.totalTaxPaid)} {depositCompareResult.currency}</span></div>
                                             )}
-                                            <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase font-semibold">Total Value</span><span className="text-[10px] text-white font-mono font-bold">{formatCurrency(depositCompareResult.usdEndValueInUsd)} {selectedCurrency}</span></div>
+                                            <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase font-semibold">Total Value</span><span className="text-[10px] text-white font-mono font-bold">{formatCurrency(depositCompareResult.usdEndValueInUsd)} {depositCompareResult.currency}</span></div>
                                             <div className="flex justify-between"><span className="text-[9px] text-neutral-500 uppercase font-semibold">Total (ETB)</span><span className={`text-[11px] font-black font-mono ${depositCompareResult.winner !== 'ETB' ? 'text-emerald-400' : 'text-neutral-400'}`}>{formatCurrency(depositCompareResult.usdEndValueInEtb)} ETB</span></div>
                                             <div className="flex justify-between items-start">
                                                 <span className="text-[9px] text-emerald-400/90 font-bold uppercase text-left">Interest Gained</span>
                                                 <div className="text-right">
-                                                    <span className="text-[10px] text-emerald-400 font-mono font-bold">+{formatCurrency(depositCompareResult.usdEndValueInUsd - depositCompareResult.fxUnitsBought)} {selectedCurrency}</span>
+                                                    <span className="text-[10px] text-emerald-400 font-mono font-bold">+{formatCurrency(depositCompareResult.usdEndValueInUsd - depositCompareResult.fxUnitsBought)} {depositCompareResult.currency}</span>
                                                     <div className="text-[8px] text-neutral-500 font-mono">≈ {formatCurrency((depositCompareResult.usdEndValueInUsd - depositCompareResult.fxUnitsBought) * depositCompareResult.fxEndRate)} ETB</div>
                                                 </div>
                                             </div>
