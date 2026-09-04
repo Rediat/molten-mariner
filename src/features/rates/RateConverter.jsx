@@ -127,65 +127,49 @@ const RateConverter = ({ toggleHelp, toggleSettings }) => {
 
             <div className="flex-1 flex flex-col min-h-0 space-y-2 overflow-y-auto custom-scrollbar pb-1">
                 <div className="bg-neutral-800/50 rounded-xl p-2.5 shrink-0 space-y-2">
-                    <div className="flex gap-2 w-full">
-                        <div className="group relative bg-neutral-800/40 rounded-xl p-2.5 transition-all duration-300 border border-neutral-700/50 hover:border-neutral-600 flex-1 min-w-0">
-                            <div className="flex justify-between items-center gap-2">
-                                <div className="flex flex-col items-start text-left min-w-0">
-                                    <label 
-                                        onClick={focusNominal}
-                                        className="text-xs font-bold text-neutral-300 cursor-pointer hover:text-white transition-colors whitespace-nowrap"
-                                        title="Click to Clear"
-                                    >
-                                        Nominal (%)
-                                    </label>
-                                    <span className="uppercase tracking-tighter text-neutral-500 font-bold truncate w-full text-[8px]">
-                                        Annual Rate (APR)
-                                    </span>
-                                </div>
-                                <div className="relative flex-1 flex items-center justify-end min-w-0">
-                                    <FormattedNumberInput 
-                                        ref={nominalRef}
-                                        value={nominal} 
-                                        onChange={(e) => {
-                                            const val = e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0);
-                                            setNominal(val);
-                                            clearResults();
-                                        }} 
-                                        className="w-full bg-transparent text-right font-mono text-white focus:outline-none text-base font-bold placeholder-neutral-600" 
-                                        placeholder="0"
-                                    />
-                                </div>
-                            </div>
+                    <div className="grid grid-cols-2 gap-2 text-left">
+                        <div className="flex flex-col">
+                            <label 
+                                onClick={focusNominal}
+                                className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold mb-1 cursor-pointer hover:text-primary-400 transition-colors select-none"
+                                title="Click to Clear"
+                            >
+                                Nominal (%)
+                            </label>
+                            <FormattedNumberInput 
+                                ref={nominalRef}
+                                value={nominal} 
+                                onChange={(e) => {
+                                    const val = e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0);
+                                    setNominal(val);
+                                    clearResults();
+                                }} 
+                                decimals={2}
+                                className="bg-neutral-900 border border-neutral-700 rounded-md text-white text-[11px] p-1.5 focus:outline-none focus:border-primary-500 w-full font-mono text-right" 
+                                placeholder="0"
+                            />
                         </div>
 
-                        <div className="group relative bg-neutral-800/40 rounded-xl p-2.5 transition-all duration-300 border border-neutral-700/50 hover:border-neutral-600 flex-1 min-w-0">
-                            <div className="flex justify-between items-center gap-2">
-                                <div className="flex flex-col items-start text-left min-w-0">
-                                    <label 
-                                        onClick={focusDeduction}
-                                        className="text-xs font-bold text-neutral-300 cursor-pointer hover:text-white transition-colors whitespace-nowrap"
-                                        title="Click to Clear"
-                                    >
-                                        Deduction %
-                                    </label>
-                                    <span className="uppercase tracking-tighter text-neutral-500 font-bold truncate w-full text-[8px]">
-                                        Deduction / Tax Rate
-                                    </span>
-                                </div>
-                                <div className="relative flex-1 flex items-center justify-end min-w-0">
-                                    <FormattedNumberInput 
-                                        ref={deductionRef}
-                                        value={deduction} 
-                                        onChange={(e) => {
-                                            const val = e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0);
-                                            setDeduction(val);
-                                            clearResults();
-                                        }} 
-                                        className="w-full bg-transparent text-right font-mono text-white focus:outline-none text-base font-bold placeholder-neutral-600" 
-                                        placeholder="0"
-                                    />
-                                </div>
-                            </div>
+                        <div className="flex flex-col">
+                            <label 
+                                onClick={focusDeduction}
+                                className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold mb-1 cursor-pointer hover:text-primary-400 transition-colors select-none"
+                                title="Click to Clear"
+                            >
+                                Deduction (%)
+                            </label>
+                            <FormattedNumberInput 
+                                ref={deductionRef}
+                                value={deduction} 
+                                onChange={(e) => {
+                                    const val = e.target.value === '' ? null : (parseFloat(e.target.value.replace(/,/g, '')) || 0);
+                                    setDeduction(val);
+                                    clearResults();
+                                }} 
+                                decimals={2}
+                                className="bg-neutral-900 border border-neutral-700 rounded-md text-white text-[11px] p-1.5 focus:outline-none focus:border-primary-500 w-full font-mono text-right" 
+                                placeholder="0"
+                            />
                         </div>
                     </div>
 
