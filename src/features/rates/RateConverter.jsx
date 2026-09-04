@@ -20,9 +20,9 @@ const FREQUENCIES = [
 
 const RateConverter = ({ toggleHelp, toggleSettings }) => {
     const { addToHistory } = useHistory();
-    const [nominal, setNominal] = useState(5);
+    const [nominal, setNominal] = useState(40);
     const [deduction, setDeduction] = useState(10);
-    const [compounding, setCompounding] = useState(12);
+    const [compounding, setCompounding] = useState(365);
     const [result, setResult] = useState(null);
     const [netResult, setNetResult] = useState(null);
     const [doublingTime, setDoublingTime] = useState(null);
@@ -37,7 +37,7 @@ const RateConverter = ({ toggleHelp, toggleSettings }) => {
 
     // APR to Periodic settings: Amount and View Type ('rate' vs 'amount')
     const [amount, setAmount] = useState(100000);
-    const [periodicViewType, setPeriodicViewType] = useState('rate');
+    const [periodicViewType, setPeriodicViewType] = useState('amount');
 
     // Refs for input focus
     const nominalRef = useRef(null);
