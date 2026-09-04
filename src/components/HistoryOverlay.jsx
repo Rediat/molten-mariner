@@ -93,6 +93,13 @@ const HistoryOverlay = ({ isOpen, onClose, module, title }) => {
                                         if (k === 'tenure') label = 'Tenor (Days)';
                                         if (k === 'securityType') label = 'Security';
                                         if (k === 'transactionType') label = 'Action';
+                                        if (k === 'deduction' || k === 'deductionPercent') label = 'Deduction (%)';
+                                        if (k === 'netNominal') label = 'Net APR (%)';
+                                        if (k === 'netEAR') label = 'Net EAR (%)';
+                                        if (k === 'nominal') label = 'Nominal (%)';
+                                        if (k === 'amount') label = 'Principal';
+                                        if (k === 'doublingTime') label = 'Doubling';
+                                        if (k === 'netDoublingTime') label = 'Net Doubling';
                                         
                                         return (
                                             <div key={k} className="flex justify-between gap-2">

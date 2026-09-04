@@ -625,49 +625,56 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                 onToggle={handleToggle}
             >
                 <p>
-                    Convert between nominal (APR) and effective annual rates. See how different
-                    compounding frequencies affect your actual return.
+                    Convert between nominal (APR) and effective annual rates (EAR) with deduction/tax withholding
+                    adjustments. See periodic rate and cash earnings breakdowns, compare Gross vs Net returns,
+                    and compute compound doubling horizons.
                 </p>
 
                 <div className="pt-2">
                     <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Inputs:</p>
                     <FieldList fields={[
-                        { name: 'Nominal Rate', description: 'The stated annual rate (APR)' },
-                        { name: 'Compounding', description: 'How often interest is compounded per year' }
+                        { name: 'Nominal Rate', description: 'The stated annual percentage rate (APR). Click the label to clear.' },
+                        { name: 'Deduction %', description: 'Tax or withholding deduction percentage (default 10%, identical to the TVM tab). Click label to clear.' },
+                        { name: 'Compounding', description: 'How often interest is compounded per year (Annually, Semi-Annually, Quarterly, Monthly, Semi-Monthly, Bi-Weekly, Weekly, Daily)' }
                     ]} />
                 </div>
 
                 <div className="pt-2">
                     <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Results:</p>
                     <FieldList fields={[
-                        { name: 'EAR', description: 'Effective Annual Rate - the actual annual return with compounding' },
-                        { name: 'Period Rates', description: 'Breakdown of rates for each compounding frequency' },
-                        { name: 'Time to Double', description: 'How long until your investment doubles at this rate' }
+                        { name: 'Gross & Net EAR', description: 'Effective Annual Rate showing both Gross EAR (at stated APR) and Net EAR (after deduction) with respective APR baselines' },
+                        { name: 'Periodic Breakdown', description: 'Detailed breakdown across 8 compounding frequencies showing Gross and Net values' },
+                        { name: 'Investment Doubling Time', description: 'Compound doubling time displayed in Years, Months, and Days at both Gross Rate and Net Rate' }
                     ]} />
                 </div>
 
                 <div className="pt-2">
                     <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Period Rates Mode Toggle:</p>
                     <FieldList fields={[
-                        { name: 'APR → Periodic', description: 'Breaks down your nominal rate into periodic rates (daily, weekly, monthly, etc.)' },
-                        { name: 'Periodic → APR', description: 'Enter a periodic rate (e.g., 2% daily) and see the equivalent Simple APR and Compound APY' }
+                        { name: 'APR → Periodic', description: 'Breaks down your nominal rate across frequencies. Includes a Principal Amount field to view periodic cash earnings, and a toggle between "Rate %" and "Interest" (Amount) in both Gross and Net.' },
+                        { name: 'Periodic → APR', description: 'Enter a periodic rate (e.g., 2% daily) to compute the equivalent Simple APR and Compound APY in both Gross and Net.' }
                     ]} />
                 </div>
 
                 <InfoBox type="formula">
-                    <strong>EAR = (1 + r/n)^n - 1</strong>
-                    <br />where r = nominal rate, n = compounding periods per year
+                    <strong>Formulas:</strong>
+                    <br />• <strong>Gross EAR:</strong> (1 + r/n)^n - 1
+                    <br />• <strong>Net Nominal Rate:</strong> r_net = r × (1 - Deduction/100)
+                    <br />• <strong>Net EAR:</strong> (1 + r_net/n)^n - 1
+                    <br />• <strong>Periodic Interest:</strong> Principal × (Periodic Rate / 100)
+                    <br />• <strong>Net Periodic Interest:</strong> Principal × (Net Periodic Rate / 100)
                 </InfoBox>
 
                 <InfoBox type="formula">
                     <strong>Periodic → APR Formulas:</strong>
                     <br />• Simple APR = Periodic Rate × Periods per Year
                     <br />• Compound APY = (1 + Periodic Rate)^Periods - 1
+                    <br />• Net APR / APY applies the deduction percentage to the periodic rate
                 </InfoBox>
 
                 <InfoBox type="tip">
                     <strong>Rule of 72:</strong> A quick estimate for doubling time is 72 ÷ interest rate.
-                    For example, at 8%, money doubles in approximately 72 ÷ 8 = 9 years.
+                    For exact compounding, the app solves t = ln(2) ÷ [n × ln(1 + r/n)] for both Gross and Net rates.
                 </InfoBox>
             </HelpSection>
 
