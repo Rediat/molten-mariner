@@ -68,24 +68,6 @@ const RateConverter = ({ toggleHelp, toggleSettings }) => {
         return { years, months, days };
     };
 
-    const formatDoublingText = (dt) => {
-        if (!dt) return '';
-        const parts = [];
-        if (dt.years) parts.push(`${dt.years} ${dt.years === 1 ? 'Year' : 'Years'}`);
-        if (dt.months) parts.push(`${dt.months} ${dt.months === 1 ? 'Month' : 'Months'}`);
-        
-        const dayStr = dt.days ? `${dt.days} ${dt.days === 1 ? 'Day' : 'Days'}` : '';
-        
-        if (parts.length > 0 && dayStr) {
-            return `${parts.join(' ')} and ${dayStr}`;
-        } else if (parts.length > 0) {
-            return parts.join(' and ');
-        } else if (dayStr) {
-            return dayStr;
-        }
-        return '0 Days';
-    };
-
     const handleCalculate = () => {
         const nom = nominal || 0;
         const ded = deduction || 0;
@@ -257,30 +239,39 @@ const RateConverter = ({ toggleHelp, toggleSettings }) => {
                                     <div className="text-2xl font-bold text-white font-mono text-center">{result.toFixed(4)}%</div>
                                 )}
 
-                                {/* Investment Doubling Time as text information below Effective Interest Rate */}
+                                {/* Ultra-Compact Investment Doubling Time Table */}
                                 {doublingTime && (
-                                    <div className="mt-2 pt-2 border-t border-neutral-700/50 text-left">
-                                        <div className="text-[9px] font-bold text-primary-400 uppercase tracking-wider mb-1">
-                                            Investment Doubling Time
-                                        </div>
-                                        {deduction > 0 ? (
-                                            <div className="space-y-1 font-mono text-xs">
-                                                <div className="flex justify-between items-center gap-2">
-                                                    <span className="text-[10px] text-neutral-400 font-sans font-bold uppercase tracking-tight">Gross:</span>
-                                                    <span className="text-xs text-white font-medium">{formatDoublingText(doublingTime)}</span>
-                                                </div>
-                                                {netDoublingTime && (
-                                                    <div className="flex justify-between items-center gap-2">
-                                                        <span className="text-[10px] text-emerald-400 font-sans font-bold uppercase tracking-tight">Net:</span>
-                                                        <span className="text-xs text-emerald-400 font-medium">{formatDoublingText(netDoublingTime)}</span>
-                                                    </div>
+                                    <div className="mt-1.5 py-1 border-y border-neutral-700/50">
+                                        <table className="w-full text-[11px] font-mono leading-tight table-fixed">
+                                            <thead>
+                                                <tr className="border-b border-neutral-800/80 text-[8px] font-bold uppercase tracking-wider text-neutral-500 font-sans">
+                                                    <th className="text-left py-0.5 font-bold text-primary-400/90 truncate">Investment Doubling Time</th>
+                                                    <th className="w-14 py-0.5 text-center font-bold">Year(s)</th>
+                                                    <th className="w-14 py-0.5 text-center font-bold">Month(s)</th>
+                                                    <th className="w-14 py-0.5 text-center font-bold">Day(s)</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-neutral-800/30">
+                                                <tr className="text-white">
+                                                    <td className="text-left py-0.5 font-sans text-[9px] font-bold text-neutral-400 truncate">
+                                                        {deduction > 0 ? 'Gross' : 'Time'}
+                                                    </td>
+                                                    <td className="w-14 text-center py-0.5 font-bold">{doublingTime.years}</td>
+                                                    <td className="w-14 text-center py-0.5 font-bold">{doublingTime.months}</td>
+                                                    <td className="w-14 text-center py-0.5 font-bold">{doublingTime.days}</td>
+                                                </tr>
+                                                {deduction > 0 && netDoublingTime && (
+                                                    <tr className="text-emerald-400">
+                                                        <td className="text-left py-0.5 font-sans text-[9px] font-bold text-emerald-400 truncate">
+                                                            Net
+                                                        </td>
+                                                        <td className="w-14 text-center py-0.5 font-bold">{netDoublingTime.years}</td>
+                                                        <td className="w-14 text-center py-0.5 font-bold">{netDoublingTime.months}</td>
+                                                        <td className="w-14 text-center py-0.5 font-bold">{netDoublingTime.days}</td>
+                                                    </tr>
                                                 )}
-                                            </div>
-                                        ) : (
-                                            <div className="text-xs font-mono text-white font-medium">
-                                                {formatDoublingText(doublingTime)}
-                                            </div>
-                                        )}
+                                            </tbody>
+                                        </table>
                                     </div>
                                 )}
                             </div>
