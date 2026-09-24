@@ -922,7 +922,18 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                                     <li><strong>T-Bill:</strong> Compares loan cost against a realistic bi-weekly rolling T-Bill reinvestment strategy following the bi-weekly NBE schedule.</li>
                                     <li><strong>Deposits:</strong> Compares loan cost against fixed retail bank deposits (182-day or 365-day terms). The 1-year deposit term uses a standard <strong>365-day year</strong> calculation rather than 364 days to match standard banking practices.</li>
                                     <li><strong>Deposit Interest & Tax Options:</strong> When Time Deposits is selected, you can customize the interest structure. Toggle between <strong>Simple</strong> and <strong>Compounding</strong> interest, configure <strong>Compounds</strong> frequency (from At Maturity to Daily), and specify a <strong>Deduction (%)</strong> rate.</li>
-                                    <li><strong>Reinvestment Rate:</strong> You can configure the percentage of returns (interest/profits) to be reinvested into subsequent periods. Pocketed profits accumulate separately as cash and are combined with the matured principal to compute the final net return.</li>
+                                    <li><strong>Reinvestment Strategy:</strong> Configure how returns (interest/profits) are handled. You can choose between two main modes:
+                                        <ul className="list-disc pl-5 mt-1 space-y-1 text-neutral-400 text-[10px]">
+                                            <li><strong>% Rate:</strong> Specify a percentage (0% to 100%) of profit to reinvest. Evaluated per compounding period for deposits (or per round for T-Bills).</li>
+                                            <li><strong>Fixed Amount:</strong> Provides a dedicated toggle between:
+                                                <ul className="list-disc pl-4 mt-0.5 space-y-0.5">
+                                                    <li><em>Reinvest Amount:</em> Enter a fixed target to reinvest each period/round. Any profit above this target is pocketed.</li>
+                                                    <li><em>Deduction:</em> Enter a fixed deduction taken from profit each period/round (pocketed as cash). The default is 100% profit reinvested minus this deduction.</li>
+                                                </ul>
+                                            </li>
+                                            <li><strong>Per-Compounding-Period Compounding:</strong> For deposits, reinvestment and pocketed amounts are calculated at every compounding period (e.g. Monthly, Daily). Pocketed cash leaves the deposit and does not compound, while only the reinvested portion compounds into subsequent periods. Pocketed profits accumulate separately as cash and are combined with the matured principal to compute the final net return.</li>
+                                        </ul>
+                                    </li>
                                 </ul>
                             </div>
                         </li>
@@ -955,7 +966,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                         { name: 'Currency / Asset', description: 'Choose between 20+ Foreign Currencies, 8 Metals/Commodities (Gold, Silver, Platinum, Copper, Tin, Zinc, Lead, Nickel), or Bitcoin (Crypto). Hidden in Leverage Mode.' },
                         { name: 'Tenure Strategy', description: '(Rolling & Leverage Modes) Choose whether to roll 28D, 91D, 182D, or 364D bills' },
                         { name: 'Loan Rate & Term', description: '(Leverage Mode only) Annual interest rate and duration of the loan in years.' },
-                        { name: 'Reinvestment Rate (%)', description: '(Leverage Mode only) The percentage of returns from each round to reinvest. The slider is accompanied by arrow buttons to step by ±5%, and a text field for precise values.' },
+                        { name: 'Reinvestment Strategy', description: '(Leverage Mode only) Choose between % Rate (0-100% with slider) and Fixed Amount. In Fixed Amount, toggle between "Reinvest Amount" (fixed amount reinvested) and "Deduction" (fixed deduction pocketed from 100% profit). For deposits, applies per compounding period.' },
                         { name: 'Rate Source', description: '(Deposit & Compare All Modes) Select whether to use unofficial parallel (Black) market rates or official bank exchange rates.' },
                         { name: 'Deposit Settings', description: '(Leverage Deposit only) Configure Interest Type (Simple vs Compounding), Compounds frequency, and Deduction (%) rate.' }
                     ]} />
@@ -967,7 +978,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                         { name: 'Winner Badge', description: 'Identifies which strategy (T-Bill or Asset) yielded higher profit over the horizon' },
                         { name: 'End Value', description: 'The final ETB value received (compounded in Rolling mode). In Leverage mode, this includes the final matured investment balance plus all accumulated pocketed cash.' },
                         { name: 'Break-even Rate', description: 'The critical rate where strategies yield zero net advantage. In Rolling mode, it shows the asset price required to match T-Bills; in Leverage mode, it shows the T-Bill yield required to cover loan costs.' },
-                        { name: 'Strategy Breakdown', description: 'A detailed log showing the Auction Date, Maturity, Yield, Quantity, Profit (Net Interest for Deposits), and Leftover Cash for every reinvestment round. When the Reinvestment Rate is below 100%, each round also displays the exact breakdown of Reinvested and Pocketed cash. If a Deduction is applied to Deposits, it also breaks down each round\'s Gross Interest and Tax Paid.' }
+                        { name: 'Strategy Breakdown', description: 'A detailed log showing the Auction Date, Maturity, Yield, Quantity, Profit (Net Interest for Deposits), and Leftover Cash for every reinvestment round. Displays the exact breakdown of Reinvested, Deduction, and Pocketed cash. If a Deduction is applied to Deposits, it also breaks down each round\'s Gross Interest and Tax Paid.' }
                     ]} />
                 </div>
 
