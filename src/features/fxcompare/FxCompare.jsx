@@ -114,7 +114,7 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
     const [resultData, setResultData] = useState(null);
     const [showExplanation, setShowExplanation] = useState(false);
     const [mode, setMode] = useState('leverage'); // 'leverage' or 'rolling' or 'single' or 'deposit'
-    const [selectedTenure, setSelectedTenure] = useState(365);
+    const [selectedTenure, setSelectedTenure] = useState('full');
     const [rollingResult, setRollingResult] = useState(null);
     const [leverageResult, setLeverageResult] = useState(null);
     const [depositCompareResult, setDepositCompareResult] = useState(null);
@@ -176,6 +176,7 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
     const [depositInterestType, setDepositInterestType] = useState('compounding'); // 'compounding' or 'simple'
     const [depositCompoundingFreq, setDepositCompoundingFreq] = useState(0); // 0 = At Maturity
     const [depositTaxRate, setDepositTaxRate] = useState(10);
+    const [depositPayoutTiming, setDepositPayoutTiming] = useState('maturity'); // 'maturity' | 'compounding'
     
     // Refs for input focus
     const budgetRef = useRef(null);
@@ -268,7 +269,8 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                 reinvestmentType,
                 reinvestmentFixedAmount || 0,
                 reinvestmentDeduction || 0,
-                reinvestmentFixedSubMode
+                reinvestmentFixedSubMode,
+                depositPayoutTiming
             );
             setLeverageResult(res);
         } else if (mode === 'deposit') {
@@ -358,6 +360,7 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
             rows.push(
                 ['Interest Type', depositInterestType],
                 ['Compounding Frequency', depositCompoundingFreq === 0 ? 'At Maturity' : `${depositCompoundingFreq}x/year`],
+                ['Payout / Pocketing Timing', (leverageResult.depositPayoutTiming || depositPayoutTiming) === 'maturity' ? 'End of Term' : 'Each Compounding Period'],
                 ['Tax / Deduction Rate', `${depositTaxRate}%`],
                 ['Total Tax Paid', formatCurrency(leverageResult.accumulatedTaxPaid || 0)]
             );
@@ -427,6 +430,7 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
         if (!leverageResult || !leverageResult.rounds) return;
         
         const getPeriodLabel = (days) => {
+            if (days === 'full') return `Full Term (${loanYears} Years)`;
             if (days === 91) return "3 Months";
             if (days === 182) return "6 Months";
             if (days === 364 || days === 365) return "1 Year";
@@ -442,7 +446,7 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
 
         if (leverageAsset === 'deposit') {
             summaryLines.push(
-                `Type: ${depositInterestType.toUpperCase()} | Compounding: ${depositCompoundingFreq === 0 ? 'At Maturity' : `${depositCompoundingFreq}x/year`} | Tax Rate: ${depositTaxRate}% (Total Paid: ${formatCurrency(leverageResult.accumulatedTaxPaid || 0)})`
+                `Type: ${depositInterestType.toUpperCase()} | Compounding: ${depositCompoundingFreq === 0 ? 'At Maturity' : `${depositCompoundingFreq}x/year`} | Payout: ${(leverageResult.depositPayoutTiming || depositPayoutTiming) === 'maturity' ? 'End of Term' : 'Each Compounding'} | Tax Rate: ${depositTaxRate}% (Total Paid: ${formatCurrency(leverageResult.accumulatedTaxPaid || 0)})`
             );
         }
 
@@ -530,6 +534,7 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
             data.push(
                 ["Interest Type", depositInterestType],
                 ["Compounding Frequency", depositCompoundingFreq === 0 ? "At Maturity" : `${depositCompoundingFreq}x/year`],
+                ["Payout / Pocketing Timing", (leverageResult.depositPayoutTiming || depositPayoutTiming) === 'maturity' ? "End of Term" : "Each Compounding Period"],
                 ["Tax / Deduction Rate", `${depositTaxRate}%`],
                 ["Total Tax Paid", leverageResult.accumulatedTaxPaid || 0]
             );
@@ -621,7 +626,7 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                         onClick={() => {
                             setMode('leverage');
                             if (leverageAsset === 'deposit') {
-                                setSelectedTenure(365);
+                                setSelectedTenure('full');
                             } else {
                                 setSelectedTenure(364);
                             }
@@ -634,7 +639,7 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                     <button
                         onClick={() => {
                             setMode('rolling');
-                            if (selectedTenure === 365) {
+                            if (selectedTenure === 365 || selectedTenure === 'full') {
                                 setSelectedTenure(364);
                             }
                             handleClear();
@@ -646,7 +651,7 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                     <button
                         onClick={() => {
                             setMode('single');
-                            if (selectedTenure === 365) {
+                            if (selectedTenure === 365 || selectedTenure === 'full') {
                                 setSelectedTenure(364);
                             }
                             handleClear();
@@ -1070,104 +1075,166 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                                     </p>
                                     {reinvestmentType === 'percentage' ? (
                                         <p className="text-neutral-400 leading-relaxed text-[10px]">
-                                            <span className="text-white font-medium">{reinvestmentPercentage}%</span> of net profit is reinvested into principal each {leverageAsset === 'deposit' ? 'compounding period' : 'round'}, while <span className="text-white font-medium">{100 - reinvestmentPercentage}%</span> is pocketed as cash.
+                                            <span className="text-white font-medium">{reinvestmentPercentage}%</span> of net profit is reinvested into principal each {leverageAsset === 'deposit' ? (depositPayoutTiming === 'maturity' ? 'term maturity' : 'compounding period') : 'round'}, while <span className="text-white font-medium">{100 - reinvestmentPercentage}%</span> is pocketed as cash.
                                         </p>
                                     ) : reinvestmentFixedSubMode === 'reinvest' ? (
                                         <p className="text-neutral-400 leading-relaxed text-[10px]">
-                                            Reinvests up to <span className="text-emerald-400 font-bold font-mono">{formatCurrency(reinvestmentFixedAmount)}</span> per {leverageAsset === 'deposit' ? 'compounding period' : 'round'}. Any profit above this target is pocketed as cash.
+                                            Reinvests up to <span className="text-emerald-400 font-bold font-mono">{formatCurrency(reinvestmentFixedAmount)}</span> per {leverageAsset === 'deposit' ? (depositPayoutTiming === 'maturity' ? 'term maturity' : 'compounding period') : 'round'}. Any profit above this target is pocketed as cash.
                                         </p>
                                     ) : (
                                         <p className="text-neutral-400 leading-relaxed text-[10px]">
-                                            100% of profit is reinvested into principal, minus <span className="text-red-400 font-bold font-mono">-{formatCurrency(reinvestmentDeduction)}</span> deducted and pocketed as cash each {leverageAsset === 'deposit' ? 'compounding period' : 'round'}.
+                                            100% of profit is reinvested into principal, minus <span className="text-red-400 font-bold font-mono">-{formatCurrency(reinvestmentDeduction)}</span> deducted and pocketed as cash each {leverageAsset === 'deposit' ? (depositPayoutTiming === 'maturity' ? 'term maturity' : 'compounding period') : 'round'}.
                                         </p>
                                     )}
                                 </div>
                             )}
 
                             {reinvestmentType === 'percentage' ? (
-                                <div className="flex items-center gap-2 mt-1">
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setReinvestmentPercentage(prev => {
-                                                const newVal = Math.max(0, prev - 5);
-                                                return newVal;
-                                            });
-                                            handleClear();
-                                        }}
-                                        className="h-6 p-1 rounded bg-neutral-900 hover:bg-neutral-800 text-neutral-400 hover:text-white border border-neutral-700 transition-colors flex items-center justify-center"
-                                        title="Decrease by 5%"
-                                    >
-                                        <ChevronLeft className="w-3.5 h-3.5" />
-                                    </button>
-                                    <input
-                                        type="range"
-                                        min="0"
-                                        max="100"
-                                        step="5"
-                                        value={reinvestmentPercentage}
-                                        onChange={(e) => {
-                                            setReinvestmentPercentage(parseFloat(e.target.value));
-                                            handleClear();
-                                        }}
-                                        className="flex-1 accent-emerald-500 h-1 bg-neutral-900 rounded-lg appearance-none cursor-pointer"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setReinvestmentPercentage(prev => {
-                                                const newVal = Math.min(100, prev + 5);
-                                                return newVal;
-                                            });
-                                            handleClear();
-                                        }}
-                                        className="h-6 p-1 rounded bg-neutral-900 hover:bg-neutral-800 text-neutral-400 hover:text-white border border-neutral-700 transition-colors flex items-center justify-center"
-                                        title="Increase by 5%"
-                                    >
-                                        <ChevronRight className="w-3.5 h-3.5" />
-                                    </button>
-                                    <FormattedNumberInput
-                                        value={reinvestmentPercentage}
-                                        onChange={(e) => {
-                                            let val = parseFloat(e.target.value.replace(/,/g, ''));
-                                            if (isNaN(val)) val = 0;
-                                            if (val < 0) val = 0;
-                                            if (val > 100) val = 100;
-                                            setReinvestmentPercentage(val);
-                                            handleClear();
-                                        }}
-                                        decimals={0}
-                                        className="bg-neutral-900 border border-neutral-700 rounded-md text-white text-[11px] h-6 focus:outline-none focus:border-emerald-500 w-16 shrink-0 font-mono text-center"
-                                    />
+                                <div className="flex items-center justify-between gap-2 mt-1">
+                                    <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setReinvestmentPercentage(prev => Math.max(0, prev - 5));
+                                                handleClear();
+                                            }}
+                                            className="h-6 w-5 p-0.5 rounded bg-neutral-900 hover:bg-neutral-800 text-neutral-400 hover:text-white border border-neutral-700 transition-colors flex items-center justify-center shrink-0"
+                                            title="Decrease by 5%"
+                                        >
+                                            <ChevronLeft className="w-3 h-3" />
+                                        </button>
+                                        <input
+                                            type="range"
+                                            min="0"
+                                            max="100"
+                                            step="5"
+                                            value={reinvestmentPercentage}
+                                            onChange={(e) => {
+                                                setReinvestmentPercentage(parseFloat(e.target.value));
+                                                handleClear();
+                                            }}
+                                            className="flex-1 min-w-[60px] max-w-[110px] accent-emerald-500 h-1 bg-neutral-900 rounded-lg appearance-none cursor-pointer"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setReinvestmentPercentage(prev => Math.min(100, prev + 5));
+                                                handleClear();
+                                            }}
+                                            className="h-6 w-5 p-0.5 rounded bg-neutral-900 hover:bg-neutral-800 text-neutral-400 hover:text-white border border-neutral-700 transition-colors flex items-center justify-center shrink-0"
+                                            title="Increase by 5%"
+                                        >
+                                            <ChevronRight className="w-3 h-3" />
+                                        </button>
+                                        <FormattedNumberInput
+                                            value={reinvestmentPercentage}
+                                            onChange={(e) => {
+                                                let val = parseFloat(e.target.value.replace(/,/g, ''));
+                                                if (isNaN(val)) val = 0;
+                                                if (val < 0) val = 0;
+                                                if (val > 100) val = 100;
+                                                setReinvestmentPercentage(val);
+                                                handleClear();
+                                            }}
+                                            decimals={0}
+                                            className="bg-neutral-900 border border-neutral-700 rounded-md text-white text-[11px] h-6 focus:outline-none focus:border-emerald-500 w-12 shrink-0 font-mono text-center"
+                                        />
+                                    </div>
+
+                                    {/* Payout / Pocketing Toggle Tablet Button (when deposit) */}
+                                    {leverageAsset === 'deposit' && (
+                                        <div className="flex bg-neutral-900/90 rounded-md p-0.5 ring-1 ring-neutral-700/60 shrink-0">
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    if (depositPayoutTiming !== 'maturity') {
+                                                        setDepositPayoutTiming('maturity');
+                                                        handleClear();
+                                                    }
+                                                }}
+                                                className={`px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded transition-all ${depositPayoutTiming === 'maturity' ? 'bg-emerald-600/25 text-emerald-400 ring-1 ring-emerald-500/40' : 'text-neutral-500 hover:text-neutral-300'}`}
+                                                title="Pocket profit at the end of each contract term / round"
+                                            >
+                                                End of Term
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    if (depositPayoutTiming !== 'compounding') {
+                                                        setDepositPayoutTiming('compounding');
+                                                        handleClear();
+                                                    }
+                                                }}
+                                                className={`px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded transition-all ${depositPayoutTiming === 'compounding' ? 'bg-emerald-600/25 text-emerald-400 ring-1 ring-emerald-500/40' : 'text-neutral-500 hover:text-neutral-300'}`}
+                                                title="Pocket profit on each compounding period (e.g. daily/monthly)"
+                                            >
+                                                Compounding
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                             ) : (
                                 <div className="space-y-1.5 mt-1">
-                                    {/* Sub-toggle between Reinvest Amount and Deduction */}
-                                    <div className="flex bg-neutral-900/90 rounded-md p-0.5 ring-1 ring-neutral-700/60 w-fit">
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                if (reinvestmentFixedSubMode !== 'reinvest') {
-                                                    setReinvestmentFixedSubMode('reinvest');
-                                                    handleClear();
-                                                }
-                                            }}
-                                            className={`px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded transition-all ${reinvestmentFixedSubMode === 'reinvest' ? 'bg-emerald-600/25 text-emerald-400 ring-1 ring-emerald-500/40' : 'text-neutral-500 hover:text-neutral-300'}`}
-                                        >
-                                            Reinvest Amount
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                if (reinvestmentFixedSubMode !== 'deduction') {
-                                                    setReinvestmentFixedSubMode('deduction');
-                                                    handleClear();
-                                                }
-                                            }}
-                                            className={`px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded transition-all ${reinvestmentFixedSubMode === 'deduction' ? 'bg-emerald-600/25 text-emerald-400 ring-1 ring-emerald-500/40' : 'text-neutral-500 hover:text-neutral-300'}`}
-                                        >
-                                            Deduction
-                                        </button>
+                                    <div className="flex justify-between items-center gap-2">
+                                        {/* Sub-toggle between Reinvest Amount and Deduction */}
+                                        <div className="flex bg-neutral-900/90 rounded-md p-0.5 ring-1 ring-neutral-700/60 shrink-0">
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    if (reinvestmentFixedSubMode !== 'reinvest') {
+                                                        setReinvestmentFixedSubMode('reinvest');
+                                                        handleClear();
+                                                    }
+                                                }}
+                                                className={`px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded transition-all ${reinvestmentFixedSubMode === 'reinvest' ? 'bg-emerald-600/25 text-emerald-400 ring-1 ring-emerald-500/40' : 'text-neutral-500 hover:text-neutral-300'}`}
+                                            >
+                                                Reinvest Amount
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    if (reinvestmentFixedSubMode !== 'deduction') {
+                                                        setReinvestmentFixedSubMode('deduction');
+                                                        handleClear();
+                                                    }
+                                                }}
+                                                className={`px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded transition-all ${reinvestmentFixedSubMode === 'deduction' ? 'bg-emerald-600/25 text-emerald-400 ring-1 ring-emerald-500/40' : 'text-neutral-500 hover:text-neutral-300'}`}
+                                            >
+                                                Deduction
+                                            </button>
+                                        </div>
+
+                                        {/* Payout / Pocketing Toggle Tablet Button (when deposit) */}
+                                        {leverageAsset === 'deposit' && (
+                                            <div className="flex bg-neutral-900/90 rounded-md p-0.5 ring-1 ring-neutral-700/60 shrink-0">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        if (depositPayoutTiming !== 'maturity') {
+                                                            setDepositPayoutTiming('maturity');
+                                                            handleClear();
+                                                        }
+                                                    }}
+                                                    className={`px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded transition-all ${depositPayoutTiming === 'maturity' ? 'bg-emerald-600/25 text-emerald-400 ring-1 ring-emerald-500/40' : 'text-neutral-500 hover:text-neutral-300'}`}
+                                                    title="Pocket profit at the end of each contract term / round"
+                                                >
+                                                    End of Term
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        if (depositPayoutTiming !== 'compounding') {
+                                                            setDepositPayoutTiming('compounding');
+                                                            handleClear();
+                                                        }
+                                                    }}
+                                                    className={`px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded transition-all ${depositPayoutTiming === 'compounding' ? 'bg-emerald-600/25 text-emerald-400 ring-1 ring-emerald-500/40' : 'text-neutral-500 hover:text-neutral-300'}`}
+                                                    title="Pocket profit on each compounding period (e.g. daily/monthly)"
+                                                >
+                                                    Compounding
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
 
                                     {reinvestmentFixedSubMode === 'reinvest' ? (
@@ -1177,7 +1244,7 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                                                     onClick={focusReinvestFixed}
                                                     className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold mb-1 cursor-pointer hover:text-emerald-400 transition-colors select-none"
                                                 >
-                                                    {leverageAsset === 'deposit' ? 'Reinvestment / Period' : 'Reinvestment / Round'}
+                                                    {leverageAsset === 'deposit' ? (depositPayoutTiming === 'maturity' ? 'Reinvestment / Term' : 'Reinvestment / Period') : 'Reinvestment / Round'}
                                                 </label>
                                                 <FormattedNumberInput
                                                     ref={reinvestFixedRef}
@@ -1199,7 +1266,7 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                                                     onClick={focusReinvestDeduction}
                                                     className="text-[9px] uppercase tracking-wider text-neutral-500 font-bold mb-1 cursor-pointer hover:text-emerald-400 transition-colors select-none"
                                                 >
-                                                    {leverageAsset === 'deposit' ? 'Deduction / Period (Pocketed)' : 'Deduction / Round (Pocketed)'}
+                                                    {leverageAsset === 'deposit' ? (depositPayoutTiming === 'maturity' ? 'Deduction / Term (Pocketed)' : 'Deduction / Period (Pocketed)') : 'Deduction / Round (Pocketed)'}
                                                 </label>
                                                 <FormattedNumberInput
                                                     ref={reinvestDeductionRef}
@@ -1287,11 +1354,7 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                                             if (leverageAsset !== 'deposit') {
                                                 setLeverageAsset('deposit');
                                                 setCustomTbillRate(25);
-                                                if (selectedTenure === 28) {
-                                                    setSelectedTenure(182); // Default to 6M
-                                                } else if (selectedTenure === 364) {
-                                                    setSelectedTenure(365);
-                                                }
+                                                setSelectedTenure('full');
                                                 handleClear();
                                             }
                                         }}
@@ -1304,7 +1367,7 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                                             if (leverageAsset !== 'tbill') {
                                                 setLeverageAsset('tbill');
                                                 setCustomTbillRate(14.0);
-                                                if (selectedTenure === 365) {
+                                                if (selectedTenure === 'full' || selectedTenure === 365) {
                                                     setSelectedTenure(364);
                                                 }
                                                 handleClear();
@@ -1320,13 +1383,14 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                         <div className="flex bg-neutral-900/50 rounded-lg p-0.5 ring-1 ring-neutral-800">
                             {leverageAsset === 'deposit' && mode === 'leverage' ? (
                                 [
-                                    { days: 91, label: '3M' },
+                                    { days: 'full', label: 'Full Term' },
+                                    { days: 365, label: '1Y' },
                                     { days: 182, label: '6M' },
-                                    { days: 365, label: '1Y' }
+                                    { days: 91, label: '3M' }
                                 ].map(t => (
                                     <button
                                         key={t.days}
-                                        onClick={() => setSelectedTenure(t.days)}
+                                        onClick={() => { setSelectedTenure(t.days); handleClear(); }}
                                         className={`px-3 py-1 text-[11px] font-bold rounded-md transition-all ${selectedTenure === t.days ? 'bg-emerald-600 text-neutral-900 shadow-lg shadow-emerald-900/20' : 'text-neutral-500 hover:text-neutral-300'}`}
                                     >
                                         {t.label}
@@ -1336,7 +1400,7 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                                 TENURE_OPTIONS.map(t => (
                                     <button
                                         key={t.days}
-                                        onClick={() => setSelectedTenure(t.days)}
+                                        onClick={() => { setSelectedTenure(t.days); handleClear(); }}
                                         className={`px-3 py-1 text-[11px] font-bold rounded-md transition-all ${selectedTenure === t.days ? 'bg-emerald-600 text-neutral-900 shadow-lg shadow-emerald-900/20' : 'text-neutral-500 hover:text-neutral-300'}`}
                                     >
                                         {t.days}D
@@ -1776,9 +1840,9 @@ const FxCompare = ({ toggleHelp, toggleSettings, tbillBrokerageRate }) => {
                                     <div className="flex justify-between items-stretch mb-2.5">
                                         <div className="text-left">
                                             <h3 className="text-sm font-bold text-white leading-none">
-                                                {loanYears} Year ({leverageAsset === 'tbill' ? `Rolling ${selectedTenure} Days` : `Rolling ${selectedTenure === 91 ? '3 Months' : selectedTenure === 182 ? '6 Months' : selectedTenure === 364 ? '1 Year' : `${selectedTenure} Days`}`})
+                                                {loanYears} Year ({leverageAsset === 'tbill' ? `Rolling ${selectedTenure} Days` : selectedTenure === 'full' ? `Full Term (${loanYears} Years)` : `Rolling ${selectedTenure === 91 ? '3 Months' : selectedTenure === 182 ? '6 Months' : selectedTenure === 364 || selectedTenure === 365 ? '1 Year' : `${selectedTenure} Days`}`})
                                             </h3>
-                                            <p className="text-[9px] text-neutral-500 uppercase mt-1">Total {leverageResult.totalRounds} {leverageAsset === 'tbill' ? 'T-Bill' : 'Deposit'} Rounds</p>
+                                            <p className="text-[9px] text-neutral-500 uppercase mt-1">Total {leverageResult.totalRounds} {leverageAsset === 'tbill' ? 'T-Bill' : 'Deposit'} Round{leverageResult.totalRounds > 1 ? 's' : ''}</p>
                                         </div>
                                         <div className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider flex items-center text-right ${leverageResult.isProfitable ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
                                             {leverageResult.isProfitable ? 'Profitable' : 'Not Profitable'}

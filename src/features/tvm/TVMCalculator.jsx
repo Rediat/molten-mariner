@@ -124,27 +124,30 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
     // Solve for PV or PMT using TI constraint
     const solveWithTIConstraint = (targetField, calcValues, effectiveTI, effectiveCY, currentTiMode = tiMode) => {
         const taxRate = calcValues.deductionPercent || 0;
-        const grossTI = (currentTiMode === 'NET' && taxRate < 100) ? effectiveTI / (1 - taxRate / 100) : effectiveTI;
         const rate = calcValues.i || 0;
+        const netRate = rate * (1 - taxRate / 100);
+        const effectiveRate = (currentTiMode === 'NET' && taxRate > 0) ? netRate : rate;
         const n = calcValues.n || 0;
         const pmt = calcValues.pmt || 0;
         const pv = calcValues.pv || 0;
 
-        const rPeriodic = (rate / 100) / effectiveCY;
+        const rPeriodic = (effectiveRate / 100) / effectiveCY;
         const { termPV, termPMT } = calcTVMFactors(rPeriodic, n, mode === 'BEGIN', interestType);
+
+        const ti = effectiveTI;
 
         if (targetField === 'pv') {
             if (Math.abs(termPV) > 1e-9) {
-                return (grossTI - pmt * termPMT) / termPV;
+                return (ti - pmt * termPMT) / termPV;
             }
             return 0;
         }
 
         if (targetField === 'pmt') {
-            let ti = grossTI;
-            if (pv > 0 && ti > 0) ti = -ti;
+            let adjustedTI = ti;
+            if (pv > 0 && adjustedTI > 0) adjustedTI = -adjustedTI;
             if (Math.abs(termPMT) > 1e-9) {
-                return (ti - pv * termPV) / termPMT;
+                return (adjustedTI - pv * termPV) / termPMT;
             }
             return 0;
         }
@@ -207,7 +210,19 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
                     setValues(prev => ({ ...prev, pmt: parseFloat(calcValues.pmt.toFixed(2)) }));
                 }
                 const grossInterestResult = (calcValues.pv || 0) + (calcValues.pmt || 0) * (calcValues.n || 0) + (calcValues.fv || 0);
-                result = (tiMode === 'NET' && taxRate > 0) ? grossInterestResult * (1 - taxRate / 100) : grossInterestResult;
+                if (tiMode === 'NET' && taxRate > 0) {
+                    const netRate = (calcValues.i || 0) * (1 - taxRate / 100);
+                    const netFvVal = calculateTVM('fv', {
+                        n: calcValues.n || 0,
+                        i: netRate,
+                        pv: calcValues.pv || 0,
+                        pmt: calcValues.pmt || 0,
+                        fv: 0
+                    }, mode, frequency, interestType, effectiveCY);
+                    result = (calcValues.pv || 0) + (calcValues.pmt || 0) * (calcValues.n || 0) + netFvVal;
+                } else {
+                    result = grossInterestResult;
+                }
             } else {
                 const sanitized = {
                     n: calcValues.n || 0,
@@ -234,7 +249,20 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
             } else {
                 const finalValues = { ...calcValues, [target]: result };
                 const grossInterestVal = (finalValues.pv || 0) + (finalValues.pmt || 0) * (finalValues.n || 0) + (finalValues.fv || 0);
-                let netInterestVal = grossInterestVal * (1 - taxRate / 100);
+                let netInterestVal = grossInterestVal;
+                if (taxRate > 0) {
+                    const netRate = (calcValues.i || 0) * (1 - taxRate / 100);
+                    const netFvVal = calculateTVM('fv', {
+                        n: calcValues.n || 0,
+                        i: netRate,
+                        pv: calcValues.pv || 0,
+                        pmt: calcValues.pmt || 0,
+                        fv: 0
+                    }, mode, frequency, interestType, effectiveCY);
+                    if (typeof netFvVal === 'number' && !isNaN(netFvVal)) {
+                        netInterestVal = (calcValues.pv || 0) + (calcValues.pmt || 0) * (calcValues.n || 0) + netFvVal;
+                    }
+                }
 
                 let interestToStore;
                 if (useTIConstraint) {
@@ -286,20 +314,27 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
 
     const toggleTiMode = () => {
         const taxRate = values.deductionPercent || 0;
+        const effectiveCY = showAdvanced ? compoundingFrequency : frequency;
         setTiMode(prevMode => {
             if (prevMode === 'GROSS') {
-                // Convert Gross to Net Interest
-                const newNet = (totalInterest !== null && totalInterest !== undefined)
-                    ? totalInterest * (1 - taxRate / 100)
-                    : null;
-                setTotalInterest(newNet !== null ? parseFloat(newNet.toFixed(2)) : null);
+                // Convert Gross to Net Interest (using net rate compounded)
+                if (taxRate > 0) {
+                    const netRate = (values.i || 0) * (1 - taxRate / 100);
+                    const netFvVal = calculateTVM('fv', {
+                        n: values.n || 0,
+                        i: netRate,
+                        pv: values.pv || 0,
+                        pmt: values.pmt || 0,
+                        fv: 0
+                    }, mode, frequency, interestType, effectiveCY);
+                    const newNet = (values.pv || 0) + (values.pmt || 0) * (values.n || 0) + netFvVal;
+                    setTotalInterest(parseFloat(newNet.toFixed(2)));
+                }
                 return 'NET';
             } else {
                 // Convert Net to Gross Interest
-                const newGross = (totalInterest !== null && totalInterest !== undefined && taxRate < 100)
-                    ? totalInterest / (1 - taxRate / 100)
-                    : totalInterest;
-                setTotalInterest(newGross !== null ? parseFloat(newGross.toFixed(2)) : null);
+                const grossVal = (grossValues.pv || 0) + (grossValues.pmt || 0) * (grossValues.n || 0) + grossValues.fv;
+                setTotalInterest(parseFloat(grossVal.toFixed(2)));
                 return 'GROSS';
             }
         });
@@ -324,7 +359,7 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
     const pvPmtDifferentSigns = (pv > 0 && pmt < 0) || (pv < 0 && pmt > 0);
     const totalPMT = pvPmtDifferentSigns ? (pmt * n) : (pv + (pmt * n));
 
-    // Tax Deduction Calculations
+    // Tax Deduction Calculations (tax deducted out during compounding process)
     const taxRate = values.deductionPercent || 0;
 
     // Build unified gross values incorporating the solved target value
@@ -342,26 +377,48 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
     const currentFV = grossValues.fv;
     const grossInterest = (grossValues.pv || 0) + (grossValues.pmt || 0) * (grossValues.n || 0) + currentFV;
 
-    let finalGrossInterest;
-    let netInterest;
+    const netRate = (grossValues.i || 0) * (1 - taxRate / 100);
+    const effectiveCY = showAdvanced ? compoundingFrequency : frequency;
 
+    let netFV = currentFV;
+    let netInterest = grossInterest;
+    let taxAmount = 0;
+
+    if (taxRate > 0) {
+        // Compound using after-tax net rate (tax deducted during compounding)
+        const rawNetFV = calculateTVM('fv', {
+            n: grossValues.n || 0,
+            i: netRate,
+            pv: grossValues.pv || 0,
+            pmt: grossValues.pmt || 0,
+            fv: 0
+        }, mode, frequency, interestType, effectiveCY);
+
+        if (typeof rawNetFV === 'number' && !isNaN(rawNetFV)) {
+            netFV = rawNetFV;
+            const netInterestCalc = (grossValues.pv || 0) + (grossValues.pmt || 0) * (grossValues.n || 0) + netFV;
+            netInterest = netInterestCalc;
+            
+            // Total tax paid during the compounding process:
+            // Since net = gross * (1 - taxRate/100), tax = net * (taxRate / (100 - taxRate))
+            if (taxRate < 100) {
+                taxAmount = Math.max(0, netInterest * (taxRate / (100 - taxRate)));
+            }
+        }
+    }
+
+    let finalGrossInterest = grossInterest;
     if (totalInterest !== null && totalInterest !== undefined && totalInterest !== 0) {
         if (tiMode === 'NET') {
             netInterest = totalInterest;
-            finalGrossInterest = (taxRate < 100) ? totalInterest / (1 - taxRate / 100) : totalInterest;
+            if (taxRate < 100) {
+                taxAmount = Math.max(0, netInterest * (taxRate / (100 - taxRate)));
+                finalGrossInterest = netInterest + taxAmount;
+            }
         } else {
             finalGrossInterest = totalInterest;
-            netInterest = totalInterest * (1 - taxRate / 100);
         }
-    } else {
-        finalGrossInterest = grossInterest;
-        netInterest = grossInterest * (1 - taxRate / 100);
     }
-
-    const taxAmount = Math.max(0, finalGrossInterest - netInterest);
-    const netFV = (grossValues.pv < 0 && grossValues.fv > 0)
-        ? Math.abs(grossValues.pv) + (grossValues.pmt ? Math.abs(grossValues.pmt * grossValues.n) : 0) + netInterest
-        : currentFV - taxAmount;
 
     const getDisplayValue = (field) => {
         if (field === 'n' && nMode === 'YEARS') {
