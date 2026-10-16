@@ -204,6 +204,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                         { name: 'PV', description: 'Present Value - the current lump sum amount' },
                         { name: 'PMT', description: 'Payment Amount - periodic payment amount' },
                         { name: 'FV', description: 'Future Value - the target amount at the end' },
+                        { name: 'Deduction %', description: 'Tax or withholding percentage (default 10%). Includes an inline pin button toggle between "Maturity" (deducted at the end of the term from gross accumulated interest) and "Compounding" (deducted continuously during each compounding cycle at net rate).' },
                         { name: 'Gross / Net Interest', description: 'Total interest over the period (label toggles between Gross Interest and Net Interest depending on selected mode)' },
                         { name: 'ΣPmt', description: 'Total Payment - shows PMT × N when PV and PMT have opposite signs, otherwise PV + PMT × N (read only)' }
                     ]} />
@@ -222,7 +223,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                     <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Advanced Features:</p>
                     <FieldList fields={[
                         { name: 'Total Interest Targeting', description: 'You can explicitly set a target Total Interest amount, and the calculator will reverse-solve for PV, PMT, FV, I/Y, or Periods to match that exact interest amount. The constraint solver respects your Simple vs Compound interest selection. You can toggle between GROSS and NET interest targeting next to the label (which toggles the label itself between Gross Interest and Net Interest), and the entered interest amount will automatically convert on the fly.' },
-                        { name: 'Tax Deduction & Net Returns', description: 'If a Deduction/Tax % is specified, the calculator shows the Tax Paid, Net Interest (remaining %), and Actual Net Future Value alongside the actual net interest rate (Simple Net Rate or Compounded Net Rate).' },
+                        { name: 'Tax Deduction & Net Returns', description: 'If a Deduction/Tax % is specified, you can choose the deduction timing via the pin toggle button (Maturity vs Compounding). "Maturity" deducts tax at the end of the investment horizon from the accumulated gross profit, whereas "Compounding" continuously deducts withholding tax on every compounding period (compounding at the net interest rate). The results breakdown shows Tax Paid, Net Interest, and Actual Net Future Value.' },
                         { name: 'Advanced Frequency Mode', description: 'Click the Settings icon to decouple Payment Frequency (Payments) from Compounding Frequency (Compounds) for complex loan or investment scenarios.' },
                         { name: 'Interest Ratio Display', description: 'When Total Interest is calculated, the label shows what percentage of your final/initial value is made up of pure interest.' }
                     ]} />
@@ -920,18 +921,18 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                                 </p>
                                 <ul className="list-disc pl-5 mt-1 space-y-1 text-neutral-400 text-[11px]">
                                     <li><strong>T-Bill:</strong> Compares loan cost against a realistic bi-weekly rolling T-Bill reinvestment strategy following the bi-weekly NBE schedule.</li>
-                                    <li><strong>Deposits:</strong> Compares loan cost against fixed retail bank deposits (182-day or 365-day terms). The 1-year deposit term uses a standard <strong>365-day year</strong> calculation rather than 364 days to match standard banking practices.</li>
-                                    <li><strong>Deposit Interest & Tax Options:</strong> When Time Deposits is selected, you can customize the interest structure. Toggle between <strong>Simple</strong> and <strong>Compounding</strong> interest, configure <strong>Compounds</strong> frequency (from At Maturity to Daily), and specify a <strong>Deduction (%)</strong> rate.</li>
-                                    <li><strong>Reinvestment Strategy:</strong> Configure how returns (interest/profits) are handled. You can choose between two main modes:
+                                    <li><strong>Deposits:</strong> Compares loan cost against retail bank time deposits. Defaults to <strong>Full Term</strong> (a single unified deposit contract spanning the entire loan horizon, e.g. 7 Years), or selectable rolling tenures: <strong>1 Year</strong> (365-day banking year), <strong>6 Months</strong> (182d), or <strong>3 Months</strong> (91d).</li>
+                                    <li><strong>Deposit Interest & Tax Options:</strong> When Time Deposits is selected, customize the interest structure with <strong>Simple</strong> vs <strong>Compounding</strong> interest, <strong>Compounds</strong> frequency (from At Maturity to Daily), and a <strong>Deduction (%)</strong> rate.</li>
+                                    <li><strong>Reinvestment Strategy & Compact Controls:</strong> Configure how returns are handled with a space-saving minimized slider and inline controls:
                                         <ul className="list-disc pl-5 mt-1 space-y-1 text-neutral-400 text-[10px]">
-                                            <li><strong>% Rate:</strong> Specify a percentage (0% to 100%) of profit to reinvest. Evaluated per compounding period for deposits (or per round for T-Bills).</li>
-                                            <li><strong>Fixed Amount:</strong> Provides a dedicated toggle between:
+                                            <li><strong>% Rate:</strong> Specify a percentage (0% to 100%) of profit to reinvest using the compact stepping slider.</li>
+                                            <li><strong>Fixed Amount:</strong> Provides a dedicated toggle between <em>Reinvest Amount</em> (fixed target reinvested) and <em>Deduction</em> (fixed cash pocketed from 100% profit).</li>
+                                            <li><strong>Payout / Pocketing Timing Toggle:</strong> Choose when profit pocketing and deductions are settled via the inline tablet toggle button:
                                                 <ul className="list-disc pl-4 mt-0.5 space-y-0.5">
-                                                    <li><em>Reinvest Amount:</em> Enter a fixed target to reinvest each period/round. Any profit above this target is pocketed.</li>
-                                                    <li><em>Deduction:</em> Enter a fixed deduction taken from profit each period/round (pocketed as cash). The default is 100% profit reinvested minus this deduction.</li>
+                                                    <li><em>End of Term (Default):</em> Profit pocketing or withdrawals occur only at contract round maturity (annually for 1Y, semi-annually for 6M, quarterly for 3M, or at the end of the loan for Full Term), allowing interest to compound uninterrupted during the term.</li>
+                                                    <li><em>Compounding:</em> Profit pocketing or deductions are extracted on every compounding period (e.g. daily or monthly), with only the retained profit compounding forward.</li>
                                                 </ul>
                                             </li>
-                                            <li><strong>Per-Compounding-Period Compounding:</strong> For deposits, reinvestment and pocketed amounts are calculated at every compounding period (e.g. Monthly, Daily). Pocketed cash leaves the deposit and does not compound, while only the reinvested portion compounds into subsequent periods. Pocketed profits accumulate separately as cash and are combined with the matured principal to compute the final net return.</li>
                                         </ul>
                                     </li>
                                 </ul>
@@ -964,9 +965,9 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                         { name: 'Investment Budget', description: 'The total amount in ETB you are considering for investment (acts as Loan Amount in Leverage Mode)' },
                         { name: 'Start Auction', description: 'The initial auction to begin the simulation. Defaults to approximately 6 months ago for relevant analysis.' },
                         { name: 'Currency / Asset', description: 'Choose between 20+ Foreign Currencies, 8 Metals/Commodities (Gold, Silver, Platinum, Copper, Tin, Zinc, Lead, Nickel), or Bitcoin (Crypto). Hidden in Leverage Mode.' },
-                        { name: 'Tenure Strategy', description: '(Rolling & Leverage Modes) Choose whether to roll 28D, 91D, 182D, or 364D bills' },
+                        { name: 'Tenure Strategy', description: '(Rolling & Leverage Modes) For T-Bills, choose whether to roll 28D, 91D, 182D, or 364D bills. For Deposits in Leverage Mode, defaults to Full Term (entire loan horizon), or choose 1 Year (365d), 6 Months (182d), or 3 Months (91d).' },
                         { name: 'Loan Rate & Term', description: '(Leverage Mode only) Annual interest rate and duration of the loan in years.' },
-                        { name: 'Reinvestment Strategy', description: '(Leverage Mode only) Choose between % Rate (0-100% with slider) and Fixed Amount. In Fixed Amount, toggle between "Reinvest Amount" (fixed amount reinvested) and "Deduction" (fixed deduction pocketed from 100% profit). For deposits, applies per compounding period.' },
+                        { name: 'Reinvestment Strategy & Payout Timing', description: '(Leverage Mode only) Choose between % Rate (compact slider) and Fixed Amount (Reinvest vs Deduction). For Deposits, toggle Payout Timing between "End of Term" (withdrawals at round maturity) and "Compounding" (withdrawals at each compounding period).' },
                         { name: 'Rate Source', description: '(Deposit & Compare All Modes) Select whether to use unofficial parallel (Black) market rates or official bank exchange rates.' },
                         { name: 'Deposit Settings', description: '(Leverage Deposit only) Configure Interest Type (Simple vs Compounding), Compounds frequency, and Deduction (%) rate.' }
                     ]} />

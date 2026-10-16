@@ -73,6 +73,7 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
     const [totalInterest, setTotalInterest] = useState(0);
     const [showHistory, setShowHistory] = useState(false);
     const [tiMode, setTiMode] = useState('GROSS');
+    const [deductionTiming, setDeductionTiming] = useState('compounding'); // 'compounding' | 'maturity'
 
     // Refs for each input field to support focusing after "Clear on Label"
     const inputRefs = {
@@ -126,7 +127,7 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
         const taxRate = calcValues.deductionPercent || 0;
         const rate = calcValues.i || 0;
         const netRate = rate * (1 - taxRate / 100);
-        const effectiveRate = (currentTiMode === 'NET' && taxRate > 0) ? netRate : rate;
+        const effectiveRate = (currentTiMode === 'NET' && taxRate > 0 && deductionTiming === 'compounding') ? netRate : rate;
         const n = calcValues.n || 0;
         const pmt = calcValues.pmt || 0;
         const pv = calcValues.pv || 0;
@@ -134,7 +135,9 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
         const rPeriodic = (effectiveRate / 100) / effectiveCY;
         const { termPV, termPMT } = calcTVMFactors(rPeriodic, n, mode === 'BEGIN', interestType);
 
-        const ti = effectiveTI;
+        const ti = (currentTiMode === 'NET' && taxRate < 100 && deductionTiming === 'maturity')
+            ? effectiveTI / (1 - taxRate / 100)
+            : effectiveTI;
 
         if (targetField === 'pv') {
             if (Math.abs(termPV) > 1e-9) {
@@ -211,15 +214,19 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
                 }
                 const grossInterestResult = (calcValues.pv || 0) + (calcValues.pmt || 0) * (calcValues.n || 0) + (calcValues.fv || 0);
                 if (tiMode === 'NET' && taxRate > 0) {
-                    const netRate = (calcValues.i || 0) * (1 - taxRate / 100);
-                    const netFvVal = calculateTVM('fv', {
-                        n: calcValues.n || 0,
-                        i: netRate,
-                        pv: calcValues.pv || 0,
-                        pmt: calcValues.pmt || 0,
-                        fv: 0
-                    }, mode, frequency, interestType, effectiveCY);
-                    result = (calcValues.pv || 0) + (calcValues.pmt || 0) * (calcValues.n || 0) + netFvVal;
+                    if (deductionTiming === 'maturity') {
+                        result = grossInterestResult * (1 - taxRate / 100);
+                    } else {
+                        const netRate = (calcValues.i || 0) * (1 - taxRate / 100);
+                        const netFvVal = calculateTVM('fv', {
+                            n: calcValues.n || 0,
+                            i: netRate,
+                            pv: calcValues.pv || 0,
+                            pmt: calcValues.pmt || 0,
+                            fv: 0
+                        }, mode, frequency, interestType, effectiveCY);
+                        result = (calcValues.pv || 0) + (calcValues.pmt || 0) * (calcValues.n || 0) + netFvVal;
+                    }
                 } else {
                     result = grossInterestResult;
                 }
@@ -244,23 +251,27 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
 
             if (target === 'totalInterest') {
                 setTotalInterest(result);
-                addToHistory('TVM', { ...calcValues, mode, target: 'TI', frequency, compoundingFrequency: effectiveCY, interestType },
+                addToHistory('TVM', { ...calcValues, mode, target: 'TI', frequency, compoundingFrequency: effectiveCY, interestType, deductionTiming },
                     { pmt: calcValues.pmt, totalInterest: result });
             } else {
                 const finalValues = { ...calcValues, [target]: result };
                 const grossInterestVal = (finalValues.pv || 0) + (finalValues.pmt || 0) * (finalValues.n || 0) + (finalValues.fv || 0);
                 let netInterestVal = grossInterestVal;
                 if (taxRate > 0) {
-                    const netRate = (calcValues.i || 0) * (1 - taxRate / 100);
-                    const netFvVal = calculateTVM('fv', {
-                        n: calcValues.n || 0,
-                        i: netRate,
-                        pv: calcValues.pv || 0,
-                        pmt: calcValues.pmt || 0,
-                        fv: 0
-                    }, mode, frequency, interestType, effectiveCY);
-                    if (typeof netFvVal === 'number' && !isNaN(netFvVal)) {
-                        netInterestVal = (calcValues.pv || 0) + (calcValues.pmt || 0) * (calcValues.n || 0) + netFvVal;
+                    if (deductionTiming === 'maturity') {
+                        netInterestVal = grossInterestVal * (1 - taxRate / 100);
+                    } else {
+                        const netRate = (calcValues.i || 0) * (1 - taxRate / 100);
+                        const netFvVal = calculateTVM('fv', {
+                            n: calcValues.n || 0,
+                            i: netRate,
+                            pv: calcValues.pv || 0,
+                            pmt: calcValues.pmt || 0,
+                            fv: 0
+                        }, mode, frequency, interestType, effectiveCY);
+                        if (typeof netFvVal === 'number' && !isNaN(netFvVal)) {
+                            netInterestVal = (calcValues.pv || 0) + (calcValues.pmt || 0) * (calcValues.n || 0) + netFvVal;
+                        }
                     }
                 }
 
@@ -282,7 +293,7 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
                     }
                     return nextValues;
                 });
-                addToHistory('TVM', { ...calcValues, mode, target, frequency, compoundingFrequency: effectiveCY, interestType },
+                addToHistory('TVM', { ...calcValues, mode, target, frequency, compoundingFrequency: effectiveCY, interestType, deductionTiming },
                     { [target]: result, totalInterest: interestToStore });
             }
         } catch (error) {
@@ -317,18 +328,23 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
         const effectiveCY = showAdvanced ? compoundingFrequency : frequency;
         setTiMode(prevMode => {
             if (prevMode === 'GROSS') {
-                // Convert Gross to Net Interest (using net rate compounded)
+                // Convert Gross to Net Interest
                 if (taxRate > 0) {
-                    const netRate = (values.i || 0) * (1 - taxRate / 100);
-                    const netFvVal = calculateTVM('fv', {
-                        n: values.n || 0,
-                        i: netRate,
-                        pv: values.pv || 0,
-                        pmt: values.pmt || 0,
-                        fv: 0
-                    }, mode, frequency, interestType, effectiveCY);
-                    const newNet = (values.pv || 0) + (values.pmt || 0) * (values.n || 0) + netFvVal;
-                    setTotalInterest(parseFloat(newNet.toFixed(2)));
+                    if (deductionTiming === 'maturity') {
+                        const grossVal = (grossValues.pv || 0) + (grossValues.pmt || 0) * (grossValues.n || 0) + grossValues.fv;
+                        setTotalInterest(parseFloat((grossVal * (1 - taxRate / 100)).toFixed(2)));
+                    } else {
+                        const netRate = (values.i || 0) * (1 - taxRate / 100);
+                        const netFvVal = calculateTVM('fv', {
+                            n: values.n || 0,
+                            i: netRate,
+                            pv: values.pv || 0,
+                            pmt: values.pmt || 0,
+                            fv: 0
+                        }, mode, frequency, interestType, effectiveCY);
+                        const newNet = (values.pv || 0) + (values.pmt || 0) * (values.n || 0) + netFvVal;
+                        setTotalInterest(parseFloat(newNet.toFixed(2)));
+                    }
                 }
                 return 'NET';
             } else {
@@ -385,24 +401,30 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
     let taxAmount = 0;
 
     if (taxRate > 0) {
-        // Compound using after-tax net rate (tax deducted during compounding)
-        const rawNetFV = calculateTVM('fv', {
-            n: grossValues.n || 0,
-            i: netRate,
-            pv: grossValues.pv || 0,
-            pmt: grossValues.pmt || 0,
-            fv: 0
-        }, mode, frequency, interestType, effectiveCY);
+        if (deductionTiming === 'maturity') {
+            taxAmount = Math.max(0, grossInterest * (taxRate / 100));
+            netInterest = grossInterest - taxAmount;
+            netFV = currentFV > 0 ? (currentFV - taxAmount) : (currentFV + taxAmount);
+        } else {
+            // Compound using after-tax net rate (tax deducted during compounding)
+            const rawNetFV = calculateTVM('fv', {
+                n: grossValues.n || 0,
+                i: netRate,
+                pv: grossValues.pv || 0,
+                pmt: grossValues.pmt || 0,
+                fv: 0
+            }, mode, frequency, interestType, effectiveCY);
 
-        if (typeof rawNetFV === 'number' && !isNaN(rawNetFV)) {
-            netFV = rawNetFV;
-            const netInterestCalc = (grossValues.pv || 0) + (grossValues.pmt || 0) * (grossValues.n || 0) + netFV;
-            netInterest = netInterestCalc;
-            
-            // Total tax paid during the compounding process:
-            // Since net = gross * (1 - taxRate/100), tax = net * (taxRate / (100 - taxRate))
-            if (taxRate < 100) {
-                taxAmount = Math.max(0, netInterest * (taxRate / (100 - taxRate)));
+            if (typeof rawNetFV === 'number' && !isNaN(rawNetFV)) {
+                netFV = rawNetFV;
+                const netInterestCalc = (grossValues.pv || 0) + (grossValues.pmt || 0) * (grossValues.n || 0) + netFV;
+                netInterest = netInterestCalc;
+                
+                // Total tax paid during the compounding process:
+                // Since net = gross * (1 - taxRate/100), tax = net * (taxRate / (100 - taxRate))
+                if (taxRate < 100) {
+                    taxAmount = Math.max(0, netInterest * (taxRate / (100 - taxRate)));
+                }
             }
         }
     }
@@ -436,7 +458,7 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
         { id: 'pv', label: 'PV', sub: 'Present Value' },
         { id: 'pmt', label: 'PMT', sub: 'Payment Amount' },
         { id: 'fv', label: 'FV', sub: 'Future Value' },
-        { id: 'deductionPercent', label: 'Deduction %', sub: 'Deduction / Tax Rate' },
+        { id: 'deductionPercent', label: 'Deduction %', sub: deductionTiming === 'maturity' ? 'Deducted at Maturity' : 'Each Compounding Period' },
         { id: 'totalInterest', label: tiMode === 'GROSS' ? 'Gross Interest' : 'Net Interest', sub: 'Total Interest' }
     ];
 
@@ -461,6 +483,34 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
                                 >
                                     {nMode === 'YEARS' ? (isHalfRow ? 'Years' : 'In Years') : (isHalfRow ? 'Periods' : 'In Periods')}
                                 </button>
+                            )}
+                            {field.id === 'deductionPercent' && (
+                                <div className="flex bg-neutral-900/60 rounded-md p-0.5 ring-1 ring-neutral-700/50">
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setDeductionTiming('maturity');
+                                            setCalculatedValue(null);
+                                        }}
+                                        className={`px-1.5 py-0.5 text-[8px] font-bold rounded-sm transition-all ${deductionTiming === 'maturity' ? 'bg-amber-500 text-neutral-900' : 'text-neutral-500 hover:text-neutral-300'}`}
+                                        title="Deduct at Maturity (End of Term from Gross Total Interest)"
+                                    >
+                                        Maturity
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setDeductionTiming('compounding');
+                                            setCalculatedValue(null);
+                                        }}
+                                        className={`px-1.5 py-0.5 text-[8px] font-bold rounded-sm transition-all ${deductionTiming === 'compounding' ? 'bg-amber-500 text-neutral-900' : 'text-neutral-500 hover:text-neutral-300'}`}
+                                        title="Deduct on Each Compounding Period (Compounded at Net Rate)"
+                                    >
+                                        Compounding
+                                    </button>
+                                </div>
                             )}
                             {field.id === 'totalInterest' && (
                                 <button
@@ -706,7 +756,9 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
                                     <div className="flex flex-col">
                                         <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider mb-0.5">Actual Net Future Value</span>
                                         <span className="text-[9px] font-medium text-emerald-400/80 uppercase tracking-wider">
-                                            {interestType === 'SIMPLE' ? 'Simple Net Rate' : 'Compounded at Net Rate'}: {((grossValues.i || 0) * (1 - taxRate / 100)).toFixed(2)}%
+                                            {deductionTiming === 'maturity'
+                                                ? 'Deducted at Maturity'
+                                                : (interestType === 'SIMPLE' ? 'Simple Net Rate' : `Compounded at Net Rate: ${((grossValues.i || 0) * (1 - taxRate / 100)).toFixed(2)}%`)}
                                         </span>
                                     </div>
                                     <span className="text-lg font-black text-white font-mono">
