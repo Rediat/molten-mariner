@@ -451,6 +451,45 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
         return values[field];
     };
 
+    const isFieldNegative = (fieldId) => {
+        const val = getDisplayValue(fieldId);
+        if (val === null || val === undefined) return false;
+        return val < 0 || Object.is(val, -0);
+    };
+
+    const handleSignToggle = (fieldId, targetSign) => {
+        if (inputRefs[fieldId]?.current) {
+            inputRefs[fieldId].current.blur();
+        }
+
+        setValues(prev => {
+            const current = prev[fieldId];
+            const num = (current === null || current === undefined || isNaN(current)) ? 0 : current;
+            const isCurrentNeg = num < 0 || Object.is(num, -0);
+
+            let shouldBeNegative;
+            if (targetSign === '+') {
+                shouldBeNegative = isCurrentNeg ? false : true;
+            } else if (targetSign === '-') {
+                shouldBeNegative = isCurrentNeg ? false : true;
+            } else {
+                shouldBeNegative = !isCurrentNeg;
+            }
+
+            if (targetSign === '+' && isCurrentNeg) shouldBeNegative = false;
+            else if (targetSign === '-' && !isCurrentNeg) shouldBeNegative = true;
+
+            const next = num === 0 ? (shouldBeNegative ? -0 : 0) : (shouldBeNegative ? -Math.abs(num) : Math.abs(num));
+            return { ...prev, [fieldId]: next };
+        });
+
+        if (target === fieldId && calculatedValue !== null && typeof calculatedValue === 'number') {
+            setCalculatedValue(prev => -prev);
+        } else if (target !== fieldId) {
+            setCalculatedValue(null);
+        }
+    };
+
     // Field definitions
     const fields = [
         { id: 'n', label: nMode === 'YEARS' ? 'Years' : 'Periods', sub: nMode === 'YEARS' ? 'N / Frequency' : 'Total Periods', hasNToggle: true },
@@ -483,6 +522,40 @@ const TVMCalculator = ({ toggleHelp, toggleSettings }) => {
                                 >
                                     {nMode === 'YEARS' ? (isHalfRow ? 'Years' : 'In Years') : (isHalfRow ? 'Periods' : 'In Periods')}
                                 </button>
+                            )}
+                            {(field.id === 'pv' || field.id === 'pmt') && (
+                                <div className={`flex bg-neutral-900/60 rounded-md p-0.5 ring-1 ring-neutral-700/50 transition-opacity ${target === field.id && calculatedValue === null ? 'opacity-40 pointer-events-none' : ''}`}>
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleSignToggle(field.id, '+');
+                                        }}
+                                        className={`px-1.5 py-0.5 text-[8px] font-bold rounded-sm transition-all ${
+                                            !isFieldNegative(field.id)
+                                                ? 'bg-amber-500 text-neutral-900 shadow-sm'
+                                                : 'text-neutral-500 hover:text-neutral-300'
+                                        }`}
+                                        title={`Set ${field.label} Positive (+)`}
+                                    >
+                                        +
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleSignToggle(field.id, '-');
+                                        }}
+                                        className={`px-1.5 py-0.5 text-[8px] font-bold rounded-sm transition-all ${
+                                            isFieldNegative(field.id)
+                                                ? 'bg-amber-500 text-neutral-900 shadow-sm'
+                                                : 'text-neutral-500 hover:text-neutral-300'
+                                        }`}
+                                        title={`Set ${field.label} Negative (-)`}
+                                    >
+                                        -
+                                    </button>
+                                </div>
                             )}
                             {field.id === 'deductionPercent' && (
                                 <div className="flex bg-neutral-900/60 rounded-md p-0.5 ring-1 ring-neutral-700/50">

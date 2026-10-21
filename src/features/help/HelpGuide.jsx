@@ -201,8 +201,8 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                     <FieldList fields={[
                         { name: 'Periods / Years', description: 'Total number of periods (or Years if toggle is set)' },
                         { name: 'I/Y', description: 'Annual interest rate (as a percentage)' },
-                        { name: 'PV', description: 'Present Value - the current lump sum amount' },
-                        { name: 'PMT', description: 'Payment Amount - periodic payment amount' },
+                        { name: 'PV', description: 'Present Value - the current lump sum amount. Includes an inline pin button to toggle the inserted value between positive (+) and negative (-).' },
+                        { name: 'PMT', description: 'Payment Amount - periodic payment amount. Includes an inline pin button to toggle the inserted value between positive (+) and negative (-).' },
                         { name: 'FV', description: 'Future Value - the target amount at the end' },
                         { name: 'Deduction %', description: 'Tax or withholding percentage (default 10%). Includes an inline pin button toggle between "Maturity" (deducted at the end of the term from gross accumulated interest) and "Compounding" (deducted continuously during each compounding cycle at net rate).' },
                         { name: 'Gross / Net Interest', description: 'Total interest over the period (label toggles between Gross Interest and Net Interest depending on selected mode)' },
