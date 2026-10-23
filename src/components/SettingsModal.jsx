@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { X, Activity, FileText, Percent, History, Receipt, Calculator, CreditCard, Target, ChevronUp, ChevronDown, Wallet, TrendingUp, Car, ArrowRightLeft, Landmark, Globe } from 'lucide-react';
 import { useSettings } from '../context/SettingsContext';
 
@@ -24,6 +24,21 @@ const TAB_CONFIG = {
 
 const SettingsModal = ({ isOpen, onClose }) => {
     const { settings, updateSetting } = useSettings();
+
+    // Close on Escape key
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape') {
+                onClose();
+            }
+        };
+        if (isOpen) {
+            window.addEventListener('keydown', handleKeyDown);
+        }
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [isOpen, onClose]);
 
     if (!isOpen) return null;
 
@@ -73,9 +88,21 @@ const SettingsModal = ({ isOpen, onClose }) => {
     // Check if an item is the history tab (locked position)
     const isHistoryTab = (id) => id === 'history';
 
+    const handleBackdropClick = (e) => {
+        if (e.target === e.currentTarget) {
+            onClose();
+        }
+    };
+
     return (
-        <div className="absolute inset-0 bg-black/60 z-50 flex items-center justify-center animate-in fade-in duration-200">
-            <div className="bg-neutral-800 rounded-2xl border border-neutral-700 w-[90%] max-w-sm shadow-2xl animate-in zoom-in-95 duration-200">
+        <div 
+            onClick={handleBackdropClick}
+            className="absolute inset-0 bg-black/60 z-50 flex items-center justify-center animate-in fade-in duration-200"
+        >
+            <div 
+                onClick={(e) => e.stopPropagation()}
+                className="bg-neutral-800 rounded-2xl border border-neutral-700 w-[90%] max-w-sm shadow-2xl animate-in zoom-in-95 duration-200"
+            >
                 {/* Header */}
                 <div className="p-4 border-b border-neutral-700 flex justify-between items-center">
                     <h3 className="font-bold text-white uppercase tracking-wider text-sm">Settings</h3>
