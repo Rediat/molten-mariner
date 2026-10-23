@@ -543,6 +543,19 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                 </div>
 
                 <div className="pt-2">
+                    <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Reordering & Timing Controls:</p>
+                    <FieldList fields={[
+                        { name: 'Drag & Drop Reordering', description: 'Grab the grip handle on the left of any row to drag and reposition that cash flow into any period.' },
+                        { name: 'Step-by-Step Up / Down', description: 'Use the chevron up (▲) and chevron down (▼) buttons on each row to shift a cash flow up or down by one period.' },
+                        { name: 'Order Menu (Bulk Actions)', description: 'Click the "Order" button above the flow list to access quick batch reordering operations:' },
+                        { name: '• Reverse All Flows', description: 'Inverts the entire sequence of cash flows from first to last.' },
+                        { name: '• Reverse Inflows (CF 1..N)', description: 'Inverts future return periods while preserving initial investment CF0 (ideal for evaluating front-loaded vs. back-loaded investment scenarios).' },
+                        { name: '• Sort Inflows (Low → High)', description: 'Sorts future returns in ascending order to test deferred-yield sensitivity.' },
+                        { name: '• Sort Inflows (High → Low)', description: 'Sorts future returns in descending order to test accelerated-yield sensitivity.' }
+                    ]} />
+                </div>
+
+                <div className="pt-2">
                     <p className="font-bold text-white text-xs uppercase tracking-wider mb-2">Results:</p>
                     <FieldList fields={[
                         { name: 'NPV', description: 'Net Present Value - total value in today\'s dollars' },
@@ -562,7 +575,7 @@ const HelpGuide = ({ activeTab = 'tvm' }) => {
                 </InfoBox>
 
                 <InfoBox type="tip">
-                    Click the "+" button to add more cash flow periods. Click the trash icon to remove a period.
+                    <strong>Quick Management:</strong> Click the "+" button to add cash flow periods. Click the trash icon on any row to delete that period (as long as at least one flow remains). Click any <strong>CF label</strong> (e.g. "CF 1") to instantly clear its value and focus the input.
                 </InfoBox>
             </HelpSection>
 
