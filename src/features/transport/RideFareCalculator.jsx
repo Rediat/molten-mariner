@@ -377,8 +377,12 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                 finalize(`${lat.toFixed(4)}, ${lng.toFixed(4)}`);
             };
 
-            // Primary: Use Places API nearbySearch to find actual building/POI names
-            if (window.google?.maps?.places) {
+            // Legacy nearbySearch fallback if Places API (New) is not enabled on the key yet
+            function legacyNearbySearch() {
+                if (!window.google?.maps?.places?.PlacesService) {
+                    geocoderFallback();
+                    return;
+                }
                 const dummyEl = document.createElement('div');
                 dummyEl.style.display = 'none';
                 document.body.appendChild(dummyEl);
@@ -391,7 +395,6 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                     type: 'establishment'
                 };
 
-                // Timeout safety net
                 let resolved = false;
                 const timer = setTimeout(() => {
                     if (!resolved) {
@@ -408,8 +411,6 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                     clearTimeout(timer);
                     cleanUp();
 
-                    console.log('nearbySearch status:', nearbyStatus, 'results:', places);
-
                     if (nearbyStatus === window.google.maps.places.PlacesServiceStatus.OK && places?.length > 0) {
                         const bestPlace = places[0];
                         const label = bestPlace.name + (bestPlace.vicinity ? `, ${bestPlace.vicinity}` : '');
@@ -418,6 +419,56 @@ const RideFareCalculator = ({ toggleHelp, toggleSettings, mapsReady, isActive })
                         geocoderFallback();
                     }
                 });
+            }
+
+            // Primary: Use Places API (New) Place.searchNearby to find actual building/POI names
+            if (window.google?.maps?.places?.Place?.searchNearby) {
+                let resolved = false;
+                const timer = setTimeout(() => {
+                    if (!resolved) {
+                        resolved = true;
+                        console.warn('Place.searchNearby timed out, falling back to Geocoder');
+                        geocoderFallback();
+                    }
+                }, 4000);
+
+                window.google.maps.places.Place.searchNearby({
+                    fields: ['displayName', 'formattedAddress', 'shortFormattedAddress', 'location'],
+                    locationRestriction: {
+                        center: { lat, lng },
+                        radius: 500,
+                    },
+                    maxResultCount: 5,
+                    rankPreference: window.google.maps.places.SearchNearbyRankPreference?.DISTANCE || 'DISTANCE',
+                })
+                    .then(({ places }) => {
+                        if (resolved) return;
+                        resolved = true;
+                        clearTimeout(timer);
+
+                        if (places?.length > 0) {
+                            const bestPlace = places[0];
+                            const name = bestPlace.displayName || '';
+                            const vicinity = bestPlace.shortFormattedAddress || bestPlace.formattedAddress || '';
+                            const label = name && vicinity && !vicinity.startsWith(name)
+                                ? `${name}, ${vicinity}`
+                                : (name || vicinity);
+                            if (label) {
+                                finalize(label);
+                                return;
+                            }
+                        }
+                        geocoderFallback();
+                    })
+                    .catch((err) => {
+                        if (resolved) return;
+                        resolved = true;
+                        clearTimeout(timer);
+                        console.warn('Places API (New) searchNearby failed, falling back to legacy nearbySearch:', err);
+                        legacyNearbySearch();
+                    });
+            } else if (window.google?.maps?.places) {
+                legacyNearbySearch();
             } else {
                 geocoderFallback();
             }

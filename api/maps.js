@@ -34,12 +34,36 @@ export default async function handler(req, res) {
         });
     }
 
-    // Option 2: Server-side autocomplete predictions (extra secure)
+    // Option 2: Server-side autocomplete predictions (Places API New with Legacy fallback)
     try {
-        const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(input)}&key=${apiKey}`;
-        const response = await fetch(url);
-        const data = await response.json();
-        res.json(data);
+        const newResponse = await fetch('https://places.googleapis.com/v1/places:autocomplete', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Goog-Api-Key': apiKey,
+            },
+            body: JSON.stringify({
+                input,
+                includedRegionCodes: ['et'],
+                locationBias: {
+                    circle: {
+                        center: { latitude: 9.0333, longitude: 38.7500 },
+                        radius: 10000.0,
+                    },
+                },
+            }),
+        });
+
+        if (newResponse.ok) {
+            const newData = await newResponse.json();
+            return res.json(newData);
+        }
+
+        // Automatic fallback to Legacy Places Autocomplete REST API if Places API (New) is not enabled
+        const legacyUrl = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(input)}&key=${apiKey}`;
+        const legacyResponse = await fetch(legacyUrl);
+        const legacyData = await legacyResponse.json();
+        res.json(legacyData);
     } catch (error) {
         res.status(500).json({ error: 'Autocomplete failed' });
     }

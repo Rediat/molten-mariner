@@ -21,15 +21,21 @@ const PlacesAutocomplete = ({ placeholder, onPlaceSelected, label, accentColor =
         }
     }, [defaultValue, inputRef]);
 
-    // Initialize Services
+    // Initialize Services (Session Token for New API + Legacy Services for fallback)
     useEffect(() => {
         if (!window.google?.maps?.places || !mapsReady) return;
         
-        autocompleteService.current = new window.google.maps.places.AutocompleteService();
-        // PlacesService requires an HTML element, even if we just use it for getDetails
-        const dummyDiv = document.createElement('div');
-        placesService.current = new window.google.maps.places.PlacesService(dummyDiv);
-        setSessionToken(new window.google.maps.places.AutocompleteSessionToken());
+        if (window.google.maps.places.AutocompleteService) {
+            autocompleteService.current = new window.google.maps.places.AutocompleteService();
+        }
+        if (window.google.maps.places.PlacesService) {
+            // PlacesService requires an HTML element for legacy fallback
+            const dummyDiv = document.createElement('div');
+            placesService.current = new window.google.maps.places.PlacesService(dummyDiv);
+        }
+        if (window.google.maps.places.AutocompleteSessionToken) {
+            setSessionToken(new window.google.maps.places.AutocompleteSessionToken());
+        }
     }, [mapsReady]);
 
     // Handle clicks outside dropdown to close it
@@ -43,29 +49,28 @@ const PlacesAutocomplete = ({ placeholder, onPlaceSelected, label, accentColor =
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [inputRef]);
 
-    const fetchPredictions = useCallback((input) => {
-        if (!input || input.length < 2 || !autocompleteService.current) {
+    // Legacy fallback for Autocomplete + TextSearch if Places API (New) is not enabled or unavailable
+    const fetchLegacyPredictions = useCallback((input) => {
+        if (!autocompleteService.current) {
+            setLoading(false);
             setPredictions([]);
             setShowDropdown(false);
             return;
         }
 
-        setLoading(true);
-        // Addis Ababa center for biasing
         const addisAbaba = new window.google.maps.LatLng(9.0333, 38.7500);
-        
+
         autocompleteService.current.getPlacePredictions({
             input,
             sessionToken,
             componentRestrictions: { country: 'et' },
-            locationBias: { radius: 10000, center: addisAbaba }, // 10km radius from city center
+            locationBias: { radius: 10000, center: addisAbaba },
         }, (results, status) => {
             if (status === window.google.maps.places.PlacesServiceStatus.OK && results && results.length > 0) {
                 setLoading(false);
                 setPredictions(results);
                 setShowDropdown(true);
             } else if (placesService.current) {
-                // Fallback to textSearch for unordered or complex queries if Autocomplete fails
                 placesService.current.textSearch({
                     query: input + ' Addis Ababa Ethiopia',
                     location: addisAbaba,
@@ -73,7 +78,6 @@ const PlacesAutocomplete = ({ placeholder, onPlaceSelected, label, accentColor =
                 }, (textResults, textStatus) => {
                     setLoading(false);
                     if (textStatus === window.google.maps.places.PlacesServiceStatus.OK && textResults) {
-                        // Map textSearch results to match the prediction object format
                         const mappedResults = textResults.slice(0, 5).map(res => ({
                             place_id: res.place_id,
                             description: res.name + ', ' + (res.formatted_address || ''),
@@ -97,6 +101,101 @@ const PlacesAutocomplete = ({ placeholder, onPlaceSelected, label, accentColor =
         });
     }, [sessionToken]);
 
+    const fetchPredictions = useCallback(async (input) => {
+        if (!input || input.length < 2 || !window.google?.maps?.places) {
+            setPredictions([]);
+            setShowDropdown(false);
+            return;
+        }
+
+        setLoading(true);
+        const addisAbabaCenter = { lat: 9.0333, lng: 38.7500 };
+
+        // Primary: Places API (New) — AutocompleteSuggestion & Place.searchByText
+        if (window.google.maps.places.AutocompleteSuggestion?.fetchAutocompleteSuggestions) {
+            try {
+                const request = {
+                    input,
+                    includedRegionCodes: ['et'],
+                    locationBias: { center: addisAbabaCenter, radius: 10000 },
+                };
+                if (sessionToken) {
+                    request.sessionToken = sessionToken;
+                }
+
+                const { suggestions } = await window.google.maps.places.AutocompleteSuggestion.fetchAutocompleteSuggestions(request);
+
+                if (suggestions && suggestions.length > 0) {
+                    const mapped = suggestions
+                        .filter(s => s.placePrediction)
+                        .map(s => {
+                            const pred = s.placePrediction;
+                            const mainText = pred.mainText?.text || pred.text?.text || '';
+                            const secondaryText = pred.secondaryText?.text || '';
+                            const description = pred.text?.text || (secondaryText ? `${mainText}, ${secondaryText}` : mainText);
+                            return {
+                                place_id: pred.placeId,
+                                description,
+                                structured_formatting: {
+                                    main_text: mainText,
+                                    secondary_text: secondaryText,
+                                },
+                                _placePrediction: pred,
+                            };
+                        });
+
+                    if (mapped.length > 0) {
+                        setLoading(false);
+                        setPredictions(mapped);
+                        setShowDropdown(true);
+                        return;
+                    }
+                }
+
+                // Fallback to Places API (New) Text Search for unordered or complex queries
+                if (window.google.maps.places.Place?.searchByText) {
+                    const { places } = await window.google.maps.places.Place.searchByText({
+                        textQuery: `${input} Addis Ababa Ethiopia`,
+                        fields: ['id', 'displayName', 'formattedAddress', 'location'],
+                        locationBias: { center: addisAbabaCenter, radius: 20000 },
+                        maxResultCount: 5,
+                    });
+
+                    setLoading(false);
+                    if (places && places.length > 0) {
+                        const mappedResults = places.slice(0, 5).map(p => ({
+                            place_id: p.id,
+                            description: p.displayName + (p.formattedAddress ? `, ${p.formattedAddress}` : ''),
+                            structured_formatting: {
+                                main_text: p.displayName || '',
+                                secondary_text: p.formattedAddress || 'Addis Ababa',
+                            },
+                            _resolvedPlace: p.location ? {
+                                lat: typeof p.location.lat === 'function' ? p.location.lat() : p.location.lat,
+                                lng: typeof p.location.lng === 'function' ? p.location.lng() : p.location.lng,
+                                name: p.displayName,
+                                address: p.formattedAddress,
+                            } : null,
+                        }));
+                        setPredictions(mappedResults);
+                        setShowDropdown(mappedResults.length > 0);
+                    } else {
+                        setPredictions([]);
+                        setShowDropdown(false);
+                    }
+                    return;
+                }
+            } catch (err) {
+                console.warn('Places API (New) autocomplete failed, falling back to legacy Places API:', err);
+                fetchLegacyPredictions(input);
+                return;
+            }
+        }
+
+        // Fallback if AutocompleteSuggestion is not available on window.google.maps.places
+        fetchLegacyPredictions(input);
+    }, [sessionToken, fetchLegacyPredictions]);
+
     const debounceTimerRef = useRef(null);
 
     const handleInputChange = (e) => {
@@ -116,12 +215,61 @@ const PlacesAutocomplete = ({ placeholder, onPlaceSelected, label, accentColor =
         }, 300);
     };
 
-    const handleSelectPrediction = (prediction) => {
-        if (!placesService.current || !prediction.place_id) return;
+    const handleSelectPrediction = async (prediction) => {
+        if (!prediction.place_id && !prediction._resolvedPlace) return;
 
-        setLoading(true);
         setShowDropdown(false);
         if (inputRef.current) inputRef.current.value = prediction.description;
+
+        // Fast-path: Place.searchByText already returned coordinates and details
+        if (prediction._resolvedPlace && prediction._resolvedPlace.lat != null && prediction._resolvedPlace.lng != null) {
+            onPlaceSelected({
+                ...prediction._resolvedPlace,
+                description: prediction.description,
+            });
+            if (window.google?.maps?.places?.AutocompleteSessionToken) {
+                setSessionToken(new window.google.maps.places.AutocompleteSessionToken());
+            }
+            return;
+        }
+
+        setLoading(true);
+
+        // Primary: Places API (New) — Place.fetchFields()
+        if (prediction._placePrediction?.toPlace || window.google?.maps?.places?.Place) {
+            try {
+                const place = prediction._placePrediction?.toPlace
+                    ? prediction._placePrediction.toPlace()
+                    : new window.google.maps.places.Place({ id: prediction.place_id });
+
+                await place.fetchFields({
+                    fields: ['displayName', 'formattedAddress', 'location'],
+                });
+
+                if (place.location) {
+                    setLoading(false);
+                    onPlaceSelected({
+                        lat: typeof place.location.lat === 'function' ? place.location.lat() : place.location.lat,
+                        lng: typeof place.location.lng === 'function' ? place.location.lng() : place.location.lng,
+                        name: place.displayName || prediction.structured_formatting?.main_text || prediction.description,
+                        address: place.formattedAddress || prediction.description,
+                        description: prediction.description,
+                    });
+                    if (window.google.maps.places.AutocompleteSessionToken) {
+                        setSessionToken(new window.google.maps.places.AutocompleteSessionToken());
+                    }
+                    return;
+                }
+            } catch (err) {
+                console.warn('Places API (New) fetchFields failed, falling back to legacy getDetails:', err);
+            }
+        }
+
+        // Legacy fallback: PlacesService.getDetails()
+        if (!placesService.current) {
+            setLoading(false);
+            return;
+        }
 
         placesService.current.getDetails({
             placeId: prediction.place_id,
@@ -138,7 +286,9 @@ const PlacesAutocomplete = ({ placeholder, onPlaceSelected, label, accentColor =
                     description: prediction.description,
                 });
                 // Refresh session token for the next trip
-                setSessionToken(new window.google.maps.places.AutocompleteSessionToken());
+                if (window.google?.maps?.places?.AutocompleteSessionToken) {
+                    setSessionToken(new window.google.maps.places.AutocompleteSessionToken());
+                }
             }
         });
     };
